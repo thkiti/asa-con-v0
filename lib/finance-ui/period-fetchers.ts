@@ -1,0 +1,66 @@
+import type {
+  PeriodListResult,
+  PeriodStatusUpdateBody,
+  PeriodStatusUpdateResult,
+  SessionDisplay,
+} from "./types"
+
+function buildPeriodQuery(filter?: { branchId?: string }): string {
+  const params = new URLSearchParams()
+  if (filter?.branchId?.trim()) {
+    params.set("branchId", filter.branchId.trim())
+  }
+  const query = params.toString()
+  return query ? `?${query}` : ""
+}
+
+async function throwFetchError(res: Response): Promise<never> {
+  let message = res.statusText || "Request failed"
+  try {
+    const body = (await res.json()) as { error?: string; message?: string }
+    if (body.error) message = body.error
+    else if (body.message) message = body.message
+  } catch {
+    // keep statusText
+  }
+  throw new Error(message)
+}
+
+export function fetchSessionDisplay(): Promise<SessionDisplay | null> {
+  return fetch("/api/auth/session").then(async (res) => {
+    if (!res.ok) return null
+    const body = (await res.json()) as {
+      user?: { name?: string; role?: string } | null
+    }
+    const user = body.user
+    if (!user) return null
+    return {
+      name: user.name ?? "",
+      role: user.role ?? "",
+    }
+  })
+}
+
+export function fetchAccountingPeriods(
+  filter?: { branchId?: string }
+): Promise<PeriodListResult> {
+  const query = buildPeriodQuery(filter)
+  return fetch(`/api/finance/periods${query}`).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<PeriodListResult>
+  })
+}
+
+export function patchPeriodStatus(
+  periodId: string,
+  body: PeriodStatusUpdateBody
+): Promise<PeriodStatusUpdateResult> {
+  return fetch(`/api/finance/period/${periodId}/status`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<PeriodStatusUpdateResult>
+  })
+}

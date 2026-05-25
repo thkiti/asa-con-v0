@@ -1,0 +1,18 @@
+import type { Role } from "@/lib/shared"
+
+/** Minimal authenticated user — no password, no ORM types in UI layer. */
+export type SessionUser = {
+  sessionId: string
+  role: Role
+  staffId: string
+  name: string
+  branchId: string
+}
+
+export type SessionCookiePayload = {
+  sessionId: string | undefined
+  role: string | undefined
+  staffId: string | undefined
+  name: string | undefined
+  branchId: string | undefined
+}

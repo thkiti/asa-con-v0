@@ -2,25 +2,44 @@
   "name": "asa-con-v0",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "jest",
+    "db:generate": "prisma generate",
+    "audit:architecture": "npx tsx scripts/audit/architecture-audit.ts",
+    "audit:finance": "npx tsx scripts/audit/finance-boundary-audit.ts",
+    "audit:ui": "npx tsx scripts/audit/ui-boundary-audit.ts",
+    "audit:tx": "npx tsx scripts/audit/no-nested-tx-audit.ts",
+    "audit:all": "npm run audit:architecture"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "dotenv": "^16.6.1",
     "next": "16.2.6",
+    "pg": "^8.16.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
+    "@types/pg": "^8.15.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "jest": "^30.4.2",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.11",
     "typescript": "^5"
   }
 }

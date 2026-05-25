@@ -1,0 +1,408 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// DATABASE_URL: see prisma.config.ts datasource.url (Prisma 7 — url not allowed in schema file)
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  HO_FINANCE
+  HO_ADMIN
+  HO_OPERATIONS
+  SH_STAFF
+}
+
+enum BranchType {
+  HO
+  SH
+}
+
+enum ProductType {
+  TRACKED
+  CONSUMABLE
+}
+
+enum DocType {
+  PURCHASE
+  TRANSFER_OUT
+  TRANSFER_IN
+  ADJUSTMENT
+  PERFORMANCE
+}
+
+enum DocStatus {
+  DRAFT
+  SUBMITTED
+  SHIPPED
+  CONFIRMED
+  RECEIVED
+  POSTED
+  TRANSFERRED
+}
+
+enum SaleStatus {
+  COMPLETED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  QR
+  TRANSFER
+  OTHER
+}
+
+enum LedgerSkipReason {
+  CONSUMABLE
+}
+
+model Branch {
+  id        String     @id @default(uuid())
+  code      String     @unique
+  name      String
+  type      BranchType @default(SH)
+  isActive  Boolean    @default(true)
+  deleted   Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  staffs            Staff[]
+  stocks            Stock[]
+  stockLayers       StockLayer[]
+  stockTransactions StockTransaction[]
+  stockDocuments    StockDocument[]
+  sales             Sale[]
+  vouchers          Voucher[]
+  accountingPeriods AccountingPeriod[]
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  staffId   String   @unique
+  password  String
+  name      String
+  role      Role
+  branchId  String
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id])
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  groupCode   Int
+  typeCode    Int
+  runningCode Int
+  code        String      @unique
+  name        String
+  productType ProductType @default(TRACKED)
+  deleted     Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  referenceStocks    ReferenceStock[]
+  stocks             Stock[]
+  stockLayers        StockLayer[]
+  stockTransactions  StockTransaction[]
+  stockDocumentLines StockDocumentLine[]
+  saleItems          SaleItem[]
+
+  @@unique([groupCode, typeCode, runningCode])
+}
+
+model ReferenceStock {
+  id           String   @id @default(uuid())
+  hookGroup    String
+  hookNo       Int
+  supplierCode String
+  productCode  String
+  productGroup String?
+  productId    String
+  deleted      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId, hookGroup, hookNo])
+}
+
+model Stock {
+  id        String   @id @default(uuid())
+  branchId  String
+  productId String
+  qty       Int      @default(0)
+  avgCost   Decimal  @default(0) @db.Decimal(18, 6)
+  updatedAt DateTime @updatedAt
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([branchId, productId])
+}
+
+model StockLayer {
+  id        String   @id @default(uuid())
+  branchId  String
+  productId String
+  qty       Int
+  qtyRemain Int
+  unitCost  Decimal  @db.Decimal(18, 6)
+  refType   String?
+  refId     String?
+  createdAt DateTime @default(now())
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model StockTransaction {
+  id          String   @id @default(uuid())
+  branchId    String
+  productId   String
+  date        DateTime
+  qtyIn       Int      @default(0)
+  qtyOut      Int      @default(0)
+  unitCost    Decimal  @db.Decimal(18, 6)
+  beforeQty   Int
+  afterQty    Int
+  beforeValue Decimal  @db.Decimal(18, 6)
+  afterValue  Decimal  @db.Decimal(18, 6)
+  refType     String
+  refId       String
+  refLineId   String
+  documentId  String?
+  createdAt   DateTime @default(now())
+
+  branch   Branch         @relation(fields: [branchId], references: [id])
+  product  Product        @relation(fields: [productId], references: [id])
+  document StockDocument? @relation(fields: [documentId], references: [id])
+}
+
+model StockDocument {
+  id                 String    @id @default(uuid())
+  refNo              String    @unique
+  docType            DocType
+  status             DocStatus @default(DRAFT)
+  date               DateTime
+  branchId           String
+  periodMonth        String?
+  fromLocId          String?
+  toLocId            String?
+  submittedAt        DateTime?
+  confirmedAt        DateTime?
+  postedAt           DateTime?
+  createdByStaffId   String?
+  confirmedByStaffId String?
+  postedByStaffId    String?
+  createdAt          DateTime  @default(now())
+
+  branch       Branch              @relation(fields: [branchId], references: [id])
+  lines        StockDocumentLine[]
+  transactions StockTransaction[]
+}
+
+model StockDocumentLine {
+  id                 String @id @default(uuid())
+  documentId         String
+  productId          String
+  qty                Int
+  endingQty          Int?
+  reviewPostingDelta Int?
+
+  document StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product  Product       @relation(fields: [productId], references: [id])
+}
+
+model DocumentCounter {
+  id      String @id @default(uuid())
+  docType String
+  shopId  String
+  period  String
+  running Int    @default(0)
+
+  @@unique([docType, shopId, period])
+}
+
+model Sale {
+  id        String     @id @default(uuid())
+  branchId  String
+  staffId   String?
+  total     Decimal    @db.Decimal(18, 2)
+  status    SaleStatus @default(COMPLETED)
+  createdAt DateTime   @default(now())
+
+  branch  Branch     @relation(fields: [branchId], references: [id])
+  items   SaleItem[]
+  payment Payment?
+  receipt Receipt?
+}
+
+model SaleItem {
+  id                  String             @id @default(uuid())
+  saleId              String
+  productId           String
+  productType         ProductType
+  qty                 Int
+  unitPrice           Decimal            @db.Decimal(18, 2)
+  lineTotal           Decimal            @db.Decimal(18, 2)
+  ledgerSkippedReason LedgerSkipReason?
+  createdAt           DateTime           @default(now())
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  saleId    String        @unique
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(18, 2)
+  change    Decimal       @default(0) @db.Decimal(18, 2)
+  createdAt DateTime      @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+}
+
+model Receipt {
+  id        String   @id @default(uuid())
+  saleId    String   @unique
+  branchId  String
+  receiptNo String
+  issuedAt  DateTime @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, receiptNo])
+}
+enum GlAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum VoucherStatus {
+  DRAFT
+  POSTED
+  VOIDED
+}
+
+enum AccountingPeriodStatus {
+  /// Posting allowed
+  OPEN
+  /// Posting blocked; soft close (reopen workflow deferred)
+  SOFT_CLOSED
+  /// Posting blocked; hard close / locked
+  HARD_CLOSED
+}
+
+model GlAccount {
+  id          String         @id @default(uuid())
+  code        String         @unique
+  name        String
+  accountType GlAccountType
+  isActive    Boolean        @default(true)
+  deleted     Boolean        @default(false)
+  parentId    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  parent            GlAccount?         @relation("GlAccountHierarchy", fields: [parentId], references: [id])
+  children          GlAccount[]        @relation("GlAccountHierarchy")
+  voucherLines      VoucherLine[]
+  journalEntryLines JournalEntryLine[]
+}
+
+model AccountingPeriod {
+  id        String                 @id @default(uuid())
+  periodKey String
+  branchId  String
+  status    AccountingPeriodStatus @default(OPEN)
+  openedAt  DateTime               @default(now())
+  closedAt  DateTime?
+
+  branch         Branch          @relation(fields: [branchId], references: [id])
+  vouchers       Voucher[]
+  journalEntries JournalEntry[]
+
+  @@unique([branchId, periodKey])
+}
+
+model Voucher {
+  id          String        @id @default(uuid())
+  voucherNo   String   @unique
+  date        DateTime
+  status      VoucherStatus @default(DRAFT)
+  branchId    String
+  periodId    String
+  refType     String
+  refId       String
+  refNo       String?
+  description String?
+  postedAt    DateTime?
+  createdAt   DateTime      @default(now())
+
+  branch       Branch           @relation(fields: [branchId], references: [id])
+  period       AccountingPeriod @relation(fields: [periodId], references: [id])
+  lines        VoucherLine[]
+  journalEntry JournalEntry?
+
+  @@unique([refType, refId])
+  @@index([branchId, date])
+}
+
+model VoucherLine {
+  /// Staging / trace layer tied to the voucher; not the immutable GL.
+  id          String  @id @default(uuid())
+  voucherId   String
+  lineNo      Int
+  glAccountId String
+  debit       Decimal @default(0) @db.Decimal(18, 2)
+  credit      Decimal @default(0) @db.Decimal(18, 2)
+  memo        String?
+
+  voucher   Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  glAccount GlAccount @relation(fields: [glAccountId], references: [id])
+
+  @@index([voucherId])
+}
+
+model JournalEntry {
+  id        String   @id @default(uuid())
+  voucherId String   @unique
+  date      DateTime
+  branchId  String
+  periodId  String
+  postedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  voucher Voucher          @relation(fields: [voucherId], references: [id])
+  period  AccountingPeriod @relation(fields: [periodId], references: [id])
+  lines   JournalEntryLine[]
+}
+
+model JournalEntryLine {
+  /// Immutable general-ledger line (posted journal).
+  id             String  @id @default(uuid())
+  journalEntryId String
+  lineNo         Int
+  glAccountId    String
+  debit          Decimal @default(0) @db.Decimal(18, 2)
+  credit          Decimal @default(0) @db.Decimal(18, 2)
+  memo           String?
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  glAccount    GlAccount    @relation(fields: [glAccountId], references: [id])
+
+  @@index([journalEntryId])
+}

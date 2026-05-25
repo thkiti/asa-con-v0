@@ -1,0 +1,9 @@
+ .gitignore        |    9 +-
+ AGENTS.md         |   13 +
+ README.md         |   54 +-
+ app/layout.tsx    |    6 +-
+ app/page.tsx      |   86 +-
+ package-lock.json | 5120 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ package.json      |   25 +-
+ tsconfig.json     |   11 +-
+ 8 files changed, 4979 insertions(+), 345 deletions(-)
