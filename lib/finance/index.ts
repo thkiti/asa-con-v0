@@ -25,6 +25,7 @@ export {
   type PostedVoucherResult,
 } from "./posting-types"
 export { bootstrapPeriodIfMissing } from "./period-setup"
+export { closeAccountingPeriod, reopenAccountingPeriod } from "./period-close"
 export {
   ensureOpenPeriod,
   postOperationalVoucher,
