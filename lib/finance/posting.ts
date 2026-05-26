@@ -24,60 +24,13 @@ import {
 } from "./validation"
 import { createVoucherWithLines } from "./voucher"
 
-function periodKeyFromDate(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  return `${y}-${m}`
-}
-
 type AccountingPeriodRow = {
   id: string
   status: AccountingPeriodStatus
 }
 
-/** Creates an OPEN period only when missing; never changes status on an existing row. */
-export async function bootstrapPeriodIfMissing(
-  tx: Prisma.TransactionClient,
-  input: { branchId: string; periodKey: string }
-): Promise<NonNullable<Awaited<ReturnType<typeof tx.accountingPeriod.findUnique>>>> {
-  let period = await tx.accountingPeriod.findUnique({
-    where: {
-      branchId_periodKey: {
-        branchId: input.branchId,
-        periodKey: input.periodKey,
-      },
-    },
-  })
-
-  if (!period) {
-    period = await tx.accountingPeriod.create({
-      data: {
-        branchId: input.branchId,
-        periodKey: input.periodKey,
-        status: AccountingPeriodStatus.OPEN,
-      },
-    })
-  }
-
-  return period
-}
-
 export function ensureOpenPeriod(period: AccountingPeriodRow): void {
   assertPeriodOpen(period.status)
-}
-
-export async function resolvePeriodId(
-  tx: Prisma.TransactionClient,
-  input: { branchId: string; date: Date }
-): Promise<string> {
-  const periodKey = periodKeyFromDate(input.date)
-  // bootstrapPeriodIfMissing never reopens SOFT_CLOSED, HARD_CLOSED, or legacy closed periods.
-  const period = await bootstrapPeriodIfMissing(tx, {
-    branchId: input.branchId,
-    periodKey,
-  })
-  ensureOpenPeriod(period)
-  return period.id
 }
 
 export async function resolveAccountIds(

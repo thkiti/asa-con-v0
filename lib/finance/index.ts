@@ -24,14 +24,13 @@ export {
   type PostStockDocumentVoucherInput,
   type PostedVoucherResult,
 } from "./posting-types"
+export { bootstrapPeriodIfMissing } from "./period-setup"
 export {
-  bootstrapPeriodIfMissing,
   ensureOpenPeriod,
   postOperationalVoucher,
   postSaleVoucher,
   postStockDocumentVoucher,
   resolveAccountIds,
-  resolvePeriodId,
 } from "./posting"
 export {
   assertBalanced,
