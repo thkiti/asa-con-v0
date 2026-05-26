@@ -1,6 +1,7 @@
+import type { PeriodAction } from "@/lib/finance-ui/period-fetchers"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
+import { PeriodAdminActions } from "./PeriodAdminActions"
 import { PeriodStatusBadge } from "./PeriodStatusBadge"
-import { PeriodStatusControl } from "./PeriodStatusControl"
 
 function formatDate(value: string | null): string {
   if (!value) return "—"
@@ -12,13 +13,18 @@ function formatDate(value: string | null): string {
 type PeriodTableProps = {
   periods: AccountingPeriodRow[]
   showControls?: boolean
-  onStatusChange?: () => void
+  onPeriodAction?: (
+    period: AccountingPeriodRow,
+    action: PeriodAction
+  ) => Promise<void>
+  actionsDisabled?: boolean
 }
 
 export function PeriodTable({
   periods,
   showControls = false,
-  onStatusChange,
+  onPeriodAction,
+  actionsDisabled = false,
 }: PeriodTableProps) {
   return (
     <div className="mt-4 overflow-x-auto">
@@ -64,10 +70,14 @@ export function PeriodTable({
                 </td>
                 {showControls ? (
                   <td className="px-3 py-2">
-                    <PeriodStatusControl
-                      periodId={period.id}
-                      currentStatus={period.status}
-                      onSuccess={onStatusChange}
+                    <PeriodAdminActions
+                      period={period}
+                      disabled={actionsDisabled}
+                      onAction={(action) =>
+                        onPeriodAction
+                          ? onPeriodAction(period, action)
+                          : Promise.resolve()
+                      }
                     />
                   </td>
                 ) : null}

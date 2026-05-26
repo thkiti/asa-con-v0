@@ -60,3 +60,9 @@ export type SessionDisplay = {
   name: string
   role: string
 }
+
+export type PeriodAction = "SOFT_CLOSE" | "HARD_CLOSE" | "REOPEN"
+
+export type AccountingPeriodMutationResult = {
+  period: AccountingPeriodRow
+}

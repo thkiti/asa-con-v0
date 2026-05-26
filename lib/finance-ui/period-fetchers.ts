@@ -1,14 +1,31 @@
 import type {
+  AccountingPeriodMutationResult,
   PeriodListResult,
   PeriodStatusUpdateBody,
   PeriodStatusUpdateResult,
   SessionDisplay,
 } from "./types"
+import type { PeriodAction } from "./types"
 
-function buildPeriodQuery(filter?: { branchId?: string }): string {
+export type { PeriodAction }
+
+type PeriodListFilter = {
+  branchId?: string
+  periodKey?: string
+  status?: string
+}
+
+function buildPeriodQuery(filter?: PeriodListFilter): string {
   const params = new URLSearchParams()
   if (filter?.branchId?.trim()) {
     params.set("branchId", filter.branchId.trim())
+  }
+  if (filter?.periodKey?.trim()) {
+    params.set("periodKey", filter.periodKey.trim())
+  }
+  const status = filter?.status?.trim()
+  if (status && status !== "ALL") {
+    params.set("status", status)
   }
   const query = params.toString()
   return query ? `?${query}` : ""
@@ -42,12 +59,41 @@ export function fetchSessionDisplay(): Promise<SessionDisplay | null> {
 }
 
 export function fetchAccountingPeriods(
-  filter?: { branchId?: string }
+  filter?: PeriodListFilter
 ): Promise<PeriodListResult> {
   const query = buildPeriodQuery(filter)
   return fetch(`/api/finance/periods${query}`).then(async (res) => {
     if (!res.ok) await throwFetchError(res)
     return res.json() as Promise<PeriodListResult>
+  })
+}
+
+export function postAccountingPeriod(body: {
+  branchId: string
+  periodKey: string
+}): Promise<AccountingPeriodMutationResult> {
+  return fetch("/api/finance/periods", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<AccountingPeriodMutationResult>
+  })
+}
+
+export function patchAccountingPeriod(body: {
+  branchId: string
+  periodKey: string
+  action: PeriodAction
+}): Promise<AccountingPeriodMutationResult> {
+  return fetch("/api/finance/periods", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<AccountingPeriodMutationResult>
   })
 }
 

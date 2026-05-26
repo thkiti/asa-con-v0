@@ -39,11 +39,12 @@ describe("PeriodTable", () => {
     expect(html).toContain("No accounting periods")
   })
 
-  it("shows locked text for hard-closed control row without actions column", () => {
+  it("shows locked text for hard-closed rows and action buttons for open rows", () => {
     const html = renderToStaticMarkup(
       <PeriodTable periods={samplePeriods} showControls />
     )
     expect(html).toContain("Locked")
-    expect(html).toContain("Update status")
+    expect(html).toContain("SOFT CLOSE")
+    expect(html).not.toContain("Update status")
   })
 })

@@ -80,11 +80,7 @@ export function PeriodsAdminView() {
       {loading && periods.length === 0 ? (
         <p className="mt-4 text-zinc-600">Loading periods…</p>
       ) : (
-        <PeriodTable
-          periods={periods}
-          showControls
-          onStatusChange={() => void loadPeriods()}
-        />
+        <PeriodTable periods={periods} />
       )}
     </div>
   )
