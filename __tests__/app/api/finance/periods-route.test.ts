@@ -7,8 +7,14 @@ import {
 } from "@/lib/finance/period-close"
 import { listAccountingPeriods } from "@/lib/finance/period-list"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
+import { getSession } from "@/lib/auth"
 import { GET, PATCH, POST } from "@/app/api/finance/periods/route"
 import { prisma } from "@/lib/shared/prisma"
+
+jest.mock("@/lib/auth", () => ({
+  ...jest.requireActual("@/lib/auth"),
+  getSession: jest.fn(),
+}))
 
 jest.mock("@/lib/finance/period-list", () => ({
   listAccountingPeriods: jest.fn(),
@@ -46,6 +52,15 @@ const mockReopen = reopenAccountingPeriod as jest.MockedFunction<
 >
 const mockTransaction = prisma.$transaction as jest.Mock
 const mockFindUnique = prisma.accountingPeriod.findUnique as jest.Mock
+const mockGetSession = getSession as jest.MockedFunction<typeof getSession>
+
+const authorizedSession = {
+  sessionId: "sess-1",
+  role: "HO_FINANCE" as const,
+  staffId: "staff-1",
+  name: "Finance User",
+  branchId: "branch-1",
+}
 
 const openedAt = new Date("2026-05-01T00:00:00.000Z")
 const closedAt = new Date("2026-05-31T23:59:59.000Z")
@@ -157,7 +172,25 @@ describe("GET finance/periods", () => {
 describe("POST finance/periods", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockGetSession.mockResolvedValue(authorizedSession)
     mockTransaction.mockImplementation(async (fn) => fn(prisma))
+  })
+
+  it("returns 401 when session is missing", async () => {
+    mockGetSession.mockResolvedValue(null)
+
+    const req = new NextRequest("http://localhost/api/finance/periods", {
+      method: "POST",
+      body: JSON.stringify({ branchId: "branch-1", periodKey: "2026-05" }),
+    })
+    const res = await POST(req)
+
+    expect(res.status).toBe(401)
+    await expect(res.json()).resolves.toEqual({
+      error: "Authentication required",
+      code: "UNAUTHENTICATED",
+    })
+    expect(mockTransaction).not.toHaveBeenCalled()
   })
 
   it("creates an OPEN period via bootstrapPeriodIfMissing", async () => {
@@ -223,7 +256,64 @@ describe("POST finance/periods", () => {
 describe("PATCH finance/periods", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockGetSession.mockResolvedValue(authorizedSession)
     mockTransaction.mockImplementation(async (fn) => fn(prisma))
+  })
+
+  it("returns 403 when role is not period admin", async () => {
+    mockGetSession.mockResolvedValue({
+      sessionId: "sess-2",
+      role: "SH_STAFF",
+      staffId: "staff-2",
+      name: "Shop Staff",
+      branchId: "branch-1",
+    })
+
+    const req = new NextRequest("http://localhost/api/finance/periods", {
+      method: "PATCH",
+      body: JSON.stringify({
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        action: "SOFT_CLOSE",
+      }),
+    })
+    const res = await PATCH(req)
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({
+      error: "Insufficient permissions for period admin",
+      code: "FORBIDDEN",
+    })
+    expect(mockTransaction).not.toHaveBeenCalled()
+  })
+
+  it("allows HO_ADMIN to mutate period status", async () => {
+    mockGetSession.mockResolvedValue({
+      sessionId: "sess-3",
+      role: "HO_ADMIN",
+      staffId: "staff-3",
+      name: "Admin User",
+      branchId: "branch-1",
+    })
+    mockClose.mockResolvedValue(
+      periodRow({ status: "SOFT_CLOSED", closedAt: new Date("2026-05-31T23:59:59.000Z") })
+    )
+    mockFindUnique.mockResolvedValue(
+      periodRow({ status: "SOFT_CLOSED", closedAt: new Date("2026-05-31T23:59:59.000Z") })
+    )
+
+    const req = new NextRequest("http://localhost/api/finance/periods", {
+      method: "PATCH",
+      body: JSON.stringify({
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        action: "SOFT_CLOSE",
+      }),
+    })
+    const res = await PATCH(req)
+
+    expect(res.status).toBe(200)
+    expect(mockClose).toHaveBeenCalled()
   })
 
   it("SOFT_CLOSE updates period status", async () => {

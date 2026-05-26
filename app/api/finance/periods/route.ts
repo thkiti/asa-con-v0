@@ -6,6 +6,11 @@ import {
   parseAccountingPeriodStatus,
 } from "@/app/api/finance/shared/finance-api-errors"
 import {
+  getSession,
+  PeriodAdminAuthError,
+  requirePeriodAdminActor,
+} from "@/lib/auth"
+import {
   closeAccountingPeriod,
   reopenAccountingPeriod,
 } from "@/lib/finance/period-close"
@@ -92,6 +97,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    requirePeriodAdminActor(await getSession())
+
     await prisma.$transaction(async (tx) => {
       await bootstrapPeriodIfMissing(tx, { branchId, periodKey })
     })
@@ -103,6 +110,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ period })
   } catch (err: unknown) {
+    if (err instanceof PeriodAdminAuthError) {
+      return NextResponse.json(
+        { error: err.message, code: err.code },
+        { status: err.httpStatus }
+      )
+    }
     return financeErrorResponse(err, "POST finance/periods error")
   }
 }
@@ -133,6 +146,8 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
+    requirePeriodAdminActor(await getSession())
+
     await prisma.$transaction(async (tx) => {
       if (action === "SOFT_CLOSE") {
         await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
@@ -150,6 +165,12 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ period })
   } catch (err: unknown) {
+    if (err instanceof PeriodAdminAuthError) {
+      return NextResponse.json(
+        { error: err.message, code: err.code },
+        { status: err.httpStatus }
+      )
+    }
     return financeErrorResponse(err, "PATCH finance/periods error")
   }
 }
