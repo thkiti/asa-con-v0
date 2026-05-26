@@ -2,7 +2,6 @@ import {
   fetchAccountingPeriods,
   fetchSessionDisplay,
   patchAccountingPeriod,
-  patchPeriodStatus,
   postAccountingPeriod,
 } from "@/lib/finance-ui/period-fetchers"
 
@@ -219,55 +218,5 @@ describe("fetchSessionDisplay", () => {
     })
 
     await expect(fetchSessionDisplay()).resolves.toBeNull()
-  })
-})
-
-describe("patchPeriodStatus", () => {
-  beforeEach(() => {
-    global.fetch = jest.fn()
-  })
-
-  it("PATCHes status route and returns JSON on success", async () => {
-    const dto = {
-      id: "period-1",
-      status: "SOFT_CLOSED" as const,
-      closedAt: "2026-05-23T12:00:00.000Z",
-    }
-    ;(global.fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      json: async () => dto,
-    })
-
-    await expect(
-      patchPeriodStatus("period-1", {
-        nextStatus: "SOFT_CLOSED",
-        reason: "Month-end",
-      })
-    ).resolves.toEqual(dto)
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/period/period-1/status",
-      expect.objectContaining({
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          nextStatus: "SOFT_CLOSED",
-          reason: "Month-end",
-        }),
-      })
-    )
-  })
-
-  it("throws with API error body on failure", async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValue({
-      ok: false,
-      statusText: "Forbidden",
-      json: async () => ({ error: "Transition not allowed" }),
-    })
-
-    await expect(
-      patchPeriodStatus("period-1", {
-        nextStatus: "HARD_CLOSED",
-      })
-    ).rejects.toThrow("Transition not allowed")
   })
 })

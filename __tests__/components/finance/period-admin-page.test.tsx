@@ -21,7 +21,6 @@ jest.mock("@/lib/finance-ui/period-fetchers", () => ({
   }),
   postAccountingPeriod: jest.fn(),
   patchAccountingPeriod: jest.fn(),
-  patchPeriodStatus: jest.fn(),
 }))
 
 describe("PeriodAdminPage", () => {

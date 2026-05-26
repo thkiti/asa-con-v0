@@ -45,17 +45,6 @@ export type PeriodListResult = {
   periods: AccountingPeriodRow[]
 }
 
-export type PeriodStatusUpdateBody = {
-  nextStatus: AccountingPeriodStatus
-  reason?: string
-}
-
-export type PeriodStatusUpdateResult = {
-  id: string
-  status: AccountingPeriodStatus
-  closedAt: string | null
-}
-
 export type SessionDisplay = {
   name: string
   role: string

@@ -1,8 +1,6 @@
 import type {
   AccountingPeriodMutationResult,
   PeriodListResult,
-  PeriodStatusUpdateBody,
-  PeriodStatusUpdateResult,
   SessionDisplay,
 } from "./types"
 import type { PeriodAction } from "./types"
@@ -94,19 +92,5 @@ export function patchAccountingPeriod(body: {
   }).then(async (res) => {
     if (!res.ok) await throwFetchError(res)
     return res.json() as Promise<AccountingPeriodMutationResult>
-  })
-}
-
-export function patchPeriodStatus(
-  periodId: string,
-  body: PeriodStatusUpdateBody
-): Promise<PeriodStatusUpdateResult> {
-  return fetch(`/api/finance/period/${periodId}/status`, {
-    method: "PATCH",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  }).then(async (res) => {
-    if (!res.ok) await throwFetchError(res)
-    return res.json() as Promise<PeriodStatusUpdateResult>
   })
 }
