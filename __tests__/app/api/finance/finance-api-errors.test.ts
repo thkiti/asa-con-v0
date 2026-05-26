@@ -4,6 +4,7 @@ import {
   parseAccountingPeriodStatus,
 } from "@/app/api/finance/shared/finance-api-errors"
 import { ClosePolicyError } from "@/lib/finance/close-policy"
+import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { ReconciliationError } from "@/lib/finance/reconciliation-errors"
 import { InvalidDateRangeError } from "@/lib/reporting/report-errors"
 
@@ -53,6 +54,45 @@ describe("financeErrorResponse", () => {
     await expect(res.json()).resolves.toEqual({
       error: "Close transition requires an audit reason",
       code: "REASON_REQUIRED",
+    })
+  })
+
+  it("maps FinancePostingError PERIOD_NOT_FOUND to 404", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError("Accounting period 2026-05 not found", "PERIOD_NOT_FOUND"),
+      "test"
+    )
+    expect(res.status).toBe(404)
+    await expect(res.json()).resolves.toEqual({
+      error: "Accounting period 2026-05 not found",
+      code: "PERIOD_NOT_FOUND",
+    })
+  })
+
+  it("maps FinancePostingError PERIOD_ALREADY_HARD_CLOSED to 409", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError(
+        "Accounting period 2026-05 is hard closed and cannot be reopened",
+        "PERIOD_ALREADY_HARD_CLOSED"
+      ),
+      "test"
+    )
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({
+      error: "Accounting period 2026-05 is hard closed and cannot be reopened",
+      code: "PERIOD_ALREADY_HARD_CLOSED",
+    })
+  })
+
+  it("maps other FinancePostingError codes to 400", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError("Period is not open for posting", "PERIOD_NOT_OPEN"),
+      "test"
+    )
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "Period is not open for posting",
+      code: "PERIOD_NOT_OPEN",
     })
   })
 

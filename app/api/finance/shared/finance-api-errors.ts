@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import { ClosePolicyError } from "@/lib/finance/close-policy"
+import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { ReconciliationError } from "@/lib/finance/reconciliation-errors"
 import { InvalidDateRangeError, ReportError } from "@/lib/reporting/report-errors"
 
@@ -43,6 +44,19 @@ export function financeErrorResponse(
     return NextResponse.json(
       { error: err.message, code: err.code },
       { status: 400 }
+    )
+  }
+
+  if (err instanceof FinancePostingError) {
+    const status =
+      err.code === "PERIOD_NOT_FOUND"
+        ? 404
+        : err.code === "PERIOD_ALREADY_HARD_CLOSED"
+          ? 409
+          : 400
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status }
     )
   }
 
