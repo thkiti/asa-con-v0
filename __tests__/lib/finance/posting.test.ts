@@ -1,6 +1,6 @@
 import fs from "fs"
 import path from "path"
-import { PaymentMethod, Prisma } from "@/generated/prisma/client"
+import { AccountingPeriodStatus, PaymentMethod, Prisma } from "@/generated/prisma/client"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
   postOperationalVoucher,
@@ -22,9 +22,26 @@ const FINANCE_SOURCES = [
   "lib/finance/index.ts",
 ]
 
+async function seedOpenPeriod(
+  tx: ReturnType<typeof createFinanceMockTx>["tx"],
+  branchId: string,
+  date: Date
+) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  await tx.accountingPeriod.create({
+    data: {
+      branchId,
+      periodKey: `${y}-${m}`,
+      status: AccountingPeriodStatus.OPEN,
+    },
+  })
+}
+
 describe("finance posting", () => {
   it("creates exactly one journal entry per voucher", async () => {
     const { tx, state } = createFinanceMockTx()
+    await seedOpenPeriod(tx, "branch-1", new Date("2026-05-15T12:00:00.000Z"))
     const cash = state.glAccounts.find((a) => a.code === "1100")!
     const revenue = state.glAccounts.find((a) => a.code === "4000")!
 
@@ -54,6 +71,7 @@ describe("finance posting", () => {
 
   it("is idempotent on refType + refId", async () => {
     const { tx, state } = createFinanceMockTx()
+    await seedOpenPeriod(tx, "branch-1", new Date("2026-05-15T12:00:00.000Z"))
     const input = {
       tx,
       branchId: "branch-1",
@@ -94,6 +112,8 @@ describe("finance posting", () => {
 
   it("posts sale voucher using sale.id ref", async () => {
     const { tx, state } = createFinanceMockTx()
+    const now = new Date()
+    await seedOpenPeriod(tx, "branch-1", now)
     const result = await postSaleVoucher({
       tx,
       sale: {

@@ -92,25 +92,33 @@ describe("finance kernel refinements", () => {
     expect(state.accountingPeriods[0]?.status).toBe(status)
   })
 
-  it("bootstraps an OPEN period when missing", async () => {
+  it("rejects PERIOD_NOT_OPENED when no period exists", async () => {
     const { tx, state } = createFinanceMockTx()
 
-    await postOperationalVoucher({
-      tx,
-      branchId: "branch-1",
-      date: new Date("2026-06-01T12:00:00.000Z"),
-      refType: FINANCE_REF_TYPES.POS_SALE,
-      refId: "sale-bootstrap",
-      lines: balancedLines(state),
-    })
+    await expect(
+      postOperationalVoucher({
+        tx,
+        branchId: "branch-1",
+        date: new Date("2026-06-01T12:00:00.000Z"),
+        refType: FINANCE_REF_TYPES.POS_SALE,
+        refId: "sale-no-period",
+        lines: balancedLines(state),
+      })
+    ).rejects.toMatchObject({ code: "PERIOD_NOT_OPENED" })
 
-    expect(state.accountingPeriods).toHaveLength(1)
-    expect(state.accountingPeriods[0]?.periodKey).toBe("2026-06")
-    expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.OPEN)
+    expect(state.accountingPeriods).toHaveLength(0)
   })
 
   it("keeps voucher lines and journal entry lines in parity after posting", async () => {
     const { tx, state } = createFinanceMockTx()
+
+    await tx.accountingPeriod.create({
+      data: {
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        status: AccountingPeriodStatus.OPEN,
+      },
+    })
 
     await postOperationalVoucher({
       tx,

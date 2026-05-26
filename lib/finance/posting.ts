@@ -6,6 +6,7 @@ import {
   resolveAccountsForStockDocument,
 } from "./account-map"
 import { FinancePostingError } from "./posting-errors"
+import { assertPostingPeriodOpen } from "./posting-period"
 import { createJournalForVoucher } from "./journal"
 import {
   FINANCE_REF_TYPES,
@@ -137,10 +138,8 @@ export async function postOperationalVoucher(
   assertNonZeroLines(input.lines)
   assertBalanced(input.lines)
 
-  const periodId = await resolvePeriodId(tx, {
-    branchId: input.branchId,
-    date: input.date,
-  })
+  const period = await assertPostingPeriodOpen(tx, input.branchId, input.date)
+  const periodId = period.id
 
   const { voucherId, voucherNo } = await createVoucherWithLines(tx, {
     branchId: input.branchId,

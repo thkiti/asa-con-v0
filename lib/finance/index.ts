@@ -13,6 +13,7 @@ export {
   createJournalForVoucher,
 } from "./journal"
 export { FinancePostingError } from "./posting-errors"
+export { assertPostingPeriodOpen, formatPeriodKey } from "./posting-period"
 export {
   FINANCE_REF_TYPES,
   type FinanceRefType,
