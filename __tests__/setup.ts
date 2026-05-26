@@ -57,5 +57,12 @@ jest.mock("@/generated/prisma/client", () => {
       ADJUSTMENT: "ADJUSTMENT",
       PERFORMANCE: "PERFORMANCE",
     },
+    DocStatus: {
+      DRAFT: "DRAFT",
+      SUBMITTED: "SUBMITTED",
+      CONFIRMED: "CONFIRMED",
+      POSTED: "POSTED",
+      VOID: "VOID",
+    },
   }
 })

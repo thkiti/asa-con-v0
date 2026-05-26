@@ -57,13 +57,17 @@ export {
 export { getGlAccountBalance, type GlBalancePrisma } from "./gl-balance"
 export { ReconciliationError } from "./reconciliation-errors"
 export {
+  buildIssueId,
   computeVariance,
   reconcileInventory,
   reconcileSalesAndTender,
+  round2Amount,
+  runFinanceReconciliation,
   type ReconciliationPrisma,
 } from "./reconciliation"
 export type {
   ClosePolicyContext,
+  FinanceReconciliationInput,
   GlAccountBalanceFilter,
   GlAccountBalanceResult,
   GlAccountBalanceRow,
@@ -72,6 +76,9 @@ export type {
   PeriodPostingContext,
   PeriodStatusLabel,
   ReconciliationDateFilter,
+  ReconciliationIssue,
+  ReconciliationIssueType,
+  ReconciliationSummary,
   ReconciliationVariance,
   SalesReconciliationFilter,
   SalesReconciliationResult,

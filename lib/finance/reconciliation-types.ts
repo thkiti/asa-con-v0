@@ -74,3 +74,35 @@ export type PeriodStatusLabel = {
   label: string
   description: string
 }
+
+export type ReconciliationIssueType =
+  | "MISSING_VOUCHER"
+  | "DUPLICATE_VOUCHER"
+  | "TOTAL_MISMATCH"
+  | "MISSING_COGS_LINES"
+  | "INVENTORY_VALUE_MISMATCH"
+
+export type ReconciliationIssue = {
+  id: string
+  sourceType: "SALE" | "STOCK_DOCUMENT"
+  sourceId: string
+  issueType: ReconciliationIssueType
+  severity: "ERROR" | "WARNING"
+  message: string
+  expectedAmount?: number
+  actualAmount?: number
+  difference?: number
+}
+
+export type ReconciliationSummary = {
+  checkedSales: number
+  checkedStockDocuments: number
+  issueCount: number
+  issues: ReconciliationIssue[]
+}
+
+export type FinanceReconciliationInput = {
+  fromDate?: Date
+  toDate?: Date
+  branchId?: string
+}

@@ -1,11 +1,145 @@
 import * as glBalance from "@/lib/finance/gl-balance"
+import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
+import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
   computeVariance,
   reconcileInventory,
   reconcileSalesAndTender,
+  runFinanceReconciliation,
 } from "@/lib/finance/reconciliation"
+import { Prisma } from "@/generated/prisma/client"
 import * as salesSummary from "@/lib/pos/sales-summary"
 import * as stockSummary from "@/lib/stock/stock-summary"
+import { STOCK_REF_TYPES } from "@/lib/stock/transaction-types"
+
+const MUTATION_METHODS = [
+  "create",
+  "update",
+  "delete",
+  "upsert",
+  "createMany",
+  "updateMany",
+  "deleteMany",
+] as const
+
+type AuditMockOverrides = {
+  sales?: Array<{ id: string; total: Prisma.Decimal | number | string }>
+  stockDocuments?: Array<{ id: string; refNo: string }>
+  saleLedgerRows?: Array<{
+    refId: string
+    qtyIn: number
+    qtyOut: number
+    unitCost: Prisma.Decimal | number | string
+  }>
+  docLedgerRows?: Array<{
+    documentId: string
+    qtyIn: number
+    qtyOut: number
+    unitCost: Prisma.Decimal | number | string
+  }>
+  vouchers?: Array<Record<string, unknown>>
+}
+
+function makeModel(extra: Record<string, jest.Mock> = {}) {
+  const model: Record<string, jest.Mock> = {}
+  for (const method of MUTATION_METHODS) {
+    model[method] = jest.fn()
+  }
+  return { ...model, ...extra }
+}
+
+function createAuditMockPrisma(overrides: AuditMockOverrides = {}) {
+  const prisma = {
+    sale: makeModel({
+      findMany: jest.fn(async () => overrides.sales ?? []),
+    }),
+    stockDocument: makeModel({
+      findMany: jest.fn(async () => overrides.stockDocuments ?? []),
+    }),
+    stockTransaction: makeModel({
+      findMany: jest.fn(async (args: { where?: Record<string, unknown> }) => {
+        if (args?.where?.refType === STOCK_REF_TYPES.POS_SALE) {
+          return overrides.saleLedgerRows ?? []
+        }
+        if (args?.where?.documentId) {
+          return overrides.docLedgerRows ?? []
+        }
+        return []
+      }),
+    }),
+    voucher: makeModel({
+      findMany: jest.fn(async () => overrides.vouchers ?? []),
+    }),
+    stock: makeModel(),
+    glAccount: makeModel(),
+    journalEntryLine: makeModel(),
+    $transaction: jest.fn(),
+  }
+
+  return prisma
+}
+
+function collectMutationMocks(prisma: ReturnType<typeof createAuditMockPrisma>) {
+  const mocks: jest.Mock[] = []
+  for (const [key, model] of Object.entries(prisma)) {
+    if (key === "$transaction" || typeof model !== "object" || model === null) {
+      continue
+    }
+    for (const method of MUTATION_METHODS) {
+      if (model[method]) {
+        mocks.push(model[method])
+      }
+    }
+  }
+  return mocks
+}
+
+function voucherWithJournal(input: {
+  id: string
+  refType: string
+  refId: string
+  lines: Array<{ code: string; debit: number; credit: number }>
+}) {
+  return {
+    id: input.id,
+    refType: input.refType,
+    refId: input.refId,
+    journalEntry: {
+      lines: input.lines.map((line, index) => ({
+        lineNo: index + 1,
+        debit: new Prisma.Decimal(line.debit),
+        credit: new Prisma.Decimal(line.credit),
+        glAccount: { code: line.code },
+      })),
+    },
+  }
+}
+
+function matchingSaleVoucher(refId: string, total: number, cogs: number) {
+  return voucherWithJournal({
+    id: `voucher-${refId}`,
+    refType: FINANCE_REF_TYPES.POS_SALE,
+    refId,
+    lines: [
+      { code: DEFAULT_ACCOUNT_CODES.CASH, debit: total, credit: 0 },
+      { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: 0, credit: total },
+      { code: DEFAULT_ACCOUNT_CODES.COGS, debit: cogs, credit: 0 },
+      { code: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: 0, credit: cogs },
+    ],
+  })
+}
+
+function matchingInboundDocVoucher(refId: string, inbound: number) {
+  return voucherWithJournal({
+    id: `voucher-${refId}`,
+    refType: FINANCE_REF_TYPES.STOCK_DOC_POST,
+    refId,
+    lines: [
+      { code: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: inbound, credit: 0 },
+      { code: DEFAULT_ACCOUNT_CODES.AP, debit: 0, credit: inbound },
+    ],
+  })
+}
 
 describe("reconciliation variance math", () => {
   it("computes operational minus gl without clamping", () => {
@@ -115,5 +249,235 @@ describe("reconcileSalesAndTender", () => {
       label: "Card tender vs card clearing GL",
       variance: "0",
     })
+  })
+})
+
+describe("runFinanceReconciliation", () => {
+  it("A. reports no issues when sale and stock document vouchers match ledger", async () => {
+    const prisma = createAuditMockPrisma({
+      sales: [{ id: "sale-1", total: new Prisma.Decimal("100.00") }],
+      stockDocuments: [{ id: "doc-1", refNo: "PUR-1" }],
+      saleLedgerRows: [
+        {
+          refId: "sale-1",
+          qtyIn: 0,
+          qtyOut: 2,
+          unitCost: new Prisma.Decimal("10.00"),
+        },
+      ],
+      docLedgerRows: [
+        {
+          documentId: "doc-1",
+          qtyIn: 5,
+          qtyOut: 0,
+          unitCost: new Prisma.Decimal("20.00"),
+        },
+      ],
+      vouchers: [
+        matchingSaleVoucher("sale-1", 100, 20),
+        matchingInboundDocVoucher("doc-1", 100),
+      ],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.checkedSales).toBe(1)
+    expect(result.checkedStockDocuments).toBe(1)
+    expect(result.issueCount).toBe(0)
+    expect(result.issues).toEqual([])
+  })
+
+  it("B. flags MISSING_VOUCHER for a completed sale without a voucher", async () => {
+    const prisma = createAuditMockPrisma({
+      sales: [{ id: "sale-1", total: new Prisma.Decimal("100.00") }],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        sourceType: "SALE",
+        sourceId: "sale-1",
+        issueType: "MISSING_VOUCHER",
+        severity: "ERROR",
+      }),
+    ])
+  })
+
+  it("C. flags DUPLICATE_VOUCHER when a sale has multiple vouchers", async () => {
+    const prisma = createAuditMockPrisma({
+      sales: [{ id: "sale-1", total: new Prisma.Decimal("100.00") }],
+      vouchers: [
+        matchingSaleVoucher("sale-1", 100, 0),
+        matchingSaleVoucher("sale-1", 100, 0),
+      ],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        sourceType: "SALE",
+        sourceId: "sale-1",
+        issueType: "DUPLICATE_VOUCHER",
+      }),
+    ])
+  })
+
+  it("D. flags TOTAL_MISMATCH with expected and actual revenue amounts", async () => {
+    const prisma = createAuditMockPrisma({
+      sales: [{ id: "sale-1", total: new Prisma.Decimal("100.00") }],
+      vouchers: [
+        voucherWithJournal({
+          id: "voucher-sale-1",
+          refType: FINANCE_REF_TYPES.POS_SALE,
+          refId: "sale-1",
+          lines: [
+            { code: DEFAULT_ACCOUNT_CODES.CASH, debit: 90, credit: 0 },
+            { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: 0, credit: 90 },
+          ],
+        }),
+      ],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        issueType: "TOTAL_MISMATCH",
+        expectedAmount: 100,
+        actualAmount: 90,
+        difference: 10,
+      }),
+    ])
+  })
+
+  it("E. flags MISSING_COGS_LINES when ledger has qtyOut but voucher COGS debit is zero", async () => {
+    const prisma = createAuditMockPrisma({
+      sales: [{ id: "sale-1", total: new Prisma.Decimal("100.00") }],
+      saleLedgerRows: [
+        {
+          refId: "sale-1",
+          qtyIn: 0,
+          qtyOut: 2,
+          unitCost: new Prisma.Decimal("10.00"),
+        },
+      ],
+      vouchers: [
+        voucherWithJournal({
+          id: "voucher-sale-1",
+          refType: FINANCE_REF_TYPES.POS_SALE,
+          refId: "sale-1",
+          lines: [
+            { code: DEFAULT_ACCOUNT_CODES.CASH, debit: 100, credit: 0 },
+            { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: 0, credit: 100 },
+          ],
+        }),
+      ],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        issueType: "MISSING_COGS_LINES",
+        expectedAmount: 20,
+        actualAmount: 0,
+        difference: 20,
+      }),
+    ])
+  })
+
+  it("F. flags MISSING_VOUCHER for a posted stock document without a voucher", async () => {
+    const prisma = createAuditMockPrisma({
+      stockDocuments: [{ id: "doc-1", refNo: "PUR-1" }],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        sourceType: "STOCK_DOCUMENT",
+        sourceId: "doc-1",
+        issueType: "MISSING_VOUCHER",
+      }),
+    ])
+  })
+
+  it("G. flags INVENTORY_VALUE_MISMATCH when inbound ledger value differs from inventory debit", async () => {
+    const prisma = createAuditMockPrisma({
+      stockDocuments: [{ id: "doc-1", refNo: "PUR-1" }],
+      docLedgerRows: [
+        {
+          documentId: "doc-1",
+          qtyIn: 5,
+          qtyOut: 0,
+          unitCost: new Prisma.Decimal("20.00"),
+        },
+      ],
+      vouchers: [matchingInboundDocVoucher("doc-1", 90)],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.issues).toEqual([
+      expect.objectContaining({
+        sourceType: "STOCK_DOCUMENT",
+        sourceId: "doc-1",
+        issueType: "INVENTORY_VALUE_MISMATCH",
+        expectedAmount: 100,
+        actualAmount: 90,
+        difference: 10,
+      }),
+    ])
+  })
+
+  it("H. derives expected inventory from StockTransaction rows, not misleading document-line retail values", async () => {
+    const retailLikeValue = 999
+    const prisma = createAuditMockPrisma({
+      stockDocuments: [{ id: "doc-1", refNo: "ADJ-1" }],
+      docLedgerRows: [
+        {
+          documentId: "doc-1",
+          qtyIn: 1,
+          qtyOut: 0,
+          unitCost: new Prisma.Decimal("50.00"),
+        },
+      ],
+      vouchers: [matchingInboundDocVoucher("doc-1", retailLikeValue)],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    const issue = result.issues.find(
+      (row) => row.issueType === "INVENTORY_VALUE_MISMATCH"
+    )
+    expect(issue).toBeDefined()
+    expect(issue?.expectedAmount).toBe(50)
+    expect(issue?.expectedAmount).not.toBe(retailLikeValue)
+    expect(issue?.actualAmount).toBe(retailLikeValue)
+  })
+
+  it("I. performs read-only prisma access and never calls mutation methods", async () => {
+    const prisma = createAuditMockPrisma({
+      sales: [{ id: "sale-1", total: new Prisma.Decimal("100.00") }],
+      stockDocuments: [{ id: "doc-1", refNo: "PUR-1" }],
+      vouchers: [
+        matchingSaleVoucher("sale-1", 100, 0),
+        matchingInboundDocVoucher("doc-1", 100),
+      ],
+    })
+
+    await runFinanceReconciliation(prisma as never)
+
+    expect(prisma.sale.findMany).toHaveBeenCalled()
+    expect(prisma.stockDocument.findMany).toHaveBeenCalled()
+    expect(prisma.stockTransaction.findMany).toHaveBeenCalled()
+    expect(prisma.voucher.findMany).toHaveBeenCalled()
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+
+    for (const mutation of collectMutationMocks(prisma)) {
+      expect(mutation).not.toHaveBeenCalled()
+    }
   })
 })
