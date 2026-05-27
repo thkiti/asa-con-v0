@@ -3,7 +3,7 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** Phase 17 — Reconciliation drill-down; see [docs/00_README.md](./docs/00_README.md)
+- **Status:** Phase 18 — Reconciliation snapshots; see [docs/00_README.md](./docs/00_README.md)
 
 ## Docs
 
@@ -12,6 +12,7 @@ Start with [docs/00_README.md](./docs/00_README.md).
 - Finance periods: [docs/15_FINANCE_PERIODS.md](./docs/15_FINANCE_PERIODS.md)
 - Reconciliation dashboard: [docs/16_FINANCE_RECONCILIATION.md](./docs/16_FINANCE_RECONCILIATION.md) — UI at `/finance/reconciliation`
 - Reconciliation drill-down: [docs/17_RECONCILIATION_DRILLDOWN.md](./docs/17_RECONCILIATION_DRILLDOWN.md)
+- Reconciliation snapshots: [docs/18_RECONCILIATION_SNAPSHOTS.md](./docs/18_RECONCILIATION_SNAPSHOTS.md) — UI at `/finance/reconciliation/snapshots`
 
 ## Setup
 
@@ -61,3 +62,4 @@ generated/  Prisma client output (gitignored)
 | 15 | Finance periods (lifecycle, admin API/UI, posting lock) |
 | 16 | Finance reconciliation dashboard (`/finance/reconciliation`) |
 | 17 | Transaction-level reconciliation drill-down (`GET .../reconciliation/issues`) |
+| 18 | Reconciliation snapshots (`/finance/reconciliation/snapshots`, `POST .../snapshots`) |

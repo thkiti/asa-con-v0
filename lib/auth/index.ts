@@ -14,3 +14,8 @@ export {
   mapRoleToClosePolicyRole,
   requirePeriodAdminActor,
 } from "./period-admin"
+export {
+  DEV_PERIOD_ADMIN_STAFF_CODE,
+  ensureDevPeriodAdminStaff,
+  resolvePeriodAdminStaffId,
+} from "./period-admin-staff"

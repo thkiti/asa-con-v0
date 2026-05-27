@@ -10,8 +10,11 @@ import type {
   FinanceFilterValues,
   InventoryReconciliationResult,
   ReconciliationIssuesResult,
+  ReconciliationSnapshotDetail,
+  ReconciliationSnapshotHeader,
   SalesReconciliationResult,
 } from "./types"
+import type { SnapshotCaptureBody } from "./reconciliation-snapshots"
 
 export function buildReconciliationQuery(filter: FinanceFilterValues): string {
   const params = new URLSearchParams()
@@ -98,5 +101,90 @@ export function fetchReconciliationIssues(
       throw new Error(message)
     }
     return res.json() as Promise<ReconciliationIssuesResult>
+  })
+}
+
+export type ReconciliationSnapshotsListFilter = {
+  branchId?: string
+  limit?: number
+}
+
+export type ReconciliationSnapshotsListResult = {
+  snapshots: ReconciliationSnapshotHeader[]
+}
+
+export type ReconciliationSnapshotDetailResult = {
+  snapshot: ReconciliationSnapshotDetail
+}
+
+export type ReconciliationSnapshotCreateResult = {
+  snapshot: ReconciliationSnapshotDetail
+}
+
+function buildSnapshotsQuery(
+  filter: ReconciliationSnapshotsListFilter
+): string {
+  const params = new URLSearchParams()
+  if (filter.branchId?.trim()) {
+    params.set("branchId", filter.branchId.trim())
+  }
+  if (filter.limit !== undefined && Number.isFinite(filter.limit)) {
+    params.set("limit", String(filter.limit))
+  }
+  const query = params.toString()
+  return query ? `?${query}` : ""
+}
+
+async function parseFinanceApiError(res: Response): Promise<string> {
+  let message = res.statusText || "Request failed"
+  try {
+    const body = (await res.json()) as { error?: string; message?: string }
+    if (body.error) message = body.error
+    else if (body.message) message = body.message
+  } catch {
+    // keep statusText
+  }
+  return message
+}
+
+export function fetchReconciliationSnapshots(
+  filter: ReconciliationSnapshotsListFilter = {}
+): Promise<ReconciliationSnapshotsListResult> {
+  const query = buildSnapshotsQuery(filter)
+  return fetch(`/api/finance/reconciliation/snapshots${query}`).then(
+    async (res) => {
+      if (!res.ok) {
+        throw new Error(await parseFinanceApiError(res))
+      }
+      return res.json() as Promise<ReconciliationSnapshotsListResult>
+    }
+  )
+}
+
+export function fetchReconciliationSnapshotById(
+  id: string
+): Promise<ReconciliationSnapshotDetailResult> {
+  return fetch(`/api/finance/reconciliation/snapshots/${encodeURIComponent(id)}`).then(
+    async (res) => {
+      if (!res.ok) {
+        throw new Error(await parseFinanceApiError(res))
+      }
+      return res.json() as Promise<ReconciliationSnapshotDetailResult>
+    }
+  )
+}
+
+export function createReconciliationSnapshot(
+  body: SnapshotCaptureBody
+): Promise<ReconciliationSnapshotCreateResult> {
+  return fetch("/api/finance/reconciliation/snapshots", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) {
+      throw new Error(await parseFinanceApiError(res))
+    }
+    return res.json() as Promise<ReconciliationSnapshotCreateResult>
   })
 }

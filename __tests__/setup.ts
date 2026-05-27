@@ -64,5 +64,15 @@ jest.mock("@/generated/prisma/client", () => {
       POSTED: "POSTED",
       VOID: "VOID",
     },
+    Role: {
+      HO_FINANCE: "HO_FINANCE",
+      HO_ADMIN: "HO_ADMIN",
+      HO_OPERATIONS: "HO_OPERATIONS",
+      SH_STAFF: "SH_STAFF",
+    },
+    BranchType: {
+      SH: "SH",
+      HO: "HO",
+    },
   }
 })

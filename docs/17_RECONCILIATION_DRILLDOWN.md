@@ -2,7 +2,7 @@
 
 Status: **Done** — transaction-level issues API + dashboard drill-down  
 Scope: Read-only per-document reconciliation visibility  
-Related: [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
+Related: [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 
 ---
 
@@ -167,7 +167,21 @@ Operational posting remains source-of-truth. Reconciliation explains gaps; corre
 
 ---
 
-## 6. Manual verification
+## 6. Snapshot vs live drill-down (Phase 18)
+
+| Aspect | Live drill-down (Phase 17) | Snapshot detail (Phase 18) |
+|--------|----------------------------|----------------------------|
+| Data source | `GET /api/finance/reconciliation/issues` | Frozen `payload.issuesPayload` |
+| Dashboard | Live `fetchReconciliationDashboard` | Frozen `payload.dashboardRows` |
+| Row click | Fetches issues by domain | Filters frozen issues client-side |
+| Mutations | None | Capture only (`POST .../snapshots`) |
+| When to use | Current operational vs GL gaps | Point-in-time audit record |
+
+Full snapshot design: [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md).
+
+---
+
+## 7. Manual verification
 
 1. Open `/finance/reconciliation` with finance role cookies.
 2. Apply filters and load aggregate rows.
@@ -179,7 +193,7 @@ Operational posting remains source-of-truth. Reconciliation explains gaps; corre
 
 ---
 
-## 7. Related docs
+## 8. Related docs
 
 - Aggregate dashboard: [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md)
 - Policy and invariants: [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md)

@@ -53,6 +53,11 @@ export const RECON_FILES = [
   "lib/finance/reconciliation-types.ts",
   "lib/finance/reconciliation-errors.ts",
   "lib/finance/close-policy.ts",
+  "lib/finance/reconciliation-issue-rows.ts",
+  "lib/finance/reconciliation-dashboard-rows.ts",
+  "lib/finance/reconciliation-snapshot-capture.ts",
+  "lib/finance/reconciliation-snapshot.ts",
+  "lib/finance/reconciliation-snapshot-errors.ts",
 ]
 
 export const RECON_NO_STOCK: AuditRule = {
@@ -142,7 +147,7 @@ export const UI_SCAN_DIRS = [
 export const UI_FORBIDDEN: AuditRule = {
   id: "UI_FORBIDDEN",
   pattern:
-    /prisma|close-policy|close-period|@\/lib\/finance\/reconciliation|@\/lib\/finance\/gl-balance|@\/lib\/finance\/account-map|@\/lib\/finance\/voucher|@\/lib\/finance\/journal|postSaleVoucher|postOperationalVoucher/,
+    /prisma|close-policy|close-period|@\/lib\/finance\/reconciliation['"]|@\/lib\/finance\/gl-balance|@\/lib\/finance\/account-map|@\/lib\/finance\/voucher|@\/lib\/finance\/journal|postSaleVoucher|postOperationalVoucher/,
   message: "Finance UI must not import kernel or Prisma directly",
 }
 

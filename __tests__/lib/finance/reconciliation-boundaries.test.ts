@@ -9,6 +9,11 @@ const RECON_FILES = [
   "reconciliation-types.ts",
   "reconciliation-errors.ts",
   "close-policy.ts",
+  "reconciliation-issue-rows.ts",
+  "reconciliation-dashboard-rows.ts",
+  "reconciliation-snapshot-capture.ts",
+  "reconciliation-snapshot.ts",
+  "reconciliation-snapshot-errors.ts",
 ]
 
 function readSource(name: string): string {

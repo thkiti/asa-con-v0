@@ -1,8 +1,8 @@
 # Finance Reconciliation (Phase 16)
 
-Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export  
+Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export, snapshot capture entry  
 Scope: Operational vs GL visibility UI; no accounting mutations  
-Related: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
+Related: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 
 ---
 
@@ -16,6 +16,7 @@ Reconciliation provides **operational visibility** into whether committed operat
 | Variance workflow | Status badges, filters, detail panel entry point |
 | Read-only exports | Client-side CSV of visible dashboard rows |
 | Drill-down entry | Row click opens detail panel (Phase 17 loads transaction issues) |
+| Snapshot capture | Manual frozen capture (Phase 18) — see [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md) |
 
 **Non-goals:** posting, auto-adjust, period mutations, or posting-lock bypass.
 
@@ -39,6 +40,8 @@ Transaction-level issues are **Phase 17**: `GET /api/finance/reconciliation/issu
 | Route | Component |
 |-------|-----------|
 | `/finance/reconciliation` | [`ReconciliationPage.tsx`](../components/finance/ReconciliationPage.tsx) |
+
+Link to frozen history: `/finance/reconciliation/snapshots` ([Phase 18](./18_RECONCILIATION_SNAPSHOTS.md)).
 
 Supporting components:
 
@@ -107,6 +110,6 @@ Kernel `runFinanceReconciliation` is used by the issues API but **not changed** 
 | Deep links to sale/stock document UI | When routes exist |
 | Branch name resolution | Replace raw branch IDs |
 | Tender-specific kernel issue types | Separate approved phase |
-| Scheduled reconciliation snapshots | Read-only history |
+| Scheduled reconciliation snapshots | **Phase 18 done** — manual capture; scheduled jobs remain future |
 
 All future work stays read-only with **no GL write-back**.

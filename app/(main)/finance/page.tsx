@@ -34,6 +34,14 @@ export default function Page() {
         </li>
         <li>
           <Link
+            href="/finance/reconciliation/snapshots"
+            className="text-zinc-900 underline hover:text-zinc-600"
+          >
+            Reconciliation snapshots
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/finance/periods"
             className="text-zinc-900 underline hover:text-zinc-600"
           >

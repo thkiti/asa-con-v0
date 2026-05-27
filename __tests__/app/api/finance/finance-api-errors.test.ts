@@ -6,6 +6,7 @@ import {
 import { ClosePolicyError } from "@/lib/finance/close-policy"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { ReconciliationError } from "@/lib/finance/reconciliation-errors"
+import { ReconciliationSnapshotError } from "@/lib/finance/reconciliation-snapshot-errors"
 import { InvalidDateRangeError } from "@/lib/reporting/report-errors"
 
 describe("parseAccountingPeriodStatus", () => {
@@ -93,6 +94,36 @@ describe("financeErrorResponse", () => {
     await expect(res.json()).resolves.toEqual({
       error: "Period is not open for posting",
       code: "PERIOD_NOT_OPEN",
+    })
+  })
+
+  it("maps ReconciliationSnapshotError INVALID_SCOPE to 400", async () => {
+    const res = financeErrorResponse(
+      new ReconciliationSnapshotError(
+        "fromDate and toDate are required when periodKey is omitted",
+        "INVALID_SCOPE"
+      ),
+      "test"
+    )
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "fromDate and toDate are required when periodKey is omitted",
+      code: "INVALID_SCOPE",
+    })
+  })
+
+  it("maps ReconciliationSnapshotError NOT_FOUND to 404", async () => {
+    const res = financeErrorResponse(
+      new ReconciliationSnapshotError(
+        "Reconciliation snapshot not found: snap-missing",
+        "NOT_FOUND"
+      ),
+      "test"
+    )
+    expect(res.status).toBe(404)
+    await expect(res.json()).resolves.toEqual({
+      error: "Reconciliation snapshot not found: snap-missing",
+      code: "NOT_FOUND",
     })
   })
 

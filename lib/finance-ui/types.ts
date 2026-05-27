@@ -63,3 +63,8 @@ export type {
   ReconciliationIssuesResult,
   ReconciliationIssueVoucherRef,
 } from "./reconciliation-issues"
+export type {
+  ReconciliationSnapshotDetail,
+  ReconciliationSnapshotHeader,
+  ReconciliationSnapshotPayloadV1,
+} from "@/lib/finance/reconciliation-snapshot-types"

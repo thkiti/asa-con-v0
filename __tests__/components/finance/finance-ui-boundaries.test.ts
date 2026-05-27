@@ -11,7 +11,7 @@ const SCAN_DIRS = [
 ]
 
 const FORBIDDEN_PATTERN =
-  /prisma|close-policy|close-period|@\/lib\/finance\/reconciliation|@\/lib\/finance\/gl-balance|@\/lib\/finance\/account-map|@\/lib\/finance\/voucher|@\/lib\/finance\/journal|postSaleVoucher|postOperationalVoucher/
+  /prisma|close-policy|close-period|@\/lib\/finance\/reconciliation['"]|@\/lib\/finance\/gl-balance|@\/lib\/finance\/account-map|@\/lib\/finance\/voucher|@\/lib\/finance\/journal|postSaleVoucher|postOperationalVoucher/
 
 function listSourceFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return []

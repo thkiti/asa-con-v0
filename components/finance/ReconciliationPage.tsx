@@ -1,7 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import {
+  createReconciliationSnapshot,
   fetchReconciliationDashboard,
   fetchReconciliationIssues,
 } from "@/lib/finance-ui/fetchers"
@@ -18,6 +20,10 @@ import {
   type ReconciliationRowStatus,
   varianceRowsFromResults,
 } from "@/lib/finance-ui/reconciliation"
+import {
+  buildSnapshotCaptureBody,
+  canCaptureSnapshotScope,
+} from "@/lib/finance-ui/reconciliation-snapshots"
 import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
 import { ReconciliationDashboardTable } from "./ReconciliationDashboardTable"
 import { VarianceDetailPanel } from "./VarianceDetailPanel"
@@ -54,6 +60,10 @@ export function ReconciliationPage() {
   const [issues, setIssues] = useState<ReconciliationIssueRow[]>([])
   const [issuesLoading, setIssuesLoading] = useState(false)
   const [issuesError, setIssuesError] = useState<string | null>(null)
+  const [captureLabel, setCaptureLabel] = useState("")
+  const [captureLoading, setCaptureLoading] = useState(false)
+  const [captureMessage, setCaptureMessage] = useState<string | null>(null)
+  const [captureError, setCaptureError] = useState<string | null>(null)
 
   const visibleRows = useMemo(
     () => filterDashboardRows(allRows, filter),
@@ -165,8 +175,36 @@ export function ReconciliationPage() {
     URL.revokeObjectURL(url)
   }
 
+  async function handleCaptureSnapshot() {
+    setCaptureLoading(true)
+    setCaptureMessage(null)
+    setCaptureError(null)
+    try {
+      const body = buildSnapshotCaptureBody(appliedFilter, {
+        label: captureLabel,
+      })
+      const result = await createReconciliationSnapshot(body)
+      setCaptureMessage(
+        `Snapshot captured (${result.snapshot.id.slice(0, 8)}…).`
+      )
+      setCaptureLabel("")
+    } catch (err) {
+      setCaptureError(err instanceof Error ? err.message : "Request failed")
+    } finally {
+      setCaptureLoading(false)
+    }
+  }
+
   return (
     <div>
+      <div className="mb-4 flex flex-wrap items-center gap-4">
+        <Link
+          href="/finance/reconciliation/snapshots"
+          className="text-sm text-zinc-900 underline hover:text-zinc-600"
+        >
+          View reconciliation snapshots
+        </Link>
+      </div>
       <section aria-label="Filters">
         <h2 className="text-base font-semibold">Filters</h2>
         <form
@@ -330,6 +368,34 @@ export function ReconciliationPage() {
                 Scope: branch={appliedFilter.branchId || "all"}, period=
                 {appliedFilter.periodKey || formatPeriodLabel(appliedFilter)}
               </p>
+            ) : null}
+            {canCaptureSnapshotScope(appliedFilter) ? (
+              <div className="mt-4 flex flex-wrap items-end gap-3 rounded border border-zinc-200 bg-zinc-50 p-4">
+                <label className="flex flex-col gap-1 text-sm text-zinc-600">
+                  Snapshot label (optional)
+                  <input
+                    type="text"
+                    value={captureLabel}
+                    onChange={(event) => setCaptureLabel(event.target.value)}
+                    className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
+                    placeholder="Month-end review"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={captureLoading}
+                  onClick={() => void handleCaptureSnapshot()}
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {captureLoading ? "Capturing…" : "Capture snapshot"}
+                </button>
+              </div>
+            ) : null}
+            {captureMessage ? (
+              <p className="mt-2 text-sm text-green-800">{captureMessage}</p>
+            ) : null}
+            {captureError ? (
+              <p className="mt-2 text-sm text-red-800">{captureError}</p>
             ) : null}
           </section>
 

@@ -1,8 +1,11 @@
 import {
   buildReconciliationQuery,
+  createReconciliationSnapshot,
   fetchInventoryReconciliation,
   fetchReconciliationDashboard,
   fetchReconciliationIssues,
+  fetchReconciliationSnapshotById,
+  fetchReconciliationSnapshots,
   fetchSalesReconciliation,
 } from "@/lib/finance-ui/fetchers"
 
@@ -168,5 +171,82 @@ describe("fetchReconciliationIssues", () => {
     })
 
     await expect(fetchReconciliationIssues({})).rejects.toThrow("Invalid filter")
+  })
+})
+
+describe("fetchReconciliationSnapshots", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("calls snapshots list API", async () => {
+    const dto = { snapshots: [{ id: "snap-1" }] }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => dto,
+    })
+
+    await expect(
+      fetchReconciliationSnapshots({ branchId: "branch-1", limit: 10 })
+    ).resolves.toEqual(dto)
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/reconciliation/snapshots?branchId=branch-1&limit=10"
+    )
+  })
+})
+
+describe("fetchReconciliationSnapshotById", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("calls snapshot detail API", async () => {
+    const dto = { snapshot: { id: "snap-1" } }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => dto,
+    })
+
+    await expect(fetchReconciliationSnapshotById("snap-1")).resolves.toEqual(dto)
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/reconciliation/snapshots/snap-1"
+    )
+  })
+})
+
+describe("createReconciliationSnapshot", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("POSTs capture body and returns snapshot", async () => {
+    const dto = { snapshot: { id: "snap-new" } }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => dto,
+    })
+
+    const body = { periodKey: "2026-05", label: "Review" }
+    await expect(createReconciliationSnapshot(body)).resolves.toEqual(dto)
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/reconciliation/snapshots",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    )
+  })
+
+  it("throws with API error body on failure", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      statusText: "Bad Request",
+      json: async () => ({ error: "Invalid scope" }),
+    })
+
+    await expect(
+      createReconciliationSnapshot({ from: "2026-05-01" })
+    ).rejects.toThrow("Invalid scope")
   })
 })

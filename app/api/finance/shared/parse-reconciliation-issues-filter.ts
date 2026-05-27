@@ -1,6 +1,8 @@
-import type { ReconciliationIssueType } from "@/lib/finance-ui/reconciliation-issues"
-import type { ReconciliationRowStatus } from "@/lib/finance-ui/reconciliation"
-import type { ReconciliationIssuesFilter } from "@/lib/finance-ui/reconciliation-issues"
+import type { ReconciliationIssueType } from "@/lib/finance/reconciliation-types"
+import type {
+  ReconciliationIssueRowStatus,
+  ReconciliationIssuesFilter,
+} from "@/lib/finance/reconciliation-issue-row-types"
 import { parseReconciliationFilter } from "./parse-finance-filter"
 
 export type ReconciliationIssuesFilterParams = {
@@ -8,7 +10,7 @@ export type ReconciliationIssuesFilterParams = {
 }
 
 const SOURCE_TYPES = new Set(["SALE", "STOCK_DOCUMENT"])
-const STATUSES = new Set<ReconciliationRowStatus>([
+const STATUSES = new Set<ReconciliationIssueRowStatus>([
   "MATCHED",
   "VARIANCE",
   "MISSING_SOURCE",
@@ -34,8 +36,8 @@ export function parseReconciliationIssuesFilter(
   }
 
   const statusRaw = params.get("status")?.trim().toUpperCase()
-  if (statusRaw && STATUSES.has(statusRaw as ReconciliationRowStatus)) {
-    filter.status = statusRaw as ReconciliationRowStatus
+  if (statusRaw && STATUSES.has(statusRaw as ReconciliationIssueRowStatus)) {
+    filter.status = statusRaw as ReconciliationIssueRowStatus
   }
 
   const domainRaw = params.get("domain")?.trim().toLowerCase()

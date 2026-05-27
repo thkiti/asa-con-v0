@@ -66,6 +66,68 @@ export {
   runFinanceReconciliation,
   type ReconciliationPrisma,
 } from "./reconciliation"
+export { buildReconciliationIssuesResult } from "./reconciliation-issue-rows"
+export {
+  deriveIssueStatus,
+  filterIssueRows,
+  issueMatchesDomain,
+} from "./reconciliation-issue-row-filters"
+export type {
+  IssueAuditInput,
+  ReconciliationIssueJournalRef,
+  ReconciliationIssueRow,
+  ReconciliationIssueRowStatus,
+  ReconciliationIssueRowsPrisma,
+  ReconciliationIssuesFilter,
+  ReconciliationIssuesResult,
+  ReconciliationIssueVoucherRef,
+} from "./reconciliation-issue-row-types"
+export {
+  deriveRowStatus,
+  formatDateOnly,
+  formatSnapshotPeriodLabel,
+  isZeroAmount,
+  summarizeSnapshotDashboardRows,
+  toSnapshotDashboardRows,
+  varianceRowsFromResults,
+} from "./reconciliation-dashboard-rows"
+export type { SnapshotDashboardSummary } from "./reconciliation-dashboard-rows"
+export { ReconciliationSnapshotError } from "./reconciliation-snapshot-errors"
+export type { ReconciliationSnapshotErrorCode } from "./reconciliation-snapshot-errors"
+export {
+  captureReconciliationSnapshotPayload,
+} from "./reconciliation-snapshot-capture"
+export type { ReconciliationSnapshotCapturePrisma } from "./reconciliation-snapshot-capture"
+export {
+  createManualSnapshot,
+  getReconciliationSnapshotById,
+  listReconciliationSnapshots,
+} from "./reconciliation-snapshot"
+export type {
+  ReconciliationSnapshotListFilter,
+  ReconciliationSnapshotPrisma,
+  ReconciliationSnapshotServicePrisma,
+} from "./reconciliation-snapshot"
+export {
+  RECONCILIATION_SNAPSHOT_PAYLOAD_VERSION,
+  periodKeyToSnapshotDateRange,
+  validateManualSnapshotScope,
+} from "./reconciliation-snapshot-types"
+export type {
+  ManualSnapshotScopeInput,
+  ManualSnapshotScopeValidationResult,
+  ReconciliationSnapshotDetail,
+  ReconciliationSnapshotHeader,
+  ReconciliationSnapshotPayloadV1,
+  ReconciliationSnapshotPayloadVersion,
+  ReconciliationSnapshotRowStatus,
+  ResolvedManualSnapshotScope,
+  SnapshotDashboardRow,
+  SnapshotIssueJournalRef,
+  SnapshotIssueRow,
+  SnapshotIssuesPayload,
+  SnapshotIssueVoucherRef,
+} from "./reconciliation-snapshot-types"
 export type {
   ClosePolicyContext,
   FinanceReconciliationInput,

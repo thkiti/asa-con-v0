@@ -76,7 +76,8 @@ model Branch {
   stockDocuments    StockDocument[]
   sales             Sale[]
   vouchers          Voucher[]
-  accountingPeriods AccountingPeriod[]
+  accountingPeriods        AccountingPeriod[]
+  reconciliationSnapshots  ReconciliationSnapshot[]
 }
 
 model Staff {
@@ -90,7 +91,8 @@ model Staff {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  branch Branch @relation(fields: [branchId], references: [id])
+  branch                         Branch                   @relation(fields: [branchId], references: [id])
+  reconciliationSnapshotsCreated ReconciliationSnapshot[]
 }
 
 model Product {
@@ -405,4 +407,45 @@ model JournalEntryLine {
   glAccount    GlAccount    @relation(fields: [glAccountId], references: [id])
 
   @@index([journalEntryId])
+}
+
+enum ReconciliationSnapshotKind {
+  MANUAL
+}
+
+model ReconciliationSnapshot {
+  id   String                     @id @default(uuid())
+  kind ReconciliationSnapshotKind @default(MANUAL)
+
+  branchId  String?
+  fromDate  DateTime?
+  toDate    DateTime?
+  periodKey String?
+
+  label String?
+  note  String? @db.Text
+
+  checkedSales          Int
+  checkedStockDocuments Int
+  issueCount            Int
+  dashboardRowCount     Int
+  matchedCount          Int
+  varianceCount         Int
+  totalVarianceAmount   Decimal @db.Decimal(18, 2)
+
+  payloadVersion Int @default(1)
+
+  inventoryResult Json
+  salesResult       Json
+  dashboardRows     Json
+  issuesPayload     Json
+
+  createdAt        DateTime @default(now())
+  createdByStaffId String
+
+  branch    Branch? @relation(fields: [branchId], references: [id])
+  createdBy Staff   @relation(fields: [createdByStaffId], references: [id])
+
+  @@index([branchId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
 }

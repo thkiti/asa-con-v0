@@ -29,6 +29,7 @@ SYSTEM
 | Home | `/` | — |
 | Finance | `/finance` | `lib/finance/` |
 | Finance reconciliation | `/finance/reconciliation` | `lib/finance-ui/`, `lib/finance/reconciliation.ts` |
+| Finance reconciliation snapshots | `/finance/reconciliation/snapshots`, `/finance/reconciliation/snapshots/[id]` | `lib/finance-ui/`, `lib/finance/reconciliation-snapshot.ts` |
 | Finance reconciliation (inventory) | `/finance/reconciliation/inventory` | `lib/finance-ui/` |
 | Finance reconciliation (sales) | `/finance/reconciliation/sales` | `lib/finance-ui/` |
 | Finance periods | `/finance/periods` | `lib/finance/period-*`, `lib/finance-ui/` |
@@ -38,7 +39,7 @@ SYSTEM
 | Login | `/login` | `lib/auth/`, `lib/permissions/` |
 | Health | `/api/health` | — |
 | Finance periods API | `/api/finance/periods` | `app/api/finance/periods/` |
-| Finance reconciliation API | `/api/finance/reconciliation/inventory`, `/sales`, `/issues` | `app/api/finance/reconciliation/` |
+| Finance reconciliation API | `/api/finance/reconciliation/inventory`, `/sales`, `/issues`, `/snapshots`, `/snapshots/[id]` | `app/api/finance/reconciliation/` |
 | POS checkout API | `/api/pos/checkout` | `app/api/pos/checkout/` |
 
 Routes not yet created: `/full-pos`, `/stock-document` — added with their vertical slices.
