@@ -12,7 +12,12 @@ const AREA_PREFIX: Record<AppArea, string> = {
 export const PUBLIC_PATHS = ["/login", "/unauthorized"] as const
 
 /** API paths skipped by route RBAC in middleware. */
-export const API_BYPASS_PATHS = ["/api/health", "/api/auth/session"] as const
+export const API_BYPASS_PATHS = [
+  "/api/health",
+  "/api/auth/session",
+  "/api/finance",
+  "/api/pos",
+] as const
 
 function pathnameArea(pathname: string): AppArea | null {
   for (const [area, prefix] of Object.entries(AREA_PREFIX) as [

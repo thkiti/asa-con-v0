@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 import { PaymentMethod } from "@/generated/prisma/client"
+import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { checkout } from "@/lib/pos/checkout"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import type { CheckoutCartLine } from "@/lib/pos/checkout-types"
@@ -37,6 +38,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: err.message, code: err.code },
         { status: err.httpStatus }
+      )
+    }
+    if (err instanceof FinancePostingError) {
+      return NextResponse.json(
+        { error: err.message, code: err.code },
+        { status: 400 }
       )
     }
     const message = err instanceof Error ? err.message : "Checkout failed"
