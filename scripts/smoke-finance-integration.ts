@@ -3,16 +3,35 @@ import { config } from "dotenv"
 config({ path: ".env.local" })
 process.env.FINANCE_POSTING_ENABLED = "true"
 
-import { BranchType, ProductType, GlAccountType } from "../generated/prisma/client"
+import { BranchType, ProductType, GlAccountType, AccountingPeriodStatus } from "../generated/prisma/client"
 import { prisma } from "../lib/shared/prisma"
 import { DEFAULT_ACCOUNT_CODES } from "../lib/finance/account-map"
 import { checkout } from "../lib/pos/checkout"
 
-const PERIOD_KEY = new Date().toISOString().slice(0, 7)
+const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000"
 const results: { name: string; pass: boolean; detail: string }[] = []
 function record(name: string, pass: boolean, detail: string) {
   results.push({ name, pass, detail })
   console.log(`${pass ? "PASS" : "FAIL"} | ${name} | ${detail}`)
+}
+
+function currentPeriodKey(): string {
+  return new Date().toISOString().slice(0, 7)
+}
+
+/** Reset closed period to OPEN so smoke lifecycle can rerun (dev DB only). */
+async function prepareSmokePeriod(branchId: string): Promise<string> {
+  const periodKey = currentPeriodKey()
+  const period = await prisma.accountingPeriod.findUnique({
+    where: { branchId_periodKey: { branchId, periodKey } },
+  })
+  if (period && period.status !== AccountingPeriodStatus.OPEN) {
+    await prisma.accountingPeriod.update({
+      where: { id: period.id },
+      data: { status: AccountingPeriodStatus.OPEN, closedAt: null },
+    })
+  }
+  return periodKey
 }
 
 async function seed() {
@@ -55,7 +74,6 @@ async function seed() {
       update: { isActive: true, deleted: false },
     })
   }
-  await prisma.accountingPeriod.deleteMany({ where: { branchId: branch.id, periodKey: PERIOD_KEY } })
   return { branchId: branch.id, productId: product.id }
 }
 
@@ -88,8 +106,10 @@ async function tryCheckout(branchId: string, productId: string) {
 
 async function main() {
   const { branchId, productId } = await seed()
+  const PERIOD_KEY = await prepareSmokePeriod(branchId)
+  console.log(`Period key: ${PERIOD_KEY}`)
 
-  const httpRes = await fetch(`http://localhost:3000/api/finance/periods?branchId=${branchId}`, {
+  const httpRes = await fetch(`${BASE}/api/finance/periods?branchId=${branchId}`, {
     headers: { cookie: `sessionId=s1; role=HO_FINANCE; staffId=st1; staffName=T; branchId=${branchId}` },
   })
   const httpText = await httpRes.text()

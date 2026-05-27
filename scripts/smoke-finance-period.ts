@@ -6,13 +6,12 @@ import "dotenv/config"
 import { config } from "dotenv"
 config({ path: ".env.local" })
 
-import { BranchType, ProductType, Role } from "../generated/prisma/client"
+import { BranchType, ProductType, Role, AccountingPeriodStatus } from "../generated/prisma/client"
 import { prisma } from "../lib/shared/prisma"
 import { DEFAULT_ACCOUNT_CODES } from "../lib/finance/account-map"
 import { GlAccountType } from "../generated/prisma/client"
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000"
-const PERIOD_KEY = new Date().toISOString().slice(0, 7)
 
 type Result = { name: string; pass: boolean; detail: string }
 
@@ -20,6 +19,25 @@ const results: Result[] = []
 function record(name: string, pass: boolean, detail: string) {
   results.push({ name, pass, detail })
   console.log(`${pass ? "PASS" : "FAIL"} | ${name} | ${detail}`)
+}
+
+function currentPeriodKey(): string {
+  return new Date().toISOString().slice(0, 7)
+}
+
+/** Smoke runs reuse the current month; reset closed rows so lifecycle can rerun (dev DB only). */
+async function prepareSmokePeriod(branchId: string): Promise<string> {
+  const periodKey = currentPeriodKey()
+  const period = await prisma.accountingPeriod.findUnique({
+    where: { branchId_periodKey: { branchId, periodKey } },
+  })
+  if (period && period.status !== AccountingPeriodStatus.OPEN) {
+    await prisma.accountingPeriod.update({
+      where: { id: period.id },
+      data: { status: AccountingPeriodStatus.OPEN, closedAt: null },
+    })
+  }
+  return periodKey
 }
 
 function cookieHeader(role: string, branchId: string, staffId = "smoke-staff-1") {
@@ -90,11 +108,7 @@ async function seedIfNeeded() {
     })
   }
 
-  // Clean prior smoke period for repeatable run
-  await prisma.accountingPeriod.deleteMany({
-    where: { branchId: branch.id, periodKey: PERIOD_KEY },
-  })
-
+  // Period rows with vouchers cannot be deleted (FK). Caller picks a reusable key.
   return { branchId: branch.id, productId: product.id }
 }
 
@@ -135,7 +149,6 @@ async function waitForServer(maxMs = 30000) {
 
 async function main() {
   console.log(`Smoke test base: ${BASE}`)
-  console.log(`Period key: ${PERIOD_KEY}`)
   console.log(`FINANCE_POSTING_ENABLED (script env): ${process.env.FINANCE_POSTING_ENABLED}`)
 
   if (!(await waitForServer())) {
@@ -147,6 +160,9 @@ async function main() {
 
   const { branchId, productId } = await seedIfNeeded()
   record("Seed data", true, `branch=${branchId} product=${productId}`)
+
+  const PERIOD_KEY = await prepareSmokePeriod(branchId)
+  console.log(`Period key: ${PERIOD_KEY}`)
 
   // G: GET without auth
   const getPublic = await api(`/api/finance/periods?branchId=${branchId}&periodKey=${PERIOD_KEY}`)

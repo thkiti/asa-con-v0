@@ -30,6 +30,9 @@ Centralized role access, session stub, route/menu guards.
 | `/unauthorized` | public | public | public | public |
 | `/api/health` | bypass RBAC | bypass | bypass | bypass |
 | `/api/auth/session` | bypass RBAC | bypass | bypass | bypass |
+| `/api/finance/*` | bypass RBAC (route auth on POST/PATCH) | bypass | bypass | bypass |
+| `/api/pos/*` | bypass RBAC (route handler auth/errors) | bypass | bypass | bypass |
+| `/finance/periods` | allow | allow | deny | deny |
 
 Unknown paths under `(main)` are **denied** (fail closed).
 
@@ -53,7 +56,7 @@ Set cookies in the browser, then visit `/` or an area route. Example role: `HO_F
 
 ```
 Request
-  → skip _next / favicon / api bypass paths
+  → skip _next / favicon / api bypass paths (/api/health, /api/auth/session, /api/finance, /api/pos)
   → public path? → next
   → read session cookies
   → missing session? → redirect /login
@@ -61,11 +64,16 @@ Request
   → canAccessRoute(pathname, role)? → next : redirect /unauthorized
 ```
 
+API bypass skips middleware redirects only. Mutating finance routes enforce auth in route handlers (`requirePeriodAdminActor`). See [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md).
+
 ## API
 
 | Route | Purpose |
 |-------|---------|
 | `GET /api/auth/session` | Returns `{ user: SessionUser }` or 401 |
+| `GET /api/finance/periods` | List accounting periods (public JSON) |
+| `POST/PATCH /api/finance/periods` | Period admin — requires `HO_FINANCE` or `HO_ADMIN` |
+| `POST /api/pos/checkout` | POS checkout — route-level errors as JSON |
 
 ## Not in Phase 2
 

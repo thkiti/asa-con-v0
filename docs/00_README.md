@@ -18,7 +18,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 12. [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md) — Phase 7 finance posting architecture
 13. [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md) — reconciliation and period-close policy
 14. [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md) — operational finance hook wiring
-15. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+15. [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md) — Phase 15 period lifecycle, posting lock, admin API/UI
+16. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -32,5 +33,6 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 5 | POS checkout (`checkout`) | Done |
 | 6 | Reporting kernel (read-only summaries) | Done |
 | 7 | Finance posting (GL / vouchers) | Done |
-| 7b | Finance reconciliation & close policy | Planned (doc only) |
-| 7c | Finance operational wiring | Planned (doc only) |
+| 7b | Finance reconciliation & close policy | Done |
+| 7c | Finance operational wiring | Done |
+| 15 | Finance periods (lifecycle, admin, posting lock) | Done |
