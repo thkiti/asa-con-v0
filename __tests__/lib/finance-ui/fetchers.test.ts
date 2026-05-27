@@ -1,6 +1,7 @@
 import {
   buildReconciliationQuery,
   fetchInventoryReconciliation,
+  fetchReconciliationDashboard,
   fetchSalesReconciliation,
 } from "@/lib/finance-ui/fetchers"
 
@@ -84,5 +85,46 @@ describe("fetchSalesReconciliation", () => {
 
     await expect(fetchSalesReconciliation({})).resolves.toEqual(dto)
     expect(global.fetch).toHaveBeenCalledWith("/api/finance/reconciliation/sales")
+  })
+})
+
+describe("fetchReconciliationDashboard", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("fetches inventory and sales APIs in parallel", async () => {
+    ;(global.fetch as jest.Mock)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          filter: {},
+          operationalTotalValue: "100",
+          glInventoryBalance: "100",
+          variances: [],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          filter: {},
+          operationalRevenue: "200",
+          glRevenueBalance: "200",
+          paymentBreakdown: [],
+          variances: [],
+        }),
+      })
+
+    const result = await fetchReconciliationDashboard({
+      branchId: "branch-1",
+      periodKey: "2026-05",
+    })
+
+    expect(result.inventory.operationalTotalValue).toBe("100")
+    expect(result.sales.operationalRevenue).toBe("200")
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/reconciliation/inventory?branchId=branch-1&from=2026-05-01&to=2026-05-31"
+    )
   })
 })

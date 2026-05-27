@@ -10,6 +10,14 @@ export default function Page() {
       <ul className="mt-6 space-y-3">
         <li>
           <Link
+            href="/finance/reconciliation"
+            className="text-zinc-900 underline hover:text-zinc-600"
+          >
+            Reconciliation dashboard
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/finance/reconciliation/inventory"
             className="text-zinc-900 underline hover:text-zinc-600"
           >

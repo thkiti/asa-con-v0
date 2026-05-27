@@ -1,3 +1,7 @@
+import {
+  buildApiFilter,
+  type ReconciliationDashboardFilter,
+} from "./reconciliation"
 import type {
   FinanceFilterValues,
   InventoryReconciliationResult,
@@ -55,4 +59,19 @@ export function fetchSalesReconciliation(
     "/api/finance/reconciliation/sales",
     filter
   )
+}
+
+export type ReconciliationDashboardResult = {
+  inventory: InventoryReconciliationResult
+  sales: SalesReconciliationResult
+}
+
+export function fetchReconciliationDashboard(
+  filter: ReconciliationDashboardFilter
+): Promise<ReconciliationDashboardResult> {
+  const apiFilter = buildApiFilter(filter)
+  return Promise.all([
+    fetchInventoryReconciliation(apiFilter),
+    fetchSalesReconciliation(apiFilter),
+  ]).then(([inventory, sales]) => ({ inventory, sales }))
 }
