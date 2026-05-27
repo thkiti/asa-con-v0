@@ -1,18 +1,26 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { ReconciliationPage } from "@/components/finance/ReconciliationPage"
-import { fetchReconciliationDashboard } from "@/lib/finance-ui/fetchers"
+import {
+  fetchReconciliationDashboard,
+  fetchReconciliationIssues,
+} from "@/lib/finance-ui/fetchers"
 
 jest.mock("@/lib/finance-ui/fetchers", () => ({
   fetchReconciliationDashboard: jest.fn(),
+  fetchReconciliationIssues: jest.fn(),
 }))
 
-const mockFetch = fetchReconciliationDashboard as jest.MockedFunction<
+const mockFetchDashboard = fetchReconciliationDashboard as jest.MockedFunction<
   typeof fetchReconciliationDashboard
+>
+const mockFetchIssues = fetchReconciliationIssues as jest.MockedFunction<
+  typeof fetchReconciliationIssues
 >
 
 describe("ReconciliationPage", () => {
   beforeEach(() => {
-    mockFetch.mockReset()
+    mockFetchDashboard.mockReset()
+    mockFetchIssues.mockReset()
   })
 
   it("renders filters and read-only guidance", () => {
@@ -22,10 +30,12 @@ describe("ReconciliationPage", () => {
     expect(html).toContain("Variance status")
     expect(html).toContain("Export CSV")
     expect(html).toContain("Read-only view")
+    expect(html).not.toContain("Fix")
+    expect(html).not.toContain("Reconcile")
   })
 
   it("configures dashboard fetcher mock for apply flow", () => {
-    mockFetch.mockResolvedValue({
+    mockFetchDashboard.mockResolvedValue({
       inventory: {
         filter: {},
         operationalTotalValue: "1000",
@@ -43,6 +53,7 @@ describe("ReconciliationPage", () => {
 
     const html = renderToStaticMarkup(<ReconciliationPage />)
     expect(html).toContain("Apply")
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(mockFetchDashboard).not.toHaveBeenCalled()
+    expect(mockFetchIssues).not.toHaveBeenCalled()
   })
 })

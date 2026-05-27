@@ -55,3 +55,11 @@ export type PeriodAction = "SOFT_CLOSE" | "HARD_CLOSE" | "REOPEN"
 export type AccountingPeriodMutationResult = {
   period: AccountingPeriodRow
 }
+
+export type { ReconciliationIssuesFilter } from "./reconciliation-issues"
+export type {
+  ReconciliationIssueJournalRef,
+  ReconciliationIssueRow,
+  ReconciliationIssuesResult,
+  ReconciliationIssueVoucherRef,
+} from "./reconciliation-issues"

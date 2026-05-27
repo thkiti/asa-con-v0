@@ -28,6 +28,9 @@ SYSTEM
 |------|-------|--------|
 | Home | `/` | — |
 | Finance | `/finance` | `lib/finance/` |
+| Finance reconciliation | `/finance/reconciliation` | `lib/finance-ui/`, `lib/finance/reconciliation.ts` |
+| Finance reconciliation (inventory) | `/finance/reconciliation/inventory` | `lib/finance-ui/` |
+| Finance reconciliation (sales) | `/finance/reconciliation/sales` | `lib/finance-ui/` |
 | Finance periods | `/finance/periods` | `lib/finance/period-*`, `lib/finance-ui/` |
 | Admin | `/admin` | (Admin services, Phase 7+) |
 | Operations | `/operations` | `lib/stock/` (HO ops queue, later) |
@@ -35,6 +38,7 @@ SYSTEM
 | Login | `/login` | `lib/auth/`, `lib/permissions/` |
 | Health | `/api/health` | — |
 | Finance periods API | `/api/finance/periods` | `app/api/finance/periods/` |
+| Finance reconciliation API | `/api/finance/reconciliation/inventory`, `/sales`, `/issues` | `app/api/finance/reconciliation/` |
 | POS checkout API | `/api/pos/checkout` | `app/api/pos/checkout/` |
 
 Routes not yet created: `/full-pos`, `/stock-document` — added with their vertical slices.

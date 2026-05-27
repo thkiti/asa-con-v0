@@ -2,9 +2,14 @@ import {
   buildApiFilter,
   type ReconciliationDashboardFilter,
 } from "./reconciliation"
+import {
+  buildIssuesQuery,
+  type ReconciliationIssuesFilter,
+} from "./reconciliation-issues"
 import type {
   FinanceFilterValues,
   InventoryReconciliationResult,
+  ReconciliationIssuesResult,
   SalesReconciliationResult,
 } from "./types"
 
@@ -74,4 +79,24 @@ export function fetchReconciliationDashboard(
     fetchInventoryReconciliation(apiFilter),
     fetchSalesReconciliation(apiFilter),
   ]).then(([inventory, sales]) => ({ inventory, sales }))
+}
+
+export function fetchReconciliationIssues(
+  filter: ReconciliationIssuesFilter
+): Promise<ReconciliationIssuesResult> {
+  const query = buildIssuesQuery(filter)
+  return fetch(`/api/finance/reconciliation/issues${query}`).then(async (res) => {
+    if (!res.ok) {
+      let message = res.statusText || "Request failed"
+      try {
+        const body = (await res.json()) as { error?: string; message?: string }
+        if (body.error) message = body.error
+        else if (body.message) message = body.message
+      } catch {
+        // keep statusText
+      }
+      throw new Error(message)
+    }
+    return res.json() as Promise<ReconciliationIssuesResult>
+  })
 }

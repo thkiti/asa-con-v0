@@ -2,6 +2,7 @@ import {
   buildReconciliationQuery,
   fetchInventoryReconciliation,
   fetchReconciliationDashboard,
+  fetchReconciliationIssues,
   fetchSalesReconciliation,
 } from "@/lib/finance-ui/fetchers"
 
@@ -126,5 +127,46 @@ describe("fetchReconciliationDashboard", () => {
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/finance/reconciliation/inventory?branchId=branch-1&from=2026-05-01&to=2026-05-31"
     )
+  })
+})
+
+describe("fetchReconciliationIssues", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("calls issues API with drill-down filters", async () => {
+    const dto = {
+      filter: { domain: "revenue" },
+      checkedSales: 1,
+      checkedStockDocuments: 0,
+      issueCount: 0,
+      issues: [],
+    }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => dto,
+    })
+
+    const result = await fetchReconciliationIssues({
+      branchId: "branch-1",
+      domain: "revenue",
+      status: "VARIANCE",
+    })
+
+    expect(result).toEqual(dto)
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/reconciliation/issues?branchId=branch-1&status=VARIANCE&domain=revenue"
+    )
+  })
+
+  it("throws with API error body on failure", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      statusText: "Bad Request",
+      json: async () => ({ error: "Invalid filter" }),
+    })
+
+    await expect(fetchReconciliationIssues({})).rejects.toThrow("Invalid filter")
   })
 })

@@ -1,15 +1,27 @@
 "use client"
 
 import { formatAmount, formatVarianceLabel } from "@/lib/finance-ui/format"
+import { issuesToCsv } from "@/lib/finance-ui/reconciliation-issues"
 import type { ReconciliationDashboardRow } from "@/lib/finance-ui/reconciliation"
+import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
+import { ReconciliationIssuesTable } from "./ReconciliationIssuesTable"
 import { ReconciliationStatusBadge } from "./ReconciliationStatusBadge"
 
 type VarianceDetailPanelProps = {
   row: ReconciliationDashboardRow | null
+  issues: ReconciliationIssueRow[]
+  issuesLoading?: boolean
+  issuesError?: string | null
   onClose: () => void
 }
 
-export function VarianceDetailPanel({ row, onClose }: VarianceDetailPanelProps) {
+export function VarianceDetailPanel({
+  row,
+  issues,
+  issuesLoading = false,
+  issuesError = null,
+  onClose,
+}: VarianceDetailPanelProps) {
   if (!row) {
     return null
   }
@@ -24,6 +36,20 @@ export function VarianceDetailPanel({ row, onClose }: VarianceDetailPanelProps) 
     }
   }
 
+  function exportIssuesCsv() {
+    if (issues.length === 0) {
+      return
+    }
+    const csv = issuesToCsv(issues)
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = "reconciliation-issues.csv"
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center"
@@ -31,7 +57,7 @@ export function VarianceDetailPanel({ row, onClose }: VarianceDetailPanelProps) 
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-lg"
+        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-lg"
         role="dialog"
         aria-modal="true"
         aria-labelledby="variance-detail-title"
@@ -87,7 +113,7 @@ export function VarianceDetailPanel({ row, onClose }: VarianceDetailPanelProps) 
         </dl>
 
         <div className="mt-6 rounded border border-zinc-200 bg-zinc-50 p-4 text-sm">
-          <p className="font-medium text-zinc-800">Explanation</p>
+          <p className="font-medium text-zinc-800">Aggregate explanation</p>
           <p className="mt-2 text-zinc-700">
             {row.varianceReason ??
               "Read-only reconciliation comparison between operational totals and GL balances. No automatic adjustment is applied."}
@@ -96,11 +122,29 @@ export function VarianceDetailPanel({ row, onClose }: VarianceDetailPanelProps) 
             <p className="mt-2 text-zinc-600">Type: {row.varianceType}</p>
           ) : null}
           <p className="mt-2 text-zinc-500">
-            Voucher/journal refs are derived at posting time; investigate linked
-            operational documents ({row.sourceType.toLowerCase()}) in source
-            systems. This view does not mutate accounting state.
+            Transaction-level issues below link operational documents to finance
+            vouchers and journals. This view does not mutate accounting state.
           </p>
         </div>
+
+        <section aria-label="Transaction issues" className="mt-6">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-base font-semibold">Transaction issues</h3>
+            <button
+              type="button"
+              disabled={issues.length === 0}
+              onClick={exportIssuesCsv}
+              className="rounded border border-zinc-300 px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+            >
+              Export issues CSV
+            </button>
+          </div>
+          <ReconciliationIssuesTable
+            issues={issues}
+            loading={issuesLoading}
+            error={issuesError}
+          />
+        </section>
 
         <div className="mt-6 flex flex-wrap gap-3">
           <button

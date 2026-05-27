@@ -1,9 +1,13 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { fetchReconciliationDashboard } from "@/lib/finance-ui/fetchers"
+import { useEffect, useMemo, useState } from "react"
+import {
+  fetchReconciliationDashboard,
+  fetchReconciliationIssues,
+} from "@/lib/finance-ui/fetchers"
 import { formatAmount } from "@/lib/finance-ui/format"
 import {
+  buildApiFilter,
   filterDashboardRows,
   formatPeriodLabel,
   rowsToCsv,
@@ -14,6 +18,7 @@ import {
   type ReconciliationRowStatus,
   varianceRowsFromResults,
 } from "@/lib/finance-ui/reconciliation"
+import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
 import { ReconciliationDashboardTable } from "./ReconciliationDashboardTable"
 import { VarianceDetailPanel } from "./VarianceDetailPanel"
 
@@ -46,6 +51,9 @@ export function ReconciliationPage() {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [selectedRow, setSelectedRow] =
     useState<ReconciliationDashboardRow | null>(null)
+  const [issues, setIssues] = useState<ReconciliationIssueRow[]>([])
+  const [issuesLoading, setIssuesLoading] = useState(false)
+  const [issuesError, setIssuesError] = useState<string | null>(null)
 
   const visibleRows = useMemo(
     () => filterDashboardRows(allRows, filter),
@@ -57,10 +65,53 @@ export function ReconciliationPage() {
     [visibleRows]
   )
 
+  useEffect(() => {
+    if (!selectedRow) {
+      setIssues([])
+      setIssuesError(null)
+      setIssuesLoading(false)
+      return
+    }
+
+    const row = selectedRow
+    let cancelled = false
+
+    async function loadIssues() {
+      setIssuesLoading(true)
+      setIssuesError(null)
+      try {
+        const apiFilter = buildApiFilter(appliedFilter)
+        const result = await fetchReconciliationIssues({
+          ...apiFilter,
+          domain: row.domain,
+        })
+        if (!cancelled) {
+          setIssues(result.issues)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setIssues([])
+          setIssuesError(err instanceof Error ? err.message : "Request failed")
+        }
+      } finally {
+        if (!cancelled) {
+          setIssuesLoading(false)
+        }
+      }
+    }
+
+    void loadIssues()
+    return () => {
+      cancelled = true
+    }
+  }, [selectedRow, appliedFilter])
+
   async function handleApply() {
     setLoading(true)
     setError(null)
     setSelectedRow(null)
+    setIssues([])
+    setIssuesError(null)
     try {
       const result = await fetchReconciliationDashboard(filter)
       const apiFilter = {
@@ -299,6 +350,9 @@ export function ReconciliationPage() {
 
       <VarianceDetailPanel
         row={selectedRow}
+        issues={issues}
+        issuesLoading={issuesLoading}
+        issuesError={issuesError}
         onClose={() => setSelectedRow(null)}
       />
     </div>

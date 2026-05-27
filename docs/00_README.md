@@ -19,7 +19,9 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 13. [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md) — reconciliation and period-close policy
 14. [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md) — operational finance hook wiring
 15. [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md) — Phase 15 period lifecycle, posting lock, admin API/UI
-16. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+16. [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md) — Phase 16 read-only reconciliation dashboard
+17. [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md) — Phase 17 transaction-level issues API + drill-down
+18. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -36,3 +38,5 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 7b | Finance reconciliation & close policy | Done |
 | 7c | Finance operational wiring | Done |
 | 15 | Finance periods (lifecycle, admin, posting lock) | Done |
+| 16 | Finance reconciliation dashboard (read-only variance workflow) | Done |
+| 17 | Transaction-level reconciliation drill-down | Done |
