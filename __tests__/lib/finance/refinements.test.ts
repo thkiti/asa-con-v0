@@ -1,4 +1,4 @@
-﻿import { AccountingPeriodStatus, Prisma } from "@/generated/prisma/client"
+import { AccountingPeriodStatus, Prisma } from "@/generated/prisma/client"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import { postOperationalVoucher } from "@/lib/finance/posting"
 import { createVoucherWithLines } from "@/lib/finance/voucher"
@@ -92,6 +92,36 @@ describe("finance kernel refinements", () => {
     expect(state.accountingPeriods[0]?.status).toBe(status)
   })
 
+
+  it.each([
+    AccountingPeriodStatus.SOFT_CLOSED,
+    AccountingPeriodStatus.HARD_CLOSED,
+  ])("createVoucherWithLines rejects %s period at voucher layer", async (status) => {
+    const { tx, state } = createFinanceMockTx()
+    const lines = balancedLines(state)
+    state.accountingPeriods.push({
+      id: "period-closed-voucher",
+      branchId: "branch-1",
+      periodKey: "2026-05",
+      status,
+      openedAt: new Date(),
+      closedAt: new Date(),
+    })
+
+    await expect(
+      createVoucherWithLines(tx, {
+        branchId: "branch-1",
+        periodId: "period-closed-voucher",
+        date: new Date("2026-05-15T12:00:00.000Z"),
+        refType: FINANCE_REF_TYPES.POS_SALE,
+        refId: "sale-voucher-layer",
+        lines,
+      })
+    ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
+
+    expect(state.vouchers).toHaveLength(0)
+  })
+
   it("rejects PERIOD_NOT_OPENED when no period exists", async () => {
     const { tx, state } = createFinanceMockTx()
 
@@ -144,3 +174,4 @@ describe("finance kernel refinements", () => {
     }
   })
 })
+
