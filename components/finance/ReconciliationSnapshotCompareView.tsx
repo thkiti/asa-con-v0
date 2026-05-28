@@ -27,7 +27,7 @@ import {
   type IssueDiffKind,
   type SnapshotCompareResult,
 } from "@/lib/finance-ui/reconciliation-snapshots"
-import { buildSnapshotIssueTrace } from "@/lib/finance-ui/traceability"
+import { resolveSnapshotDiffIssueTrace } from "@/lib/finance-ui/traceability"
 import type { ReconciliationSnapshotDetail, ReconciliationSnapshotHeader } from "@/lib/finance-ui/types"
 import { FinanceTraceabilityPanel } from "./FinanceTraceabilityPanel"
 import {
@@ -303,6 +303,47 @@ function CompareRowDiffTable({ diffs }: { diffs: DashboardRowDiff[] }) {
   )
 }
 
+function CompareIssueDiffTracePanel({
+  diff,
+  leftSnapshot,
+  rightSnapshot,
+}: {
+  diff: IssueDiff
+  leftSnapshot: Pick<ReconciliationSnapshotDetail, "id" | "createdAt">
+  rightSnapshot: Pick<ReconciliationSnapshotDetail, "id" | "createdAt">
+}) {
+  const trace = useMemo(
+    () =>
+      resolveSnapshotDiffIssueTrace(diff, {
+        left: {
+          snapshotId: leftSnapshot.id,
+          capturedAt: leftSnapshot.createdAt,
+        },
+        right: {
+          snapshotId: rightSnapshot.id,
+          capturedAt: rightSnapshot.createdAt,
+        },
+      }),
+    [
+      diff,
+      leftSnapshot.createdAt,
+      leftSnapshot.id,
+      rightSnapshot.createdAt,
+      rightSnapshot.id,
+    ]
+  )
+
+  if (!trace) {
+    return null
+  }
+
+  return (
+    <div className="mt-2 min-w-[20rem]">
+      <FinanceTraceabilityPanel trace={trace} frozen />
+    </div>
+  )
+}
+
 function CompareIssueDiffTable({
   diffs,
   leftSnapshot,
@@ -338,14 +379,7 @@ function CompareIssueDiffTable({
               leftIssue?.documentRef ??
               diff.id
             const traceIssue = rightIssue ?? leftIssue
-            const traceSnapshot = rightIssue ? rightSnapshot : leftSnapshot
             const traceExpanded = expandedTraceId === diff.id
-            const trace = traceIssue
-              ? buildSnapshotIssueTrace(traceIssue, {
-                  snapshotId: traceSnapshot.id,
-                  capturedAt: traceSnapshot.createdAt,
-                })
-              : null
 
             return (
               <tr key={diff.id} className="border-b border-zinc-100 align-top">
@@ -362,7 +396,7 @@ function CompareIssueDiffTable({
                       Changed: {diff.changedFields.join(", ")}
                     </p>
                   ) : null}
-                  {trace ? (
+                  {traceIssue ? (
                     <div className="mt-2">
                       <button
                         type="button"
@@ -374,9 +408,11 @@ function CompareIssueDiffTable({
                         {traceExpanded ? "Hide trace" : "View trace"}
                       </button>
                       {traceExpanded ? (
-                        <div className="mt-2 min-w-[20rem]">
-                          <FinanceTraceabilityPanel trace={trace} frozen />
-                        </div>
+                        <CompareIssueDiffTracePanel
+                          diff={diff}
+                          leftSnapshot={leftSnapshot}
+                          rightSnapshot={rightSnapshot}
+                        />
                       ) : null}
                     </div>
                   ) : null}
@@ -735,5 +771,6 @@ export function ReconciliationSnapshotCompareClient({
 
   return <ReconciliationSnapshotCompareView left={left} right={right} />
 }
+
 
 

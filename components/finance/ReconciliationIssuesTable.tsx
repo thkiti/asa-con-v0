@@ -1,17 +1,17 @@
 ﻿"use client"
 
-import { useMemo, useState } from "react"
+import { memo, useCallback, useMemo, useState } from "react"
 import { formatAmount } from "@/lib/finance-ui/format"
-import { buildFinanceTrace, buildSnapshotIssueTrace } from "@/lib/finance-ui/traceability"
+import {
+  resolveIssueFinanceTrace,
+  type IssueTraceSnapshotContext,
+} from "@/lib/finance-ui/traceability"
 import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
 import { FinanceTraceabilityPanel } from "./FinanceTraceabilityPanel"
 import { OperationalSourceChip } from "./traceability-badges"
 import { ReconciliationStatusBadge } from "./ReconciliationStatusBadge"
 
-export type SnapshotTraceContext = {
-  snapshotId: string
-  capturedAt?: string
-}
+export type SnapshotTraceContext = IssueTraceSnapshotContext
 
 type ReconciliationIssuesTableProps = {
   issues: ReconciliationIssueRow[]
@@ -27,6 +27,9 @@ export function ReconciliationIssuesTable({
   snapshotTrace,
 }: ReconciliationIssuesTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const handleToggle = useCallback((issueId: string) => {
+    setExpandedId((current) => (current === issueId ? null : issueId))
+  }, [])
 
   if (loading) {
     return (
@@ -52,24 +55,20 @@ export function ReconciliationIssuesTable({
 
   return (
     <div className="mt-3 space-y-2">
-      {issues.map((issue) => {
-        const expanded = expandedId === issue.id
-
-        return (
-          <IssueRow
-            key={issue.id}
-            issue={issue}
-            expanded={expanded}
-            snapshotTrace={snapshotTrace}
-            onToggle={() => setExpandedId(expanded ? null : issue.id)}
-          />
-        )
-      })}
+      {issues.map((issue) => (
+        <IssueRow
+          key={issue.id}
+          issue={issue}
+          expanded={expandedId === issue.id}
+          snapshotTrace={snapshotTrace}
+          onToggle={handleToggle}
+        />
+      ))}
     </div>
   )
 }
 
-function IssueRow({
+const IssueRow = memo(function IssueRow({
   issue,
   expanded,
   snapshotTrace,
@@ -78,21 +77,14 @@ function IssueRow({
   issue: ReconciliationIssueRow
   expanded: boolean
   snapshotTrace?: SnapshotTraceContext
-  onToggle: () => void
+  onToggle: (issueId: string) => void
 }) {
-  const trace = useMemo(() => {
-    if (snapshotTrace) {
-      return buildSnapshotIssueTrace(issue, snapshotTrace)
-    }
-    return buildFinanceTrace(issue, { mode: "live" })
-  }, [issue, snapshotTrace])
-
   return (
     <div className="rounded border border-zinc-200 bg-white text-sm">
       <button
         type="button"
         className="flex w-full items-start justify-between gap-3 px-3 py-2 text-left hover:bg-zinc-50"
-        onClick={onToggle}
+        onClick={() => onToggle(issue.id)}
       >
         <div>
           <p className="font-medium text-zinc-900">{issue.documentRef}</p>
@@ -106,60 +98,69 @@ function IssueRow({
         <ReconciliationStatusBadge status={issue.status} />
       </button>
       {expanded ? (
-        <div className="border-t border-zinc-100 px-3 py-3 text-zinc-700">
-          <p>{issue.message}</p>
-          <div className="mt-3">
-            <FinanceTraceabilityPanel
-              trace={trace}
-              frozen={snapshotTrace !== undefined}
-            />
-          </div>
-          <dl className="mt-3 grid gap-2">
-            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
-              <dt className="text-zinc-500">Source</dt>
-              <dd>
-                <OperationalSourceChip row={issue} />
-              </dd>
-            </div>
-            {issue.expectedAmount !== null ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Expected</dt>
-                <dd className="tabular-nums">
-                  {formatAmount(String(issue.expectedAmount))}
-                </dd>
-              </div>
-            ) : null}
-            {issue.actualAmount !== null ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Actual</dt>
-                <dd className="tabular-nums">
-                  {formatAmount(String(issue.actualAmount))}
-                </dd>
-              </div>
-            ) : null}
-            {issue.difference !== null ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Difference</dt>
-                <dd className="tabular-nums">
-                  {formatAmount(String(issue.difference))}
-                </dd>
-              </div>
-            ) : null}
-            {issue.sourceCreatedAt ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Created</dt>
-                <dd>{issue.sourceCreatedAt}</dd>
-              </div>
-            ) : null}
-            {issue.sourcePostedAt ? (
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Posted</dt>
-                <dd>{issue.sourcePostedAt}</dd>
-              </div>
-            ) : null}
-          </dl>
-        </div>
+        <IssueRowExpanded issue={issue} snapshotTrace={snapshotTrace} />
       ) : null}
     </div>
   )
-}
+})
+
+const IssueRowExpanded = memo(function IssueRowExpanded({
+  issue,
+  snapshotTrace,
+}: {
+  issue: ReconciliationIssueRow
+  snapshotTrace?: SnapshotTraceContext
+}) {
+  const trace = useMemo(
+    () => resolveIssueFinanceTrace(issue, snapshotTrace),
+    [issue, snapshotTrace]
+  )
+  const frozen = snapshotTrace !== undefined
+
+  return (
+    <div className="border-t border-zinc-100 px-3 py-3 text-zinc-700">
+      <p>{issue.message}</p>
+      <div className="mt-3">
+        <FinanceTraceabilityPanel trace={trace} frozen={frozen} />
+      </div>
+      <dl className="mt-3 grid gap-2">
+        {issue.expectedAmount !== null ? (
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Expected</dt>
+            <dd className="tabular-nums">
+              {formatAmount(String(issue.expectedAmount))}
+            </dd>
+          </div>
+        ) : null}
+        {issue.actualAmount !== null ? (
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Actual</dt>
+            <dd className="tabular-nums">
+              {formatAmount(String(issue.actualAmount))}
+            </dd>
+          </div>
+        ) : null}
+        {issue.difference !== null ? (
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Difference</dt>
+            <dd className="tabular-nums">
+              {formatAmount(String(issue.difference))}
+            </dd>
+          </div>
+        ) : null}
+        {issue.sourceCreatedAt ? (
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Created</dt>
+            <dd>{issue.sourceCreatedAt}</dd>
+          </div>
+        ) : null}
+        {issue.sourcePostedAt ? (
+          <div className="flex justify-between gap-4">
+            <dt className="text-zinc-500">Posted</dt>
+            <dd>{issue.sourcePostedAt}</dd>
+          </div>
+        ) : null}
+      </dl>
+    </div>
+  )
+})

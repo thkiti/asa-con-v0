@@ -255,8 +255,42 @@ export function buildSnapshotIssueTrace(
   })
 }
 
+
+export type IssueTraceSnapshotContext = {
+  snapshotId: string
+  capturedAt?: string
+}
+
+export function resolveIssueFinanceTrace(
+  row: TraceableIssueRow,
+  snapshotTrace?: IssueTraceSnapshotContext
+): FinanceTrace {
+  if (snapshotTrace) {
+    return buildSnapshotIssueTrace(row, snapshotTrace)
+  }
+  return buildFinanceTrace(row, { mode: "live" })
+}
+
+export function resolveSnapshotDiffIssueTrace(
+  diff: {
+    left?: TraceableIssueRow | null
+    right?: TraceableIssueRow | null
+  },
+  snapshots: {
+    left: IssueTraceSnapshotContext
+    right: IssueTraceSnapshotContext
+  }
+): FinanceTrace | null {
+  const traceIssue = diff.right ?? diff.left
+  if (!traceIssue) {
+    return null
+  }
+  const traceSnapshot = diff.right ? snapshots.right : snapshots.left
+  return buildSnapshotIssueTrace(traceIssue, traceSnapshot)
+}
 export function toTraceableIssueRow(
   row: ReconciliationIssueRow | SnapshotIssueRow
 ): TraceableIssueRow {
   return row
 }
+

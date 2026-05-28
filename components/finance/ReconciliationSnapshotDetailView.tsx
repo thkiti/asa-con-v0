@@ -193,6 +193,14 @@ export function ReconciliationSnapshotDetailView({
     [visibleIssues, issuesVisibleCount]
   )
 
+  const snapshotTraceContext = useMemo(
+    () => ({
+      snapshotId: snapshot.id,
+      capturedAt: snapshot.createdAt,
+    }),
+    [snapshot.createdAt, snapshot.id]
+  )
+
   const { inventoryResult, salesResult } = snapshot.payload
 
   return (
@@ -455,13 +463,13 @@ export function ReconciliationSnapshotDetailView({
           </div>
         </div>
         <div className="no-print">
-          <ReconciliationIssuesTable issues={issuesPagination.visible} snapshotTrace={{ snapshotId: snapshot.id, capturedAt: snapshot.createdAt }} />
+          <ReconciliationIssuesTable issues={issuesPagination.visible} snapshotTrace={snapshotTraceContext} />
         </div>
         <div className="print-only print-break-before">
           <p className="mb-3 text-sm text-zinc-600">
             Full frozen issues ({allIssues.length} issues)
           </p>
-          <ReconciliationIssuesTable issues={allIssues} snapshotTrace={{ snapshotId: snapshot.id, capturedAt: snapshot.createdAt }} />
+          <ReconciliationIssuesTable issues={allIssues} snapshotTrace={snapshotTraceContext} />
         </div>
         {issuesPagination.hasMore ? (
           <button

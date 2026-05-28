@@ -1,5 +1,6 @@
 ﻿"use client"
 
+import { memo } from "react"
 import Link from "next/link"
 import { formatDateTime } from "@/lib/finance-ui/format"
 import {
@@ -110,7 +111,7 @@ function TraceStepBody({ step }: { step: TraceStep }) {
   }
 }
 
-export function FinanceTraceabilityPanel({
+export const FinanceTraceabilityPanel = memo(function FinanceTraceabilityPanel({
   trace,
   readOnly = true,
   frozen = false,
@@ -168,4 +169,4 @@ export function FinanceTraceabilityPanel({
       ) : null}
     </div>
   )
-}
+})
