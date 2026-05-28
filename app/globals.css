@@ -24,3 +24,50 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-break-before {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body {
+    background: #fff !important;
+    color: #171717 !important;
+  }
+
+  .sticky {
+    position: static !important;
+  }
+
+  details {
+    display: block !important;
+  }
+
+  details > summary {
+    display: block !important;
+    list-style: none;
+  }
+
+  details > div {
+    display: block !important;
+  }
+}

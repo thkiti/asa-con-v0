@@ -1,13 +1,120 @@
 "use client"
 
+import { formatDateTime } from "@/lib/finance-ui/format"
+import { formatExportTimestamp } from "@/lib/finance-ui/export-formatters"
 import {
   formatAmountDelta,
   formatCountDelta,
+  formatSnapshotDisplayTitle,
   formatSnapshotKindLabel,
+  formatSnapshotScope,
   type DashboardRowDiffKind,
   type IssueDiffKind,
 } from "@/lib/finance-ui/reconciliation-snapshots"
-import type { ReconciliationSnapshotHeader } from "@/lib/finance-ui/types"
+import type {
+  ReconciliationSnapshotDetail,
+  ReconciliationSnapshotHeader,
+} from "@/lib/finance-ui/types"
+
+export const FROZEN_SNAPSHOT_DISCLAIMER =
+  "Frozen snapshot — data from capture time only (no live reconciliation fetch)."
+
+export function PrintAuditButton() {
+  return (
+    <button
+      type="button"
+      onClick={() => window.print()}
+      className="no-print rounded border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900"
+    >
+      Print audit report
+    </button>
+  )
+}
+
+export function SnapshotAuditPrintHeader({
+  snapshot,
+}: {
+  snapshot: ReconciliationSnapshotDetail
+}) {
+  const printedAt = formatExportTimestamp()
+
+  return (
+    <div className="print-only print-break-inside-avoid mb-4 border-b border-zinc-300 pb-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+        Reconciliation snapshot audit
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <h2 className="text-base font-semibold text-zinc-900">
+          {formatSnapshotDisplayTitle(snapshot)}
+        </h2>
+        <SnapshotKindBadge kind={snapshot.kind} />
+      </div>
+      <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="text-zinc-500">Scope</dt>
+          <dd className="text-zinc-900">{formatSnapshotScope(snapshot)}</dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">Captured</dt>
+          <dd className="text-zinc-900">{formatDateTime(snapshot.createdAt)}</dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">Snapshot ID</dt>
+          <dd className="font-mono text-xs text-zinc-900">{snapshot.id}</dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">Printed</dt>
+          <dd className="text-zinc-900">{printedAt}</dd>
+        </div>
+      </dl>
+      <p className="mt-3 text-xs text-zinc-700">{FROZEN_SNAPSHOT_DISCLAIMER}</p>
+    </div>
+  )
+}
+
+export function CompareAuditPrintHeader({
+  left,
+  right,
+}: {
+  left: ReconciliationSnapshotDetail
+  right: ReconciliationSnapshotDetail
+}) {
+  const printedAt = formatExportTimestamp()
+
+  return (
+    <div className="print-only print-break-inside-avoid mb-4 border-b border-zinc-300 pb-4">
+      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+        Snapshot compare audit
+      </p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="text-xs font-medium text-zinc-500">Left snapshot</p>
+          <p className="mt-1 font-medium text-zinc-900">
+            {formatSnapshotDisplayTitle(left)}
+          </p>
+          <p className="mt-1 text-sm text-zinc-600">
+            {formatSnapshotScope(left)} · {formatDateTime(left.createdAt)}
+          </p>
+          <p className="mt-1 font-mono text-xs text-zinc-500">{left.id}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-zinc-500">Right snapshot</p>
+          <p className="mt-1 font-medium text-zinc-900">
+            {formatSnapshotDisplayTitle(right)}
+          </p>
+          <p className="mt-1 text-sm text-zinc-600">
+            {formatSnapshotScope(right)} · {formatDateTime(right.createdAt)}
+          </p>
+          <p className="mt-1 font-mono text-xs text-zinc-500">{right.id}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-zinc-700">
+        Client-side diff of frozen payloads only — no live reconciliation fetch.
+      </p>
+      <p className="mt-1 text-xs text-zinc-500">Printed {printedAt}</p>
+    </div>
+  )
+}
 
 export type CollapsibleSectionProps = {
   title: string

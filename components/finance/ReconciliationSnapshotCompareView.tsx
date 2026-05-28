@@ -21,16 +21,20 @@ import {
   formatSnapshotScope,
   paginateList,
   SNAPSHOT_UI_ISSUES_PAGE_SIZE,
+  type DashboardRowDiff,
   type DashboardRowDiffKind,
+  type IssueDiff,
   type IssueDiffKind,
   type SnapshotCompareResult,
 } from "@/lib/finance-ui/reconciliation-snapshots"
 import type { ReconciliationSnapshotDetail, ReconciliationSnapshotHeader } from "@/lib/finance-ui/types"
 import {
   CollapsibleSection,
+  CompareAuditPrintHeader,
   CompareSkeleton,
   DeltaChip,
   DiffKindBadge,
+  PrintAuditButton,
 } from "./reconciliation-snapshot-ui"
 import { ReconciliationStatusBadge } from "./ReconciliationStatusBadge"
 
@@ -172,22 +176,25 @@ function CompareEvidenceExportControls({
   }
 
   return (
-    <div className="rounded border border-zinc-200 bg-zinc-50 p-4">
+    <div className="no-print rounded border border-zinc-200 bg-zinc-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-zinc-900">Compare evidence export</p>
           <p className="mt-1 text-xs text-zinc-600">
-            Frozen compare diff only � metadata, summary deltas, and changed rows/issues.
+            Frozen compare diff only — metadata, summary deltas, and changed rows/issues.
           </p>
         </div>
-        <button
-          type="button"
-          disabled={exporting}
-          onClick={() => void handleExportPack()}
-          className="rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
-          {exporting ? "Exporting�" : "Export compare evidence"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <PrintAuditButton />
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={() => void handleExportPack()}
+            className="rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {exporting ? "Exporting…" : "Export compare evidence"}
+          </button>
+        </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <button
@@ -219,6 +226,139 @@ function CompareEvidenceExportControls({
           Issue changes CSV
         </button>
       </div>
+    </div>
+  )
+}
+
+function CompareRowDiffTable({ diffs }: { diffs: DashboardRowDiff[] }) {
+  if (diffs.length === 0) {
+    return <p className="mt-4 text-sm text-zinc-600">No dashboard row changes.</p>
+  }
+
+  return (
+    <div className="mt-4 overflow-x-auto rounded border border-zinc-200">
+      <table className="min-w-full border-collapse text-sm">
+        <thead className="bg-zinc-50">
+          <tr className="border-b border-zinc-200 text-left text-zinc-600">
+            <th className="px-3 py-2 font-medium">Change</th>
+            <th className="px-3 py-2 font-medium">Reference</th>
+            <th className="px-3 py-2 font-medium">Left</th>
+            <th className="px-3 py-2 font-medium">Right</th>
+          </tr>
+        </thead>
+        <tbody>
+          {diffs.map((diff) => {
+            const leftRow = diff.left
+            const rightRow = diff.right
+            const reference =
+              rightRow?.reference ?? leftRow?.reference ?? diff.id
+            return (
+              <tr key={diff.id} className="border-b border-zinc-100 align-top">
+                <td className="px-3 py-2">
+                  <DiffKindBadge kind={diff.kind} />
+                </td>
+                <td className="px-3 py-2">
+                  <p className="font-medium text-zinc-900">{reference}</p>
+                  {diff.changedFields?.length ? (
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Changed: {diff.changedFields.join(", ")}
+                    </p>
+                  ) : null}
+                </td>
+                <td className="px-3 py-2 text-zinc-700">
+                  {leftRow ? (
+                    <div className="space-y-1">
+                      <p className="tabular-nums">
+                        {formatAmount(leftRow.expectedAmount)} /{" "}
+                        {formatAmount(leftRow.actualAmount)}
+                      </p>
+                      <ReconciliationStatusBadge status={leftRow.status} />
+                    </div>
+                  ) : (
+                    <span className="text-zinc-400">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-zinc-700">
+                  {rightRow ? (
+                    <div className="space-y-1">
+                      <p className="tabular-nums">
+                        {formatAmount(rightRow.expectedAmount)} /{" "}
+                        {formatAmount(rightRow.actualAmount)}
+                      </p>
+                      <ReconciliationStatusBadge status={rightRow.status} />
+                    </div>
+                  ) : (
+                    <span className="text-zinc-400">—</span>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function CompareIssueDiffTable({ diffs }: { diffs: IssueDiff[] }) {
+  if (diffs.length === 0) {
+    return <p className="mt-4 text-sm text-zinc-600">No issue changes.</p>
+  }
+
+  return (
+    <div className="mt-4 overflow-x-auto rounded border border-zinc-200">
+      <table className="min-w-full border-collapse text-sm">
+        <thead className="bg-zinc-50">
+          <tr className="border-b border-zinc-200 text-left text-zinc-600">
+            <th className="px-3 py-2 font-medium">Change</th>
+            <th className="px-3 py-2 font-medium">Issue</th>
+            <th className="px-3 py-2 font-medium">Left</th>
+            <th className="px-3 py-2 font-medium">Right</th>
+          </tr>
+        </thead>
+        <tbody>
+          {diffs.map((diff) => {
+            const leftIssue = diff.left
+            const rightIssue = diff.right
+            const label =
+              rightIssue?.documentRef ??
+              leftIssue?.documentRef ??
+              diff.id
+            return (
+              <tr key={diff.id} className="border-b border-zinc-100 align-top">
+                <td className="px-3 py-2">
+                  <DiffKindBadge kind={diff.kind} />
+                </td>
+                <td className="px-3 py-2">
+                  <p className="font-medium text-zinc-900">{label}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {rightIssue?.issueType ?? leftIssue?.issueType}
+                  </p>
+                  {diff.changedFields?.length ? (
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Changed: {diff.changedFields.join(", ")}
+                    </p>
+                  ) : null}
+                </td>
+                <td className="px-3 py-2 text-zinc-700">
+                  {leftIssue ? (
+                    <p className="text-sm">{leftIssue.message}</p>
+                  ) : (
+                    <span className="text-zinc-400">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-zinc-700">
+                  {rightIssue ? (
+                    <p className="text-sm">{rightIssue.message}</p>
+                  ) : (
+                    <span className="text-zinc-400">—</span>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }
@@ -264,8 +404,10 @@ export function ReconciliationSnapshotCompareView({
   const visibleIssueDiffs = issueDiffPagination.visible
 
   return (
-    <div className="space-y-4">
-      <p className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div className="reconciliation-audit-print space-y-4">
+      <CompareAuditPrintHeader left={left} right={right} />
+
+      <p className="no-print rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Client-side diff of frozen payloads only — no live reconciliation fetch.
       </p>
 
@@ -311,7 +453,7 @@ export function ReconciliationSnapshotCompareView({
       </div>
 
       <CollapsibleSection title={`Dashboard row changes (${rowCounts.added + rowCounts.removed + rowCounts.changed})`}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="no-print flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2 text-xs text-zinc-600">
             <span>{rowCounts.added} added</span>
             <span>{rowCounts.removed} removed</span>
@@ -333,74 +475,23 @@ export function ReconciliationSnapshotCompareView({
             </select>
           </label>
         </div>
-        {visibleRowDiffs.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-600">No dashboard row changes for this filter.</p>
-        ) : (
-          <div className="mt-4 overflow-x-auto rounded border border-zinc-200">
-            <table className="min-w-full border-collapse text-sm">
-              <thead className="sticky top-0 z-10 bg-zinc-50">
-                <tr className="border-b border-zinc-200 text-left text-zinc-600">
-                  <th className="px-3 py-2 font-medium">Change</th>
-                  <th className="px-3 py-2 font-medium">Reference</th>
-                  <th className="px-3 py-2 font-medium">Left</th>
-                  <th className="px-3 py-2 font-medium">Right</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleRowDiffs.map((diff) => {
-                  const leftRow = diff.left
-                  const rightRow = diff.right
-                  const reference =
-                    rightRow?.reference ?? leftRow?.reference ?? diff.id
-                  return (
-                    <tr key={diff.id} className="border-b border-zinc-100 align-top">
-                      <td className="px-3 py-2">
-                        <DiffKindBadge kind={diff.kind} />
-                      </td>
-                      <td className="px-3 py-2">
-                        <p className="font-medium text-zinc-900">{reference}</p>
-                        {diff.changedFields?.length ? (
-                          <p className="mt-1 text-xs text-zinc-500">
-                            Changed: {diff.changedFields.join(", ")}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-2 text-zinc-700">
-                        {leftRow ? (
-                          <div className="space-y-1">
-                            <p className="tabular-nums">
-                              {formatAmount(leftRow.expectedAmount)} /{" "}
-                              {formatAmount(leftRow.actualAmount)}
-                            </p>
-                            <ReconciliationStatusBadge status={leftRow.status} />
-                          </div>
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-zinc-700">
-                        {rightRow ? (
-                          <div className="space-y-1">
-                            <p className="tabular-nums">
-                              {formatAmount(rightRow.expectedAmount)} /{" "}
-                              {formatAmount(rightRow.actualAmount)}
-                            </p>
-                            <ReconciliationStatusBadge status={rightRow.status} />
-                          </div>
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="no-print">
+          {visibleRowDiffs.length === 0 ? (
+            <p className="mt-4 text-sm text-zinc-600">No dashboard row changes for this filter.</p>
+          ) : (
+            <CompareRowDiffTable diffs={visibleRowDiffs} />
+          )}
+        </div>
+        <div className="print-only print-break-before">
+          <p className="mb-3 text-sm text-zinc-600">
+            All dashboard row changes ({rowDiffs.length})
+          </p>
+          <CompareRowDiffTable diffs={rowDiffs} />
+        </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title={`Issue changes (${issueCounts.added + issueCounts.removed + issueCounts.changed})`}>
+      <CollapsibleSection title={`Issue changes
+ (${issueCounts.added + issueCounts.removed + issueCounts.changed})`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2 text-xs text-zinc-600">
             <span>{issueCounts.added} added</span>
@@ -423,88 +514,44 @@ export function ReconciliationSnapshotCompareView({
             </select>
           </label>
         </div>
-        {filteredIssueDiffs.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-600">No issue changes for this filter.</p>
-        ) : (
-          <>
-            {filteredIssueDiffs.length > SNAPSHOT_UI_ISSUES_PAGE_SIZE ? (
-              <p className="mt-4 text-xs text-zinc-500">
-                Showing {visibleIssueDiffs.length} of {filteredIssueDiffs.length} issue changes.
-              </p>
-            ) : null}
-            <div className="mt-4 overflow-x-auto rounded border border-zinc-200">
-            <table className="min-w-full border-collapse text-sm">
-              <thead className="sticky top-0 z-10 bg-zinc-50">
-                <tr className="border-b border-zinc-200 text-left text-zinc-600">
-                  <th className="px-3 py-2 font-medium">Change</th>
-                  <th className="px-3 py-2 font-medium">Issue</th>
-                  <th className="px-3 py-2 font-medium">Left</th>
-                  <th className="px-3 py-2 font-medium">Right</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleIssueDiffs.map((diff) => {
-                  const leftIssue = diff.left
-                  const rightIssue = diff.right
-                  const label =
-                    rightIssue?.documentRef ??
-                    leftIssue?.documentRef ??
-                    diff.id
-                  return (
-                    <tr key={diff.id} className="border-b border-zinc-100 align-top">
-                      <td className="px-3 py-2">
-                        <DiffKindBadge kind={diff.kind} />
-                      </td>
-                      <td className="px-3 py-2">
-                        <p className="font-medium text-zinc-900">{label}</p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {rightIssue?.issueType ?? leftIssue?.issueType}
-                        </p>
-                        {diff.changedFields?.length ? (
-                          <p className="mt-1 text-xs text-zinc-500">
-                            Changed: {diff.changedFields.join(", ")}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-2 text-zinc-700">
-                        {leftIssue ? (
-                          <p className="text-sm">{leftIssue.message}</p>
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-zinc-700">
-                        {rightIssue ? (
-                          <p className="text-sm">{rightIssue.message}</p>
-                        ) : (
-                          <span className="text-zinc-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-            {issueDiffPagination.hasMore ? (
-              <button
-                type="button"
-                onClick={() =>
-                  setIssueDiffVisibleCount(issueDiffPagination.nextVisibleCount)
-                }
-                className="mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
-              >
-                Show more changes ({issueDiffPagination.total - issueDiffPagination.visible.length} remaining)
-              </button>
-            ) : null}
-          </>
-        )}
+        <div className="no-print">
+          {filteredIssueDiffs.length === 0 ? (
+            <p className="mt-4 text-sm text-zinc-600">No issue changes for this filter.</p>
+          ) : (
+            <>
+              {filteredIssueDiffs.length > SNAPSHOT_UI_ISSUES_PAGE_SIZE ? (
+                <p className="mt-4 text-xs text-zinc-500">
+                  Showing {visibleIssueDiffs.length} of {filteredIssueDiffs.length} issue changes.
+                </p>
+              ) : null}
+              <CompareIssueDiffTable diffs={visibleIssueDiffs} />
+              {issueDiffPagination.hasMore ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setIssueDiffVisibleCount(issueDiffPagination.nextVisibleCount)
+                  }
+                  className="no-print mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
+                >
+                  Show more changes ({issueDiffPagination.total - issueDiffPagination.visible.length} remaining)
+                </button>
+              ) : null}
+            </>
+          )}
+        </div>
+        <div className="print-only print-break-before">
+          <p className="mb-3 text-sm text-zinc-600">
+            All issue changes ({issueDiffs.length})
+          </p>
+          <CompareIssueDiffTable diffs={issueDiffs} />
+        </div>
       </CollapsibleSection>
     </div>
   )
 }
 
-type ReconciliationSnapshotCompareClientProps = {
+type ReconciliationSnapshotCompareClientProps
+ = {
   leftId?: string
   rightId?: string
 }

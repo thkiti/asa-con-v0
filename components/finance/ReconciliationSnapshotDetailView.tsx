@@ -27,6 +27,9 @@ import {
 import type { ReconciliationSnapshotDetail } from "@/lib/finance-ui/types"
 import {
   CollapsibleSection,
+  FROZEN_SNAPSHOT_DISCLAIMER,
+  PrintAuditButton,
+  SnapshotAuditPrintHeader,
   SnapshotDetailSkeleton,
   SnapshotKindBadge,
 } from "./reconciliation-snapshot-ui"
@@ -78,22 +81,23 @@ function SnapshotEvidenceExportControls({
   }
 
   return (
-    <div className="rounded border border-zinc-200 bg-zinc-50 p-4">
+    <div className="no-print rounded border border-zinc-200 bg-zinc-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-zinc-900">Evidence export</p>
           <p className="mt-1 text-xs text-zinc-600">
-            Frozen payload only � metadata, summary, dashboard, and issues CSVs.
+            Frozen payload only — metadata, summary, dashboard, and issues CSVs.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <PrintAuditButton />
           <button
             type="button"
             disabled={exporting}
             onClick={() => void handleExportPack()}
             className="rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {exporting ? "Exporting�" : "Export evidence pack"}
+            {exporting ? "Exporting…" : "Export evidence pack"}
           </button>
         </div>
       </div>
@@ -168,6 +172,11 @@ export function ReconciliationSnapshotDetailView({
     [visibleRows]
   )
 
+  const fullSummary = useMemo(
+    () => summarizeDashboardRows(dashboardRows),
+    [dashboardRows]
+  )
+
   const visibleIssues = useMemo(() => {
     if (!selectedRow) {
       return allIssues
@@ -187,8 +196,10 @@ export function ReconciliationSnapshotDetailView({
   const { inventoryResult, salesResult } = snapshot.payload
 
   return (
-    <div className="space-y-4">
-      <header>
+    <div className="reconciliation-audit-print space-y-4">
+      <SnapshotAuditPrintHeader snapshot={snapshot} />
+
+      <header className="no-print">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-lg font-semibold text-zinc-900">
             {formatSnapshotDisplayTitle(snapshot)}
@@ -196,15 +207,15 @@ export function ReconciliationSnapshotDetailView({
           <SnapshotKindBadge kind={snapshot.kind} />
         </div>
         <p className="mt-1 text-sm text-zinc-600">
-          {formatSnapshotScope(snapshot)} ? captured{" "}
+          {formatSnapshotScope(snapshot)} · captured{" "}
           <time dateTime={snapshot.createdAt}>
             {formatDateTime(snapshot.createdAt)}
           </time>
         </p>
       </header>
 
-      <p className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        Frozen snapshot � data from capture time only (no live fetch).
+      <p className="no-print rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        {FROZEN_SNAPSHOT_DISCLAIMER}
       </p>
 
       <SnapshotEvidenceExportControls snapshot={snapshot} />
@@ -236,7 +247,7 @@ export function ReconciliationSnapshotDetailView({
         <dl className="grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-sm text-zinc-500">Label</dt>
-            <dd className="mt-1 text-zinc-900">{snapshot.label ?? "�"}</dd>
+            <dd className="mt-1 text-zinc-900">{snapshot.label ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-sm text-zinc-500">Scope</dt>
@@ -303,7 +314,7 @@ export function ReconciliationSnapshotDetailView({
       </CollapsibleSection>
 
       <CollapsibleSection title="Dashboard summary">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="no-print grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded border border-zinc-200 p-4">
             <p className="text-sm text-zinc-600">Matched</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">
@@ -329,10 +340,36 @@ export function ReconciliationSnapshotDetailView({
             </p>
           </div>
         </div>
+        <div className="print-only grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded border border-zinc-200 p-4">
+            <p className="text-sm text-zinc-600">Matched (full payload)</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {fullSummary.matchedCount}
+            </p>
+          </div>
+          <div className="rounded border border-zinc-200 p-4">
+            <p className="text-sm text-zinc-600">Unmatched</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {fullSummary.unmatchedCount}
+            </p>
+          </div>
+          <div className="rounded border border-zinc-200 p-4">
+            <p className="text-sm text-zinc-600">Variance rows</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {fullSummary.varianceCount}
+            </p>
+          </div>
+          <div className="rounded border border-zinc-200 p-4">
+            <p className="text-sm text-zinc-600">Total variance amount</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {formatAmount(fullSummary.totalVarianceAmount)}
+            </p>
+          </div>
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Dashboard rows">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="no-print flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-wrap gap-3">
             <label className="flex flex-col gap-1 text-sm text-zinc-600">
               Category
@@ -371,15 +408,23 @@ export function ReconciliationSnapshotDetailView({
             </label>
           </div>
         </div>
-        <ReconciliationDashboardTable
-          rows={visibleRows}
-          selectedRowId={selectedRow?.id ?? null}
-          onSelectRow={setSelectedRow}
-        />
+        <div className="no-print">
+          <ReconciliationDashboardTable
+            rows={visibleRows}
+            selectedRowId={selectedRow?.id ?? null}
+            onSelectRow={setSelectedRow}
+          />
+        </div>
+        <div className="print-only print-break-before">
+          <p className="mb-3 text-sm text-zinc-600">
+            Full frozen dashboard ({dashboardRows.length} rows)
+          </p>
+          <ReconciliationDashboardTable rows={dashboardRows} />
+        </div>
       </CollapsibleSection>
 
       <CollapsibleSection title="Transaction issues">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="no-print flex flex-wrap items-center justify-between gap-3">
           <div>
             {selectedRow ? (
               <p className="text-sm text-zinc-600">
@@ -409,12 +454,20 @@ export function ReconciliationSnapshotDetailView({
             ) : null}
           </div>
         </div>
-        <ReconciliationIssuesTable issues={issuesPagination.visible} />
+        <div className="no-print">
+          <ReconciliationIssuesTable issues={issuesPagination.visible} />
+        </div>
+        <div className="print-only print-break-before">
+          <p className="mb-3 text-sm text-zinc-600">
+            Full frozen issues ({allIssues.length} issues)
+          </p>
+          <ReconciliationIssuesTable issues={allIssues} />
+        </div>
         {issuesPagination.hasMore ? (
           <button
             type="button"
             onClick={() => setIssuesVisibleCount(issuesPagination.nextVisibleCount)}
-            className="mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
+            className="no-print mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
           >
             Show more issues ({issuesPagination.total - issuesPagination.visible.length} remaining)
           </button>
