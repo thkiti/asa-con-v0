@@ -1,8 +1,9 @@
-﻿import type { Prisma } from "@/generated/prisma/client"
+import type { Prisma } from "@/generated/prisma/client"
 import { Prisma as PrismaNamespace, VoucherStatus } from "@/generated/prisma/client"
 import { FinancePostingError } from "./posting-errors"
 import { toMoney } from "./decimal"
 import type { JournalLineDraft } from "./posting-types"
+import { assertPeriodOpen } from "./validation"
 
 export type CreateVoucherWithLinesInput = {
   branchId: string
@@ -45,6 +46,8 @@ export async function createVoucherWithLines(
   if (!period) {
     throw new FinancePostingError("Accounting period not found", "PERIOD_NOT_FOUND")
   }
+
+  assertPeriodOpen(period.status)
 
   const voucherNo = await allocateVoucherNo(tx, period.periodKey)
   const postedAt = new Date()

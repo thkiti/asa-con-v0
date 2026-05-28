@@ -10,7 +10,6 @@ export {
   assertVoucherJournalLineParity,
   POSTED_JOURNAL_IMMUTABLE,
   assertPostedJournalImmutable,
-  createJournalForVoucher,
 } from "./journal"
 export { FinancePostingError } from "./posting-errors"
 export { assertPostingPeriodOpen, formatPeriodKey } from "./posting-period"
@@ -40,7 +39,6 @@ export {
   sumCredits,
   sumDebits,
 } from "./validation"
-export { allocateVoucherNo, createVoucherWithLines } from "./voucher"
 export {
   canOverridePeriod,
   canPostToPeriod,
