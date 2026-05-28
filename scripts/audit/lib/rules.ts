@@ -1,5 +1,5 @@
 import path from "path"
-import type { AuditResult, AuditRule } from "./types"
+import type { AuditResult, AuditRule, Violation } from "./types"
 import {
   getRepoRoot,
   listRelativeSourceFiles,
@@ -446,5 +446,125 @@ export function runArchitectureAudits(repoRoot?: string): AuditResult[] {
     auditLedgerCallers(repoRoot),
     auditStockPrismaWriters(repoRoot),
     auditLibFrameworkBoundaries(repoRoot),
+  ]
+}
+// --- Posting lock (Phase 19B) ---
+
+export const POSTING_LOCK_SCAN_ROOTS = ["app", "lib", "components", "scripts"]
+
+export const GL_WRITER_VOUCHER_CREATE: AuditRule = {
+  id: "GL_WRITER_SINGLETON",
+  pattern: /(?:^|[^\w])voucher\.create\b/,
+  allowedRelativePaths: ["lib/finance/voucher.ts", "scripts/audit/"],
+  message: "voucher.create only allowed in lib/finance/voucher.ts",
+}
+
+export const GL_WRITER_JOURNAL_CREATE: AuditRule = {
+  id: "GL_WRITER_SINGLETON",
+  pattern: /(?:^|[^\w])journalEntry\.create\b/,
+  allowedRelativePaths: ["lib/finance/journal.ts", "scripts/audit/"],
+  message: "journalEntry.create only allowed in lib/finance/journal.ts",
+}
+
+export const VOUCHER_JOURNAL_CALLER_ALLOWLIST: AuditRule = {
+  id: "VOUCHER_JOURNAL_CALLER_ALLOWLIST",
+  pattern: /createVoucherWithLines\s*\(|createJournalForVoucher\s*\(/,
+  allowedRelativePaths: [
+    "lib/finance/posting.ts",
+    "lib/finance/voucher.ts",
+    "lib/finance/journal.ts",
+    "__tests__/",
+  ],
+  message:
+    "createVoucherWithLines/createJournalForVoucher only allowed from lib/finance/posting.ts or tests",
+}
+
+function listPostingLockScanFiles(
+  root: string,
+  opts?: { includeTests?: boolean }
+): string[] {
+  return POSTING_LOCK_SCAN_ROOTS.flatMap((dir) =>
+    listSourceFiles(path.join(root, dir), {
+      extensions: [".ts"],
+      excludeTest: opts?.includeTests !== true,
+    })
+  )
+}
+
+export function auditGlWriterSingleton(repoRoot?: string): AuditResult {
+  const root = repoRoot ?? getRepoRoot()
+  const files = listPostingLockScanFiles(root)
+  return scanFiles(
+    "GL writer singleton (GL_WRITER_SINGLETON)",
+    files,
+    [GL_WRITER_VOUCHER_CREATE, GL_WRITER_JOURNAL_CREATE],
+    root
+  )
+}
+
+export function auditVoucherJournalCallerAllowlist(repoRoot?: string): AuditResult {
+  const root = repoRoot ?? getRepoRoot()
+  const files = listPostingLockScanFiles(root, { includeTests: true })
+  return scanFiles(
+    "Voucher/journal caller allowlist (VOUCHER_JOURNAL_CALLER_ALLOWLIST)",
+    files,
+    [VOUCHER_JOURNAL_CALLER_ALLOWLIST],
+    root
+  )
+}
+
+export function auditPostingGateRequired(repoRoot?: string): AuditResult {
+  const root = repoRoot ?? getRepoRoot()
+  const rel = "lib/finance/posting.ts"
+  const source = readFileRelative(rel, root)
+  const violations: Violation[] = []
+
+  const gateMarker = "assertPostingPeriodOpen"
+  const voucherMarker = "createVoucherWithLines"
+
+  if (!source.includes(gateMarker)) {
+    violations.push({
+      ruleId: "POSTING_GATE_REQUIRED",
+      file: rel,
+      message: "postOperationalVoucher flow must call assertPostingPeriodOpen",
+    })
+  } else {
+    const gateIdx = source.indexOf(gateMarker)
+    const voucherIdx = source.indexOf(voucherMarker)
+    if (voucherIdx === -1 || gateIdx > voucherIdx) {
+      violations.push({
+        ruleId: "POSTING_GATE_REQUIRED",
+        file: rel,
+        message:
+          "assertPostingPeriodOpen must precede createVoucherWithLines in lib/finance/posting.ts",
+      })
+    }
+  }
+
+  return {
+    name: "Posting gate required (POSTING_GATE_REQUIRED)",
+    passed: violations.length === 0,
+    violations,
+    filesScanned: 1,
+  }
+}
+
+export function auditReconNoPosting(repoRoot?: string): AuditResult {
+  const root = repoRoot ?? getRepoRoot()
+  const reconFiles = RECON_FILES.map((rel) => resolveRelative(rel, root))
+  return scanFiles(
+    "Reconciliation no posting (RECON_NO_POSTING)",
+    reconFiles,
+    [RECON_NO_VOUCHER_JOURNAL, RECON_NO_STOCK, RECON_NO_SALE_PAYMENT],
+    root
+  )
+}
+
+export function runPostingLockAudits(repoRoot?: string): AuditResult[] {
+  return [
+    auditGlWriterSingleton(repoRoot),
+    auditVoucherJournalCallerAllowlist(repoRoot),
+    auditPostingGateRequired(repoRoot),
+    auditReconNoPosting(repoRoot),
   ]
 }

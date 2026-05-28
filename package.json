@@ -16,7 +16,8 @@
     "audit:finance": "npx tsx scripts/audit/finance-boundary-audit.ts",
     "audit:ui": "npx tsx scripts/audit/ui-boundary-audit.ts",
     "audit:tx": "npx tsx scripts/audit/no-nested-tx-audit.ts",
-    "audit:all": "npm run audit:architecture"
+    "audit:all": "npm run audit:architecture",
+    "audit:posting-lock": "npx tsx scripts/audit/posting-lock-audit.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
