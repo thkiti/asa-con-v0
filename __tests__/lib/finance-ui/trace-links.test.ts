@@ -1,4 +1,5 @@
 ﻿import {
+  buildSnapshotDetailPath,
   buildVoucherDetailPath,
   formatOperationalSourceLabel,
   formatVoucherLinkLabel,
@@ -7,6 +8,12 @@
 describe("trace-links", () => {
   it("builds voucher detail paths", () => {
     expect(buildVoucherDetailPath("voucher-1")).toBe("/finance/vouchers/voucher-1")
+  })
+
+  it("builds snapshot detail paths", () => {
+    expect(buildSnapshotDetailPath("snap-1")).toBe(
+      "/finance/reconciliation/snapshots/snap-1"
+    )
   })
 
   it("formats operational and voucher labels", () => {

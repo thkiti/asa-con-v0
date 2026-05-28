@@ -9,6 +9,10 @@ export function buildVoucherDetailPath(voucherId: string): string {
   return `/finance/vouchers/${encodeURIComponent(voucherId)}`
 }
 
+export function buildSnapshotDetailPath(snapshotId: string): string {
+  return `/finance/reconciliation/snapshots/${encodeURIComponent(snapshotId)}`
+}
+
 export function formatOperationalSourceLabel(
   row: Pick<ReconciliationIssueRow, "sourceType" | "documentRef">
 ): string {
