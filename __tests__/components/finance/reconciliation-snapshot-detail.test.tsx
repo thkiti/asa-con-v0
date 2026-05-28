@@ -99,7 +99,11 @@ describe("ReconciliationSnapshotDetailView", () => {
       <ReconciliationSnapshotDetailView snapshot={snapshot} />
     )
     expect(html).toContain("Frozen snapshot")
-    expect(html).toContain("no live fetch")
+    expect(html).toContain("no live reconciliation fetch")
+    expect(html).toContain("Reconciliation snapshot audit")
+    expect(html).toContain("Print audit report")
+    expect(html).toContain("Full frozen dashboard")
+    expect(html).toContain("Full frozen issues")
     expect(html).toContain("Month-end")
     expect(html).toContain("Inventory total")
     expect(html).toContain("doc-1")

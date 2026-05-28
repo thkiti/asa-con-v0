@@ -2,10 +2,16 @@ import { RECONCILIATION_SNAPSHOT_PAYLOAD_VERSION } from "@/lib/finance/reconcili
 import {
   buildCompareDashboardRowDiffCsv,
   buildCompareEvidenceCsvFiles,
+  buildCompareEvidenceExport,
+  buildCompareIssueDiffCsv,
+  buildCompareMetadataCsv,
+  buildCompareSummaryCsv,
   buildSnapshotDashboardCsv,
   buildSnapshotEvidenceCsvFiles,
+  buildSnapshotEvidenceExport,
   buildSnapshotIssuesCsv,
   buildSnapshotMetadataCsv,
+  buildSnapshotSummaryCsv,
 } from "@/lib/finance-ui/reconciliation-export"
 import {
   computeSnapshotCompareResult,
@@ -137,8 +143,20 @@ const laterSnapshot: ReconciliationSnapshotDetail = {
 describe("buildSnapshotMetadataCsv", () => {
   it("includes audit metadata fields", () => {
     const csv = buildSnapshotMetadataCsv(snapshot, exportedAt)
+    expect(csv).toContain('"exportType","reconciliation_snapshot_evidence"')
     expect(csv).toContain('"snapshotId","snap-1"')
     expect(csv).toContain('"title","Month-end"')
+    expect(csv).toContain('"note","Audit note"')
+    expect(csv).toContain('"exportedAt","2026-05-28T12:00:00.000Z"')
+  })
+})
+
+describe("buildSnapshotSummaryCsv", () => {
+  it("includes header metrics and aggregate totals", () => {
+    const csv = buildSnapshotSummaryCsv(snapshot, exportedAt)
+    expect(csv).toContain('"matchedCount","0"')
+    expect(csv).toContain('"inventoryOperationalTotal","100.00"')
+    expect(csv).toContain('"salesGlRevenueBalance","500.00"')
     expect(csv).toContain('"exportedAt","2026-05-28T12:00:00.000Z"')
   })
 })
@@ -165,13 +183,49 @@ describe("buildSnapshotIssuesCsv", () => {
   })
 })
 
+describe("buildCompareMetadataCsv", () => {
+  it("includes left and right snapshot identifiers", () => {
+    const csv = buildCompareMetadataCsv({
+      left: snapshot,
+      right: laterSnapshot,
+      exportedAt,
+    })
+    expect(csv).toContain('"exportType","reconciliation_snapshot_compare_evidence"')
+    expect(csv).toContain('"leftSnapshotId","snap-1"')
+    expect(csv).toContain('"rightSnapshotId","snap-2"')
+    expect(csv).toContain('"leftTitle","Month-end"')
+    expect(csv).toContain('"rightTitle","Follow-up"')
+  })
+})
+
+describe("buildCompareSummaryCsv", () => {
+  it("includes metric deltas between snapshots", () => {
+    const compare = computeSnapshotCompareResult(snapshot, laterSnapshot)
+    const csv = buildCompareSummaryCsv({ compare, exportedAt })
+    expect(csv).toContain('"matchedCount","0","2","+2"')
+    expect(csv).toContain('"issueCount","1","0","-1"')
+    expect(csv).toContain('"exportedAt","","","2026-05-28T12:00:00.000Z"')
+  })
+})
+
 describe("buildCompareDashboardRowDiffCsv", () => {
   it("exports changed rows only by default", () => {
     const compare = computeSnapshotCompareResult(snapshot, laterSnapshot)
     const csv = buildCompareDashboardRowDiffCsv(compare.rowDiffs)
     expect(csv).toContain('"changeKind","rowId"')
     expect(csv).toContain("inventory:Inventory total")
+    expect(csv).not.toContain('"unchanged","revenue:POS"')
     expect(csv).not.toContain('"changed","revenue:POS"')
+  })
+})
+
+describe("buildCompareIssueDiffCsv", () => {
+  it("exports removed issues when right snapshot clears them", () => {
+    const compare = computeSnapshotCompareResult(snapshot, laterSnapshot)
+    const csv = buildCompareIssueDiffCsv(compare.issueDiffs)
+    expect(csv).toContain('"changeKind","issueId"')
+    expect(csv).toContain('"removed","STOCK_DOCUMENT:doc-1:INVENTORY_VALUE_MISMATCH"')
+    expect(csv).toContain("Inventory value mismatch")
   })
 })
 
@@ -201,7 +255,38 @@ describe("evidence file builders", () => {
       exportedAt,
     })
     expect(files).toHaveLength(4)
-    expect(files[0]?.filename).toContain("-metadata.csv")
-    expect(files[2]?.filename).toContain("-dashboard-changes.csv")
+    expect(files.map((file) => file.filename)).toEqual([
+      "month-end-vs-follow-up-metadata.csv",
+      "month-end-vs-follow-up-summary.csv",
+      "month-end-vs-follow-up-dashboard-changes.csv",
+      "month-end-vs-follow-up-issue-changes.csv",
+    ])
+    expect(files[2]?.content).toContain("inventory:Inventory total")
+    expect(files[3]?.content).toContain("STOCK_DOCUMENT:doc-1:INVENTORY_VALUE_MISMATCH")
+  })
+
+  it("buildSnapshotEvidenceExport uses full frozen payload", () => {
+    const files = buildSnapshotEvidenceExport(snapshot, exportedAt)
+    expect(files).toHaveLength(4)
+    expect(files[2]?.content).toContain("revenue:POS")
+    expect(files[2]?.content).toContain("inventory:Inventory total")
+    expect(files[3]?.content).toContain("STOCK_DOCUMENT:doc-1:INVENTORY_VALUE_MISMATCH")
+  })
+
+  it("buildCompareEvidenceExport matches compare evidence file builder", () => {
+    const compare = computeSnapshotCompareResult(snapshot, laterSnapshot)
+    const direct = buildCompareEvidenceCsvFiles({
+      left: snapshot,
+      right: laterSnapshot,
+      compare,
+      exportedAt,
+    })
+    const wrapped = buildCompareEvidenceExport({
+      left: snapshot,
+      right: laterSnapshot,
+      compare,
+      exportedAt,
+    })
+    expect(wrapped).toEqual(direct)
   })
 })
