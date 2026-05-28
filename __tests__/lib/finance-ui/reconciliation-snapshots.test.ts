@@ -4,6 +4,11 @@
   formatSnapshotDisplayTitle,
   formatSnapshotKindLabel,
   formatSnapshotScope,
+  compareSnapshotHeaderMetrics,
+  diffDashboardRows,
+  diffSnapshotIssues,
+  formatAmountDelta,
+  formatCountDelta,
 } from "@/lib/finance-ui/reconciliation-snapshots"
 import { formatDateTime } from "@/lib/finance-ui/format"
 
@@ -111,5 +116,107 @@ describe("buildSnapshotCaptureBody", () => {
     expect(body.periodKey).toBe("2026-05")
     expect(body.from).toBeUndefined()
     expect(body.to).toBeUndefined()
+  })
+})
+
+
+describe("formatCountDelta", () => {
+  it("formats positive and negative deltas", () => {
+    expect(formatCountDelta(0)).toBe("0")
+    expect(formatCountDelta(2)).toBe("+2")
+    expect(formatCountDelta(-1)).toBe("-1")
+  })
+})
+
+describe("formatAmountDelta", () => {
+  it("formats monetary delta", () => {
+    expect(formatAmountDelta(10)).toBe("+10.00")
+    expect(formatAmountDelta(-5.5)).toBe("-5.50")
+  })
+})
+
+describe("compareSnapshotHeaderMetrics", () => {
+  it("computes right minus left deltas", () => {
+    const left = {
+      matchedCount: 1,
+      varianceCount: 2,
+      issueCount: 3,
+      dashboardRowCount: 4,
+      totalVarianceAmount: "10.00",
+    } as never
+    const right = {
+      matchedCount: 2,
+      varianceCount: 1,
+      issueCount: 4,
+      dashboardRowCount: 4,
+      totalVarianceAmount: "15.00",
+    } as never
+
+    const metrics = compareSnapshotHeaderMetrics(left, right)
+    expect(metrics.matchedCount.delta).toBe(1)
+    expect(metrics.varianceCount.delta).toBe(-1)
+    expect(metrics.issueCount.delta).toBe(1)
+    expect(metrics.totalVarianceAmount.delta).toBe(5)
+  })
+})
+
+describe("diffDashboardRows", () => {
+  it("classifies added removed and changed rows", () => {
+    const baseRow = {
+      id: "inventory:Inventory total",
+      sourceType: "Inventory",
+      reference: "Inventory total",
+      branchId: "branch-1",
+      periodLabel: "2026-05",
+      expectedAmount: "100",
+      actualAmount: "90",
+      variance: "10",
+      status: "VARIANCE",
+      domain: "inventory",
+      raw: {} as never,
+    }
+
+    const diffs = diffDashboardRows(
+      [baseRow],
+      [
+        { ...baseRow, status: "MATCHED", variance: "0", actualAmount: "100" },
+        {
+          ...baseRow,
+          id: "revenue:POS",
+          reference: "POS revenue",
+          domain: "revenue",
+        },
+      ]
+    )
+
+    expect(diffs.find((d) => d.id === "inventory:Inventory total")?.kind).toBe(
+      "changed"
+    )
+    expect(diffs.find((d) => d.id === "revenue:POS")?.kind).toBe("added")
+  })
+})
+
+describe("diffSnapshotIssues", () => {
+  it("detects added and removed issues by id", () => {
+    const issue = {
+      id: "STOCK_DOCUMENT:doc-1:INVENTORY_VALUE_MISMATCH",
+      sourceType: "STOCK_DOCUMENT",
+      sourceId: "doc-1",
+      documentRef: "doc-1",
+      issueType: "INVENTORY_VALUE_MISMATCH",
+      severity: "ERROR",
+      status: "VARIANCE",
+      message: "Mismatch",
+      expectedAmount: 100,
+      actualAmount: 90,
+      difference: 10,
+      vouchers: [],
+      journalEntries: [],
+      sourceCreatedAt: null,
+      sourcePostedAt: null,
+    }
+
+    const diffs = diffSnapshotIssues([issue], [])
+    expect(diffs[0]?.kind).toBe("removed")
   })
 })

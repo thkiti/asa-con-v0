@@ -22,6 +22,8 @@ describe("ReconciliationSnapshotsPage", () => {
     expect(html).toContain("Read-only frozen reconciliation captures")
     expect(html).toContain("Branch filter")
     expect(html).toContain("Apply filter")
+    expect(html).toContain("Open compare")
+    expect(html).toContain("Select two snapshots to compare")
     expect(html).toContain("animate-pulse")
     expect(html).not.toContain("Fix")
     expect(html).not.toContain("Reconcile")

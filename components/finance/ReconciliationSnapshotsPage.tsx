@@ -45,7 +45,8 @@ function SnapshotListSkeleton() {
       <table className="min-w-full border-collapse text-sm">
         <thead className="sticky top-0 z-10 bg-zinc-50">
           <tr className="border-b border-zinc-200 text-left text-zinc-600">
-            <th className="px-3 py-2 font-medium">Label / scope</th>
+            <th className="px-3 py-2 font-medium w-10">Compare</th>
+                <th className="px-3 py-2 font-medium">Label / scope</th>
             <th className="px-3 py-2 font-medium">Branch</th>
             <th className="px-3 py-2 font-medium">Captured</th>
             <th className="px-3 py-2 font-medium text-right">Summary</th>
@@ -55,7 +56,7 @@ function SnapshotListSkeleton() {
         <tbody>
           {Array.from({ length: 5 }, (_, index) => (
             <tr key={index} className="border-b border-zinc-100">
-              <td className="px-3 py-3" colSpan={5}>
+              <td className="px-3 py-3" colSpan={6}>
                 <div className="h-4 animate-pulse rounded bg-zinc-200" />
               </td>
             </tr>
@@ -69,6 +70,7 @@ function SnapshotListSkeleton() {
 export function ReconciliationSnapshotsPage() {
   const [branchFilter, setBranchFilter] = useState("")
   const [appliedBranchId, setAppliedBranchId] = useState<string | undefined>()
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [snapshots, setSnapshots] = useState<ReconciliationSnapshotHeader[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -93,6 +95,18 @@ export function ReconciliationSnapshotsPage() {
     void loadSnapshots()
   }, [loadSnapshots])
 
+  function toggleSnapshotSelection(id: string) {
+    setSelectedIds((current) => {
+      if (current.includes(id)) {
+        return current.filter((value) => value !== id)
+      }
+      if (current.length >= 2) {
+        return [current[1], id]
+      }
+      return [...current, id]
+    })
+  }
+
   function handleApplyBranchFilter(event: React.FormEvent) {
     event.preventDefault()
     const trimmed = branchFilter.trim()
@@ -106,15 +120,32 @@ export function ReconciliationSnapshotsPage() {
           Read-only frozen reconciliation captures. No live refresh of underlying
           data.
         </p>
-        <button
-          type="button"
-          onClick={() => void loadSnapshots()}
-          disabled={loading}
-          className="shrink-0 rounded border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-900 disabled:opacity-50"
-        >
-          {loading ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedIds.length === 2 ? (
+            <Link
+              href={`/finance/reconciliation/snapshots/compare?left=${selectedIds[0]}&right=${selectedIds[1]}`}
+              className="rounded border border-zinc-900 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white"
+            >
+              Compare selected
+            </Link>
+          ) : (
+            <span className="text-xs text-zinc-500">Select two snapshots to compare</span>
+          )}
+          <Link
+            href="/finance/reconciliation/snapshots/compare"
+            className="rounded border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-900"
+          >
+            Open compare
+          </Link>
+          <button
+            type="button"
+            onClick={() => void loadSnapshots()}
+            disabled={loading}
+            className="shrink-0 rounded border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-900 disabled:opacity-50"
+          >
+            {loading ? "Refreshing�" : "Refresh"}
+          </button>
+        </div>      </div>
 
       <form
         className="flex flex-wrap items-end gap-3"
@@ -180,6 +211,7 @@ export function ReconciliationSnapshotsPage() {
           <table className="min-w-full border-collapse text-sm">
             <thead className="sticky top-0 z-10 bg-zinc-50 shadow-sm">
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
+                <th className="px-3 py-2 font-medium w-10">Compare</th>
                 <th className="px-3 py-2 font-medium">Label / scope</th>
                 <th className="px-3 py-2 font-medium">Branch</th>
                 <th className="px-3 py-2 font-medium">Captured</th>
@@ -193,6 +225,15 @@ export function ReconciliationSnapshotsPage() {
                   key={snapshot.id}
                   className="border-b border-zinc-100 hover:bg-zinc-50"
                 >
+                  <td className="px-3 py-3 align-top">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(snapshot.id)}
+                      onChange={() => toggleSnapshotSelection(snapshot.id)}
+                      aria-label={`Select ${formatSnapshotDisplayTitle(snapshot)} for compare`}
+                      className="h-4 w-4 rounded border-zinc-300"
+                    />
+                  </td>
                   <td className="px-3 py-3 align-top">
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
