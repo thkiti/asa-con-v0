@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server"
+﻿import { NextRequest, NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
+import { financeErrorResponse } from "@/app/api/finance/shared/finance-api-errors"
 import { postDocument } from "@/lib/stock/posting"
 import { PostingError } from "@/lib/stock/posting-errors"
 
@@ -30,8 +31,6 @@ export async function POST(req: NextRequest, context: Context) {
         { status: err.httpStatus }
       )
     }
-    const message = err instanceof Error ? err.message : "Post failed"
-    console.error("POST stock-document error:", err)
-    return NextResponse.json({ error: message }, { status: 500 })
+    return financeErrorResponse(err, "POST stock-document error")
   }
 }
