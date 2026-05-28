@@ -16,6 +16,7 @@ Start with [docs/00_README.md](./docs/00_README.md).
 - Reconciliation drill-down: [docs/17_RECONCILIATION_DRILLDOWN.md](./docs/17_RECONCILIATION_DRILLDOWN.md)
 - Reconciliation snapshots: [docs/18_RECONCILIATION_SNAPSHOTS.md](./docs/18_RECONCILIATION_SNAPSHOTS.md) — UI at `/finance/reconciliation/snapshots`
 - Phase 19 stabilization: [docs/19_FINANCE_RECONCILIATION_STABILIZATION.md](./docs/19_FINANCE_RECONCILIATION_STABILIZATION.md) — snapshot UX, posting-lock audit, evidence export
+- Finance traceability: [docs/20_FINANCE_TRACEABILITY.md](./docs/20_FINANCE_TRACEABILITY.md) — Phase 20A lineage panel, voucher detail, frozen snapshot trace
 
 ## Setup
 
@@ -67,3 +68,4 @@ generated/  Prisma client output (gitignored)
 | 17 | Transaction-level reconciliation drill-down (`GET .../reconciliation/issues`) |
 | 18 | Reconciliation snapshots (`/finance/reconciliation/snapshots`, `POST .../snapshots`) |
 | 19 | Reconciliation stabilization — snapshot UX (19A), posting-lock audit (19B), evidence export/print (19C); tag `phase19c-stable` |
+| 20A | Finance traceability — issue lineage panel, read-only voucher detail, frozen snapshot trace |

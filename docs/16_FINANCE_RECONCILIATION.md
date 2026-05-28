@@ -1,8 +1,8 @@
-# Finance Reconciliation (Phase 16)
+﻿# Finance Reconciliation (Phase 16)
 
-Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export, snapshot capture entry; snapshot evidence export (Phase 19C)  
+Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export, snapshot capture entry; snapshot evidence export (Phase 19C); finance traceability panel (Phase 20A)
 Scope: Operational vs GL visibility UI; no accounting mutations  
-Related: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
+Related: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 
 ---
 
@@ -99,10 +99,11 @@ Kernel `runFinanceReconciliation` is used by the issues API but **not changed** 
 1. Open `/finance/reconciliation`.
 2. Apply filters — aggregate rows and summary cards load.
 3. Click a variance row — detail panel opens; transaction issues load (Phase 17).
-4. Confirm no post/fix/reconcile buttons.
-5. Export dashboard CSV and issues CSV — downloads only, no mutation APIs.
-6. Open a frozen snapshot detail — **Export evidence pack** and **Print audit report** use payload only ([18 §9](./18_RECONCILIATION_SNAPSHOTS.md#9-phase-19c--evidence-export-and-audit-print)).
-7. Network tab: only `GET` to `/inventory`, `/sales`, and `/issues` on the live dashboard.
+4. Expand an issue — `FinanceTraceabilityPanel` shows lineage; no POST on trace expand.
+5. Confirm no post/fix/reconcile buttons.
+6. Export dashboard CSV and issues CSV — downloads only, no mutation APIs.
+7. Open a frozen snapshot detail — **Export evidence pack** and **Print audit report** use payload only ([18 §9](./18_RECONCILIATION_SNAPSHOTS.md#9-phase-19c--evidence-export-and-audit-print)).
+8. Network tab: only `GET` to `/inventory`, `/sales`, and `/issues` on the live dashboard.
 
 ---
 
@@ -117,3 +118,19 @@ Kernel `runFinanceReconciliation` is used by the issues API but **not changed** 
 | Snapshot evidence export / audit print | **Phase 19C done** — browser CSV packs and print layouts on snapshot detail/compare |
 
 All future work stays read-only with **no GL write-back**.
+
+---
+
+## 8. Finance traceability (Phase 20A)
+
+Phase 20A adds **read-only lineage navigation** on transaction issues opened from the live dashboard drill-down.
+
+| Feature | Location |
+|---------|----------|
+| Expandable issue trace | [`ReconciliationIssuesTable`](../components/finance/ReconciliationIssuesTable.tsx) — lazy-mounted [`FinanceTraceabilityPanel`](../components/finance/FinanceTraceabilityPanel.tsx) |
+| Voucher detail | `/finance/vouchers/[id]` via `GET /api/finance/vouchers/[id]` |
+| Helpers | [`lib/finance-ui/traceability.ts`](../lib/finance-ui/traceability.ts) |
+
+Flow: aggregate row click (Phase 16–17) → expand issue → trace panel shows operational → voucher → journal → issue → live evidence. No posting or fix actions.
+
+Frozen snapshot trace uses the same panel with payload-only refs — see [18 §10](./18_RECONCILIATION_SNAPSHOTS.md#10-phase-20a--snapshot-traceability) and [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md).

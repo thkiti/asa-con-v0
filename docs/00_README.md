@@ -23,7 +23,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 17. [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md) — Phase 17 transaction-level issues API + drill-down
 18. [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md) — Phase 18 frozen reconciliation snapshots
 19. [19_FINANCE_RECONCILIATION_STABILIZATION.md](./19_FINANCE_RECONCILIATION_STABILIZATION.md) — Phase 19 stabilization summary (19A UI, 19B posting-lock audit, 19C evidence export)
-20. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+20. [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md) — Phase 20A read-only finance lineage navigation
+21. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -44,3 +45,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 17 | Transaction-level reconciliation drill-down | Done |
 | 18 | Reconciliation snapshots (manual capture, frozen history) | Done |
 | 19 | Finance reconciliation stabilization (19A UI, 19B posting-lock audit, 19C evidence export) | Done |
+| 20A | Finance traceability (lineage panel, voucher read API, frozen snapshot trace) | Done |
