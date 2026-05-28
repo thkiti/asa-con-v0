@@ -48,6 +48,31 @@ export {
   type ClosePolicyRole,
 } from "./close-policy"
 export {
+  buildCloseChecklist,
+  countChecklistSeverities,
+  DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS,
+  detectSnapshotHeaderDrift,
+  hasDashboardDomain,
+  resolveCloseReadinessStatus,
+  snapshotScopeMatchesPeriod,
+  sortCloseChecklistItems,
+  summarizeSnapshotIssues,
+  toCloseChecklistSnapshotRef,
+} from "./close-checklist"
+export type {
+  CloseChecklistGroup,
+  CloseChecklistInput,
+  CloseChecklistItem,
+  CloseChecklistItemRef,
+  CloseChecklistIssueSummary,
+  CloseChecklistMetrics,
+  CloseChecklistPeriodInput,
+  CloseChecklistResult,
+  CloseChecklistSeverity,
+  CloseChecklistSnapshotRef,
+  CloseReadinessStatus,
+} from "./close-checklist"
+export {
   listAccountingPeriods,
   type AccountingPeriodListFilter,
   type AccountingPeriodListRow,
