@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { fetchReconciliationSnapshotById } from "@/lib/finance-ui/fetchers"
@@ -86,7 +86,7 @@ function SnapshotEvidenceExportControls({
         <div>
           <p className="text-sm font-medium text-zinc-900">Evidence export</p>
           <p className="mt-1 text-xs text-zinc-600">
-            Frozen payload only — metadata, summary, dashboard, and issues CSVs.
+            Frozen payload only โ€” metadata, summary, dashboard, and issues CSVs.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -97,7 +97,7 @@ function SnapshotEvidenceExportControls({
             onClick={() => void handleExportPack()}
             className="rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {exporting ? "Exporting…" : "Export evidence pack"}
+            {exporting ? "Exportingโ€ฆ" : "Export evidence pack"}
           </button>
         </div>
       </div>
@@ -207,7 +207,7 @@ export function ReconciliationSnapshotDetailView({
           <SnapshotKindBadge kind={snapshot.kind} />
         </div>
         <p className="mt-1 text-sm text-zinc-600">
-          {formatSnapshotScope(snapshot)} · captured{" "}
+          {formatSnapshotScope(snapshot)} ยท captured{" "}
           <time dateTime={snapshot.createdAt}>
             {formatDateTime(snapshot.createdAt)}
           </time>
@@ -247,7 +247,7 @@ export function ReconciliationSnapshotDetailView({
         <dl className="grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-sm text-zinc-500">Label</dt>
-            <dd className="mt-1 text-zinc-900">{snapshot.label ?? "—"}</dd>
+            <dd className="mt-1 text-zinc-900">{snapshot.label ?? "โ€”"}</dd>
           </div>
           <div>
             <dt className="text-sm text-zinc-500">Scope</dt>
@@ -433,7 +433,7 @@ export function ReconciliationSnapshotDetailView({
               </p>
             ) : (
               <p className="text-sm text-zinc-600">
-                {allIssues.length} issue(s) from frozen payload.
+                {allIssues.length} issue(s) from frozen payload. Expand an issue to view frozen finance lineage.
               </p>
             )}
             {issuesPagination.total > SNAPSHOT_UI_ISSUES_PAGE_SIZE ? (
@@ -455,13 +455,13 @@ export function ReconciliationSnapshotDetailView({
           </div>
         </div>
         <div className="no-print">
-          <ReconciliationIssuesTable issues={issuesPagination.visible} />
+          <ReconciliationIssuesTable issues={issuesPagination.visible} snapshotTrace={{ snapshotId: snapshot.id, capturedAt: snapshot.createdAt }} />
         </div>
         <div className="print-only print-break-before">
           <p className="mb-3 text-sm text-zinc-600">
             Full frozen issues ({allIssues.length} issues)
           </p>
-          <ReconciliationIssuesTable issues={allIssues} />
+          <ReconciliationIssuesTable issues={allIssues} snapshotTrace={{ snapshotId: snapshot.id, capturedAt: snapshot.createdAt }} />
         </div>
         {issuesPagination.hasMore ? (
           <button
@@ -541,3 +541,4 @@ export function ReconciliationSnapshotDetailClient({
 
   return <ReconciliationSnapshotDetailView snapshot={snapshot} />
 }
+

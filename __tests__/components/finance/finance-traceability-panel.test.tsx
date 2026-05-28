@@ -1,9 +1,9 @@
 ﻿import { renderToStaticMarkup } from "react-dom/server"
 import { FinanceTraceabilityPanel } from "@/components/finance/FinanceTraceabilityPanel"
-import { buildFinanceTrace } from "@/lib/finance-ui/traceability"
+import { buildFinanceTrace, buildSnapshotIssueTrace } from "@/lib/finance-ui/traceability"
 import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
 
-const issue: ReconciliationIssueRow = {
+const liveIssue: ReconciliationIssueRow = {
   id: "SALE:s2:DUPLICATE_VOUCHER",
   sourceType: "SALE",
   sourceId: "s2",
@@ -35,9 +35,41 @@ const issue: ReconciliationIssueRow = {
   sourcePostedAt: null,
 }
 
+const snapshotIssue: ReconciliationIssueRow = {
+  id: "STOCK_DOCUMENT:doc-1:INVENTORY_VALUE_MISMATCH",
+  sourceType: "STOCK_DOCUMENT",
+  sourceId: "doc-1",
+  documentRef: "DOC-001",
+  issueType: "INVENTORY_VALUE_MISMATCH",
+  severity: "ERROR",
+  status: "VARIANCE",
+  message: "Inventory value mismatch",
+  expectedAmount: 100,
+  actualAmount: 90,
+  difference: 10,
+  vouchers: [
+    {
+      id: "voucher-1",
+      voucherNo: "V-2026-0002",
+      refType: "STOCK_DOC_POST",
+      refId: "doc-1",
+      postedAt: "2026-05-01T12:00:00.000Z",
+    },
+  ],
+  journalEntries: [
+    {
+      id: "journal-1",
+      voucherId: "voucher-1",
+      postedAt: "2026-05-01T12:00:00.000Z",
+    },
+  ],
+  sourceCreatedAt: null,
+  sourcePostedAt: "2026-05-01T10:00:00.000Z",
+}
+
 describe("FinanceTraceabilityPanel", () => {
   it("renders ordered lineage steps read-only", () => {
-    const trace = buildFinanceTrace(issue, { mode: "live" })
+    const trace = buildFinanceTrace(liveIssue, { mode: "live" })
     const html = renderToStaticMarkup(<FinanceTraceabilityPanel trace={trace} />)
 
     expect(html).toContain("Finance lineage")
@@ -50,5 +82,20 @@ describe("FinanceTraceabilityPanel", () => {
     expect(html).toContain("Read-only trace")
     expect(html).not.toContain("Post")
     expect(html).not.toContain("Reconcile")
+  })
+
+  it("shows frozen disclaimer and snapshot evidence step", () => {
+    const trace = buildSnapshotIssueTrace(snapshotIssue, {
+      snapshotId: "snap-1",
+      capturedAt: "2026-05-27T12:00:00.000Z",
+    })
+    const html = renderToStaticMarkup(
+      <FinanceTraceabilityPanel trace={trace} frozen />
+    )
+
+    expect(html).toContain("Frozen trace")
+    expect(html).toContain("Snapshot evidence")
+    expect(html).toContain('href="/finance/reconciliation/snapshots/snap-1"')
+    expect(html).not.toContain("Live reconciliation evidence")
   })
 })

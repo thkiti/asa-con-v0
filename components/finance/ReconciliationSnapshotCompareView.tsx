@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
@@ -27,11 +27,14 @@ import {
   type IssueDiffKind,
   type SnapshotCompareResult,
 } from "@/lib/finance-ui/reconciliation-snapshots"
+import { buildSnapshotIssueTrace } from "@/lib/finance-ui/traceability"
 import type { ReconciliationSnapshotDetail, ReconciliationSnapshotHeader } from "@/lib/finance-ui/types"
+import { FinanceTraceabilityPanel } from "./FinanceTraceabilityPanel"
 import {
   CollapsibleSection,
   CompareAuditPrintHeader,
   CompareSkeleton,
+  FROZEN_TRACE_DISCLAIMER,
   DeltaChip,
   DiffKindBadge,
   PrintAuditButton,
@@ -60,7 +63,7 @@ function SnapshotCard({
         </span>
       </div>
       <p className="mt-1 text-sm text-zinc-600">
-        {formatSnapshotScope(snapshot)} · captured{" "}
+        {formatSnapshotScope(snapshot)} ยท captured{" "}
         <time dateTime={snapshot.createdAt}>{formatDateTime(snapshot.createdAt)}</time>
       </p>
     </div>
@@ -100,7 +103,7 @@ function SnapshotPicker({
             onChange={(event) => onLeftChange(event.target.value)}
             className="rounded border border-zinc-300 bg-white px-3 py-2 text-zinc-900"
           >
-            <option value="">Choose snapshot…</option>
+            <option value="">Choose snapshotโ€ฆ</option>
             {options.map((snapshot) => (
               <option key={snapshot.id} value={snapshot.id}>
                 {formatSnapshotDisplayTitle(snapshot)} ({formatDateTime(snapshot.createdAt)})
@@ -115,7 +118,7 @@ function SnapshotPicker({
             onChange={(event) => onRightChange(event.target.value)}
             className="rounded border border-zinc-300 bg-white px-3 py-2 text-zinc-900"
           >
-            <option value="">Choose snapshot…</option>
+            <option value="">Choose snapshotโ€ฆ</option>
             {options.map((snapshot) => (
               <option key={snapshot.id} value={snapshot.id}>
                 {formatSnapshotDisplayTitle(snapshot)} ({formatDateTime(snapshot.createdAt)})
@@ -181,7 +184,7 @@ function CompareEvidenceExportControls({
         <div>
           <p className="text-sm font-medium text-zinc-900">Compare evidence export</p>
           <p className="mt-1 text-xs text-zinc-600">
-            Frozen compare diff only — metadata, summary deltas, and changed rows/issues.
+            Frozen compare diff only โ€” metadata, summary deltas, and changed rows/issues.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -192,7 +195,7 @@ function CompareEvidenceExportControls({
             onClick={() => void handleExportPack()}
             className="rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {exporting ? "Exporting…" : "Export compare evidence"}
+            {exporting ? "Exportingโ€ฆ" : "Export compare evidence"}
           </button>
         </div>
       </div>
@@ -275,7 +278,7 @@ function CompareRowDiffTable({ diffs }: { diffs: DashboardRowDiff[] }) {
                       <ReconciliationStatusBadge status={leftRow.status} />
                     </div>
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-zinc-400">โ€”</span>
                   )}
                 </td>
                 <td className="px-3 py-2 text-zinc-700">
@@ -288,7 +291,7 @@ function CompareRowDiffTable({ diffs }: { diffs: DashboardRowDiff[] }) {
                       <ReconciliationStatusBadge status={rightRow.status} />
                     </div>
                   ) : (
-                    <span className="text-zinc-400">—</span>
+                    <span className="text-zinc-400">โ€”</span>
                   )}
                 </td>
               </tr>
@@ -300,7 +303,17 @@ function CompareRowDiffTable({ diffs }: { diffs: DashboardRowDiff[] }) {
   )
 }
 
-function CompareIssueDiffTable({ diffs }: { diffs: IssueDiff[] }) {
+function CompareIssueDiffTable({
+  diffs,
+  leftSnapshot,
+  rightSnapshot,
+}: {
+  diffs: IssueDiff[]
+  leftSnapshot: Pick<ReconciliationSnapshotDetail, "id" | "createdAt">
+  rightSnapshot: Pick<ReconciliationSnapshotDetail, "id" | "createdAt">
+}) {
+  const [expandedTraceId, setExpandedTraceId] = useState<string | null>(null)
+
   if (diffs.length === 0) {
     return <p className="mt-4 text-sm text-zinc-600">No issue changes.</p>
   }
@@ -324,6 +337,16 @@ function CompareIssueDiffTable({ diffs }: { diffs: IssueDiff[] }) {
               rightIssue?.documentRef ??
               leftIssue?.documentRef ??
               diff.id
+            const traceIssue = rightIssue ?? leftIssue
+            const traceSnapshot = rightIssue ? rightSnapshot : leftSnapshot
+            const traceExpanded = expandedTraceId === diff.id
+            const trace = traceIssue
+              ? buildSnapshotIssueTrace(traceIssue, {
+                  snapshotId: traceSnapshot.id,
+                  capturedAt: traceSnapshot.createdAt,
+                })
+              : null
+
             return (
               <tr key={diff.id} className="border-b border-zinc-100 align-top">
                 <td className="px-3 py-2">
@@ -338,6 +361,24 @@ function CompareIssueDiffTable({ diffs }: { diffs: IssueDiff[] }) {
                     <p className="mt-1 text-xs text-zinc-500">
                       Changed: {diff.changedFields.join(", ")}
                     </p>
+                  ) : null}
+                  {trace ? (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedTraceId(traceExpanded ? null : diff.id)
+                        }
+                        className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs font-medium text-zinc-900"
+                      >
+                        {traceExpanded ? "Hide trace" : "View trace"}
+                      </button>
+                      {traceExpanded ? (
+                        <div className="mt-2 min-w-[20rem]">
+                          <FinanceTraceabilityPanel trace={trace} frozen />
+                        </div>
+                      ) : null}
+                    </div>
                   ) : null}
                 </td>
                 <td className="px-3 py-2 text-zinc-700">
@@ -362,7 +403,6 @@ function CompareIssueDiffTable({ diffs }: { diffs: IssueDiff[] }) {
     </div>
   )
 }
-
 type ReconciliationSnapshotCompareViewProps = {
   left: ReconciliationSnapshotDetail
   right: ReconciliationSnapshotDetail
@@ -408,7 +448,7 @@ export function ReconciliationSnapshotCompareView({
       <CompareAuditPrintHeader left={left} right={right} />
 
       <p className="no-print rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        Client-side diff of frozen payloads only — no live reconciliation fetch.
+        Client-side diff of frozen payloads only โ€” no live reconciliation fetch.
       </p>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -424,7 +464,7 @@ export function ReconciliationSnapshotCompareView({
 
       <div className="sticky top-0 z-20 -mx-1 border border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Header metric deltas (right − left)
+          Header metric deltas (right โ’ left)
         </p>
         <dl className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {(
@@ -440,7 +480,7 @@ export function ReconciliationSnapshotCompareView({
               <dt className="text-xs text-zinc-500">{label}</dt>
               <dd className="mt-1 flex flex-wrap items-center gap-2">
                 <span className="text-sm tabular-nums text-zinc-700">
-                  {String(metric.left)} → {String(metric.right)}
+                  {String(metric.left)} โ’ {String(metric.right)}
                 </span>
                 <DeltaChip
                   delta={metric.delta}
@@ -492,7 +532,8 @@ export function ReconciliationSnapshotCompareView({
 
       <CollapsibleSection title={`Issue changes
  (${issueCounts.added + issueCounts.removed + issueCounts.changed})`}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-zinc-500">{FROZEN_TRACE_DISCLAIMER}</p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2 text-xs text-zinc-600">
             <span>{issueCounts.added} added</span>
             <span>{issueCounts.removed} removed</span>
@@ -524,7 +565,7 @@ export function ReconciliationSnapshotCompareView({
                   Showing {visibleIssueDiffs.length} of {filteredIssueDiffs.length} issue changes.
                 </p>
               ) : null}
-              <CompareIssueDiffTable diffs={visibleIssueDiffs} />
+              <CompareIssueDiffTable diffs={visibleIssueDiffs} leftSnapshot={left} rightSnapshot={right} />
               {issueDiffPagination.hasMore ? (
                 <button
                   type="button"
@@ -543,7 +584,7 @@ export function ReconciliationSnapshotCompareView({
           <p className="mb-3 text-sm text-zinc-600">
             All issue changes ({issueDiffs.length})
           </p>
-          <CompareIssueDiffTable diffs={issueDiffs} />
+          <CompareIssueDiffTable diffs={issueDiffs} leftSnapshot={left} rightSnapshot={right} />
         </div>
       </CollapsibleSection>
     </div>
@@ -694,3 +735,5 @@ export function ReconciliationSnapshotCompareClient({
 
   return <ReconciliationSnapshotCompareView left={left} right={right} />
 }
+
+

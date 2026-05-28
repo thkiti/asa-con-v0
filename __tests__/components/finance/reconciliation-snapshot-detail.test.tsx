@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server"
+﻿import { renderToStaticMarkup } from "react-dom/server"
 import { ReconciliationSnapshotDetailView } from "@/components/finance/ReconciliationSnapshotDetailView"
 import { RECONCILIATION_SNAPSHOT_PAYLOAD_VERSION } from "@/lib/finance/reconciliation-snapshot-types"
 import type { ReconciliationSnapshotDetail } from "@/lib/finance-ui/types"
@@ -114,6 +114,7 @@ describe("ReconciliationSnapshotDetailView", () => {
     expect(html).toContain("Export evidence pack")
     expect(html).toContain("Metadata CSV")
     expect(html).toContain("Frozen payload only")
+    expect(html).toContain("frozen finance lineage")
     expect(html).not.toContain("Fix")
     expect(html).not.toContain("Reconcile")
     expect(html).not.toContain("Loading transaction issues")

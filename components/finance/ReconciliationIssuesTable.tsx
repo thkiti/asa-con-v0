@@ -2,22 +2,29 @@
 
 import { useMemo, useState } from "react"
 import { formatAmount } from "@/lib/finance-ui/format"
-import { buildFinanceTrace } from "@/lib/finance-ui/traceability"
+import { buildFinanceTrace, buildSnapshotIssueTrace } from "@/lib/finance-ui/traceability"
 import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
 import { FinanceTraceabilityPanel } from "./FinanceTraceabilityPanel"
 import { OperationalSourceChip } from "./traceability-badges"
 import { ReconciliationStatusBadge } from "./ReconciliationStatusBadge"
 
+export type SnapshotTraceContext = {
+  snapshotId: string
+  capturedAt?: string
+}
+
 type ReconciliationIssuesTableProps = {
   issues: ReconciliationIssueRow[]
   loading?: boolean
   error?: string | null
+  snapshotTrace?: SnapshotTraceContext
 }
 
 export function ReconciliationIssuesTable({
   issues,
   loading = false,
   error = null,
+  snapshotTrace,
 }: ReconciliationIssuesTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -53,6 +60,7 @@ export function ReconciliationIssuesTable({
             key={issue.id}
             issue={issue}
             expanded={expanded}
+            snapshotTrace={snapshotTrace}
             onToggle={() => setExpandedId(expanded ? null : issue.id)}
           />
         )
@@ -64,16 +72,20 @@ export function ReconciliationIssuesTable({
 function IssueRow({
   issue,
   expanded,
+  snapshotTrace,
   onToggle,
 }: {
   issue: ReconciliationIssueRow
   expanded: boolean
+  snapshotTrace?: SnapshotTraceContext
   onToggle: () => void
 }) {
-  const trace = useMemo(
-    () => buildFinanceTrace(issue, { mode: "live" }),
-    [issue]
-  )
+  const trace = useMemo(() => {
+    if (snapshotTrace) {
+      return buildSnapshotIssueTrace(issue, snapshotTrace)
+    }
+    return buildFinanceTrace(issue, { mode: "live" })
+  }, [issue, snapshotTrace])
 
   return (
     <div className="rounded border border-zinc-200 bg-white text-sm">
@@ -97,7 +109,10 @@ function IssueRow({
         <div className="border-t border-zinc-100 px-3 py-3 text-zinc-700">
           <p>{issue.message}</p>
           <div className="mt-3">
-            <FinanceTraceabilityPanel trace={trace} />
+            <FinanceTraceabilityPanel
+              trace={trace}
+              frozen={snapshotTrace !== undefined}
+            />
           </div>
           <dl className="mt-3 grid gap-2">
             <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">

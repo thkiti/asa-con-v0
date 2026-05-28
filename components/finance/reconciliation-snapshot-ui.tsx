@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { formatDateTime } from "@/lib/finance-ui/format"
 import { formatExportTimestamp } from "@/lib/finance-ui/export-formatters"
@@ -16,8 +16,11 @@ import type {
   ReconciliationSnapshotHeader,
 } from "@/lib/finance-ui/types"
 
+export const FROZEN_TRACE_DISCLAIMER =
+  "Frozen trace - refs from capture time only (no live voucher fetch)."
+
 export const FROZEN_SNAPSHOT_DISCLAIMER =
-  "Frozen snapshot — data from capture time only (no live reconciliation fetch)."
+  "Frozen snapshot โ€” data from capture time only (no live reconciliation fetch)."
 
 export function PrintAuditButton() {
   return (
@@ -93,7 +96,7 @@ export function CompareAuditPrintHeader({
             {formatSnapshotDisplayTitle(left)}
           </p>
           <p className="mt-1 text-sm text-zinc-600">
-            {formatSnapshotScope(left)} · {formatDateTime(left.createdAt)}
+            {formatSnapshotScope(left)} ยท {formatDateTime(left.createdAt)}
           </p>
           <p className="mt-1 font-mono text-xs text-zinc-500">{left.id}</p>
         </div>
@@ -103,13 +106,13 @@ export function CompareAuditPrintHeader({
             {formatSnapshotDisplayTitle(right)}
           </p>
           <p className="mt-1 text-sm text-zinc-600">
-            {formatSnapshotScope(right)} · {formatDateTime(right.createdAt)}
+            {formatSnapshotScope(right)} ยท {formatDateTime(right.createdAt)}
           </p>
           <p className="mt-1 font-mono text-xs text-zinc-500">{right.id}</p>
         </div>
       </div>
       <p className="mt-3 text-xs text-zinc-700">
-        Client-side diff of frozen payloads only — no live reconciliation fetch.
+        Client-side diff of frozen payloads only โ€” no live reconciliation fetch.
       </p>
       <p className="mt-1 text-xs text-zinc-500">Printed {printedAt}</p>
     </div>

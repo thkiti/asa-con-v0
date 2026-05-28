@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server"
+﻿import { renderToStaticMarkup } from "react-dom/server"
 import { ReconciliationSnapshotCompareView } from "@/components/finance/ReconciliationSnapshotCompareView"
 import { RECONCILIATION_SNAPSHOT_PAYLOAD_VERSION } from "@/lib/finance/reconciliation-snapshot-types"
 import type { ReconciliationSnapshotDetail } from "@/lib/finance-ui/types"
@@ -129,7 +129,10 @@ describe("ReconciliationSnapshotCompareView", () => {
     expect(html).toContain("All dashboard row changes")
     expect(html).toContain("All issue changes")
     expect(html).toContain("Dashboard changes CSV")
+    expect(html).toContain("View trace")
+    expect(html).toContain("Frozen trace")
     expect(html).not.toContain("Fix")
     expect(html).not.toContain("Reconcile")
   })
 })
+

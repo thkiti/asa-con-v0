@@ -12,12 +12,14 @@ import {
   type FinanceTrace,
   type TraceStep,
 } from "@/lib/finance-ui/traceability"
+import { FROZEN_TRACE_DISCLAIMER } from "./reconciliation-snapshot-ui"
 import { CopyRefButton } from "./traceability-badges"
 import { TraceStepKindBadge } from "./traceability-ui"
 
 type FinanceTraceabilityPanelProps = {
   trace: FinanceTrace
   readOnly?: boolean
+  frozen?: boolean
 }
 
 function TraceStepMeta({ label, value }: { label: string; value: string }) {
@@ -111,6 +113,7 @@ function TraceStepBody({ step }: { step: TraceStep }) {
 export function FinanceTraceabilityPanel({
   trace,
   readOnly = true,
+  frozen = false,
 }: FinanceTraceabilityPanelProps) {
   return (
     <div className="rounded border border-zinc-200 bg-zinc-50/70 p-3">
@@ -118,6 +121,12 @@ export function FinanceTraceabilityPanel({
         <p className="font-medium text-zinc-900">Finance lineage</p>
         <p className="font-mono text-xs text-zinc-500">{trace.documentRef}</p>
       </div>
+
+      {frozen ? (
+        <p className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+          {FROZEN_TRACE_DISCLAIMER}
+        </p>
+      ) : null}
 
       <ol className="mt-3 space-y-0">
         {trace.steps.map((step, index) => (
