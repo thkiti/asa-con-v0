@@ -1,7 +1,58 @@
-import {
+﻿import {
   buildSnapshotCaptureBody,
   canCaptureSnapshotScope,
+  formatSnapshotDisplayTitle,
+  formatSnapshotKindLabel,
+  formatSnapshotScope,
 } from "@/lib/finance-ui/reconciliation-snapshots"
+import { formatDateTime } from "@/lib/finance-ui/format"
+
+describe("formatSnapshotScope", () => {
+  it("prefers periodKey", () => {
+    expect(
+      formatSnapshotScope({
+        periodKey: "2026-05",
+        fromDate: "2026-05-01",
+        toDate: "2026-05-31",
+      })
+    ).toBe("2026-05")
+  })
+
+  it("formats date range when periodKey missing", () => {
+    expect(
+      formatSnapshotScope({
+        periodKey: null,
+        fromDate: "2026-05-01T00:00:00.000Z",
+        toDate: "2026-05-31T00:00:00.000Z",
+      })
+    ).toBe("2026-05-01 → 2026-05-31")
+  })
+})
+
+describe("formatSnapshotDisplayTitle", () => {
+  it("uses label when present", () => {
+    expect(
+      formatSnapshotDisplayTitle({
+        label: "Month-end",
+        periodKey: "2026-05",
+        fromDate: null,
+        toDate: null,
+      } as never)
+    ).toBe("Month-end")
+  })
+})
+
+describe("formatSnapshotKindLabel", () => {
+  it("maps MANUAL", () => {
+    expect(formatSnapshotKindLabel("MANUAL")).toBe("Manual")
+  })
+})
+
+describe("formatDateTime", () => {
+  it("returns em dash for empty values", () => {
+    expect(formatDateTime(null)).toBe("—")
+  })
+})
 
 describe("canCaptureSnapshotScope", () => {
   it("returns true for valid periodKey", () => {

@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server"
+﻿import { renderToStaticMarkup } from "react-dom/server"
 import { ReconciliationSnapshotsPage } from "@/components/finance/ReconciliationSnapshotsPage"
 import { fetchReconciliationSnapshots } from "@/lib/finance-ui/fetchers"
 
@@ -20,6 +20,9 @@ describe("ReconciliationSnapshotsPage", () => {
     const html = renderToStaticMarkup(<ReconciliationSnapshotsPage />)
     expect(html).toContain("Refresh")
     expect(html).toContain("Read-only frozen reconciliation captures")
+    expect(html).toContain("Branch filter")
+    expect(html).toContain("Apply filter")
+    expect(html).toContain("animate-pulse")
     expect(html).not.toContain("Fix")
     expect(html).not.toContain("Reconcile")
     expect(html).not.toContain("Post")

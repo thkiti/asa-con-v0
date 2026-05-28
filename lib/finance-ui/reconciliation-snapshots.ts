@@ -11,8 +11,44 @@ import {
   type ReconciliationDashboardRow,
 } from "./reconciliation"
 import { issuesToCsv } from "./reconciliation-issues"
-import type { ReconciliationIssueRow } from "./types"
+import type {
+  ReconciliationIssueRow,
+  ReconciliationSnapshotHeader,
+} from "./types"
 
+
+
+export type SnapshotScopeFields = Pick<
+  ReconciliationSnapshotHeader,
+  "periodKey" | "fromDate" | "toDate"
+>
+
+export function formatSnapshotScope(snapshot: SnapshotScopeFields): string {
+  if (snapshot.periodKey) {
+    return snapshot.periodKey
+  }
+  if (snapshot.fromDate && snapshot.toDate) {
+    return `${snapshot.fromDate.slice(0, 10)} → ${snapshot.toDate.slice(0, 10)}`
+  }
+  return "All dates"
+}
+
+export function formatSnapshotDisplayTitle(snapshot: ReconciliationSnapshotHeader): string {
+  const label = snapshot.label?.trim()
+  if (label) return label
+  return formatSnapshotScope(snapshot)
+}
+
+export function formatSnapshotKindLabel(
+  kind: ReconciliationSnapshotHeader["kind"]
+): string {
+  switch (kind) {
+    case "MANUAL":
+      return "Manual"
+    default:
+      return kind
+  }
+}
 export type SnapshotCaptureOptions = {
   label?: string
   note?: string
