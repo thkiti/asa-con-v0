@@ -2,17 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { fetchReconciliationSnapshotById } from "@/lib/finance-ui/fetchers"
-import { formatAmount } from "@/lib/finance-ui/format"
+import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import {
   filterDashboardRows,
   summarizeDashboardRows,
   type ReconciliationDashboardFilter,
   type ReconciliationDashboardRow,
+  type ReconciliationRowStatus,
 } from "@/lib/finance-ui/reconciliation"
 import {
   exportFrozenDashboardCsv,
   exportFrozenIssuesCsv,
   filterFrozenIssuesByDomain,
+  formatSnapshotDisplayTitle,
+  formatSnapshotKindLabel,
+  formatSnapshotScope,
   snapshotIssuesToUiRows,
   snapshotRowsToDashboardRows,
 } from "@/lib/finance-ui/reconciliation-snapshots"
@@ -23,18 +27,47 @@ import type {
 import { ReconciliationDashboardTable } from "./ReconciliationDashboardTable"
 import { ReconciliationIssuesTable } from "./ReconciliationIssuesTable"
 
-type ReconciliationSnapshotDetailViewProps = {
-  snapshot: ReconciliationSnapshotDetail
+const STATUS_OPTIONS: Array<ReconciliationRowStatus | "ALL"> = [
+  "ALL",
+  "MATCHED",
+  "VARIANCE",
+  "MISSING_SOURCE",
+  "MISSING_GL",
+]
+
+const DOMAIN_OPTIONS = [
+  { value: "all", label: "All categories" },
+  { value: "inventory", label: "Inventory" },
+  { value: "revenue", label: "Revenue" },
+  { value: "tender", label: "Tender" },
+]
+
+type CollapsibleSectionProps = {
+  title: string
+  open?: boolean
+  children: React.ReactNode
 }
 
-function formatScope(snapshot: ReconciliationSnapshotDetail): string {
-  if (snapshot.periodKey) {
-    return snapshot.periodKey
-  }
-  if (snapshot.fromDate && snapshot.toDate) {
-    return `${snapshot.fromDate.slice(0, 10)} → ${snapshot.toDate.slice(0, 10)}`
-  }
-  return "All dates"
+function CollapsibleSection({
+  title,
+  open = true,
+  children,
+}: CollapsibleSectionProps) {
+  return (
+    <details
+      open={open}
+      className="rounded border border-zinc-200 bg-white"
+    >
+      <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-zinc-900 [&::-webkit-details-marker]:hidden">
+        {title}
+      </summary>
+      <div className="border-t border-zinc-100 px-4 pb-4 pt-3">{children}</div>
+    </details>
+  )
+}
+
+type ReconciliationSnapshotDetailViewProps = {
+  snapshot: ReconciliationSnapshotDetail
 }
 
 export function ReconciliationSnapshotDetailView({
@@ -42,7 +75,7 @@ export function ReconciliationSnapshotDetailView({
 }: ReconciliationSnapshotDetailViewProps) {
   const [selectedRow, setSelectedRow] =
     useState<ReconciliationDashboardRow | null>(null)
-  const [filter] = useState<ReconciliationDashboardFilter>({
+  const [filter, setFilter] = useState<ReconciliationDashboardFilter>({
     domain: "all",
     status: "ALL",
   })
@@ -74,22 +107,63 @@ export function ReconciliationSnapshotDetailView({
     return filterFrozenIssuesByDomain(allIssues, selectedRow.domain)
   }, [allIssues, selectedRow])
 
+  const { inventoryResult, salesResult } = snapshot.payload
+
   return (
-    <div>
+    <div className="space-y-4">
+      <header>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-lg font-semibold text-zinc-900">
+            {formatSnapshotDisplayTitle(snapshot)}
+          </h2>
+          <span className="inline-block rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-zinc-700">
+            {formatSnapshotKindLabel(snapshot.kind)}
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-zinc-600">
+          {formatSnapshotScope(snapshot)} · captured{" "}
+          <time dateTime={snapshot.createdAt}>
+            {formatDateTime(snapshot.createdAt)}
+          </time>
+        </p>
+      </header>
+
       <p className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Frozen snapshot — data from capture time only (no live fetch).
       </p>
 
-      <section aria-label="Snapshot metadata" className="mt-6">
-        <h2 className="text-base font-semibold">Metadata</h2>
-        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="sticky top-0 z-20 -mx-1 border border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-zinc-500">Matched</dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums">{summary.matchedCount}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-zinc-500">Variance rows</dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums">{summary.varianceCount}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-zinc-500">Issues</dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums">{allIssues.length}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-zinc-500">Total variance</dt>
+            <dd className="mt-1 text-lg font-semibold tabular-nums">
+              {formatAmount(summary.totalVarianceAmount)}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <CollapsibleSection title="Metadata">
+        <dl className="grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-sm text-zinc-500">Label</dt>
             <dd className="mt-1 text-zinc-900">{snapshot.label ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-sm text-zinc-500">Scope</dt>
-            <dd className="mt-1 text-zinc-900">{formatScope(snapshot)}</dd>
+            <dd className="mt-1 text-zinc-900">{formatSnapshotScope(snapshot)}</dd>
           </div>
           <div>
             <dt className="text-sm text-zinc-500">Branch</dt>
@@ -100,7 +174,7 @@ export function ReconciliationSnapshotDetailView({
           <div>
             <dt className="text-sm text-zinc-500">Captured</dt>
             <dd className="mt-1 text-zinc-900">
-              {new Date(snapshot.createdAt).toLocaleString()}
+              {formatDateTime(snapshot.createdAt)}
             </dd>
           </div>
           <div>
@@ -118,11 +192,41 @@ export function ReconciliationSnapshotDetailView({
             <p className="mt-1 whitespace-pre-wrap">{snapshot.note}</p>
           </div>
         ) : null}
-      </section>
+      </CollapsibleSection>
 
-      <section aria-label="Summary" className="mt-8">
-        <h2 className="text-base font-semibold">Summary</h2>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <CollapsibleSection title="Aggregate totals at capture">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded border border-zinc-200 p-4">
+            <p className="text-sm font-medium text-zinc-800">Inventory</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Operational</dt>
+                <dd className="tabular-nums">{formatAmount(inventoryResult.operationalTotalValue)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">GL balance</dt>
+                <dd className="tabular-nums">{formatAmount(inventoryResult.glInventoryBalance)}</dd>
+              </div>
+            </dl>
+          </div>
+          <div className="rounded border border-zinc-200 p-4">
+            <p className="text-sm font-medium text-zinc-800">Sales / revenue</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">Operational revenue</dt>
+                <dd className="tabular-nums">{formatAmount(salesResult.operationalRevenue)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-zinc-500">GL revenue</dt>
+                <dd className="tabular-nums">{formatAmount(salesResult.glRevenueBalance)}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Dashboard summary">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded border border-zinc-200 p-4">
             <p className="text-sm text-zinc-600">Matched</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">
@@ -148,37 +252,73 @@ export function ReconciliationSnapshotDetailView({
             </p>
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
 
-      <section aria-label="Frozen dashboard rows" className="mt-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold">Dashboard rows</h2>
+      <CollapsibleSection title="Dashboard rows">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap gap-3">
+            <label className="flex flex-col gap-1 text-sm text-zinc-600">
+              Category
+              <select
+                value={filter.domain ?? "all"}
+                onChange={(event) =>
+                  setFilter({ ...filter, domain: event.target.value })
+                }
+                className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
+              >
+                {DOMAIN_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-zinc-600">
+              Status
+              <select
+                value={filter.status ?? "ALL"}
+                onChange={(event) =>
+                  setFilter({
+                    ...filter,
+                    status: event.target.value as ReconciliationRowStatus | "ALL",
+                  })
+                }
+                className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <button
             type="button"
             disabled={visibleRows.length === 0}
             onClick={() => exportFrozenDashboardCsv(visibleRows)}
-            className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
+            className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
           >
             Export dashboard CSV
           </button>
         </div>
         <ReconciliationDashboardTable
           rows={visibleRows}
+          selectedRowId={selectedRow?.id ?? null}
           onSelectRow={setSelectedRow}
         />
-      </section>
+      </CollapsibleSection>
 
-      <section aria-label="Frozen transaction issues" className="mt-8">
+      <CollapsibleSection title="Transaction issues">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">Transaction issues</h2>
             {selectedRow ? (
-              <p className="mt-1 text-sm text-zinc-600">
+              <p className="text-sm text-zinc-600">
                 Filtered by category: {selectedRow.domain}. Click another row or
                 clear selection to show all frozen issues.
               </p>
             ) : (
-              <p className="mt-1 text-sm text-zinc-600">
+              <p className="text-sm text-zinc-600">
                 {allIssues.length} issue(s) from frozen payload.
               </p>
             )}
@@ -188,7 +328,7 @@ export function ReconciliationSnapshotDetailView({
               <button
                 type="button"
                 onClick={() => setSelectedRow(null)}
-                className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900"
+                className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
               >
                 Show all issues
               </button>
@@ -197,20 +337,31 @@ export function ReconciliationSnapshotDetailView({
               type="button"
               disabled={visibleIssues.length === 0}
               onClick={() => exportFrozenIssuesCsv(visibleIssues)}
-              className="rounded border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
+              className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
             >
               Export issues CSV
             </button>
           </div>
         </div>
         <ReconciliationIssuesTable issues={visibleIssues} />
-      </section>
+      </CollapsibleSection>
     </div>
   )
 }
 
 type ReconciliationSnapshotDetailClientProps = {
   id: string
+}
+
+function SnapshotDetailSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="h-6 w-48 animate-pulse rounded bg-zinc-200" />
+      <div className="h-4 w-72 animate-pulse rounded bg-zinc-200" />
+      <div className="h-16 animate-pulse rounded border border-zinc-200 bg-zinc-100" />
+      <div className="h-40 animate-pulse rounded border border-zinc-200 bg-zinc-100" />
+    </div>
+  )
 }
 
 export function ReconciliationSnapshotDetailClient({
@@ -252,7 +403,7 @@ export function ReconciliationSnapshotDetailClient({
   }, [id])
 
   if (loading) {
-    return <p className="text-zinc-600">Loading snapshot…</p>
+    return <SnapshotDetailSkeleton />
   }
 
   if (error) {

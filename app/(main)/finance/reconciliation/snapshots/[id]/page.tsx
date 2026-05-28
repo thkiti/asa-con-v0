@@ -19,8 +19,9 @@ export default async function FinanceReconciliationSnapshotDetailPage({
         ← Snapshots
       </Link>
       <h1 className="mt-4 text-xl font-semibold">Snapshot detail</h1>
-      <p className="mt-2 text-zinc-600">
-        Frozen reconciliation data captured at a point in time.
+      <p className="mt-2 text-sm text-zinc-600">
+        Immutable frozen capture — dashboard rows and transaction issues from
+        payload only.
       </p>
       <div className="mt-6">
         <ReconciliationSnapshotDetailClient id={id} />

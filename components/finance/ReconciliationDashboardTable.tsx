@@ -22,6 +22,7 @@ type SortKey = keyof Pick<
 type ReconciliationDashboardTableProps = {
   rows: ReconciliationDashboardRow[]
   onSelectRow?: (row: ReconciliationDashboardRow) => void
+  selectedRowId?: string | null
 }
 
 const columns: Array<{ key: SortKey; label: string; align?: "right" }> = [
@@ -38,6 +39,7 @@ const columns: Array<{ key: SortKey; label: string; align?: "right" }> = [
 export function ReconciliationDashboardTable({
   rows,
   onSelectRow,
+  selectedRowId = null,
 }: ReconciliationDashboardTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("sourceType")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
@@ -67,7 +69,7 @@ export function ReconciliationDashboardTable({
   return (
     <div className="mt-4 overflow-x-auto rounded border border-zinc-200">
       <table className="min-w-full border-collapse text-sm">
-        <thead className="bg-zinc-50">
+        <thead className="sticky top-0 z-10 bg-zinc-50">
           <tr className="border-b border-zinc-200 text-left text-zinc-600">
             {columns.map((column) => (
               <th
@@ -93,7 +95,7 @@ export function ReconciliationDashboardTable({
           {sortedRows.map((row) => (
             <tr
               key={row.id}
-              className="border-b border-zinc-100 hover:bg-zinc-50"
+              className={`border-b border-zinc-100 hover:bg-zinc-50 ${selectedRowId === row.id ? "bg-amber-50 ring-1 ring-inset ring-amber-200" : ""}`}
             >
               <td className="px-3 py-2">{row.sourceType}</td>
               <td className="px-3 py-2">
