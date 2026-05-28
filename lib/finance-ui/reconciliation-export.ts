@@ -10,10 +10,13 @@ import {
 import type { ReconciliationDashboardRow } from "./reconciliation"
 import type { ReconciliationIssueRow } from "./reconciliation-issues"
 import {
+  downloadCsv,
   filterDashboardRowDiffs,
   filterIssueDiffs,
   formatAmountDelta,
   formatCountDelta,
+  snapshotIssuesToUiRows,
+  snapshotRowsToDashboardRows,
   type DashboardRowDiff,
   type IssueDiff,
   type SnapshotCompareResult,
@@ -335,6 +338,30 @@ export function buildSnapshotEvidenceCsvFiles(input: {
       content: buildSnapshotIssuesCsv(input.issues),
     },
   ]
+}
+
+export function buildSnapshotEvidenceExport(
+  snapshot: ReconciliationSnapshotDetail,
+  exportedAt?: string
+): EvidenceCsvFile[] {
+  return buildSnapshotEvidenceCsvFiles({
+    snapshot,
+    dashboardRows: snapshotRowsToDashboardRows(snapshot.payload.dashboardRows),
+    issues: snapshotIssuesToUiRows(snapshot.payload.issuesPayload.issues),
+    exportedAt,
+  })
+}
+
+export async function downloadEvidenceCsvFiles(
+  files: readonly EvidenceCsvFile[],
+  delayMs = 200
+): Promise<void> {
+  for (const [index, file] of files.entries()) {
+    downloadCsv(file.filename, file.content)
+    if (index < files.length - 1 && delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
 }
 
 export function buildCompareEvidenceCsvFiles(input: {

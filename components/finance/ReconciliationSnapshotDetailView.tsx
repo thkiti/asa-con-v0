@@ -11,8 +11,11 @@ import {
   type ReconciliationRowStatus,
 } from "@/lib/finance-ui/reconciliation"
 import {
-  exportFrozenDashboardCsv,
-  exportFrozenIssuesCsv,
+  buildSnapshotEvidenceExport,
+  downloadEvidenceCsvFiles,
+} from "@/lib/finance-ui/reconciliation-export"
+import { downloadCsv } from "@/lib/finance-ui/reconciliation-snapshots"
+import {
   filterFrozenIssuesByDomain,
   formatSnapshotDisplayTitle,
   formatSnapshotScope,
@@ -44,6 +47,89 @@ const DOMAIN_OPTIONS = [
   { value: "revenue", label: "Revenue" },
   { value: "tender", label: "Tender" },
 ]
+
+type SnapshotEvidenceExportControlsProps = {
+  snapshot: ReconciliationSnapshotDetail
+}
+
+function SnapshotEvidenceExportControls({
+  snapshot,
+}: SnapshotEvidenceExportControlsProps) {
+  const [exporting, setExporting] = useState(false)
+
+  const evidenceFiles = useMemo(
+    () => buildSnapshotEvidenceExport(snapshot),
+    [snapshot]
+  )
+
+  async function handleExportPack() {
+    setExporting(true)
+    try {
+      await downloadEvidenceCsvFiles(evidenceFiles)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  function handleExportSingle(index: number) {
+    const file = evidenceFiles[index]
+    if (!file) return
+    downloadCsv(file.filename, file.content)
+  }
+
+  return (
+    <div className="rounded border border-zinc-200 bg-zinc-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-zinc-900">Evidence export</p>
+          <p className="mt-1 text-xs text-zinc-600">
+            Frozen payload only � metadata, summary, dashboard, and issues CSVs.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={() => void handleExportPack()}
+            className="rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {exporting ? "Exporting�" : "Export evidence pack"}
+          </button>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => handleExportSingle(0)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Metadata CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => handleExportSingle(1)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Summary CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => handleExportSingle(2)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Dashboard CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => handleExportSingle(3)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Issues CSV
+        </button>
+      </div>
+    </div>
+  )
+}
 
 type ReconciliationSnapshotDetailViewProps = {
   snapshot: ReconciliationSnapshotDetail
@@ -120,6 +206,8 @@ export function ReconciliationSnapshotDetailView({
       <p className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         Frozen snapshot � data from capture time only (no live fetch).
       </p>
+
+      <SnapshotEvidenceExportControls snapshot={snapshot} />
 
       <div className="sticky top-0 z-20 -mx-1 border border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -282,14 +370,6 @@ export function ReconciliationSnapshotDetailView({
               </select>
             </label>
           </div>
-          <button
-            type="button"
-            disabled={visibleRows.length === 0}
-            onClick={() => exportFrozenDashboardCsv(visibleRows)}
-            className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
-          >
-            Export dashboard CSV
-          </button>
         </div>
         <ReconciliationDashboardTable
           rows={visibleRows}
@@ -327,14 +407,6 @@ export function ReconciliationSnapshotDetailView({
                 Show all issues
               </button>
             ) : null}
-            <button
-              type="button"
-              disabled={visibleIssues.length === 0}
-              onClick={() => exportFrozenIssuesCsv(visibleIssues)}
-              className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900 disabled:opacity-50"
-            >
-              Export issues CSV
-            </button>
           </div>
         </div>
         <ReconciliationIssuesTable issues={issuesPagination.visible} />
