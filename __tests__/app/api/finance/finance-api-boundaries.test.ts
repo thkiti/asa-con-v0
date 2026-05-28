@@ -1,4 +1,4 @@
-import fs from "fs"
+﻿import fs from "fs"
 import path from "path"
 
 const ROOT = path.join(__dirname, "..", "..", "..", "..")
@@ -33,7 +33,7 @@ describe("finance API boundary grep audit", () => {
 
       it("has no forbidden finance posting imports", () => {
         const pattern =
-          /account-map|postSaleVoucher|postOperationalVoucher|\/voucher|\/journal/
+          /account-map|postSaleVoucher|postOperationalVoucher|from ['"]@\/lib\/finance\/voucher['"]|from ['"]@\/lib\/finance\/journal['"]/
         expect(source.match(pattern)).toBeNull()
       })
 

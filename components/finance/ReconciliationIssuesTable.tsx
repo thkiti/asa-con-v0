@@ -1,8 +1,13 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
+import {
+  JournalTraceRef,
+  OperationalSourceChip,
+  VoucherTraceLink,
+} from "./traceability-badges"
 import { ReconciliationStatusBadge } from "./ReconciliationStatusBadge"
 
 type ReconciliationIssuesTableProps = {
@@ -44,6 +49,10 @@ export function ReconciliationIssuesTable({
     <div className="mt-3 space-y-2">
       {issues.map((issue) => {
         const expanded = expandedId === issue.id
+        const voucherNoById = new Map(
+          issue.vouchers.map((voucher) => [voucher.id, voucher.voucherNo])
+        )
+
         return (
           <div
             key={issue.id}
@@ -56,6 +65,9 @@ export function ReconciliationIssuesTable({
             >
               <div>
                 <p className="font-medium text-zinc-900">{issue.documentRef}</p>
+                <div className="mt-1">
+                  <OperationalSourceChip row={issue} />
+                </div>
                 <p className="mt-1 text-zinc-600">
                   {issue.issueType.replace(/_/g, " ")}
                 </p>
@@ -66,10 +78,10 @@ export function ReconciliationIssuesTable({
               <div className="border-t border-zinc-100 px-3 py-3 text-zinc-700">
                 <p>{issue.message}</p>
                 <dl className="mt-3 grid gap-2">
-                  <div className="flex justify-between gap-4">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                     <dt className="text-zinc-500">Source</dt>
                     <dd>
-                      {issue.sourceType} · {issue.sourceId}
+                      <OperationalSourceChip row={issue} />
                     </dd>
                   </div>
                   {issue.expectedAmount !== null ? (
@@ -112,10 +124,10 @@ export function ReconciliationIssuesTable({
                 {issue.vouchers.length > 0 ? (
                   <div className="mt-3">
                     <p className="font-medium text-zinc-800">Vouchers</p>
-                    <ul className="mt-1 space-y-1 font-mono text-xs">
+                    <ul className="mt-2 flex flex-wrap gap-2">
                       {issue.vouchers.map((voucher) => (
                         <li key={voucher.id}>
-                          {voucher.voucherNo} · {voucher.id}
+                          <VoucherTraceLink voucher={voucher} />
                         </li>
                       ))}
                     </ul>
@@ -126,10 +138,13 @@ export function ReconciliationIssuesTable({
                 {issue.journalEntries.length > 0 ? (
                   <div className="mt-3">
                     <p className="font-medium text-zinc-800">Journal entries</p>
-                    <ul className="mt-1 space-y-1 font-mono text-xs">
+                    <ul className="mt-2 flex flex-wrap gap-2">
                       {issue.journalEntries.map((journal) => (
                         <li key={journal.id}>
-                          {journal.id} · voucher {journal.voucherId}
+                          <JournalTraceRef
+                            journal={journal}
+                            voucherNo={voucherNoById.get(journal.voucherId)}
+                          />
                         </li>
                       ))}
                     </ul>

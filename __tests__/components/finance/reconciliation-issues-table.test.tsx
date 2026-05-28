@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server"
+﻿import { renderToStaticMarkup } from "react-dom/server"
 import { ReconciliationIssuesTable } from "@/components/finance/ReconciliationIssuesTable"
 import type { ReconciliationIssueRow } from "@/lib/finance-ui/types"
 
@@ -28,6 +28,8 @@ describe("ReconciliationIssuesTable", () => {
     expect(html).toContain("s1")
     expect(html).toContain("MISSING VOUCHER")
     expect(html).toContain("MISSING GL")
+    expect(html).toContain("POS sale")
+    expect(html).toContain("Copy ID")
     expect(html).not.toContain("Fix")
     expect(html).not.toContain("Reconcile")
     expect(html).not.toContain("Post")

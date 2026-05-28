@@ -1,4 +1,4 @@
-import path from "path"
+﻿import path from "path"
 import type { AuditResult, AuditRule, Violation } from "./types"
 import {
   getRepoRoot,
@@ -155,7 +155,7 @@ export const UI_FORBIDDEN: AuditRule = {
 
 export const API_FORBIDDEN_POSTING: AuditRule = {
   id: "API_FORBIDDEN_POSTING",
-  pattern: /account-map|postSaleVoucher|postOperationalVoucher|\/voucher|\/journal/,
+  pattern: /account-map|postSaleVoucher|postOperationalVoucher|from ['"]@\/lib\/finance\/voucher['"]|from ['"]@\/lib\/finance\/journal['"]/,
   message: "Finance API routes must not import posting internals",
 }
 

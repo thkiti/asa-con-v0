@@ -1,4 +1,4 @@
-import {
+﻿import {
   buildApiFilter,
   type ReconciliationDashboardFilter,
 } from "./reconciliation"
@@ -13,6 +13,7 @@ import type {
   ReconciliationSnapshotDetail,
   ReconciliationSnapshotHeader,
   SalesReconciliationResult,
+  VoucherDetailResult,
 } from "./types"
 import type { SnapshotCaptureBody } from "./reconciliation-snapshots"
 
@@ -186,5 +187,14 @@ export function createReconciliationSnapshot(
       throw new Error(await parseFinanceApiError(res))
     }
     return res.json() as Promise<ReconciliationSnapshotCreateResult>
+  })
+}
+
+export function fetchVoucherById(id: string): Promise<VoucherDetailResult> {
+  return fetch(`/api/finance/vouchers/${encodeURIComponent(id)}`).then(async (res) => {
+    if (!res.ok) {
+      throw new Error(await parseFinanceApiError(res))
+    }
+    return res.json() as Promise<VoucherDetailResult>
   })
 }

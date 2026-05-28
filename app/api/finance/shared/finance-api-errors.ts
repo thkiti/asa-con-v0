@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server"
+﻿import { NextResponse } from "next/server"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import { ClosePolicyError } from "@/lib/finance/close-policy"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { ReconciliationError } from "@/lib/finance/reconciliation-errors"
 import { ReconciliationSnapshotError } from "@/lib/finance/reconciliation-snapshot-errors"
+import { VoucherReadError } from "@/lib/finance/voucher-read-errors"
 import { InvalidDateRangeError, ReportError } from "@/lib/reporting/report-errors"
 
 export function parseAccountingPeriodStatus(
@@ -34,6 +35,13 @@ export function financeErrorResponse(
   err: unknown,
   logLabel: string
 ): NextResponse {
+  if (err instanceof VoucherReadError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: statusForCode(err.code) }
+    )
+  }
+
   if (err instanceof ReconciliationSnapshotError) {
     return NextResponse.json(
       { error: err.message, code: err.code },
