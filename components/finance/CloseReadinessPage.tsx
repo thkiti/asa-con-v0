@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
-import { fetchCloseReadiness } from "@/lib/finance-ui/period-fetchers"
 import type { CloseReadinessResult } from "@/lib/finance-ui/close-readiness"
+import { fetchCloseReadiness } from "@/lib/finance-ui/period-fetchers"
 import { CloseChecklistPanel } from "./CloseChecklistPanel"
+import { CloseReadinessEvidenceActions } from "./CloseReadinessEvidenceActions"
 import { CloseReadinessStatusBadge } from "./CloseReadinessStatusBadge"
 import { PeriodStatusBadge } from "./PeriodStatusBadge"
 
@@ -97,12 +98,6 @@ export function CloseReadinessPage({ periodId }: CloseReadinessPageProps) {
           >
             Back to periods
           </Link>
-          <Link
-            href="/finance/reconciliation"
-            className="rounded border border-zinc-300 px-3 py-2 text-sm hover:bg-white"
-          >
-            Live reconciliation
-          </Link>
         </div>
       </section>
 
@@ -112,6 +107,7 @@ export function CloseReadinessPage({ periodId }: CloseReadinessPageProps) {
         </p>
       ) : null}
 
+      <CloseReadinessEvidenceActions readiness={readiness} />
       <CloseChecklistPanel readiness={readiness} />
     </div>
   )

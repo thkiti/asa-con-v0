@@ -1,7 +1,15 @@
 import Link from "next/link"
 import { ReconciliationSnapshotsPage } from "@/components/finance/ReconciliationSnapshotsPage"
 
-export default function FinanceReconciliationSnapshotsPage() {
+type PageProps = {
+  searchParams: Promise<{ branchId?: string }>
+}
+
+export default async function FinanceReconciliationSnapshotsPage({
+  searchParams,
+}: PageProps) {
+  const { branchId } = await searchParams
+
   return (
     <main className="p-8">
       <Link
@@ -16,7 +24,7 @@ export default function FinanceReconciliationSnapshotsPage() {
         issues. Notes are visible on each snapshot detail page.
       </p>
       <div className="mt-6">
-        <ReconciliationSnapshotsPage />
+        <ReconciliationSnapshotsPage initialBranchId={branchId} />
       </div>
     </main>
   )

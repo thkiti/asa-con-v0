@@ -5,6 +5,12 @@ import {
   groupCloseChecklistItems,
   type CloseReadinessResult,
 } from "@/lib/finance-ui/close-readiness"
+import {
+  buildSnapshotComparePath,
+  buildSnapshotEvidenceExportPath,
+  buildSnapshotTracePath,
+  resolveChecklistItemLinks,
+} from "@/lib/finance-ui/close-readiness-links"
 import { buildSnapshotDetailPath } from "@/lib/finance-ui/trace-links"
 
 const itemToneClasses: Record<
@@ -28,52 +34,38 @@ type CloseChecklistPanelProps = {
   readiness: CloseReadinessResult
 }
 
-function ChecklistItemLinks({ item }: { item: CloseChecklistItem }) {
-  const snapshotId = item.refs?.snapshotId
-  const compareSnapshotId = item.refs?.compareSnapshotId
+function ChecklistItemLinks({
+  item,
+  readiness,
+}: {
+  item: CloseChecklistItem
+  readiness: CloseReadinessResult
+}) {
+  const links = resolveChecklistItemLinks(item, readiness)
 
-  if (!snapshotId && !compareSnapshotId) {
+  if (links.length === 0) {
     return null
   }
 
   return (
     <div className="mt-2 flex flex-wrap gap-2 text-xs">
-      {snapshotId ? (
-        <>
-          <Link
-            href={buildSnapshotDetailPath(snapshotId)}
-            className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-white"
-          >
-            Open snapshot
-          </Link>
-          <Link
-            href={`${buildSnapshotDetailPath(snapshotId)}#snapshot-issues`}
-            className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-white"
-          >
-            View issues / trace
-          </Link>
-          <Link
-            href={`${buildSnapshotDetailPath(snapshotId)}#snapshot-evidence-export`}
-            className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-white"
-          >
-            Evidence export
-          </Link>
-        </>
-      ) : null}
-      {compareSnapshotId ? (
+      {links.map((link) => (
         <Link
-          href={`/finance/reconciliation/snapshots/compare?left=${encodeURIComponent(compareSnapshotId)}&right=${encodeURIComponent(snapshotId ?? compareSnapshotId)}`}
+          key={`${item.id}:${link.label}:${link.href}`}
+          href={link.href}
           className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-white"
         >
-          Compare snapshots
+          {link.label}
         </Link>
-      ) : null}
+      ))}
     </div>
   )
 }
 
 export function CloseChecklistPanel({ readiness }: CloseChecklistPanelProps) {
   const groups = groupCloseChecklistItems(readiness.items)
+  const latestSnapshotId = readiness.latestSnapshotRef?.id
+  const priorSnapshotId = readiness.priorSnapshotRef?.id
 
   return (
     <div className="space-y-6">
@@ -106,17 +98,46 @@ export function CloseChecklistPanel({ readiness }: CloseChecklistPanelProps) {
           </div>
         </dl>
         {readiness.latestSnapshotRef ? (
-          <p className="mt-3 text-xs text-zinc-600">
-            Latest snapshot{" "}
-            <Link
-              href={buildSnapshotDetailPath(readiness.latestSnapshotRef.id)}
-              className="font-medium text-zinc-900 underline"
-            >
-              {readiness.latestSnapshotRef.label?.trim() ||
-                readiness.latestSnapshotRef.id}
-            </Link>{" "}
-            captured {readiness.latestSnapshotRef.createdAt}.
-          </p>
+          <div className="mt-3 space-y-2 text-xs text-zinc-600">
+            <p>
+              Latest snapshot{" "}
+              <Link
+                href={buildSnapshotDetailPath(readiness.latestSnapshotRef.id)}
+                className="font-medium text-zinc-900 underline"
+              >
+                {readiness.latestSnapshotRef.label?.trim() ||
+                  readiness.latestSnapshotRef.id}
+              </Link>{" "}
+              captured {readiness.latestSnapshotRef.createdAt}.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={buildSnapshotTracePath(readiness.latestSnapshotRef.id)}
+                className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-zinc-50"
+              >
+                Open trace panel
+              </Link>
+              <Link
+                href={buildSnapshotEvidenceExportPath(
+                  readiness.latestSnapshotRef.id
+                )}
+                className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-zinc-50"
+              >
+                Open evidence export
+              </Link>
+              {priorSnapshotId && latestSnapshotId ? (
+                <Link
+                  href={buildSnapshotComparePath(
+                    priorSnapshotId,
+                    latestSnapshotId
+                  )}
+                  className="rounded border border-zinc-300 px-2 py-1 text-zinc-700 hover:bg-zinc-50"
+                >
+                  Compare captures
+                </Link>
+              ) : null}
+            </div>
+          </div>
         ) : (
           <p className="mt-3 text-xs text-zinc-600">
             No frozen reconciliation snapshot linked to this period yet.
@@ -146,7 +167,7 @@ export function CloseChecklistPanel({ readiness }: CloseChecklistPanelProps) {
                     {item.severity}
                   </span>
                 </div>
-                <ChecklistItemLinks item={item} />
+                <ChecklistItemLinks item={item} readiness={readiness} />
               </li>
             ))}
           </ul>

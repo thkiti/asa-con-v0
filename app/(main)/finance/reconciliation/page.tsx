@@ -1,7 +1,15 @@
 import Link from "next/link"
 import { ReconciliationPage } from "@/components/finance/ReconciliationPage"
 
-export default function FinanceReconciliationPage() {
+type PageProps = {
+  searchParams: Promise<{ branchId?: string; periodKey?: string }>
+}
+
+export default async function FinanceReconciliationPage({
+  searchParams,
+}: PageProps) {
+  const { branchId, periodKey } = await searchParams
+
   return (
     <main className="p-8">
       <Link href="/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
@@ -13,7 +21,10 @@ export default function FinanceReconciliationPage() {
         from this view.
       </p>
       <div className="mt-6">
-        <ReconciliationPage />
+        <ReconciliationPage
+          initialBranchId={branchId}
+          initialPeriodKey={periodKey}
+        />
       </div>
     </main>
   )

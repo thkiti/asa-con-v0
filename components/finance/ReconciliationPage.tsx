@@ -43,10 +43,20 @@ const DOMAIN_OPTIONS = [
   { value: "tender", label: "Tender" },
 ]
 
-export function ReconciliationPage() {
+type ReconciliationPageProps = {
+  initialBranchId?: string
+  initialPeriodKey?: string
+}
+
+export function ReconciliationPage({
+  initialBranchId,
+  initialPeriodKey,
+}: ReconciliationPageProps = {}) {
   const [filter, setFilter] = useState<ReconciliationDashboardFilter>({
     status: "ALL",
     domain: "all",
+    ...(initialBranchId?.trim() ? { branchId: initialBranchId.trim() } : {}),
+    ...(initialPeriodKey?.trim() ? { periodKey: initialPeriodKey.trim() } : {}),
   })
   const [allRows, setAllRows] = useState<ReconciliationDashboardRow[]>([])
   const [appliedFilter, setAppliedFilter] = useState<ReconciliationDashboardFilter>(

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
@@ -59,9 +59,17 @@ function SnapshotListSkeleton() {
   )
 }
 
-export function ReconciliationSnapshotsPage() {
-  const [branchFilter, setBranchFilter] = useState("")
-  const [appliedBranchId, setAppliedBranchId] = useState<string | undefined>()
+type ReconciliationSnapshotsPageProps = {
+  initialBranchId?: string
+}
+
+export function ReconciliationSnapshotsPage({
+  initialBranchId,
+}: ReconciliationSnapshotsPageProps = {}) {
+  const [branchFilter, setBranchFilter] = useState(initialBranchId?.trim() ?? "")
+  const [appliedBranchId, setAppliedBranchId] = useState<string | undefined>(
+    initialBranchId?.trim() || undefined
+  )
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [snapshots, setSnapshots] = useState<ReconciliationSnapshotHeader[]>([])
   const [loading, setLoading] = useState(true)
