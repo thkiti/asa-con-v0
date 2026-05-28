@@ -47,8 +47,22 @@ export {
   requireOpenPeriodForPosting,
   type ClosePolicyRole,
 } from "./close-policy"
+
+export {
+  CLOSE_BLOCKER_RULES,
+  CLOSE_BLOCKER_THRESHOLDS,
+  getCloseBlockerRule,
+  sortCloseBlockerRuleIds,
+} from "./close-blocker-rules"
+export type {
+  CloseBlockerEvaluationContext,
+  CloseBlockerRuleDefinition,
+  CloseBlockerRuleId,
+  CloseBlockerThresholds,
+} from "./close-blocker-rules"
 export {
   buildCloseChecklist,
+  evaluateCloseBlockerRules,
   countChecklistSeverities,
   DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS,
   detectSnapshotHeaderDrift,
