@@ -1,14 +1,22 @@
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import { classifyPeriodStatus } from "./close-policy"
+import {
+  CLOSE_BLOCKER_THRESHOLDS,
+  getCloseBlockerRule,
+  type CloseBlockerEvaluationContext,
+  type CloseBlockerRuleId,
+} from "./close-blocker-rules"
 import type {
   CloseChecklistInput,
   CloseChecklistItem,
+  CloseChecklistItemRef,
   CloseChecklistMetrics,
   CloseChecklistResult,
   CloseChecklistSeverity,
   CloseChecklistSnapshotRef,
   CloseChecklistIssueSummary,
   CloseReadinessStatus,
+  CloseChecklistPeriodInput,
 } from "./close-checklist-types"
 import type {
   ReconciliationSnapshotHeader,
@@ -30,7 +38,18 @@ export type {
   CloseReadinessStatus,
 } from "./close-checklist-types"
 
-export const DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS = 7
+export {
+  CLOSE_BLOCKER_RULES,
+  CLOSE_BLOCKER_THRESHOLDS,
+  getCloseBlockerRule,
+  sortCloseBlockerRuleIds,
+  type CloseBlockerRuleDefinition,
+  type CloseBlockerRuleId,
+  type CloseBlockerThresholds,
+} from "./close-blocker-rules"
+
+export const DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS =
+  CLOSE_BLOCKER_THRESHOLDS.staleSnapshotDays
 
 const SEVERITY_ORDER: Record<CloseChecklistSeverity, number> = {
   BLOCKED: 0,
@@ -183,358 +202,285 @@ export function resolveCloseReadinessStatus(
   return "READY"
 }
 
-function buildPostingLockItems(
-  period: CloseChecklistInput["period"]
+function periodRefs(period: CloseChecklistPeriodInput): CloseChecklistItemRef {
+  return {
+    periodKey: period.periodKey,
+    branchId: period.branchId,
+  }
+}
+
+function snapshotRefs(
+  snapshotId: string,
+  period: CloseChecklistPeriodInput,
+  compareSnapshotId?: string
+): CloseChecklistItemRef {
+  return {
+    snapshotId,
+    compareSnapshotId,
+    periodKey: period.periodKey,
+    branchId: period.branchId,
+  }
+}
+
+function makeChecklistItem(
+  id: CloseBlockerRuleId,
+  title: string,
+  detail: string,
+  refs?: CloseChecklistItemRef
+): CloseChecklistItem {
+  const rule = getCloseBlockerRule(id)
+  return {
+    id: rule.id,
+    group: rule.group,
+    severity: rule.severity,
+    title,
+    detail,
+    refs,
+  }
+}
+
+export function evaluateCloseBlockerRules(
+  context: CloseBlockerEvaluationContext
 ): CloseChecklistItem[] {
+  const items: CloseChecklistItem[] = []
+  const { period, latestSnapshot, priorSnapshot, issueSummary, dashboardRows } =
+    context
   const statusLabel = classifyPeriodStatus(period.status)
 
   if (period.status === AccountingPeriodStatus.HARD_CLOSED) {
-    return [
-      {
-        id: "posting-lock-hard-closed",
-        group: "posting_lock",
-        severity: "INFO",
-        title: "Period is hard closed",
-        detail: statusLabel.description,
-        refs: {
-          periodKey: period.periodKey,
-          branchId: period.branchId,
-        },
-      },
-    ]
+    items.push(
+      makeChecklistItem(
+        "posting-lock-hard-closed",
+        "Period is hard closed",
+        statusLabel.description,
+        periodRefs(period)
+      )
+    )
+  } else if (period.status === AccountingPeriodStatus.SOFT_CLOSED) {
+    items.push(
+      makeChecklistItem(
+        "posting-lock-soft-closed",
+        "Period is soft closed",
+        "Routine posting is blocked. Review reconciliation evidence before hard close.",
+        periodRefs(period)
+      )
+    )
+  } else {
+    items.push(
+      makeChecklistItem(
+        "posting-lock-open",
+        "Period is open for posting",
+        statusLabel.description,
+        periodRefs(period)
+      )
+    )
   }
 
-  if (period.status === AccountingPeriodStatus.SOFT_CLOSED) {
-    return [
-      {
-        id: "posting-lock-soft-closed",
-        group: "posting_lock",
-        severity: "WARNING",
-        title: "Period is soft closed",
-        detail:
-          "Routine posting is blocked. Review reconciliation evidence before hard close.",
-        refs: {
-          periodKey: period.periodKey,
-          branchId: period.branchId,
-        },
-      },
-    ]
+  if (
+    period.status === AccountingPeriodStatus.HARD_CLOSED &&
+    latestSnapshot &&
+    period.closedAt &&
+    parseIsoTime(latestSnapshot.createdAt) > parseIsoTime(period.closedAt)
+  ) {
+    items.push(
+      makeChecklistItem(
+        "period-hard-closed-snapshot-after-close",
+        "Snapshot captured after hard close",
+        `Latest snapshot ${latestSnapshot.id} was captured after the period hard close timestamp ${period.closedAt}.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
   }
-
-  return [
-    {
-      id: "posting-lock-open",
-      group: "posting_lock",
-      severity: "PASS",
-      title: "Period is open for posting",
-      detail: statusLabel.description,
-      refs: {
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    },
-  ]
-}
-
-function buildSnapshotEvidenceItems(
-  input: CloseChecklistInput,
-  nowIso: string,
-  staleThresholdDays: number,
-  dashboardRows: SnapshotDashboardRow[]
-): CloseChecklistItem[] {
-  const { period, latestSnapshot, priorSnapshot } = input
-  const items: CloseChecklistItem[] = []
 
   if (!latestSnapshot) {
-    items.push({
-      id: "snapshot-missing",
-      group: "snapshot_evidence",
-      severity: "BLOCKED",
-      title: "No reconciliation snapshot for period",
-      detail:
+    items.push(
+      makeChecklistItem(
+        "snapshot-missing",
+        "No reconciliation snapshot for period",
         "Capture a frozen reconciliation snapshot for this branch and period before close.",
-      refs: {
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
+        periodRefs(period)
+      )
+    )
+    items.push(
+      makeChecklistItem(
+        "reconciliation-no-snapshot",
+        "Reconciliation evidence unavailable",
+        "Cannot evaluate transaction issues without a frozen snapshot.",
+        periodRefs(period)
+      )
+    )
+    items.push(
+      makeChecklistItem(
+        "audit-evidence-unavailable",
+        "Evidence export unavailable",
+        "Snapshot evidence CSV packs and audit print require a captured snapshot.",
+        periodRefs(period)
+      )
+    )
     return items
   }
 
   const snapshotRef = toCloseChecklistSnapshotRef(latestSnapshot)
   const scopeMatch = snapshotScopeMatchesPeriod(latestSnapshot, period)
 
-  items.push({
-    id: "snapshot-present",
-    group: "snapshot_evidence",
-    severity: "PASS",
-    title: "Reconciliation snapshot captured",
-    detail: `Latest snapshot ${snapshotRef.id} captured at ${snapshotRef.createdAt}.`,
-    refs: {
-      snapshotId: snapshotRef.id,
-      periodKey: period.periodKey,
-      branchId: period.branchId,
-    },
-  })
+  items.push(
+    makeChecklistItem(
+      "snapshot-present",
+      "Reconciliation snapshot captured",
+      `Latest snapshot ${snapshotRef.id} captured at ${snapshotRef.createdAt}.`,
+      snapshotRefs(snapshotRef.id, period)
+    )
+  )
 
   if (!scopeMatch.branchMatch) {
-    items.push({
-      id: "snapshot-branch-mismatch",
-      group: "snapshot_evidence",
-      severity: "BLOCKED",
-      title: "Snapshot branch does not match period",
-      detail: `Snapshot branch ${latestSnapshot.branchId ?? "unknown"} does not match period branch ${period.branchId}.`,
-      refs: {
-        snapshotId: latestSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
+    items.push(
+      makeChecklistItem(
+        "snapshot-branch-mismatch",
+        "Snapshot branch does not match period",
+        `Snapshot branch ${latestSnapshot.branchId ?? "unknown"} does not match period branch ${period.branchId}.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
   }
 
   if (!scopeMatch.periodKeyMatch) {
-    items.push({
-      id: "snapshot-period-mismatch",
-      group: "snapshot_evidence",
-      severity: "BLOCKED",
-      title: "Snapshot period does not match accounting period",
-      detail: `Snapshot period ${latestSnapshot.periodKey ?? "unknown"} does not match ${period.periodKey}.`,
-      refs: {
-        snapshotId: latestSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
+    items.push(
+      makeChecklistItem(
+        "snapshot-period-mismatch",
+        "Snapshot period does not match accounting period",
+        `Snapshot period ${latestSnapshot.periodKey ?? "unknown"} does not match ${period.periodKey}.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
   }
 
-  const snapshotAgeDays = daysBetween(latestSnapshot.createdAt, nowIso)
-  if (snapshotAgeDays > staleThresholdDays) {
-    items.push({
-      id: "snapshot-stale",
-      group: "snapshot_evidence",
-      severity: "WARNING",
-      title: "Snapshot may be stale",
-      detail: `Latest snapshot is ${snapshotAgeDays} days old (threshold ${staleThresholdDays} days). Consider recapture before hard close.`,
-      refs: {
-        snapshotId: latestSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-  }
-
-  if (priorSnapshot && detectSnapshotHeaderDrift(priorSnapshot, latestSnapshot)) {
-    items.push({
-      id: "snapshot-compare-drift",
-      group: "snapshot_evidence",
-      severity: "WARNING",
-      title: "Snapshot metrics changed since prior capture",
-      detail:
-        "Header metrics differ between the two most recent snapshots for this period.",
-      refs: {
-        snapshotId: latestSnapshot.id,
-        compareSnapshotId: priorSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-  }
-
-  if (!hasDashboardDomain(dashboardRows, "inventory")) {
-    items.push({
-      id: "snapshot-missing-inventory-domain",
-      group: "snapshot_evidence",
-      severity: "BLOCKED",
-      title: "Missing inventory reconciliation in snapshot",
-      detail:
-        "Frozen snapshot dashboard has no inventory aggregate row for this scope.",
-      refs: {
-        snapshotId: latestSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-  }
-
-  if (!hasDashboardDomain(dashboardRows, "revenue")) {
-    items.push({
-      id: "snapshot-missing-revenue-domain",
-      group: "snapshot_evidence",
-      severity: "BLOCKED",
-      title: "Missing revenue reconciliation in snapshot",
-      detail:
-        "Frozen snapshot dashboard has no revenue aggregate row for this scope.",
-      refs: {
-        snapshotId: latestSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-  }
-
-  return items
-}
-
-function buildReconciliationItems(
-  input: CloseChecklistInput,
-  issueSummary: CloseChecklistIssueSummary,
-  metrics: Pick<
-    CloseChecklistMetrics,
-    "issueCount" | "varianceCount" | "matchedCount"
-  >
-): CloseChecklistItem[] {
-  const { period, latestSnapshot } = input
-  const items: CloseChecklistItem[] = []
-  const snapshotId = latestSnapshot?.id
-
-  if (!latestSnapshot) {
-    items.push({
-      id: "reconciliation-no-snapshot",
-      group: "reconciliation",
-      severity: "BLOCKED",
-      title: "Reconciliation evidence unavailable",
-      detail: "Cannot evaluate transaction issues without a frozen snapshot.",
-      refs: {
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-    return items
-  }
-
-  if (issueSummary.missingGlCount > 0) {
-    items.push({
-      id: "reconciliation-missing-gl-issues",
-      group: "reconciliation",
-      severity: "BLOCKED",
-      title: "Unresolved missing GL issues",
-      detail: `${issueSummary.missingGlCount} frozen issue(s) with MISSING_GL status must be resolved before close.`,
-      refs: {
-        snapshotId,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-  }
-
-  if (issueSummary.missingSourceCount > 0) {
-    items.push({
-      id: "reconciliation-missing-source-issues",
-      group: "reconciliation",
-      severity: "BLOCKED",
-      title: "Unresolved missing source issues",
-      detail: `${issueSummary.missingSourceCount} frozen issue(s) with MISSING_SOURCE status must be resolved before close.`,
-      refs: {
-        snapshotId,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-  }
-
-  if (metrics.varianceCount > 0) {
-    items.push({
-      id: "reconciliation-dashboard-variance",
-      group: "reconciliation",
-      severity: "WARNING",
-      title: "Aggregate reconciliation variances present",
-      detail: `${metrics.varianceCount} dashboard row(s) are not MATCHED in the frozen snapshot.`,
-      refs: {
-        snapshotId,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
-  }
-
-  if (issueSummary.varianceStatusCount > 0) {
-    items.push({
-      id: "reconciliation-issue-variance",
-      group: "reconciliation",
-      severity: "WARNING",
-      title: "Transaction issue variances present",
-      detail: `${issueSummary.varianceStatusCount} frozen issue(s) have VARIANCE status.`,
-      refs: {
-        snapshotId,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
+  const snapshotAgeDays = daysBetween(latestSnapshot.createdAt, context.nowIso)
+  if (snapshotAgeDays > context.staleSnapshotThresholdDays) {
+    items.push(
+      makeChecklistItem(
+        "snapshot-stale",
+        "Snapshot may be stale",
+        `Latest snapshot is ${snapshotAgeDays} days old (threshold ${context.staleSnapshotThresholdDays} days). Consider recapture before hard close.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
   }
 
   if (
-    metrics.issueCount === 0 &&
-    metrics.varianceCount === 0 &&
+    priorSnapshot &&
+    detectSnapshotHeaderDrift(priorSnapshot, latestSnapshot)
+  ) {
+    items.push(
+      makeChecklistItem(
+        "snapshot-compare-drift",
+        "Snapshot metrics changed since prior capture",
+        "Header metrics differ between the two most recent snapshots for this period.",
+        snapshotRefs(latestSnapshot.id, period, priorSnapshot.id)
+      )
+    )
+  }
+
+  if (!hasDashboardDomain(dashboardRows, "inventory")) {
+    items.push(
+      makeChecklistItem(
+        "snapshot-missing-inventory-domain",
+        "Missing inventory reconciliation in snapshot",
+        "Frozen snapshot dashboard has no inventory aggregate row for this scope.",
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
+  }
+
+  if (!hasDashboardDomain(dashboardRows, "revenue")) {
+    items.push(
+      makeChecklistItem(
+        "snapshot-missing-revenue-domain",
+        "Missing revenue reconciliation in snapshot",
+        "Frozen snapshot dashboard has no revenue aggregate row for this scope.",
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
+  }
+
+  if (issueSummary.missingGlCount > 0) {
+    items.push(
+      makeChecklistItem(
+        "reconciliation-missing-gl-issues",
+        "Unresolved missing GL issues",
+        `${issueSummary.missingGlCount} frozen issue(s) with MISSING_GL status must be resolved before close.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
+  }
+
+  if (issueSummary.missingSourceCount > 0) {
+    items.push(
+      makeChecklistItem(
+        "reconciliation-missing-source-issues",
+        "Unresolved missing source issues",
+        `${issueSummary.missingSourceCount} frozen issue(s) with MISSING_SOURCE status must be resolved before close.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
+  }
+
+  if (context.metrics.varianceCount > 0) {
+    items.push(
+      makeChecklistItem(
+        "reconciliation-dashboard-variance",
+        "Aggregate reconciliation variances present",
+        `${context.metrics.varianceCount} dashboard row(s) are not MATCHED in the frozen snapshot.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
+  }
+
+  if (issueSummary.varianceStatusCount > 0) {
+    items.push(
+      makeChecklistItem(
+        "reconciliation-issue-variance",
+        "Transaction issue variances present",
+        `${issueSummary.varianceStatusCount} frozen issue(s) have VARIANCE status.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
+  }
+
+  if (
+    context.metrics.issueCount === 0 &&
+    context.metrics.varianceCount === 0 &&
     issueSummary.missingGlCount === 0 &&
     issueSummary.missingSourceCount === 0
   ) {
-    items.push({
-      id: "reconciliation-clean",
-      group: "reconciliation",
-      severity: "PASS",
-      title: "Reconciliation snapshot is clean",
-      detail: `Frozen snapshot has ${metrics.matchedCount} matched dashboard row(s) and no open transaction issues.`,
-      refs: {
-        snapshotId,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    })
+    items.push(
+      makeChecklistItem(
+        "reconciliation-clean",
+        "Reconciliation snapshot is clean",
+        `Frozen snapshot has ${context.metrics.matchedCount} matched dashboard row(s) and no open transaction issues.`,
+        snapshotRefs(latestSnapshot.id, period)
+      )
+    )
   }
+
+  items.push(
+    makeChecklistItem(
+      "audit-evidence-export-ready",
+      "Evidence export available",
+      "Frozen snapshot supports browser evidence CSV packs and audit print from snapshot detail.",
+      snapshotRefs(latestSnapshot.id, period)
+    )
+  )
+
+  items.push(
+    makeChecklistItem(
+      "audit-evidence-export-not-recorded",
+      "Evidence export not recorded",
+      "Export is client-side only; the system cannot verify that an evidence pack was downloaded.",
+      snapshotRefs(latestSnapshot.id, period)
+    )
+  )
 
   return items
-}
-
-function buildAuditEvidenceItems(
-  input: CloseChecklistInput
-): CloseChecklistItem[] {
-  const { period, latestSnapshot } = input
-
-  if (!latestSnapshot) {
-    return [
-      {
-        id: "audit-evidence-unavailable",
-        group: "audit_evidence",
-        severity: "WARNING",
-        title: "Evidence export unavailable",
-        detail:
-          "Snapshot evidence CSV packs and audit print require a captured snapshot.",
-        refs: {
-          periodKey: period.periodKey,
-          branchId: period.branchId,
-        },
-      },
-    ]
-  }
-
-  return [
-    {
-      id: "audit-evidence-export-ready",
-      group: "audit_evidence",
-      severity: "PASS",
-      title: "Evidence export available",
-      detail:
-        "Frozen snapshot supports browser evidence CSV packs and audit print from snapshot detail.",
-      refs: {
-        snapshotId: latestSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    },
-    {
-      id: "audit-evidence-export-not-recorded",
-      group: "audit_evidence",
-      severity: "WARNING",
-      title: "Evidence export not recorded",
-      detail:
-        "Export is client-side only; the system cannot verify that an evidence pack was downloaded.",
-      refs: {
-        snapshotId: latestSnapshot.id,
-        periodKey: period.periodKey,
-        branchId: period.branchId,
-      },
-    },
-  ]
 }
 
 function buildCloseChecklistMetrics(
@@ -577,7 +523,7 @@ export function buildCloseChecklist(
   input: CloseChecklistInput
 ): CloseChecklistResult {
   const nowIso = input.now ?? new Date().toISOString()
-  const staleThresholdDays =
+  const staleSnapshotThresholdDays =
     input.staleSnapshotThresholdDays ?? DEFAULT_STALE_SNAPSHOT_THRESHOLD_DAYS
   const dashboardRows = resolveDashboardRows(input)
   const issueSummary = summarizeSnapshotIssues(resolveSnapshotIssues(input))
@@ -587,21 +533,22 @@ export function buildCloseChecklist(
       detectSnapshotHeaderDrift(input.priorSnapshot, input.latestSnapshot)
   )
 
-  const items = sortCloseChecklistItems([
-    ...buildPostingLockItems(input.period),
-    ...buildSnapshotEvidenceItems(
-      input,
+  const items = sortCloseChecklistItems(
+    evaluateCloseBlockerRules({
+      period: input.period,
+      latestSnapshot: input.latestSnapshot,
+      priorSnapshot: input.priorSnapshot ?? null,
+      issueSummary,
+      dashboardRows,
       nowIso,
-      staleThresholdDays,
-      dashboardRows
-    ),
-    ...buildReconciliationItems(input, issueSummary, {
-      issueCount: input.latestSnapshot?.issueCount ?? 0,
-      varianceCount: input.latestSnapshot?.varianceCount ?? 0,
-      matchedCount: input.latestSnapshot?.matchedCount ?? 0,
-    }),
-    ...buildAuditEvidenceItems(input),
-  ])
+      staleSnapshotThresholdDays,
+      metrics: {
+        issueCount: input.latestSnapshot?.issueCount ?? 0,
+        varianceCount: input.latestSnapshot?.varianceCount ?? 0,
+        matchedCount: input.latestSnapshot?.matchedCount ?? 0,
+      },
+    })
+  )
 
   const { blockerCount, warningCount } = countChecklistSeverities(items)
 
