@@ -9,6 +9,8 @@
   diffSnapshotIssues,
   formatAmountDelta,
   formatCountDelta,
+  paginateList,
+  SNAPSHOT_UI_ISSUES_PAGE_SIZE,
 } from "@/lib/finance-ui/reconciliation-snapshots"
 import { formatDateTime } from "@/lib/finance-ui/format"
 
@@ -218,5 +220,25 @@ describe("diffSnapshotIssues", () => {
 
     const diffs = diffSnapshotIssues([issue], [])
     expect(diffs[0]?.kind).toBe("removed")
+  })
+})
+
+
+describe("paginateList", () => {
+  it("returns first page and hasMore when items exceed page size", () => {
+    const items = Array.from({ length: 55 }, (_, index) => index)
+    const page = paginateList(items, SNAPSHOT_UI_ISSUES_PAGE_SIZE)
+    expect(page.visible).toHaveLength(50)
+    expect(page.total).toBe(55)
+    expect(page.hasMore).toBe(true)
+    expect(page.nextVisibleCount).toBe(55)
+  })
+
+  it("expands visible count on next page request", () => {
+    const items = Array.from({ length: 120 }, (_, index) => index)
+    const next = paginateList(items, 100)
+    expect(next.visible).toHaveLength(100)
+    expect(next.hasMore).toBe(true)
+    expect(next.nextVisibleCount).toBe(120)
   })
 })

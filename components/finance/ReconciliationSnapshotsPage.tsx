@@ -6,18 +6,10 @@ import { fetchReconciliationSnapshots } from "@/lib/finance-ui/fetchers"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import {
   formatSnapshotDisplayTitle,
-  formatSnapshotKindLabel,
   formatSnapshotScope,
 } from "@/lib/finance-ui/reconciliation-snapshots"
 import type { ReconciliationSnapshotHeader } from "@/lib/finance-ui/types"
-
-function SnapshotKindBadge({ kind }: { kind: ReconciliationSnapshotHeader["kind"] }) {
-  return (
-    <span className="inline-block rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-zinc-700">
-      {formatSnapshotKindLabel(kind)}
-    </span>
-  )
-}
+import { SnapshotKindBadge } from "./reconciliation-snapshot-ui"
 
 function SnapshotSummaryChips({
   snapshot,

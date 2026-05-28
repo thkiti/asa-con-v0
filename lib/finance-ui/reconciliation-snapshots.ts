@@ -13,6 +13,7 @@ import {
 import { issuesToCsv } from "./reconciliation-issues"
 import type {
   ReconciliationIssueRow,
+  ReconciliationSnapshotDetail,
   ReconciliationSnapshotHeader,
 } from "./types"
 
@@ -389,5 +390,66 @@ export function countIssueDiffs(diffs: IssueDiff[]) {
     removed: diffs.filter((diff) => diff.kind === "removed").length,
     changed: diffs.filter((diff) => diff.kind === "changed").length,
     unchanged: diffs.filter((diff) => diff.kind === "unchanged").length,
+  }
+}
+
+
+export const SNAPSHOT_UI_ISSUES_PAGE_SIZE = 50
+
+export type PaginatedListResult<T> = {
+  visible: T[]
+  total: number
+  hasMore: boolean
+  nextVisibleCount: number
+}
+
+export function paginateList<T>(
+  items: T[],
+  visibleCount: number,
+  pageSize: number = SNAPSHOT_UI_ISSUES_PAGE_SIZE
+): PaginatedListResult<T> {
+  const safeCount = Math.max(pageSize, visibleCount)
+  const visible = items.slice(0, safeCount)
+  return {
+    visible,
+    total: items.length,
+    hasMore: items.length > visible.length,
+    nextVisibleCount: Math.min(items.length, safeCount + pageSize),
+  }
+}
+
+export type SnapshotCompareResult = {
+  leftRows: ReconciliationDashboardRow[]
+  rightRows: ReconciliationDashboardRow[]
+  leftIssues: ReconciliationIssueRow[]
+  rightIssues: ReconciliationIssueRow[]
+  metrics: SnapshotHeaderMetricCompare
+  rowDiffs: DashboardRowDiff[]
+  issueDiffs: IssueDiff[]
+  rowCounts: ReturnType<typeof countDashboardRowDiffs>
+  issueCounts: ReturnType<typeof countIssueDiffs>
+}
+
+export function computeSnapshotCompareResult(
+  left: ReconciliationSnapshotDetail,
+  right: ReconciliationSnapshotDetail
+): SnapshotCompareResult {
+  const leftRows = snapshotRowsToDashboardRows(left.payload.dashboardRows)
+  const rightRows = snapshotRowsToDashboardRows(right.payload.dashboardRows)
+  const leftIssues = snapshotIssuesToUiRows(left.payload.issuesPayload.issues)
+  const rightIssues = snapshotIssuesToUiRows(right.payload.issuesPayload.issues)
+  const rowDiffs = diffDashboardRows(leftRows, rightRows)
+  const issueDiffs = diffSnapshotIssues(leftIssues, rightIssues)
+
+  return {
+    leftRows,
+    rightRows,
+    leftIssues,
+    rightIssues,
+    metrics: compareSnapshotHeaderMetrics(left, right),
+    rowDiffs,
+    issueDiffs,
+    rowCounts: countDashboardRowDiffs(rowDiffs),
+    issueCounts: countIssueDiffs(issueDiffs),
   }
 }

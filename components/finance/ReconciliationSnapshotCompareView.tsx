@@ -8,80 +8,25 @@ import {
 } from "@/lib/finance-ui/fetchers"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import {
-  compareSnapshotHeaderMetrics,
-  countDashboardRowDiffs,
-  countIssueDiffs,
-  diffDashboardRows,
-  diffSnapshotIssues,
+  computeSnapshotCompareResult,
   filterDashboardRowDiffs,
   filterIssueDiffs,
-  formatAmountDelta,
-  formatCountDelta,
   formatSnapshotDisplayTitle,
   formatSnapshotKindLabel,
   formatSnapshotScope,
-  snapshotIssuesToUiRows,
-  snapshotRowsToDashboardRows,
+  paginateList,
+  SNAPSHOT_UI_ISSUES_PAGE_SIZE,
   type DashboardRowDiffKind,
   type IssueDiffKind,
 } from "@/lib/finance-ui/reconciliation-snapshots"
 import type { ReconciliationSnapshotDetail, ReconciliationSnapshotHeader } from "@/lib/finance-ui/types"
+import {
+  CollapsibleSection,
+  CompareSkeleton,
+  DeltaChip,
+  DiffKindBadge,
+} from "./reconciliation-snapshot-ui"
 import { ReconciliationStatusBadge } from "./ReconciliationStatusBadge"
-
-type CollapsibleSectionProps = {
-  title: string
-  open?: boolean
-  children: React.ReactNode
-}
-
-function CollapsibleSection({
-  title,
-  open = true,
-  children,
-}: CollapsibleSectionProps) {
-  return (
-    <details
-      open={open}
-      className="rounded border border-zinc-200 bg-white"
-    >
-      <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-zinc-900 [&::-webkit-details-marker]:hidden">
-        {title}
-      </summary>
-      <div className="border-t border-zinc-100 px-4 pb-4 pt-3">{children}</div>
-    </details>
-  )
-}
-
-function DiffKindBadge({ kind }: { kind: DashboardRowDiffKind | IssueDiffKind }) {
-  const styles: Record<string, string> = {
-    added: "bg-green-100 text-green-800",
-    removed: "bg-red-100 text-red-800",
-    changed: "bg-amber-100 text-amber-900",
-    unchanged: "bg-zinc-100 text-zinc-700",
-  }
-  return (
-    <span
-      className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${styles[kind] ?? styles.unchanged}`}
-    >
-      {kind}
-    </span>
-  )
-}
-
-function DeltaChip({ delta, amount = false }: { delta: number; amount?: boolean }) {
-  const label = amount ? formatAmountDelta(delta) : formatCountDelta(delta)
-  const tone =
-    delta > 0
-      ? "bg-amber-100 text-amber-900"
-      : delta < 0
-        ? "bg-green-100 text-green-800"
-        : "bg-zinc-100 text-zinc-700"
-  return (
-    <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium tabular-nums ${tone}`}>
-      {label}
-    </span>
-  )
-}
 
 function SnapshotCard({
   label,
@@ -108,18 +53,6 @@ function SnapshotCard({
         {formatSnapshotScope(snapshot)} · captured{" "}
         <time dateTime={snapshot.createdAt}>{formatDateTime(snapshot.createdAt)}</time>
       </p>
-    </div>
-  )
-}
-
-function CompareSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="h-28 animate-pulse rounded border border-zinc-200 bg-zinc-100" />
-        <div className="h-28 animate-pulse rounded border border-zinc-200 bg-zinc-100" />
-      </div>
-      <div className="h-24 animate-pulse rounded border border-zinc-200 bg-zinc-100" />
     </div>
   )
 }
@@ -204,46 +137,34 @@ export function ReconciliationSnapshotCompareView({
 }: ReconciliationSnapshotCompareViewProps) {
   const [rowDiffFilter, setRowDiffFilter] = useState<"all" | DashboardRowDiffKind>("all")
   const [issueDiffFilter, setIssueDiffFilter] = useState<"all" | IssueDiffKind>("all")
-
-  const leftRows = useMemo(
-    () => snapshotRowsToDashboardRows(left.payload.dashboardRows),
-    [left.payload.dashboardRows]
-  )
-  const rightRows = useMemo(
-    () => snapshotRowsToDashboardRows(right.payload.dashboardRows),
-    [right.payload.dashboardRows]
-  )
-  const leftIssues = useMemo(
-    () => snapshotIssuesToUiRows(left.payload.issuesPayload.issues),
-    [left.payload.issuesPayload.issues]
-  )
-  const rightIssues = useMemo(
-    () => snapshotIssuesToUiRows(right.payload.issuesPayload.issues),
-    [right.payload.issuesPayload.issues]
+  const [issueDiffVisibleCount, setIssueDiffVisibleCount] = useState(
+    SNAPSHOT_UI_ISSUES_PAGE_SIZE
   )
 
-  const metrics = useMemo(
-    () => compareSnapshotHeaderMetrics(left, right),
+  const compareResult = useMemo(
+    () => computeSnapshotCompareResult(left, right),
     [left, right]
   )
-  const rowDiffs = useMemo(
-    () => diffDashboardRows(leftRows, rightRows),
-    [leftRows, rightRows]
-  )
-  const issueDiffs = useMemo(
-    () => diffSnapshotIssues(leftIssues, rightIssues),
-    [leftIssues, rightIssues]
-  )
-  const rowCounts = useMemo(() => countDashboardRowDiffs(rowDiffs), [rowDiffs])
-  const issueCounts = useMemo(() => countIssueDiffs(issueDiffs), [issueDiffs])
+  const { metrics, rowDiffs, issueDiffs, rowCounts, issueCounts } = compareResult
+
   const visibleRowDiffs = useMemo(
     () => filterDashboardRowDiffs(rowDiffs, rowDiffFilter),
     [rowDiffs, rowDiffFilter]
   )
-  const visibleIssueDiffs = useMemo(
+  const filteredIssueDiffs = useMemo(
     () => filterIssueDiffs(issueDiffs, issueDiffFilter),
     [issueDiffs, issueDiffFilter]
   )
+
+  useEffect(() => {
+    setIssueDiffVisibleCount(SNAPSHOT_UI_ISSUES_PAGE_SIZE)
+  }, [issueDiffFilter])
+
+  const issueDiffPagination = useMemo(
+    () => paginateList(filteredIssueDiffs, issueDiffVisibleCount),
+    [filteredIssueDiffs, issueDiffVisibleCount]
+  )
+  const visibleIssueDiffs = issueDiffPagination.visible
 
   return (
     <div className="space-y-4">
@@ -399,10 +320,16 @@ export function ReconciliationSnapshotCompareView({
             </select>
           </label>
         </div>
-        {visibleIssueDiffs.length === 0 ? (
+        {filteredIssueDiffs.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-600">No issue changes for this filter.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded border border-zinc-200">
+          <>
+            {filteredIssueDiffs.length > SNAPSHOT_UI_ISSUES_PAGE_SIZE ? (
+              <p className="mt-4 text-xs text-zinc-500">
+                Showing {visibleIssueDiffs.length} of {filteredIssueDiffs.length} issue changes.
+              </p>
+            ) : null}
+            <div className="mt-4 overflow-x-auto rounded border border-zinc-200">
             <table className="min-w-full border-collapse text-sm">
               <thead className="sticky top-0 z-10 bg-zinc-50">
                 <tr className="border-b border-zinc-200 text-left text-zinc-600">
@@ -456,6 +383,18 @@ export function ReconciliationSnapshotCompareView({
               </tbody>
             </table>
           </div>
+            {issueDiffPagination.hasMore ? (
+              <button
+                type="button"
+                onClick={() =>
+                  setIssueDiffVisibleCount(issueDiffPagination.nextVisibleCount)
+                }
+                className="mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
+              >
+                Show more changes ({issueDiffPagination.total - issueDiffPagination.visible.length} remaining)
+              </button>
+            ) : null}
+          </>
         )}
       </CollapsibleSection>
     </div>

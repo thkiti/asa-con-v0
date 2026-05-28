@@ -15,15 +15,18 @@ import {
   exportFrozenIssuesCsv,
   filterFrozenIssuesByDomain,
   formatSnapshotDisplayTitle,
-  formatSnapshotKindLabel,
   formatSnapshotScope,
+  paginateList,
+  SNAPSHOT_UI_ISSUES_PAGE_SIZE,
   snapshotIssuesToUiRows,
   snapshotRowsToDashboardRows,
 } from "@/lib/finance-ui/reconciliation-snapshots"
-import type {
-  ReconciliationIssueRow,
-  ReconciliationSnapshotDetail,
-} from "@/lib/finance-ui/types"
+import type { ReconciliationSnapshotDetail } from "@/lib/finance-ui/types"
+import {
+  CollapsibleSection,
+  SnapshotDetailSkeleton,
+  SnapshotKindBadge,
+} from "./reconciliation-snapshot-ui"
 import { ReconciliationDashboardTable } from "./ReconciliationDashboardTable"
 import { ReconciliationIssuesTable } from "./ReconciliationIssuesTable"
 
@@ -42,30 +45,6 @@ const DOMAIN_OPTIONS = [
   { value: "tender", label: "Tender" },
 ]
 
-type CollapsibleSectionProps = {
-  title: string
-  open?: boolean
-  children: React.ReactNode
-}
-
-function CollapsibleSection({
-  title,
-  open = true,
-  children,
-}: CollapsibleSectionProps) {
-  return (
-    <details
-      open={open}
-      className="rounded border border-zinc-200 bg-white"
-    >
-      <summary className="cursor-pointer list-none px-4 py-3 text-base font-semibold text-zinc-900 [&::-webkit-details-marker]:hidden">
-        {title}
-      </summary>
-      <div className="border-t border-zinc-100 px-4 pb-4 pt-3">{children}</div>
-    </details>
-  )
-}
-
 type ReconciliationSnapshotDetailViewProps = {
   snapshot: ReconciliationSnapshotDetail
 }
@@ -79,6 +58,9 @@ export function ReconciliationSnapshotDetailView({
     domain: "all",
     status: "ALL",
   })
+  const [issuesVisibleCount, setIssuesVisibleCount] = useState(
+    SNAPSHOT_UI_ISSUES_PAGE_SIZE
+  )
 
   const dashboardRows = useMemo(
     () => snapshotRowsToDashboardRows(snapshot.payload.dashboardRows),
@@ -100,12 +82,21 @@ export function ReconciliationSnapshotDetailView({
     [visibleRows]
   )
 
-  const visibleIssues = useMemo<ReconciliationIssueRow[]>(() => {
+  const visibleIssues = useMemo(() => {
     if (!selectedRow) {
       return allIssues
     }
     return filterFrozenIssuesByDomain(allIssues, selectedRow.domain)
   }, [allIssues, selectedRow])
+
+  useEffect(() => {
+    setIssuesVisibleCount(SNAPSHOT_UI_ISSUES_PAGE_SIZE)
+  }, [selectedRow, filter.domain, filter.status])
+
+  const issuesPagination = useMemo(
+    () => paginateList(visibleIssues, issuesVisibleCount),
+    [visibleIssues, issuesVisibleCount]
+  )
 
   const { inventoryResult, salesResult } = snapshot.payload
 
@@ -116,12 +107,10 @@ export function ReconciliationSnapshotDetailView({
           <h2 className="text-lg font-semibold text-zinc-900">
             {formatSnapshotDisplayTitle(snapshot)}
           </h2>
-          <span className="inline-block rounded bg-zinc-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-zinc-700">
-            {formatSnapshotKindLabel(snapshot.kind)}
-          </span>
+          <SnapshotKindBadge kind={snapshot.kind} />
         </div>
         <p className="mt-1 text-sm text-zinc-600">
-          {formatSnapshotScope(snapshot)} · captured{" "}
+          {formatSnapshotScope(snapshot)} ? captured{" "}
           <time dateTime={snapshot.createdAt}>
             {formatDateTime(snapshot.createdAt)}
           </time>
@@ -129,7 +118,7 @@ export function ReconciliationSnapshotDetailView({
       </header>
 
       <p className="rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        Frozen snapshot — data from capture time only (no live fetch).
+        Frozen snapshot � data from capture time only (no live fetch).
       </p>
 
       <div className="sticky top-0 z-20 -mx-1 border border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -159,7 +148,7 @@ export function ReconciliationSnapshotDetailView({
         <dl className="grid gap-3 sm:grid-cols-2">
           <div>
             <dt className="text-sm text-zinc-500">Label</dt>
-            <dd className="mt-1 text-zinc-900">{snapshot.label ?? "—"}</dd>
+            <dd className="mt-1 text-zinc-900">{snapshot.label ?? "�"}</dd>
           </div>
           <div>
             <dt className="text-sm text-zinc-500">Scope</dt>
@@ -322,6 +311,11 @@ export function ReconciliationSnapshotDetailView({
                 {allIssues.length} issue(s) from frozen payload.
               </p>
             )}
+            {issuesPagination.total > SNAPSHOT_UI_ISSUES_PAGE_SIZE ? (
+              <p className="mt-1 text-xs text-zinc-500">
+                Showing {issuesPagination.visible.length} of {issuesPagination.total} issues.
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             {selectedRow ? (
@@ -343,7 +337,16 @@ export function ReconciliationSnapshotDetailView({
             </button>
           </div>
         </div>
-        <ReconciliationIssuesTable issues={visibleIssues} />
+        <ReconciliationIssuesTable issues={issuesPagination.visible} />
+        {issuesPagination.hasMore ? (
+          <button
+            type="button"
+            onClick={() => setIssuesVisibleCount(issuesPagination.nextVisibleCount)}
+            className="mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
+          >
+            Show more issues ({issuesPagination.total - issuesPagination.visible.length} remaining)
+          </button>
+        ) : null}
       </CollapsibleSection>
     </div>
   )
@@ -351,17 +354,6 @@ export function ReconciliationSnapshotDetailView({
 
 type ReconciliationSnapshotDetailClientProps = {
   id: string
-}
-
-function SnapshotDetailSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="h-6 w-48 animate-pulse rounded bg-zinc-200" />
-      <div className="h-4 w-72 animate-pulse rounded bg-zinc-200" />
-      <div className="h-16 animate-pulse rounded border border-zinc-200 bg-zinc-100" />
-      <div className="h-40 animate-pulse rounded border border-zinc-200 bg-zinc-100" />
-    </div>
-  )
 }
 
 export function ReconciliationSnapshotDetailClient({
