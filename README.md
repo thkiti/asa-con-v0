@@ -3,7 +3,9 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** Phase 18 — Reconciliation snapshots; see [docs/00_README.md](./docs/00_README.md)
+- **Status:** `phase19c-stable` — Phase 19 reconciliation stabilization complete; see [docs/00_README.md](./docs/00_README.md)
+
+Phase 19 completed reconciliation stabilization: snapshot UX polish (19A), posting-lock enforcement audit (19B), and evidence export / audit print (19C). Summary: [docs/19_FINANCE_RECONCILIATION_STABILIZATION.md](./docs/19_FINANCE_RECONCILIATION_STABILIZATION.md).
 
 ## Docs
 
@@ -13,6 +15,7 @@ Start with [docs/00_README.md](./docs/00_README.md).
 - Reconciliation dashboard: [docs/16_FINANCE_RECONCILIATION.md](./docs/16_FINANCE_RECONCILIATION.md) — UI at `/finance/reconciliation`
 - Reconciliation drill-down: [docs/17_RECONCILIATION_DRILLDOWN.md](./docs/17_RECONCILIATION_DRILLDOWN.md)
 - Reconciliation snapshots: [docs/18_RECONCILIATION_SNAPSHOTS.md](./docs/18_RECONCILIATION_SNAPSHOTS.md) — UI at `/finance/reconciliation/snapshots`
+- Phase 19 stabilization: [docs/19_FINANCE_RECONCILIATION_STABILIZATION.md](./docs/19_FINANCE_RECONCILIATION_STABILIZATION.md) — snapshot UX, posting-lock audit, evidence export
 
 ## Setup
 
@@ -63,3 +66,4 @@ generated/  Prisma client output (gitignored)
 | 16 | Finance reconciliation dashboard (`/finance/reconciliation`) |
 | 17 | Transaction-level reconciliation drill-down (`GET .../reconciliation/issues`) |
 | 18 | Reconciliation snapshots (`/finance/reconciliation/snapshots`, `POST .../snapshots`) |
+| 19 | Reconciliation stabilization — snapshot UX (19A), posting-lock audit (19B), evidence export/print (19C); tag `phase19c-stable` |

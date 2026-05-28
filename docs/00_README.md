@@ -22,7 +22,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 16. [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md) — Phase 16 read-only reconciliation dashboard
 17. [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md) — Phase 17 transaction-level issues API + drill-down
 18. [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md) — Phase 18 frozen reconciliation snapshots
-19. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+19. [19_FINANCE_RECONCILIATION_STABILIZATION.md](./19_FINANCE_RECONCILIATION_STABILIZATION.md) — Phase 19 stabilization summary (19A UI, 19B posting-lock audit, 19C evidence export)
+20. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -42,3 +43,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 16 | Finance reconciliation dashboard (read-only variance workflow) | Done |
 | 17 | Transaction-level reconciliation drill-down | Done |
 | 18 | Reconciliation snapshots (manual capture, frozen history) | Done |
+| 19 | Finance reconciliation stabilization (19A UI, 19B posting-lock audit, 19C evidence export) | Done |
