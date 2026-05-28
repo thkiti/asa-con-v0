@@ -1,6 +1,6 @@
 # Finance Periods (Phase 15)
 
-Status: **Done** — period lifecycle, posting enforcement, admin API/UI, auth, middleware bypass  
+Status: **Done** — period lifecycle, posting enforcement, admin API/UI, auth, middleware bypass; Phase 19B posting-lock audit  
 Scope: `AccountingPeriod` lifecycle, posting lock, admin operations, middleware/API boundaries  
 Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
 
@@ -229,7 +229,8 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | `lib/finance/period-close.ts` | `closeAccountingPeriod`, `reopenAccountingPeriod` |
 | `lib/finance/posting-period.ts` | `assertPostingPeriodOpen` — posting gate |
 | `lib/finance/period-list.ts` | Read-only list DTOs |
-| `lib/finance/posting.ts` | Voucher/journal writes (uses assert, never bootstrap) |
+| `lib/finance/posting.ts` | Voucher/journal orchestration (uses assert, never bootstrap) |
+| `lib/finance/voucher.ts` | Voucher writes; defense-in-depth `assertPeriodOpen` on loaded period |
 | `lib/auth/period-admin.ts` | Route-level admin auth |
 | `app/api/finance/periods/route.ts` | HTTP adapter |
 | `components/finance/PeriodAdminPage.tsx` | Admin UI |
@@ -247,7 +248,7 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | `UNAUTHENTICATED` | 401 | POST/PATCH without session |
 | `FORBIDDEN` | 403 | POST/PATCH with non-admin role |
 
-POS checkout maps `FinancePostingError` to JSON at [`app/api/pos/checkout/route.ts`](../app/api/pos/checkout/route.ts).
+POS checkout maps `FinancePostingError` to JSON at [`app/api/pos/checkout/route.ts`](../app/api/pos/checkout/route.ts). Stock document POST uses shared [`financeErrorResponse`](../app/api/finance/shared/finance-api-errors.ts) at [`app/api/stock-document/[id]/post/route.ts`](../app/api/stock-document/[id]/post/route.ts).
 
 ---
 
@@ -262,7 +263,98 @@ Set in `.env.local` for local dev. Restart dev server after changing.
 
 ---
 
-## 13. Out of scope (future)
+## 13. Phase 19B — Posting lock enforcement audit
+
+Status: **Done** — CI-style architecture audits, voucher defense-in-depth, consistent API errors
+
+Phase 19B does **not** change posting business rules from Phase 15. It adds **provable guarantees** that the lock cannot be bypassed by accident and documents the enforcement layers.
+
+### Enforcement layers
+
+```mermaid
+flowchart TD
+  subgraph operational [Operational orchestrators own outer tx]
+    checkout["lib/pos/checkout.ts"]
+    postDoc["lib/stock/posting.ts"]
+  end
+
+  subgraph finance [Finance joins caller tx only]
+    postOp["postOperationalVoucher"]
+    assertOpen["assertPostingPeriodOpen"]
+    voucher["createVoucherWithLines"]
+    assertStatus["assertPeriodOpen on loaded period"]
+    journal["createJournalForVoucher"]
+  end
+
+  checkout --> postOp
+  postDoc --> postOp
+  postOp --> assertOpen
+  assertOpen --> voucher
+  voucher --> assertStatus
+  assertStatus --> journal
+```
+
+| Layer | Module | Role |
+|-------|--------|------|
+| **Primary gate** | [`lib/finance/posting-period.ts`](../lib/finance/posting-period.ts) | `assertPostingPeriodOpen(tx, branchId, postingDate)` — authoritative check before any voucher write in `postOperationalVoucher` |
+| **Defense in depth** | [`lib/finance/voucher.ts`](../lib/finance/voucher.ts) | `assertPeriodOpen(period.status)` on the period row already loaded by `periodId` — blocks direct calls to `createVoucherWithLines` with a closed period |
+| **Low-level writers** | `voucher.ts`, [`journal.ts`](../lib/finance/journal.ts) | Only modules that call `voucher.create` / `journalEntry.create`; not exported from [`lib/finance/index.ts`](../lib/finance/index.ts) barrel |
+
+There is **one** DB lookup for period status on the live path (`assertPostingPeriodOpen`). The voucher-layer check reuses the row from `findUnique({ id: periodId })` — no second period query.
+
+### No nested transactions
+
+Operational orchestrators (`checkout`, `postDocument`) open the **outer** `prisma.$transaction`. Finance posting receives `{ tx }` and must not open another transaction. This keeps rollback atomic: a `PERIOD_CLOSED` error rolls back the sale/stock write together with the failed voucher attempt.
+
+See also: `npm run audit:tx` (nested-transaction audit).
+
+### Caller allowlist philosophy
+
+GL posting is intentionally narrow:
+
+- **Only** [`lib/finance/posting.ts`](../lib/finance/posting.ts) orchestrates voucher + journal creation in production.
+- Operational modules call `postSaleVoucher` / `postStockDocumentVoucher` — not `createVoucherWithLines` or `createJournalForVoucher` directly.
+- Low-level writers stay module-internal; the public barrel exposes posting facades, not GL primitives.
+
+This reduces the chance of a future path that skips `assertPostingPeriodOpen`.
+
+### Architecture audit (`npm run audit:posting-lock`)
+
+Script: [`scripts/audit/posting-lock-audit.ts`](../scripts/audit/posting-lock-audit.ts)
+
+| Rule ID | Guarantee |
+|---------|-----------|
+| `GL_WRITER_SINGLETON` | `voucher.create` and `journalEntry.create` only in `lib/finance/voucher.ts` and `lib/finance/journal.ts` |
+| `VOUCHER_JOURNAL_CALLER_ALLOWLIST` | `createVoucherWithLines` / `createJournalForVoucher` invoked only from `posting.ts`, writer definitions, or tests |
+| `POSTING_GATE_REQUIRED` | `posting.ts` calls `assertPostingPeriodOpen` before `createVoucherWithLines` |
+| `RECON_NO_POSTING` | Reconciliation modules do not create vouchers/journals or mutate operational sales/stock |
+
+Tests: [`__tests__/scripts/audit/posting-lock-audit.test.ts`](../__tests__/scripts/audit/posting-lock-audit.test.ts)
+
+### Reconciliation stays read-only
+
+Reconciliation (Phase 16–18) **observes** posted state; it does not post, close periods, or bypass the lock:
+
+- No `postOperationalVoucher`, `voucher.create`, or `journalEntry.create` in reconciliation modules.
+- Snapshots persist audit JSON only — not GL rows.
+- `RECON_NO_POSTING` audit rule enforces this at CI time.
+
+Operational source (sales, stock ledger, documents) remains source of truth; reconciliation compares operational totals to derived GL without writing either side.
+
+### API error consistency
+
+Both operational POST routes return structured finance errors (not opaque 500s):
+
+| Route | Handler |
+|-------|---------|
+| `POST /api/pos/checkout` | Maps `FinancePostingError` → 400 + `{ error, code }` |
+| `POST /api/stock-document/[id]/post` | `financeErrorResponse` (400 for `PERIOD_CLOSED`, 404 for `PERIOD_NOT_FOUND`, etc.) |
+
+Rollback behavior is unchanged — only the HTTP mapping improved for stock POST.
+
+---
+
+## 14. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
 - Period close audit trail / reason capture on PATCH
