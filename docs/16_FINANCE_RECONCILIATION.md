@@ -1,6 +1,6 @@
 # Finance Reconciliation (Phase 16)
 
-Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export, snapshot capture entry  
+Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export, snapshot capture entry; snapshot evidence export (Phase 19C)  
 Scope: Operational vs GL visibility UI; no accounting mutations  
 Related: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 
@@ -14,7 +14,7 @@ Reconciliation provides **operational visibility** into whether committed operat
 |------|-------------|
 | Aggregate comparison | Inventory and sales/tender vs GL in one dashboard |
 | Variance workflow | Status badges, filters, detail panel entry point |
-| Read-only exports | Client-side CSV of visible dashboard rows |
+| Read-only exports | Client-side CSV of visible dashboard rows; frozen snapshot evidence packs on history pages (Phase 19C — [18 §9](./18_RECONCILIATION_SNAPSHOTS.md#9-phase-19c--evidence-export-and-audit-print)) |
 | Drill-down entry | Row click opens detail panel (Phase 17 loads transaction issues) |
 | Snapshot capture | Manual frozen capture (Phase 18) — see [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md) |
 
@@ -88,6 +88,8 @@ Full API filters, UI sequence, and read-only guarantees: [17_RECONCILIATION_DRIL
 | No posting lock bypass | Yes | Yes |
 | CSV export read-only | Dashboard CSV in browser | Issues CSV in browser |
 
+Frozen snapshot **evidence CSV packs** and **audit print** (Phase 19C) are browser-only and payload-only — see [18 §9](./18_RECONCILIATION_SNAPSHOTS.md#9-phase-19c--evidence-export-and-audit-print).
+
 Kernel `runFinanceReconciliation` is used by the issues API but **not changed** in Phase 17.
 
 ---
@@ -99,7 +101,8 @@ Kernel `runFinanceReconciliation` is used by the issues API but **not changed** 
 3. Click a variance row — detail panel opens; transaction issues load (Phase 17).
 4. Confirm no post/fix/reconcile buttons.
 5. Export dashboard CSV and issues CSV — downloads only, no mutation APIs.
-6. Network tab: only `GET` to `/inventory`, `/sales`, and `/issues`.
+6. Open a frozen snapshot detail — **Export evidence pack** and **Print audit report** use payload only ([18 §9](./18_RECONCILIATION_SNAPSHOTS.md#9-phase-19c--evidence-export-and-audit-print)).
+7. Network tab: only `GET` to `/inventory`, `/sales`, and `/issues` on the live dashboard.
 
 ---
 
@@ -111,5 +114,6 @@ Kernel `runFinanceReconciliation` is used by the issues API but **not changed** 
 | Branch name resolution | Replace raw branch IDs |
 | Tender-specific kernel issue types | Separate approved phase |
 | Scheduled reconciliation snapshots | **Phase 18 done** — manual capture; scheduled jobs remain future |
+| Snapshot evidence export / audit print | **Phase 19C done** — browser CSV packs and print layouts on snapshot detail/compare |
 
 All future work stays read-only with **no GL write-back**.

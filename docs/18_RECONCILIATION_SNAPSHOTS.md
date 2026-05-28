@@ -1,6 +1,6 @@
 # Reconciliation Snapshots (Phase 18)
 
-Status: **Done** — manual capture, frozen read-only history, CSV export; Phase 19A snapshot UI polish  
+Status: **Done** — manual capture, frozen read-only history, CSV export; Phase 19A snapshot UI polish; Phase 19C evidence export and audit print  
 Scope: Persist reconciliation dashboard + transaction issues at capture time  
 Related: [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md), [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 
@@ -15,6 +15,8 @@ Phase 18 adds **frozen reconciliation snapshots** — point-in-time captures of 
 | Manual capture | Finance admin captures current reconciliation scope from the live dashboard |
 | Frozen history | List and detail views read stored JSON payload only |
 | CSV export | Client-side export of frozen dashboard rows and issues |
+| Evidence pack (Phase 19C) | Metadata, summary, dashboard, and issues CSVs from frozen payload; compare diff CSVs |
+| Audit print (Phase 19C) | Browser print layout with full frozen data (same scope as CSV export) |
 | Domain drill-down | Row click filters issues from frozen payload (no live issues API) |
 
 **Non-goals:** scheduled capture, snapshot delete/edit, GL posting, auto-adjust, or re-running kernel on detail view.
@@ -124,9 +126,12 @@ Finance hub [`/finance`](../app/(main)/finance/page.tsx) links to snapshots.
 
 | Module | Role |
 |--------|------|
-| [`lib/finance-ui/reconciliation-snapshots.ts`](../lib/finance-ui/reconciliation-snapshots.ts) | Scope validation, capture body, row mappers, CSV export, compare diff helpers, pagination |
+| [`lib/finance-ui/reconciliation-snapshots.ts`](../lib/finance-ui/reconciliation-snapshots.ts) | Scope validation, capture body, row mappers, CSV download, compare diff helpers, pagination |
+| [`lib/finance-ui/reconciliation-export.ts`](../lib/finance-ui/reconciliation-export.ts) | Evidence CSV builders (snapshot + compare packs), sequential browser download |
+| [`lib/finance-ui/csv.ts`](../lib/finance-ui/csv.ts) | Shared CSV escaping, table builder, stable sort |
+| [`lib/finance-ui/export-formatters.ts`](../lib/finance-ui/export-formatters.ts) | ISO timestamps, fixed-decimal amounts, metadata rows, export slug |
 | [`lib/finance-ui/fetchers.ts`](../lib/finance-ui/fetchers.ts) | `fetchReconciliationSnapshots`, `fetchReconciliationSnapshotById`, `createReconciliationSnapshot` |
-| [`components/finance/reconciliation-snapshot-ui.tsx`](../components/finance/reconciliation-snapshot-ui.tsx) | Shared collapsible sections, badges, skeletons, compare delta chips |
+| [`components/finance/reconciliation-snapshot-ui.tsx`](../components/finance/reconciliation-snapshot-ui.tsx) | Shared collapsible sections, badges, skeletons, compare delta chips, audit print headers |
 
 ### Capture flow (manual)
 
@@ -141,7 +146,8 @@ Finance hub [`/finance`](../app/(main)/finance/page.tsx) links to snapshots.
 2. Dashboard table renders `payload.dashboardRows` — **no** `fetchReconciliationDashboard`.
 3. Issues table renders `payload.issuesPayload.issues` — **no** `fetchReconciliationIssues`.
 4. Row click filters issues by domain using `issueMatchesDomain` on frozen rows only.
-5. Export CSV buttons build files in the browser.
+5. **Export evidence pack** or individual CSVs build files in the browser from the **full frozen payload** (not UI pagination/filters).
+6. **Print audit report** opens the browser print dialog with audit headers and full frozen dashboard rows / issues (or full compare diffs).
 
 ---
 
@@ -154,7 +160,8 @@ Finance hub [`/finance`](../app/(main)/finance/page.tsx) links to snapshots.
 | **Compare uses payload only** | `ReconciliationSnapshotCompareView` diffs two stored payloads — no live fetch, no compare API |
 | **Only POST for capture** | No PATCH/DELETE on snapshot API |
 | **No fix/reconcile UI** | Snapshot pages have no Fix, Reconcile, or Post buttons |
-| **CSV is client-side** | `downloadCsv` / export helpers — no server write |
+| **CSV is client-side** | `downloadCsv` / `reconciliation-export.ts` — no server write |
+| **Print is client-side** | `window.print()` + `@media print` CSS — no PDF server, no live fetch during print |
 | **Capture is explicit** | Manual button after live dashboard load; no background jobs |
 
 Live reconciliation (Phases 16–17) remains the source for current operational vs GL state. Snapshots are historical records only.
@@ -172,8 +179,9 @@ Live reconciliation (Phases 16–17) remains the source for current operational 
 7. Click dashboard row — issues filter by domain from payload (no `GET .../issues`).
 8. When issues exceed 50 — **Show more issues** appears; CSV export still includes all filtered issues.
 9. Open compare — header metric deltas and row/issue change tables render from frozen payloads only.
-10. Export CSV — downloads only.
-11. Confirm no Fix / Reconcile / Post buttons anywhere on snapshot pages.
+10. Export CSV — downloads only (evidence pack or individual files).
+11. Print audit report — print preview shows audit header, disclaimer, and full frozen tables; export buttons and filters hidden.
+12. Confirm no Fix / Reconcile / Post buttons anywhere on snapshot pages.
 
 ---
 
@@ -244,10 +252,74 @@ Compare helpers in [`lib/finance-ui/reconciliation-snapshots.ts`](../lib/finance
   - Detail **Transaction issues** section: show first 50, **Show more issues** for remainder.
   - Compare **Issue changes** table: same pattern.
   - Resets when dashboard row selection or filters change.
-  - CSV export always uses the full filtered list, not just the visible page.
+  - Resets when dashboard row selection or filters change.
+  - On-screen browsing may paginate; **evidence export and audit print** always use the full frozen payload (Phase 19C).
 
 ---
 
+## 9. Phase 19C — Evidence export and audit print
+
+Status: **Done** — browser-only evidence CSV packs and print-friendly audit layouts
+
+Phase 19C is **read-only**. It does not call live reconciliation APIs during export or print, change snapshot capture, or add server-side PDF/zip endpoints.
+
+### Scope
+
+| In scope | Out of scope |
+|----------|--------------|
+| Snapshot evidence CSV pack (metadata, summary, dashboard, issues) | Server-side export routes |
+| Compare evidence CSV pack (metadata, summary, dashboard changes, issue changes) | jszip / single combined download |
+| Shared CSV helpers and deterministic sort order | Live dashboard refresh on detail/compare |
+| **Print audit report** on detail and compare pages | PDF generation service |
+| Print layout: audit header, frozen disclaimer, full payload tables | Schema or API changes |
+
+### Pure helpers (`lib/finance-ui/`)
+
+| Module | Role |
+|--------|------|
+| [`reconciliation-export.ts`](../lib/finance-ui/reconciliation-export.ts) | `buildSnapshotEvidenceExport`, `buildCompareEvidenceExport`, per-section CSV builders, `downloadEvidenceCsvFiles` |
+| [`csv.ts`](../lib/finance-ui/csv.ts) | `escapeCsvCell`, `rowsToCsvTable`, `sortByStableKey` |
+| [`export-formatters.ts`](../lib/finance-ui/export-formatters.ts) | ISO timestamps, `formatExportAmount`, metadata row builders, `buildSnapshotExportSlug` |
+
+All evidence data is derived from the **stored snapshot payload** (detail) or **in-memory compare result** (compare) — the same sources as the on-screen frozen UI, not a separate reconciliation run.
+
+### Snapshot detail export (`ReconciliationSnapshotDetailView`)
+
+- **Export evidence pack** — four sequential browser downloads (200 ms spacing): `{slug}-metadata.csv`, `{slug}-summary.csv`, `{slug}-dashboard.csv`, `{slug}-issues.csv`.
+- Individual buttons for each file.
+- Slug from snapshot label (e.g. `month-end`) or id prefix via `buildSnapshotExportSlug`.
+- Dashboard and issues CSVs include **all** frozen payload rows/issues, regardless of on-screen filters or issue pagination.
+
+### Compare export (`ReconciliationSnapshotCompareView`)
+
+- **Export compare evidence** — four files: `{left-slug}-vs-{right-slug}-metadata.csv`, `-summary.csv`, `-dashboard-changes.csv`, `-issue-changes.csv`.
+- Summary CSV: header metric deltas (right − left) from `computeSnapshotCompareResult`.
+- Dashboard/issue change CSVs: **changed rows only** (added / removed / changed), sorted by stable id.
+
+### Audit print
+
+Shared print UI in [`reconciliation-snapshot-ui.tsx`](../components/finance/reconciliation-snapshot-ui.tsx):
+
+| Component | Purpose |
+|-----------|---------|
+| `PrintAuditButton` | Calls `window.print()` |
+| `SnapshotAuditPrintHeader` | Compact audit header on detail print |
+| `CompareAuditPrintHeader` | Left/right snapshot summary on compare print |
+| `FROZEN_SNAPSHOT_DISCLAIMER` | Single disclaimer string |
+
+Print CSS in [`app/globals.css`](../app/globals.css): `.no-print`, `.print-only`, page-break utilities, expand `<details>` sections, neutralize sticky headers.
+
+**Print scope matches CSV export:** full frozen dashboard rows and issues on detail; full compare diffs on compare. Interactive controls (export buttons, filters, pagination, page chrome) are hidden via `.no-print`.
+
+### Tests
+
+| File | Coverage |
+|------|----------|
+| [`__tests__/lib/finance-ui/reconciliation-export.test.ts`](../__tests__/lib/finance-ui/reconciliation-export.test.ts) | Metadata/summary/compare CSV content, stable filenames, changed-only diffs |
+| [`__tests__/lib/finance-ui/csv.test.ts`](../__tests__/lib/finance-ui/csv.test.ts) | CSV escaping and stable sort |
+| Component tests | Export pack buttons, print audit report, print-only full-table markers |
+
+---
 
 ### Development staff fallback (local smoke only)
 
@@ -264,7 +336,7 @@ Production (and test/CI) still require a real active `Staff` row; `requirePeriod
 For local smoke, set period-admin cookies (`role=HO_FINANCE` or `HO_ADMIN`); any `staffId` in the cookie is fine in development — first capture auto-seeds `DEV` if needed.
 
 
-## 9. Related docs
+## 10. Related docs
 
 - Live dashboard: [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md)
 - Live drill-down: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md)
