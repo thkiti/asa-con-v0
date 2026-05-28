@@ -35,6 +35,24 @@ const liveIssue: ReconciliationIssueRow = {
   sourcePostedAt: null,
 }
 
+const missingRefsIssue: ReconciliationIssueRow = {
+  id: "SALE:s1:MISSING_VOUCHER",
+  sourceType: "SALE",
+  sourceId: "s1",
+  documentRef: "s1",
+  issueType: "MISSING_VOUCHER",
+  severity: "ERROR",
+  status: "MISSING_GL",
+  message: "Completed sale has no posted finance voucher",
+  expectedAmount: null,
+  actualAmount: null,
+  difference: null,
+  vouchers: [],
+  journalEntries: [],
+  sourceCreatedAt: "2026-05-01T00:00:00.000Z",
+  sourcePostedAt: null,
+}
+
 const snapshotIssue: ReconciliationIssueRow = {
   id: "STOCK_DOCUMENT:doc-1:INVENTORY_VALUE_MISMATCH",
   sourceType: "STOCK_DOCUMENT",
@@ -80,6 +98,17 @@ describe("FinanceTraceabilityPanel", () => {
     expect(html).toContain("Live reconciliation evidence")
     expect(html).toContain('href="/finance/vouchers/voucher-1"')
     expect(html).toContain("Read-only trace")
+    expect(html).not.toContain("Post")
+    expect(html).not.toContain("Reconcile")
+  })
+
+  it("renders MISSING VOUCHER and journal refs without posting actions", () => {
+    const trace = buildFinanceTrace(missingRefsIssue, { mode: "live" })
+    const html = renderToStaticMarkup(<FinanceTraceabilityPanel trace={trace} />)
+
+    expect(html).toContain("POS sale · s1")
+    expect(html).toContain("MISSING VOUCHER")
+    expect(html).not.toContain('href="/finance/vouchers/')
     expect(html).not.toContain("Post")
     expect(html).not.toContain("Reconcile")
   })

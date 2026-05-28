@@ -35,6 +35,31 @@ describe("ReconciliationIssuesTable", () => {
     expect(html).not.toContain("Post")
   })
 
+  it("lazy-mounts lineage panel content only when expanded", () => {
+    const html = renderToStaticMarkup(
+      <ReconciliationIssuesTable issues={[sampleIssue]} />
+    )
+
+    expect(html).not.toContain("Finance lineage")
+    expect(html).not.toContain("Live reconciliation evidence")
+  })
+
+  it("accepts frozen snapshot trace context without live fetch UI", () => {
+    const html = renderToStaticMarkup(
+      <ReconciliationIssuesTable
+        issues={[sampleIssue]}
+        snapshotTrace={{
+          snapshotId: "snap-1",
+          capturedAt: "2026-05-27T12:00:00.000Z",
+        }}
+      />
+    )
+
+    expect(html).toContain("POS sale")
+    expect(html).not.toContain("Finance lineage")
+    expect(html).not.toContain("Loading transaction issues")
+  })
+
   it("shows loading state", () => {
     const html = renderToStaticMarkup(
       <ReconciliationIssuesTable issues={[]} loading />
