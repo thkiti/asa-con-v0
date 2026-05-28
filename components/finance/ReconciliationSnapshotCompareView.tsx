@@ -8,6 +8,11 @@ import {
 } from "@/lib/finance-ui/fetchers"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import {
+  buildCompareEvidenceExport,
+  downloadEvidenceCsvFiles,
+} from "@/lib/finance-ui/reconciliation-export"
+import { downloadCsv } from "@/lib/finance-ui/reconciliation-snapshots"
+import {
   computeSnapshotCompareResult,
   filterDashboardRowDiffs,
   filterIssueDiffs,
@@ -18,6 +23,7 @@ import {
   SNAPSHOT_UI_ISSUES_PAGE_SIZE,
   type DashboardRowDiffKind,
   type IssueDiffKind,
+  type SnapshotCompareResult,
 } from "@/lib/finance-ui/reconciliation-snapshots"
 import type { ReconciliationSnapshotDetail, ReconciliationSnapshotHeader } from "@/lib/finance-ui/types"
 import {
@@ -126,6 +132,97 @@ function SnapshotPicker({
   )
 }
 
+
+type CompareEvidenceExportControlsProps = {
+  left: ReconciliationSnapshotDetail
+  right: ReconciliationSnapshotDetail
+  compareResult: SnapshotCompareResult
+}
+
+function CompareEvidenceExportControls({
+  left,
+  right,
+  compareResult,
+}: CompareEvidenceExportControlsProps) {
+  const [exporting, setExporting] = useState(false)
+
+  const evidenceFiles = useMemo(
+    () =>
+      buildCompareEvidenceExport({
+        left,
+        right,
+        compare: compareResult,
+      }),
+    [left, right, compareResult]
+  )
+
+  async function handleExportPack() {
+    setExporting(true)
+    try {
+      await downloadEvidenceCsvFiles(evidenceFiles)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  function handleExportSingle(index: number) {
+    const file = evidenceFiles[index]
+    if (!file) return
+    downloadCsv(file.filename, file.content)
+  }
+
+  return (
+    <div className="rounded border border-zinc-200 bg-zinc-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-zinc-900">Compare evidence export</p>
+          <p className="mt-1 text-xs text-zinc-600">
+            Frozen compare diff only � metadata, summary deltas, and changed rows/issues.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={exporting}
+          onClick={() => void handleExportPack()}
+          className="rounded border border-zinc-900 bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {exporting ? "Exporting�" : "Export compare evidence"}
+        </button>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => handleExportSingle(0)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Metadata CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => handleExportSingle(1)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Summary CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => handleExportSingle(2)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Dashboard changes CSV
+        </button>
+        <button
+          type="button"
+          onClick={() => handleExportSingle(3)}
+          className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900"
+        >
+          Issue changes CSV
+        </button>
+      </div>
+    </div>
+  )
+}
+
 type ReconciliationSnapshotCompareViewProps = {
   left: ReconciliationSnapshotDetail
   right: ReconciliationSnapshotDetail
@@ -176,6 +273,12 @@ export function ReconciliationSnapshotCompareView({
         <SnapshotCard label="Left snapshot" snapshot={left} />
         <SnapshotCard label="Right snapshot" snapshot={right} />
       </div>
+
+      <CompareEvidenceExportControls
+        left={left}
+        right={right}
+        compareResult={compareResult}
+      />
 
       <div className="sticky top-0 z-20 -mx-1 border border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">

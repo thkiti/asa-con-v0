@@ -395,3 +395,13 @@ export function buildCompareEvidenceCsvFiles(input: {
     },
   ]
 }
+
+
+export function buildCompareEvidenceExport(input: {
+  left: ReconciliationSnapshotDetail
+  right: ReconciliationSnapshotDetail
+  compare: SnapshotCompareResult
+  exportedAt?: string
+}): EvidenceCsvFile[] {
+  return buildCompareEvidenceCsvFiles(input)
+}
