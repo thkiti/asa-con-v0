@@ -39,6 +39,17 @@ export type ReconciliationSnapshotListFilter = {
   limit?: number
 }
 
+export type ReconciliationSnapshotPeriodFilter = {
+  branchId: string
+  periodKey: string
+  limit?: number
+}
+
+export type SnapshotsForPeriodResult = {
+  latest: ReconciliationSnapshotDetail | null
+  prior: ReconciliationSnapshotHeader | null
+}
+
 const DEFAULT_LIST_LIMIT = 50
 const MAX_LIST_LIMIT = 100
 
@@ -153,6 +164,40 @@ export async function listReconciliationSnapshots(
   return rows.map(toSnapshotHeader)
 }
 
+
+function clampPeriodSnapshotLimit(limit: number | undefined): number {
+  if (limit === undefined || !Number.isFinite(limit)) {
+    return 2
+  }
+  return Math.min(Math.max(1, Math.floor(limit)), MAX_LIST_LIMIT)
+}
+
+export async function findSnapshotsForPeriod(
+  prisma: ReconciliationSnapshotListPrisma,
+  filter: ReconciliationSnapshotPeriodFilter
+): Promise<SnapshotsForPeriodResult> {
+  const branchId = await resolveBranchId(prisma, filter.branchId)
+  const periodKey = filter.periodKey.trim()
+  const take = clampPeriodSnapshotLimit(filter.limit)
+
+  const rows = await prisma.reconciliationSnapshot.findMany({
+    where: {
+      branchId,
+      periodKey,
+    },
+    orderBy: { createdAt: "desc" },
+    take,
+  })
+
+  if (rows.length === 0) {
+    return { latest: null, prior: null }
+  }
+
+  return {
+    latest: toSnapshotDetail(rows[0]),
+    prior: rows.length > 1 ? toSnapshotHeader(rows[1]) : null,
+  }
+}
 export async function getReconciliationSnapshotById(
   prisma: ReconciliationSnapshotPrisma,
   id: string
