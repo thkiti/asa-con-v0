@@ -2,7 +2,7 @@
 
 Status: **Done** — period lifecycle, posting enforcement, admin API/UI, auth, middleware bypass; Phase 19B posting-lock audit  
 Scope: `AccountingPeriod` lifecycle, posting lock, admin operations, middleware/API boundaries  
-Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
+Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
 
 ---
 
@@ -106,6 +106,7 @@ Feature flag: `FINANCE_POSTING_ENABLED=true` (server env). When false, operation
 | Route | Component | Roles (page) |
 |-------|-----------|--------------|
 | `/finance/periods` | `PeriodAdminPage` | `HO_FINANCE`, `HO_ADMIN` (via middleware RBAC) |
+| `/finance/periods/[id]/close-readiness` | `CloseReadinessPage` | Same — read-only close checklist (Phase 20B) |
 
 Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetchers.ts) call `/api/finance/periods`.
 
@@ -116,6 +117,7 @@ Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetch
 | `GET` | `/api/finance/periods` | None (public list/filter) | List periods |
 | `POST` | `/api/finance/periods` | Period admin | Create/open period (`bootstrapPeriodIfMissing`) |
 | `PATCH` | `/api/finance/periods` | Period admin | `SOFT_CLOSE`, `HARD_CLOSE`, `REOPEN` |
+| `GET` | `/api/finance/periods/[id]/close-readiness` | None (public JSON) | Read-only close checklist for period (Phase 20B) |
 
 Body (POST/PATCH): `{ branchId, periodKey }` plus `action` on PATCH.
 
@@ -354,9 +356,27 @@ Rollback behavior is unchanged — only the HTTP mapping improved for stock POST
 
 ---
 
-## 14. Out of scope (future)
+## 14. Phase 20B — Close readiness review
+
+Status: **Done** — read-only checklist before manual close; no automated PATCH close
+
+Finance admins use **Review** on the period table to open `/finance/periods/[id]/close-readiness`. The page loads `GET /api/finance/periods/[id]/close-readiness`, which evaluates frozen snapshot evidence, posting lock state, and audit export readiness via `buildCloseChecklist` / `evaluateCloseBlockerRules`.
+
+| Concern | Behavior |
+|---------|----------|
+| Close action | Still **only** via PATCH on `/api/finance/periods` from period admin — readiness page has no Close button |
+| Blockers | Missing snapshot, scope mismatch, MISSING_GL / MISSING_SOURCE issues, etc. — see [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md) |
+| Evidence links | Deep links to reconciliation dashboard, snapshot detail, compare, frozen trace, evidence export anchors |
+| Posting lock | Unchanged — checklist observes period status; does not bypass `assertPostingPeriodOpen` |
+
+Full workflow, rule registry, and manual verification: [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md).
+
+---
+
+## 15. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
 - Period close audit trail / reason capture on PATCH
 - Automated period rollover / scheduled close
+- Hard gate on HARD_CLOSE using checklist blockers (optional future wiring into `closeAccountingPeriod`)
 - Real login replacing cookie stub

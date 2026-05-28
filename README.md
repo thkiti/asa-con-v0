@@ -3,9 +3,9 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** `phase19c-stable` — Phase 19 reconciliation stabilization complete; see [docs/00_README.md](./docs/00_README.md)
+- **Status:** Phase 20B close readiness complete — see [docs/00_README.md](./docs/00_README.md)
 
-Phase 19 completed reconciliation stabilization: snapshot UX polish (19A), posting-lock enforcement audit (19B), and evidence export / audit print (19C). Summary: [docs/19_FINANCE_RECONCILIATION_STABILIZATION.md](./docs/19_FINANCE_RECONCILIATION_STABILIZATION.md).
+Phase 20B adds a read-only period close checklist at `/finance/periods/[id]/close-readiness` with blocker rules and deep links to reconciliation, snapshot, trace, and evidence surfaces. Phase 20A added finance lineage navigation. Summary: [docs/21_FINANCE_CLOSE_WORKFLOW.md](./docs/21_FINANCE_CLOSE_WORKFLOW.md).
 
 ## Docs
 
@@ -17,6 +17,7 @@ Start with [docs/00_README.md](./docs/00_README.md).
 - Reconciliation snapshots: [docs/18_RECONCILIATION_SNAPSHOTS.md](./docs/18_RECONCILIATION_SNAPSHOTS.md) — UI at `/finance/reconciliation/snapshots`
 - Phase 19 stabilization: [docs/19_FINANCE_RECONCILIATION_STABILIZATION.md](./docs/19_FINANCE_RECONCILIATION_STABILIZATION.md) — snapshot UX, posting-lock audit, evidence export
 - Finance traceability: [docs/20_FINANCE_TRACEABILITY.md](./docs/20_FINANCE_TRACEABILITY.md) — Phase 20A lineage panel, voucher detail, frozen snapshot trace
+- Close readiness: [docs/21_FINANCE_CLOSE_WORKFLOW.md](./docs/21_FINANCE_CLOSE_WORKFLOW.md) — Phase 20B period close checklist, blocker rules, evidence links
 
 ## Setup
 
@@ -69,3 +70,4 @@ generated/  Prisma client output (gitignored)
 | 18 | Reconciliation snapshots (`/finance/reconciliation/snapshots`, `POST .../snapshots`) |
 | 19 | Reconciliation stabilization — snapshot UX (19A), posting-lock audit (19B), evidence export/print (19C); tag `phase19c-stable` |
 | 20A | Finance traceability — issue lineage panel, read-only voucher detail, frozen snapshot trace |
+| 20B | Close readiness — period checklist, blocker rules, evidence deep links (read-only; manual close on period admin) |

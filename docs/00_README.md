@@ -24,7 +24,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 18. [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md) — Phase 18 frozen reconciliation snapshots
 19. [19_FINANCE_RECONCILIATION_STABILIZATION.md](./19_FINANCE_RECONCILIATION_STABILIZATION.md) — Phase 19 stabilization summary (19A UI, 19B posting-lock audit, 19C evidence export)
 20. [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md) — Phase 20A read-only finance lineage navigation
-21. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+21. [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md) — Phase 20B read-only period close readiness checklist
+22. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -46,3 +47,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 18 | Reconciliation snapshots (manual capture, frozen history) | Done |
 | 19 | Finance reconciliation stabilization (19A UI, 19B posting-lock audit, 19C evidence export) | Done |
 | 20A | Finance traceability (lineage panel, voucher read API, frozen snapshot trace) | Done |
+| 20B | Finance close readiness (checklist, blocker rules, evidence links — read-only review) | Done |

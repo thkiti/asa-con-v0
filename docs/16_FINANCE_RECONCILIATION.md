@@ -1,8 +1,8 @@
 ﻿# Finance Reconciliation (Phase 16)
 
-Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export, snapshot capture entry; snapshot evidence export (Phase 19C); finance traceability panel (Phase 20A)
+Status: **Done** — read-only aggregate dashboard, variance workflow, CSV export, snapshot capture entry; snapshot evidence export (Phase 19C); finance traceability panel (Phase 20A); close readiness review entry (Phase 20B)
 Scope: Operational vs GL visibility UI; no accounting mutations  
-Related: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
+Related: [17_RECONCILIATION_DRILLDOWN.md](./17_RECONCILIATION_DRILLDOWN.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 
 ---
 
@@ -134,3 +134,17 @@ Phase 20A adds **read-only lineage navigation** on transaction issues opened fro
 Flow: aggregate row click (Phase 16–17) → expand issue → trace panel shows operational → voucher → journal → issue → live evidence. No posting or fix actions.
 
 Frozen snapshot trace uses the same panel with payload-only refs — see [18 §10](./18_RECONCILIATION_SNAPSHOTS.md#10-phase-20a--snapshot-traceability) and [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md).
+
+---
+
+## 9. Close readiness review (Phase 20B)
+
+Period close review reuses reconciliation and snapshot surfaces — it does not recalculate live reconciliation during checklist build.
+
+| Feature | Location |
+|---------|----------|
+| Review entry | [`PeriodTable`](../components/finance/PeriodTable.tsx) **Review** → `/finance/periods/[id]/close-readiness` |
+| Checklist API | `GET /api/finance/periods/[id]/close-readiness` |
+| Evidence links | [`lib/finance-ui/close-readiness-links.ts`](../lib/finance-ui/close-readiness-links.ts) — dashboard, snapshot, compare, trace, export anchors |
+
+Flow: capture snapshot on this dashboard → open period **Review** → resolve blockers via linked snapshot/trace/compare → close period manually on `/finance/periods`. Full rules and guarantees: [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md).
