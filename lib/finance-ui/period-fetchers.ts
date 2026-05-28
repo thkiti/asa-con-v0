@@ -1,3 +1,4 @@
+import type { CloseReadinessApiResult } from "./close-readiness"
 import type {
   AccountingPeriodMutationResult,
   PeriodListResult,
@@ -93,4 +94,14 @@ export function patchAccountingPeriod(body: {
     if (!res.ok) await throwFetchError(res)
     return res.json() as Promise<AccountingPeriodMutationResult>
   })
+}
+
+export function fetchCloseReadiness(periodId: string): Promise<CloseReadinessApiResult> {
+  const trimmed = periodId.trim()
+  return fetch(`/api/finance/periods/${encodeURIComponent(trimmed)}/close-readiness`).then(
+    async (res) => {
+      if (!res.ok) await throwFetchError(res)
+      return res.json() as Promise<CloseReadinessApiResult>
+    }
+  )
 }

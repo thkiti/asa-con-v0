@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { fetchReconciliationSnapshotById } from "@/lib/finance-ui/fetchers"
@@ -226,7 +226,9 @@ export function ReconciliationSnapshotDetailView({
         {FROZEN_SNAPSHOT_DISCLAIMER}
       </p>
 
-      <SnapshotEvidenceExportControls snapshot={snapshot} />
+      <div id="snapshot-evidence-export">
+        <SnapshotEvidenceExportControls snapshot={snapshot} />
+      </div>
 
       <div className="sticky top-0 z-20 -mx-1 border border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -431,7 +433,8 @@ export function ReconciliationSnapshotDetailView({
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Transaction issues">
+      <div id="snapshot-issues">
+        <CollapsibleSection title="Transaction issues">
         <div className="no-print flex flex-wrap items-center justify-between gap-3">
           <div>
             {selectedRow ? (
@@ -480,7 +483,8 @@ export function ReconciliationSnapshotDetailView({
             Show more issues ({issuesPagination.total - issuesPagination.visible.length} remaining)
           </button>
         ) : null}
-      </CollapsibleSection>
+        </CollapsibleSection>
+      </div>
     </div>
   )
 }

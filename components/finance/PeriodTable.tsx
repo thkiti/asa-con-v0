@@ -1,4 +1,6 @@
+import Link from "next/link"
 import type { PeriodAction } from "@/lib/finance-ui/period-fetchers"
+import { buildCloseReadinessPath } from "@/lib/finance-ui/close-readiness"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { PeriodAdminActions } from "./PeriodAdminActions"
 import { PeriodStatusBadge } from "./PeriodStatusBadge"
@@ -36,6 +38,7 @@ export function PeriodTable({
             <th className="px-3 py-2 font-medium">Status</th>
             <th className="px-3 py-2 font-medium">Opened</th>
             <th className="px-3 py-2 font-medium">Closed</th>
+            <th className="px-3 py-2 font-medium">Close readiness</th>
             {showControls ? (
               <th className="px-3 py-2 font-medium">Actions</th>
             ) : null}
@@ -45,7 +48,7 @@ export function PeriodTable({
           {periods.length === 0 ? (
             <tr>
               <td
-                colSpan={showControls ? 6 : 5}
+                colSpan={showControls ? 7 : 6}
                 className="px-3 py-4 text-center text-zinc-500"
               >
                 No accounting periods
@@ -67,6 +70,14 @@ export function PeriodTable({
                 </td>
                 <td className="px-3 py-2 text-zinc-600">
                   {formatDate(period.closedAt)}
+                </td>
+                <td className="px-3 py-2">
+                  <Link
+                    href={buildCloseReadinessPath(period.id)}
+                    className="text-sm font-medium text-zinc-900 underline"
+                  >
+                    Review
+                  </Link>
                 </td>
                 {showControls ? (
                   <td className="px-3 py-2">
