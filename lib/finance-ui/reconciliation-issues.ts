@@ -54,18 +54,19 @@ export function buildIssuesQuery(filter: ReconciliationIssuesFilter): string {
 }
 
 export function issuesToCsv(rows: ReconciliationIssueRow[]): string {
-  const header = [
-    "sourceType",
-    "documentRef",
-    "issueType",
-    "status",
-    "expectedAmount",
-    "actualAmount",
-    "difference",
-    "message",
-  ]
-  const lines = rows.map((row) =>
+  const sorted = sortByStableKey(rows, (row) => row.id)
+  return rowsToCsvTable(
     [
+      "sourceType",
+      "documentRef",
+      "issueType",
+      "status",
+      "expectedAmount",
+      "actualAmount",
+      "difference",
+      "message",
+    ],
+    sorted.map((row) => [
       row.sourceType,
       row.documentRef,
       row.issueType,
@@ -74,9 +75,6 @@ export function issuesToCsv(rows: ReconciliationIssueRow[]): string {
       row.actualAmount ?? "",
       row.difference ?? "",
       row.message,
-    ]
-      .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-      .join(",")
+    ])
   )
-  return [header.join(","), ...lines].join("\n")
 }

@@ -1,3 +1,4 @@
+import { rowsToCsvTable, sortByStableKey } from "./csv"
 import type {
   FinanceFilterValues,
   InventoryReconciliationResult,
@@ -260,18 +261,19 @@ export function sortDashboardRows(
 }
 
 export function rowsToCsv(rows: ReconciliationDashboardRow[]): string {
-  const header = [
-    "sourceType",
-    "reference",
-    "branch",
-    "period",
-    "expectedAmount",
-    "actualAmount",
-    "variance",
-    "status",
-  ]
-  const lines = rows.map((row) =>
+  const sorted = sortByStableKey(rows, (row) => row.id)
+  return rowsToCsvTable(
     [
+      "sourceType",
+      "reference",
+      "branch",
+      "period",
+      "expectedAmount",
+      "actualAmount",
+      "variance",
+      "status",
+    ],
+    sorted.map((row) => [
       row.sourceType,
       row.reference,
       row.branchId,
@@ -280,9 +282,6 @@ export function rowsToCsv(rows: ReconciliationDashboardRow[]): string {
       row.actualAmount,
       row.variance,
       row.status,
-    ]
-      .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-      .join(",")
+    ])
   )
-  return [header.join(","), ...lines].join("\n")
 }
