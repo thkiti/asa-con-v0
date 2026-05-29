@@ -89,6 +89,22 @@ export type {
 export { getCloseReadinessByPeriodId } from "./close-readiness"
 export type { CloseReadinessPrisma, CloseReadinessResult } from "./close-readiness"
 export {
+  assertCloseReadiness,
+  buildCloseBlockerError,
+  DEFAULT_CLOSE_GATE_POLICY,
+  resolveCloseGateErrorCode,
+  selectCloseGateFailures,
+  sortCloseGateBlockers,
+  toCloseGateErrorPayload,
+  CloseGateError,
+} from "./close-gate"
+export type {
+  CloseGatePolicy,
+  CloseGateBlocker,
+  CloseGateErrorCode,
+  CloseGateErrorPayload,
+} from "./close-gate"
+export {
   listAccountingPeriods,
   type AccountingPeriodListFilter,
   type AccountingPeriodListRow,
