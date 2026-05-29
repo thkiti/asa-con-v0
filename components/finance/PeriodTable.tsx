@@ -20,6 +20,7 @@ type PeriodTableProps = {
     action: PeriodAction
   ) => Promise<void>
   actionsDisabled?: boolean
+  pendingPeriodId?: string | null
 }
 
 export function PeriodTable({
@@ -27,6 +28,7 @@ export function PeriodTable({
   showControls = false,
   onPeriodAction,
   actionsDisabled = false,
+  pendingPeriodId = null,
 }: PeriodTableProps) {
   return (
     <div className="mt-4 overflow-x-auto">
@@ -84,6 +86,9 @@ export function PeriodTable({
                     <PeriodAdminActions
                       period={period}
                       disabled={actionsDisabled}
+                      submitting={
+                        Boolean(pendingPeriodId) && pendingPeriodId === period.id
+                      }
                       onAction={(action) =>
                         onPeriodAction
                           ? onPeriodAction(period, action)

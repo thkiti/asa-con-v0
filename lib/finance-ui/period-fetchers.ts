@@ -1,5 +1,9 @@
 import type { CloseReadinessApiResult } from "./close-readiness"
 import type {
+  PeriodActionError,
+  PeriodFetchErrorBody,
+} from "./period-errors"
+import type {
   AccountingPeriodMutationResult,
   PeriodListResult,
   SessionDisplay,
@@ -32,14 +36,20 @@ function buildPeriodQuery(filter?: PeriodListFilter): string {
 
 async function throwFetchError(res: Response): Promise<never> {
   let message = res.statusText || "Request failed"
+  let body: PeriodFetchErrorBody = {}
   try {
-    const body = (await res.json()) as { error?: string; message?: string }
+    body = (await res.json()) as PeriodFetchErrorBody
     if (body.error) message = body.error
     else if (body.message) message = body.message
   } catch {
     // keep statusText
   }
-  throw new Error(message)
+
+  const err = new Error(message) as PeriodActionError
+  if (body.code) err.code = body.code
+  if (body.readinessStatus) err.readinessStatus = body.readinessStatus
+  if (body.blockers) err.blockers = body.blockers
+  throw err
 }
 
 export function fetchSessionDisplay(): Promise<SessionDisplay | null> {

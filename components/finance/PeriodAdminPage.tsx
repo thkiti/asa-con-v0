@@ -8,11 +8,13 @@ import {
   postAccountingPeriod,
   type PeriodAction,
 } from "@/lib/finance-ui/period-fetchers"
+import { getPeriodActionErrorDetails } from "@/lib/finance-ui/period-errors"
 import type {
   AccountingPeriodRow,
   AccountingPeriodStatus,
   SessionDisplay,
 } from "@/lib/finance-ui/types"
+import { CloseGateBlockerList } from "./CloseGateBlockerList"
 import { PeriodTable } from "./PeriodTable"
 
 const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
@@ -40,6 +42,10 @@ export function PeriodAdminPage() {
   const [pendingAction, setPendingAction] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<ReturnType<
+    typeof getPeriodActionErrorDetails
+  > | null>(null)
+  const [pendingPeriodId, setPendingPeriodId] = useState<string | null>(null)
 
   const branchOptions = useMemo(() => {
     const ids = [...new Set(periods.map((period) => period.branchId))].sort()
@@ -49,6 +55,7 @@ export function PeriodAdminPage() {
   const loadPeriods = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setActionError(null)
     try {
       const periodKey = periodKeyFilter.trim()
       if (periodKey && !PERIOD_KEY_PATTERN.test(periodKey)) {
@@ -92,6 +99,7 @@ export function PeriodAdminPage() {
   async function handleCreatePeriod() {
     setMessage(null)
     setError(null)
+    setActionError(null)
 
     const branchId = createBranchId.trim()
     const periodKey = createPeriodKey.trim()
@@ -127,6 +135,8 @@ export function PeriodAdminPage() {
   ) {
     setMessage(null)
     setError(null)
+    setActionError(null)
+    setPendingPeriodId(period.id)
     setPendingAction(true)
     try {
       const result = await patchAccountingPeriod({
@@ -139,8 +149,14 @@ export function PeriodAdminPage() {
       )
       await loadPeriods()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Request failed")
+      const details = getPeriodActionErrorDetails(err)
+      setError(details.message)
+      if (details.blockers?.length) {
+        setActionError(details)
+      }
+      throw err
     } finally {
+      setPendingPeriodId(null)
       setPendingAction(false)
     }
   }
@@ -259,9 +275,14 @@ export function PeriodAdminPage() {
       ) : null}
 
       {error ? (
-        <p className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {error}
-        </p>
+        <div className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p>{error}</p>
+          {actionError?.blockers?.length ? (
+            <div className="mt-3 text-zinc-900">
+              <CloseGateBlockerList blockers={actionError.blockers} compact />
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       {loading && periods.length === 0 ? (
@@ -271,6 +292,7 @@ export function PeriodAdminPage() {
           periods={periods}
           showControls
           actionsDisabled={controlsDisabled}
+          pendingPeriodId={pendingPeriodId}
           onPeriodAction={handlePeriodAction}
         />
       )}
