@@ -42,9 +42,13 @@ export function PeriodAdminPage() {
   const [pendingAction, setPendingAction] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<ReturnType<
-    typeof getPeriodActionErrorDetails
-  > | null>(null)
+  const [actionError, setActionError] = useState<
+    ReturnType<typeof getPeriodActionErrorDetails> & {
+      periodId?: string
+      branchId?: string
+      periodKey?: string
+    } | null
+  >(null)
   const [pendingPeriodId, setPendingPeriodId] = useState<string | null>(null)
 
   const branchOptions = useMemo(() => {
@@ -151,8 +155,13 @@ export function PeriodAdminPage() {
     } catch (err) {
       const details = getPeriodActionErrorDetails(err)
       setError(details.message)
-      if (details.blockers?.length) {
-        setActionError(details)
+      if (details.blockers?.length || details.code) {
+        setActionError({
+          ...details,
+          periodId: period.id,
+          branchId: period.branchId,
+          periodKey: period.periodKey,
+        })
       }
       throw err
     } finally {
@@ -279,7 +288,20 @@ export function PeriodAdminPage() {
           <p>{error}</p>
           {actionError?.blockers?.length ? (
             <div className="mt-3 text-zinc-900">
-              <CloseGateBlockerList blockers={actionError.blockers} compact />
+              <CloseGateBlockerList
+                blockers={actionError.blockers}
+                title="Hard close rejected"
+                errorCode={actionError.code}
+                readinessStatus={actionError.readinessStatus}
+                context={{
+                  periodId: actionError.periodId,
+                  branchId: actionError.branchId,
+                  periodKey: actionError.periodKey,
+                  latestSnapshotId: actionError.blockers.find(
+                    (blocker) => blocker.refs?.snapshotId
+                  )?.refs?.snapshotId,
+                }}
+              />
             </div>
           ) : null}
         </div>

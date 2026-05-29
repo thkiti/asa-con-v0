@@ -194,7 +194,14 @@ export function HardCloseConfirmDialog({
                 <div className="mt-3">
                   <CloseGateBlockerList
                     blockers={blockedItems}
-                    periodId={period.id}
+                    title="Blockers preventing hard close"
+                    context={{
+                      periodId: period.id,
+                      branchId: period.branchId,
+                      periodKey: period.periodKey,
+                      latestSnapshotId: readiness.latestSnapshotRef?.id,
+                      priorSnapshotId: readiness.priorSnapshotRef?.id,
+                    }}
                     compact
                   />
                 </div>
@@ -206,17 +213,19 @@ export function HardCloseConfirmDialog({
                 <p className="text-sm font-medium text-amber-900">
                   Warnings require acknowledgment before hard close
                 </p>
-                <ul className="space-y-2">
-                  {warningItems.map((item) => (
-                    <li
-                      key={item.id}
-                      className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-zinc-800"
-                    >
-                      <p className="font-medium text-zinc-900">{item.title}</p>
-                      <p className="mt-1">{item.detail}</p>
-                    </li>
-                  ))}
-                </ul>
+<CloseGateBlockerList
+                  blockers={warningItems}
+                  title="Warnings to review before hard close"
+                  readinessStatus={readiness.status}
+                  context={{
+                    periodId: period.id,
+                    branchId: period.branchId,
+                    periodKey: period.periodKey,
+                    latestSnapshotId: readiness.latestSnapshotRef?.id,
+                    priorSnapshotId: readiness.priorSnapshotRef?.id,
+                  }}
+                  compact
+                />
                 <label className="flex items-start gap-2 text-sm text-zinc-800">
                   <input
                     type="checkbox"

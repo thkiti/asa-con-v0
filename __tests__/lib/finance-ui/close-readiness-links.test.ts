@@ -5,6 +5,7 @@ import {
   buildReconciliationDashboardPath,
   buildSnapshotComparePath,
   resolveChecklistItemLinks,
+  resolveCloseGateBlockerLinks,
 } from "@/lib/finance-ui/close-readiness-links"
 
 function readiness(overrides: Partial<CloseReadinessResult> = {}): CloseReadinessResult {
@@ -104,5 +105,30 @@ describe("close-readiness-links", () => {
       "Capture snapshot",
       "Snapshot history",
     ])
+  })
+  it("maps close gate blocker to snapshot and trace links", () => {
+    const links = resolveCloseGateBlockerLinks(
+      {
+        id: "reconciliation-missing-gl-issues",
+        group: "reconciliation",
+        severity: "BLOCKED",
+        title: "Unresolved missing GL issues",
+        detail: "Resolve before close",
+        refs: {
+          snapshotId: "snap-1",
+          branchId: "branch-1",
+          periodKey: "2026-05",
+        },
+      },
+      {
+        periodId: "period-1",
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        latestSnapshotId: "snap-1",
+      }
+    )
+
+    expect(links.some((link) => link.label === "Open snapshot")).toBe(true)
+    expect(links.some((link) => link.label === "Investigate trace")).toBe(true)
   })
 })

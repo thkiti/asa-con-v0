@@ -1,4 +1,6 @@
+import type { AccountingPeriodStatus } from "@/generated/prisma/client"
 import type { CloseChecklistItem } from "@/lib/finance/close-checklist-types"
+import type { CloseGateBlocker } from "@/lib/finance/close-gate-errors"
 import type { CloseReadinessResult } from "./close-readiness"
 import { buildSnapshotDetailPath } from "./trace-links"
 
@@ -200,4 +202,94 @@ export function resolveChecklistItemLinks(
   }
 
   return dedupeNavLinks(links)
+}
+
+export type CloseGateBlockerSurfaceContext = {
+  periodId?: string
+  branchId?: string
+  periodKey?: string
+  latestSnapshotId?: string
+  priorSnapshotId?: string
+}
+
+function buildBlockerLinkReadiness(
+  blocker: CloseGateBlocker,
+  context: CloseGateBlockerSurfaceContext
+): CloseReadinessResult {
+  const branchId = context.branchId ?? blocker.refs?.branchId ?? ""
+  const periodKey = context.periodKey ?? blocker.refs?.periodKey ?? ""
+  const snapshotId = blocker.refs?.snapshotId ?? context.latestSnapshotId
+  const compareSnapshotId =
+    blocker.refs?.compareSnapshotId ?? context.priorSnapshotId
+
+  return {
+    status: "BLOCKED",
+    blockerCount: 1,
+    warningCount: 0,
+    items: [],
+    latestSnapshotRef: snapshotId
+      ? {
+          id: snapshotId,
+          createdAt: "",
+          periodKey: periodKey || null,
+          branchId: branchId || null,
+          label: null,
+        }
+      : null,
+    priorSnapshotRef: compareSnapshotId
+      ? {
+          id: compareSnapshotId,
+          createdAt: "",
+          periodKey: periodKey || null,
+          branchId: branchId || null,
+          label: null,
+        }
+      : null,
+    metrics: {
+      issueCount: 0,
+      varianceCount: 0,
+      matchedCount: 0,
+      dashboardRowCount: 0,
+      totalVarianceAmount: null,
+      missingGlIssueCount: 0,
+      missingSourceIssueCount: 0,
+      inventoryDomainPresent: false,
+      revenueDomainPresent: false,
+      snapshotAgeDays: null,
+      compareDriftDetected: false,
+    },
+    period: {
+      id: context.periodId ?? "",
+      branchId,
+      periodKey,
+      status: "OPEN" as AccountingPeriodStatus,
+      closedAt: null,
+    },
+  }
+}
+
+export function resolveCloseGateBlockerLinks(
+  blocker: CloseGateBlocker,
+  context: CloseGateBlockerSurfaceContext = {}
+): CloseReadinessNavLink[] {
+  const readiness = buildBlockerLinkReadiness(blocker, context)
+  const branchId = context.branchId ?? blocker.refs?.branchId
+  const periodKey = context.periodKey ?? blocker.refs?.periodKey
+  const snapshotId = blocker.refs?.snapshotId ?? context.latestSnapshotId
+
+  const item: CloseChecklistItem = {
+    id: blocker.id,
+    group: blocker.group,
+    severity: blocker.severity,
+    title: blocker.title,
+    detail: blocker.detail,
+    refs: {
+      ...blocker.refs,
+      branchId: blocker.refs?.branchId ?? branchId,
+      periodKey: blocker.refs?.periodKey ?? periodKey,
+      snapshotId: blocker.refs?.snapshotId ?? snapshotId,
+    },
+  }
+
+  return resolveChecklistItemLinks(item, readiness)
 }
