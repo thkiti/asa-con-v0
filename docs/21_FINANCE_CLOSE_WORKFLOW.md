@@ -1,10 +1,10 @@
 # Finance Close Workflow (Phase 20B)
 
-Status: **Done** — read-only close readiness checklist, blocker rules, evidence navigation  
-Scope: Workflow and orchestration only — no posting math, reconciliation recalc, snapshot mutation, or auto-fix  
-Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md)
+Status: **Done** — read-only close readiness checklist, blocker rules, evidence navigation; Phase 20C enforces gate on HARD close  
+Scope: Workflow and orchestration — checklist is read-only; HARD close enforcement lives in `closeAccountingPeriod`  
+Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md)
 
-Phase 20B adds a **period close readiness review** surface for finance admins. It evaluates frozen reconciliation evidence, posting lock state, and audit export readiness — then links investigators to existing reconciliation, snapshot, compare, trace, and evidence pages. It does **not** close periods or bypass posting locks.
+Phase 20B adds a **period close readiness review** surface for finance admins. Phase 20C **enforces** the same checklist on HARD close — see [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md). The readiness page remains read-only; enforcement is server-side in the domain layer.
 
 ---
 
@@ -33,11 +33,13 @@ flowchart TD
   checklist["buildCloseChecklist"]
   evidence["Evidence links"]
   manual["Admin PATCH SOFT_CLOSE / HARD_CLOSE"]
+  gate["closeAccountingPeriod gate\n(HARD only, Phase 20C)"]
 
   periods --> review --> readiness
   readiness --> api --> checklist
   checklist --> evidence
   evidence --> manual
+  manual --> gate
 ```
 
 Typical month-end path:
@@ -48,9 +50,9 @@ Typical month-end path:
 4. **Review readiness** — **Review** on period row → checklist loads latest + prior snapshot for that branch/period.
 5. **Resolve blockers** — investigate via linked snapshot trace, compare, or live dashboard; fix operational/posting issues outside this workflow.
 6. **Export evidence (optional)** — browser CSV pack / audit print on snapshot detail ([18 §9](./18_RECONCILIATION_SNAPSHOTS.md#9-phase-19c--evidence-export-and-audit-print)).
-7. **Close period manually** — return to `/finance/periods` → SOFT_CLOSE then HARD_CLOSE when satisfied.
+7. **Close period manually** — return to `/finance/periods` → SOFT_CLOSE (ungated) then HARD_CLOSE when satisfied. HARD close runs the gate in `closeAccountingPeriod` — BLOCKED items reject with HTTP 409; WARNING allowed by default.
 
-The checklist **never** triggers PATCH close. Close remains the existing admin API ([15 §4](./15_FINANCE_PERIODS.md#4-admin-flow)).
+The checklist page **never** triggers PATCH close. Close remains the period admin API ([15 §4](./15_FINANCE_PERIODS.md#4-admin-flow)). Phase 20C adds a confirmation dialog before HARD close that previews the same checklist data.
 
 ---
 
@@ -173,7 +175,9 @@ Per-item links: [`resolveChecklistItemLinks`](../lib/finance-ui/close-readiness-
 | Read-only | Checklist reads period + snapshot headers/payload only |
 | No posting | No voucher/journal creation; no operational mutation |
 | No snapshot mutation | Does not capture, update, or delete snapshots |
-| No close automation | UI has no Close button; PATCH close stays on period admin |
+| No close automation | Readiness page has no Close button; PATCH close stays on period admin |
+| HARD close gate (20C) | `closeAccountingPeriod(mode: HARD)` calls same checklist builder + `assertCloseReadiness` |
+| SOFT ungated (20C) | SOFT close skips checklist and gate entirely |
 | No lock bypass | Posting lock unchanged ([15 §13](./15_FINANCE_PERIODS.md#13-phase-19b--posting-lock-enforcement-audit)) |
 | Operational source of truth | Checklist observes frozen snapshot payload — does not recalc reconciliation |
 | Immutable snapshots | Uses captured payload as-is at review time |
@@ -192,6 +196,8 @@ Reconciliation modules remain read-only ([16 §5](./16_FINANCE_RECONCILIATION.md
 6. Network tab: only `GET /api/finance/periods/[id]/close-readiness` on the review page (no POST).
 7. Soft-close period on admin page → checklist shows soft-closed WARNING; posting still blocked via existing kernel.
 8. Confirm no Close / Hard close button on readiness page.
+9. Attempt HARD close with BLOCKED readiness → API returns 409 with `blockers`; period stays `OPEN` or `SOFT_CLOSED`.
+10. Resolve blockers, HARD close with WARNING-only readiness → succeeds under default policy.
 
 ---
 
@@ -205,7 +211,18 @@ Reconciliation modules remain read-only ([16 §5](./16_FINANCE_RECONCILIATION.md
 | [`__tests__/app/api/finance/close-readiness-route.test.ts`](../__tests__/app/api/finance/close-readiness-route.test.ts) | GET route boundary |
 | [`__tests__/lib/finance-ui/close-readiness-links.test.ts`](../__tests__/lib/finance-ui/close-readiness-links.test.ts) | Deep-link URL builders |
 
-At Step 7 completion: **567 tests passing**, `npm run build` clean.
+Phase 20C close gate tests — see [22 §10](./22_FINANCE_CLOSE_GATE.md#10-test-map):
+
+| File | Coverage |
+|------|----------|
+| [`__tests__/lib/finance/close-gate.test.ts`](../__tests__/lib/finance/close-gate.test.ts) | Gate helpers, error codes, payloads |
+| [`__tests__/lib/finance/close-gate-policy.test.ts`](../__tests__/lib/finance/close-gate-policy.test.ts) | Centralized policy |
+| [`__tests__/lib/finance/close-gate-enforcement.test.ts`](../__tests__/lib/finance/close-gate-enforcement.test.ts) | Rollback, no side effects, no bypass |
+| [`__tests__/lib/finance/period-close.test.ts`](../__tests__/lib/finance/period-close.test.ts) | Domain integration |
+| [`__tests__/app/api/finance/periods-route.test.ts`](../__tests__/app/api/finance/periods-route.test.ts) | PATCH 409 payloads |
+| [`__tests__/app/api/finance/finance-api-errors.test.ts`](../__tests__/app/api/finance/finance-api-errors.test.ts) | Error mapping |
+
+At Phase 20C completion: **608 tests passing**, `npm run build` clean.
 
 ---
 
@@ -224,23 +241,41 @@ At Step 7 completion: **567 tests passing**, `npm run build` clean.
 
 ---
 
-## 11. Remaining gaps (future phases)
+## 11. Phase 20C — Close gate (enforcement)
 
-| Gap | Notes |
-|-----|-------|
-| Close gate on PATCH | Wire `evaluateCloseBlockerRules` into `closeAccountingPeriod` — optional hard gate before HARD_CLOSE |
-| Evidence export audit log | Server cannot verify client-side CSV download today |
-| Scheduled snapshot capture | Still manual ([18](./18_RECONCILIATION_SNAPSHOTS.md)) |
-| Override posting into SOFT_CLOSED | Policy hook exists in close-policy; not wired to posting kernel ([15 §14](./15_FINANCE_PERIODS.md#14-out-of-scope-future)) |
-| Close reason / audit trail | PATCH close does not capture reviewer notes |
+Status: **Done** — see [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md)
 
-All future close automation must preserve read-only reconciliation, immutable snapshots, and posting-lock invariants.
+| Concern | Phase 20B (advisory) | Phase 20C (enforced) |
+|---------|----------------------|----------------------|
+| Checklist | Read-only GET + review page | Same builder used at HARD close |
+| SOFT close | Manual PATCH | **Ungated** — no checklist |
+| HARD close | Manual PATCH | **Gated** — BLOCKED rejects; WARNING allowed by default |
+| Errors | N/A on close | `CloseGateError` → HTTP 409 + blockers |
+| Override | N/A | **None** — no force-close |
+
+The readiness review page and GET API are unchanged in purpose. Enforcement adds server-side rejection when admins PATCH HARD_CLOSE with unresolved BLOCKED items.
 
 ---
 
-## 12. Related docs
+## 12. Remaining gaps (future phases)
 
-- Period lifecycle and posting lock: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
+| Gap | Notes |
+|-----|-------|
+| Evidence export audit log | Server cannot verify client-side CSV download today |
+| Scheduled snapshot capture | Still manual ([18](./18_RECONCILIATION_SNAPSHOTS.md)) |
+| Override posting into SOFT_CLOSED | Policy hook exists in close-policy; not wired to posting kernel ([15 §16](./15_FINANCE_PERIODS.md#16-out-of-scope-future)) |
+| Close reason / audit trail | PATCH close does not capture reviewer notes |
+| Strict WARNING policy in production | `STRICT_CLOSE_GATE_POLICY` + `warningExemptRuleIds` ready; wire via `getHardCloseGatePolicy()` with audit |
+| Admin override with audit | Explicit override workflow — never silent bypass of gate |
+
+All future close automation must preserve read-only reconciliation, immutable snapshots, posting-lock invariants, and single enforcement boundary in `closeAccountingPeriod`.
+
+---
+
+## 13. Related docs
+
+- Period lifecycle, gate sequence, error codes: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
+- Close gate policy, rollback, test map: [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md)
 - Reconciliation dashboard: [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md)
 - Frozen snapshots: [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md)
 - Lineage navigation: [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md)

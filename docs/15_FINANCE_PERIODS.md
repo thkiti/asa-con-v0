@@ -2,7 +2,7 @@
 
 Status: **Done** — period lifecycle, posting enforcement, admin API/UI, auth, middleware bypass; Phase 19B posting-lock audit  
 Scope: `AccountingPeriod` lifecycle, posting lock, admin operations, middleware/API boundaries  
-Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
+Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
 
 ---
 
@@ -40,6 +40,8 @@ stateDiagram-v2
 | `SOFT_CLOSE` | `OPEN`, `SOFT_CLOSED` | `SOFT_CLOSED` | Already `SOFT_CLOSED` |
 | `REOPEN` | `SOFT_CLOSED`, `OPEN` | `OPEN` | Already `OPEN` |
 | `HARD_CLOSE` | any except terminal | `HARD_CLOSED` | Already `HARD_CLOSED` |
+
+`HARD_CLOSE` from `OPEN` or `SOFT_CLOSED` runs the **close gate** (Phase 20C) before status update — see [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md). `SOFT_CLOSE` is **ungated**.
 
 `REOPEN` from `HARD_CLOSED` throws `PERIOD_ALREADY_HARD_CLOSED` (409).
 
@@ -228,7 +230,11 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | Module | Role |
 |--------|------|
 | `lib/finance/period-setup.ts` | `bootstrapPeriodIfMissing` — admin create only |
-| `lib/finance/period-close.ts` | `closeAccountingPeriod`, `reopenAccountingPeriod` |
+| `lib/finance/period-close.ts` | `closeAccountingPeriod`, `reopenAccountingPeriod` — HARD gate (20C) |
+| `lib/finance/close-gate-policy.ts` | Centralized close gate policy (20C) |
+| `lib/finance/close-gate.ts` | `assertCloseReadiness`, gate helpers (20C) |
+| `lib/finance/close-gate-errors.ts` | `CloseGateError`, structured payloads (20C) |
+| `lib/finance/close-readiness.ts` | Read-only checklist build for gate + GET API (20B/20C) |
 | `lib/finance/posting-period.ts` | `assertPostingPeriodOpen` — posting gate |
 | `lib/finance/period-list.ts` | Read-only list DTOs |
 | `lib/finance/posting.ts` | Voucher/journal orchestration (uses assert, never bootstrap) |
@@ -247,6 +253,10 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | `PERIOD_CLOSED` | 400 | Posting when SOFT/HARD closed |
 | `PERIOD_NOT_FOUND` | 404 | Close/reopen on missing period |
 | `PERIOD_ALREADY_HARD_CLOSED` | 409 | Reopen or invalid transition |
+| `CLOSE_SNAPSHOT_REQUIRED` | 409 | HARD close blocked — missing/invalid snapshot evidence |
+| `CLOSE_BLOCKED` | 409 | HARD close blocked — reconciliation/posting blockers |
+| `CLOSE_EVIDENCE_REQUIRED` | 409 | HARD close blocked — audit evidence unavailable |
+| `CLOSE_READINESS_FAILED` | 409 | HARD close blocked — WARNING items under strict policy |
 | `UNAUTHENTICATED` | 401 | POST/PATCH without session |
 | `FORBIDDEN` | 403 | POST/PATCH with non-admin role |
 
@@ -358,13 +368,13 @@ Rollback behavior is unchanged — only the HTTP mapping improved for stock POST
 
 ## 14. Phase 20B — Close readiness review
 
-Status: **Done** — read-only checklist before manual close; no automated PATCH close
+Status: **Done** — read-only checklist before manual close
 
 Finance admins use **Review** on the period table to open `/finance/periods/[id]/close-readiness`. The page loads `GET /api/finance/periods/[id]/close-readiness`, which evaluates frozen snapshot evidence, posting lock state, and audit export readiness via `buildCloseChecklist` / `evaluateCloseBlockerRules`.
 
 | Concern | Behavior |
 |---------|----------|
-| Close action | Still **only** via PATCH on `/api/finance/periods` from period admin — readiness page has no Close button |
+| Close action | PATCH on `/api/finance/periods` from period admin — readiness page has no Close button |
 | Blockers | Missing snapshot, scope mismatch, MISSING_GL / MISSING_SOURCE issues, etc. — see [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md) |
 | Evidence links | Deep links to reconciliation dashboard, snapshot detail, compare, frozen trace, evidence export anchors |
 | Posting lock | Unchanged — checklist observes period status; does not bypass `assertPostingPeriodOpen` |
@@ -373,10 +383,57 @@ Full workflow, rule registry, and manual verification: [21_FINANCE_CLOSE_WORKFLO
 
 ---
 
-## 15. Out of scope (future)
+## 15. Phase 20C — Close gate enforcement
+
+Status: **Done** — HARD close gated in domain; SOFT close ungated; no force-close override
+
+Phase 20C wires Phase 20B checklist evaluation into [`closeAccountingPeriod`](../lib/finance/period-close.ts) for `mode: "HARD"` only.
+
+```mermaid
+sequenceDiagram
+  participant API as PATCH /api/finance/periods
+  participant Tx as prisma.$transaction
+  participant Close as closeAccountingPeriod
+  participant Ready as buildCloseReadinessChecklistForPeriod
+  participant Gate as assertCloseReadiness
+  participant DB as accountingPeriod.update
+
+  API->>Tx: HARD_CLOSE
+  Tx->>Close: mode HARD
+  alt already HARD_CLOSED
+    Close-->>Tx: idempotent return
+  else gate required
+    Close->>Ready: read-only checklist
+    Ready-->>Close: CloseChecklistResult
+    Close->>Gate: getHardCloseGatePolicy()
+    alt BLOCKED or strict WARNING
+      Gate-->>Tx: CloseGateError
+      Tx-->>API: rollback, 409 + blockers
+    else pass
+      Close->>DB: HARD_CLOSED
+      DB-->>API: 200 period DTO
+    end
+  end
+```
+
+| Concern | Behavior |
+|---------|----------|
+| Enforcement boundary | **Only** `closeAccountingPeriod()` — API has no alternate HARD close path |
+| SOFT close | **Ungated** — no checklist, no `assertCloseReadiness` |
+| Default policy | BLOCKED rejects; WARNING allowed ([`close-gate-policy.ts`](../lib/finance/close-gate-policy.ts)) |
+| Rollback | Gate throw before `update` — failed HARD close leaves period unchanged |
+| Side effects | No snapshot creation, evidence export, posting, or live reconciliation during gate |
+| UI | `HardCloseConfirmDialog` previews readiness; server enforces regardless |
+| Override | **None** in v1 — no force-close flag |
+
+Full policy, error payloads, test map, and future override notes: [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md).
+
+---
+
+## 16. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
 - Period close audit trail / reason capture on PATCH
 - Automated period rollover / scheduled close
-- Hard gate on HARD_CLOSE using checklist blockers (optional future wiring into `closeAccountingPeriod`)
+- Force-close / admin override bypass for close gate (policy hook exists for strict WARNING; no silent bypass)
 - Real login replacing cookie stub
