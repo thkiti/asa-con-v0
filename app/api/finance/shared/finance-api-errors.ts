@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import { ClosePolicyError } from "@/lib/finance/close-policy"
+import { CloseGateError, toCloseGateErrorPayload } from "@/lib/finance/close-gate"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { ReconciliationError } from "@/lib/finance/reconciliation-errors"
 import { ReconciliationSnapshotError } from "@/lib/finance/reconciliation-snapshot-errors"
@@ -65,6 +66,10 @@ export function financeErrorResponse(
       { error: err.message, code: err.code },
       { status: 400 }
     )
+  }
+
+  if (err instanceof CloseGateError) {
+    return NextResponse.json(toCloseGateErrorPayload(err), { status: 409 })
   }
 
   if (err instanceof FinancePostingError) {

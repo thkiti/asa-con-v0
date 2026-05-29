@@ -86,8 +86,16 @@ export type {
   CloseChecklistSnapshotRef,
   CloseReadinessStatus,
 } from "./close-checklist"
-export { getCloseReadinessByPeriodId } from "./close-readiness"
-export type { CloseReadinessPrisma, CloseReadinessResult } from "./close-readiness"
+export {
+  buildCloseReadinessChecklistForPeriod,
+  getCloseReadinessByPeriodId,
+} from "./close-readiness"
+export type {
+  CloseReadinessChecklistPrisma,
+  CloseReadinessPeriodInput,
+  CloseReadinessPrisma,
+  CloseReadinessResult,
+} from "./close-readiness"
 export {
   assertCloseReadiness,
   buildCloseBlockerError,

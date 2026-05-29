@@ -1,4 +1,11 @@
+﻿jest.mock("@/lib/finance/close-readiness", () => ({
+  buildCloseReadinessChecklistForPeriod: jest.fn(),
+}))
+
 import { AccountingPeriodStatus, Prisma } from "@/generated/prisma/client"
+import type { CloseChecklistResult } from "@/lib/finance/close-checklist-types"
+import { buildCloseReadinessChecklistForPeriod } from "@/lib/finance/close-readiness"
+import { CloseGateError } from "@/lib/finance/close-gate-errors"
 import {
   closeAccountingPeriod,
   reopenAccountingPeriod,
@@ -6,11 +13,68 @@ import {
 import { postOperationalVoucher } from "@/lib/finance/posting"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
+import { buildCloseChecklist } from "@/lib/finance/close-checklist"
 import { createFinanceMockTx } from "./mock-finance-tx"
+
+const mockBuildChecklist = buildCloseReadinessChecklistForPeriod as jest.MockedFunction<
+  typeof buildCloseReadinessChecklistForPeriod
+>
 
 const branchId = "branch-1"
 const periodKey = "2026-05"
 const postingDate = new Date("2026-05-15T12:00:00.000Z")
+
+function gateReadyChecklist(): CloseChecklistResult {
+  return {
+    status: "READY",
+    blockerCount: 0,
+    warningCount: 0,
+    items: [],
+    latestSnapshotRef: {
+      id: "snap-1",
+      createdAt: "2026-05-27T12:00:00.000Z",
+      periodKey,
+      branchId,
+      label: null,
+    },
+    metrics: {
+      issueCount: 0,
+      varianceCount: 0,
+      matchedCount: 2,
+      dashboardRowCount: 2,
+      totalVarianceAmount: "0.00",
+      missingGlIssueCount: 0,
+      missingSourceIssueCount: 0,
+      inventoryDomainPresent: true,
+      revenueDomainPresent: true,
+      snapshotAgeDays: 1,
+      compareDriftDetected: false,
+    },
+    period: {
+      id: "period-1",
+      branchId,
+      periodKey,
+      status: AccountingPeriodStatus.OPEN,
+      closedAt: null,
+    },
+  }
+}
+
+function gateBlockedChecklist(): CloseChecklistResult {
+  return buildCloseChecklist({
+    period: {
+      id: "period-1",
+      branchId,
+      periodKey,
+      status: AccountingPeriodStatus.OPEN,
+      closedAt: null,
+    },
+    latestSnapshot: null,
+    priorSnapshot: null,
+    snapshotPayload: null,
+    now: "2026-05-28T00:00:00.000Z",
+  })
+}
 
 async function seedOpenPeriod(
   tx: ReturnType<typeof createFinanceMockTx>["tx"],
@@ -40,6 +104,11 @@ function balancedLines(state: ReturnType<typeof createFinanceMockTx>["state"]) {
 }
 
 describe("period-close", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockBuildChecklist.mockResolvedValue(gateReadyChecklist())
+  })
+
   it("closes OPEN period to SOFT_CLOSED with closedAt set", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
@@ -54,9 +123,10 @@ describe("period-close", () => {
     expect(closed.closedAt).toBeInstanceOf(Date)
     expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.SOFT_CLOSED)
     expect(state.accountingPeriods[0]?.closedAt).toBeInstanceOf(Date)
+    expect(mockBuildChecklist).not.toHaveBeenCalled()
   })
 
-  it("closes OPEN period to HARD_CLOSED", async () => {
+  it("closes OPEN period to HARD_CLOSED when readiness passes", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
 
@@ -69,12 +139,14 @@ describe("period-close", () => {
     expect(closed.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
     expect(closed.closedAt).toBeInstanceOf(Date)
     expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
+    expect(mockBuildChecklist).toHaveBeenCalledTimes(1)
   })
 
-  it("closes SOFT_CLOSED period to HARD_CLOSED", async () => {
+  it("closes SOFT_CLOSED period to HARD_CLOSED when readiness passes", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
     await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    mockBuildChecklist.mockClear()
 
     const closed = await closeAccountingPeriod(tx, {
       branchId,
@@ -84,6 +156,70 @@ describe("period-close", () => {
 
     expect(closed.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
     expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
+    expect(mockBuildChecklist).toHaveBeenCalledTimes(1)
+  })
+
+  describe("close gate enforcement", () => {
+    it("rejects HARD close when readiness is BLOCKED and leaves period unchanged", async () => {
+      const { tx, state } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+      mockBuildChecklist.mockResolvedValue(gateBlockedChecklist())
+
+      await expect(
+        closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+      ).rejects.toBeInstanceOf(CloseGateError)
+
+      await expect(
+        closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+      ).rejects.toMatchObject({
+        code: "CLOSE_SNAPSHOT_REQUIRED",
+        blockers: expect.arrayContaining([
+          expect.objectContaining({ id: "snapshot-missing", severity: "BLOCKED" }),
+        ]),
+      })
+
+      expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.OPEN)
+      expect(state.accountingPeriods[0]?.closedAt).toBeNull()
+    })
+
+    it("allows HARD close when readiness is WARNING-only", async () => {
+      const { tx, state } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+      mockBuildChecklist.mockResolvedValue({
+        ...gateReadyChecklist(),
+        status: "WARNING",
+        warningCount: 1,
+        items: [
+          {
+            id: "audit-evidence-export-not-recorded",
+            group: "audit_evidence",
+            severity: "WARNING",
+            title: "Evidence export not recorded",
+            detail: "not recorded",
+          },
+        ],
+      })
+
+      const closed = await closeAccountingPeriod(tx, {
+        branchId,
+        periodKey,
+        mode: "HARD",
+      })
+
+      expect(closed.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
+      expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
+    })
+
+    it("skips close gate when period is already HARD_CLOSED", async () => {
+      const { tx } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+      await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+      mockBuildChecklist.mockClear()
+
+      await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+
+      expect(mockBuildChecklist).not.toHaveBeenCalled()
+    })
   })
 
   it("reopens SOFT_CLOSED period to OPEN with closedAt null", async () => {

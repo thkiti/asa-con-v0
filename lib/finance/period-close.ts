@@ -1,5 +1,7 @@
-import type { Prisma } from "@/generated/prisma/client"
+﻿import type { Prisma } from "@/generated/prisma/client"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
+import { assertCloseReadiness } from "./close-gate"
+import { buildCloseReadinessChecklistForPeriod } from "./close-readiness"
 import { FinancePostingError } from "./posting-errors"
 
 type PeriodCloseInput = {
@@ -66,6 +68,9 @@ export async function closeAccountingPeriod(
   if (period.status === AccountingPeriodStatus.HARD_CLOSED) {
     return period
   }
+
+  const checklist = await buildCloseReadinessChecklistForPeriod(tx, period)
+  assertCloseReadiness(checklist)
 
   return tx.accountingPeriod.update({
     where: { id: period.id },

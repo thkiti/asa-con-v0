@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/generated/prisma/client"
+﻿import type { AccountingPeriodStatus, PrismaClient } from "@/generated/prisma/client"
 import { buildCloseChecklist, toCloseChecklistSnapshotRef } from "./close-checklist"
 import type {
   CloseChecklistResult,
@@ -14,8 +14,45 @@ export type CloseReadinessPrisma = Pick<
 > &
   BranchLookupPrisma
 
+export type CloseReadinessChecklistPrisma = Pick<
+  PrismaClient,
+  "reconciliationSnapshot"
+> &
+  BranchLookupPrisma
+
+export type CloseReadinessPeriodInput = {
+  id: string
+  branchId: string
+  periodKey: string
+  status: AccountingPeriodStatus
+  closedAt: Date | null
+}
+
 export type CloseReadinessResult = CloseChecklistResult & {
   priorSnapshotRef: CloseChecklistSnapshotRef | null
+}
+
+export async function buildCloseReadinessChecklistForPeriod(
+  prisma: CloseReadinessChecklistPrisma,
+  period: CloseReadinessPeriodInput
+): Promise<CloseChecklistResult> {
+  const snapshots = await findSnapshotsForPeriod(prisma, {
+    branchId: period.branchId,
+    periodKey: period.periodKey,
+  })
+
+  return buildCloseChecklist({
+    period: {
+      id: period.id,
+      branchId: period.branchId,
+      periodKey: period.periodKey,
+      status: period.status,
+      closedAt: period.closedAt ? period.closedAt.toISOString() : null,
+    },
+    latestSnapshot: snapshots.latest,
+    priorSnapshot: snapshots.prior,
+    snapshotPayload: snapshots.latest?.payload ?? null,
+  })
 }
 
 export async function getCloseReadinessByPeriodId(
@@ -46,18 +83,7 @@ export async function getCloseReadinessByPeriodId(
     periodKey: period.periodKey,
   })
 
-  const checklist = buildCloseChecklist({
-    period: {
-      id: period.id,
-      branchId: period.branchId,
-      periodKey: period.periodKey,
-      status: period.status,
-      closedAt: period.closedAt ? period.closedAt.toISOString() : null,
-    },
-    latestSnapshot: snapshots.latest,
-    priorSnapshot: snapshots.prior,
-    snapshotPayload: snapshots.latest?.payload ?? null,
-  })
+  const checklist = await buildCloseReadinessChecklistForPeriod(prisma, period)
 
   return {
     ...checklist,

@@ -4,6 +4,7 @@ import {
   parseAccountingPeriodStatus,
 } from "@/app/api/finance/shared/finance-api-errors"
 import { ClosePolicyError } from "@/lib/finance/close-policy"
+import { CloseGateError } from "@/lib/finance/close-gate-errors"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { ReconciliationError } from "@/lib/finance/reconciliation-errors"
 import { ReconciliationSnapshotError } from "@/lib/finance/reconciliation-snapshot-errors"
@@ -55,6 +56,31 @@ describe("financeErrorResponse", () => {
     await expect(res.json()).resolves.toEqual({
       error: "Close transition requires an audit reason",
       code: "REASON_REQUIRED",
+    })
+  })
+
+  it("maps CloseGateError to 409 JSON with blockers", async () => {
+    const err = new CloseGateError(
+      "Period close blocked: 1 blocker must be resolved",
+      "CLOSE_SNAPSHOT_REQUIRED",
+      "BLOCKED",
+      [
+        {
+          id: "snapshot-missing",
+          group: "snapshot_evidence",
+          severity: "BLOCKED",
+          title: "No reconciliation snapshot for period",
+          detail: "Capture a frozen reconciliation snapshot before close.",
+        },
+      ]
+    )
+    const res = financeErrorResponse(err, "test")
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({
+      error: err.message,
+      code: "CLOSE_SNAPSHOT_REQUIRED",
+      readinessStatus: "BLOCKED",
+      blockers: err.blockers,
     })
   })
 

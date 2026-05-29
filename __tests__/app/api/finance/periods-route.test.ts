@@ -7,6 +7,7 @@ import {
 } from "@/lib/finance/period-close"
 import { listAccountingPeriods } from "@/lib/finance/period-list"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
+import { CloseGateError } from "@/lib/finance/close-gate-errors"
 import { getSession } from "@/lib/auth"
 import { GET, PATCH, POST } from "@/app/api/finance/periods/route"
 import { prisma } from "@/lib/shared/prisma"
@@ -376,6 +377,44 @@ describe("PATCH finance/periods", () => {
       periodKey: "2026-05",
       mode: "HARD",
     })
+  })
+
+  it("returns 409 with blockers when HARD_CLOSE is blocked by close gate", async () => {
+    mockClose.mockRejectedValue(
+      new CloseGateError(
+        "Period close blocked: 1 blocker must be resolved",
+        "CLOSE_SNAPSHOT_REQUIRED",
+        "BLOCKED",
+        [
+          {
+            id: "snapshot-missing",
+            group: "snapshot_evidence",
+            severity: "BLOCKED",
+            title: "No reconciliation snapshot for period",
+            detail: "Capture a frozen reconciliation snapshot before close.",
+          },
+        ]
+      )
+    )
+
+    const req = new NextRequest("http://localhost/api/finance/periods", {
+      method: "PATCH",
+      body: JSON.stringify({
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        action: "HARD_CLOSE",
+      }),
+    })
+    const res = await PATCH(req)
+
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toMatchObject({
+      code: "CLOSE_SNAPSHOT_REQUIRED",
+      blockers: [
+        expect.objectContaining({ id: "snapshot-missing", severity: "BLOCKED" }),
+      ],
+    })
+    expect(mockFindUnique).not.toHaveBeenCalled()
   })
 
   it("REOPEN updates period status", async () => {
