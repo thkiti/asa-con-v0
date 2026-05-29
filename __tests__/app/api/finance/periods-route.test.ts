@@ -417,6 +417,143 @@ describe("PATCH finance/periods", () => {
     expect(mockFindUnique).not.toHaveBeenCalled()
   })
 
+  describe("close gate API enforcement", () => {
+    it("returns full CloseGateError payload with HTTP 409 for HARD_CLOSE", async () => {
+      const gateErr = new CloseGateError(
+        "Period close blocked: 1 blocker must be resolved",
+        "CLOSE_SNAPSHOT_REQUIRED",
+        "BLOCKED",
+        [
+          {
+            id: "snapshot-missing",
+            group: "snapshot_evidence",
+            severity: "BLOCKED",
+            title: "No reconciliation snapshot for period",
+            detail: "Capture a frozen reconciliation snapshot before close.",
+          },
+        ]
+      )
+      mockClose.mockRejectedValue(gateErr)
+
+      const req = new NextRequest("http://localhost/api/finance/periods", {
+        method: "PATCH",
+        body: JSON.stringify({
+          branchId: "branch-1",
+          periodKey: "2026-05",
+          action: "HARD_CLOSE",
+        }),
+      })
+      const res = await PATCH(req)
+
+      expect(res.status).toBe(409)
+      await expect(res.json()).resolves.toEqual({
+        error: gateErr.message,
+        code: "CLOSE_SNAPSHOT_REQUIRED",
+        readinessStatus: "BLOCKED",
+        blockers: gateErr.blockers,
+      })
+      expect(mockClose).toHaveBeenCalledWith(prisma, {
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        mode: "HARD",
+      })
+      expect(mockReopen).not.toHaveBeenCalled()
+      expect(mockFindUnique).not.toHaveBeenCalled()
+    })
+
+    it("returns CLOSE_READINESS_FAILED payload when gate rejects WARNING under strict policy", async () => {
+      mockClose.mockRejectedValue(
+        new CloseGateError(
+          "Period close blocked: 1 blocker must be resolved",
+          "CLOSE_READINESS_FAILED",
+          "WARNING",
+          [
+            {
+              id: "snapshot-stale",
+              group: "snapshot_evidence",
+              severity: "WARNING",
+              title: "Snapshot may be stale",
+              detail: "stale",
+            },
+          ]
+        )
+      )
+
+      const req = new NextRequest("http://localhost/api/finance/periods", {
+        method: "PATCH",
+        body: JSON.stringify({
+          branchId: "branch-1",
+          periodKey: "2026-05",
+          action: "HARD_CLOSE",
+        }),
+      })
+      const res = await PATCH(req)
+
+      expect(res.status).toBe(409)
+      await expect(res.json()).resolves.toMatchObject({
+        code: "CLOSE_READINESS_FAILED",
+        readinessStatus: "WARNING",
+        blockers: [expect.objectContaining({ id: "snapshot-stale", severity: "WARNING" })],
+      })
+    })
+
+    it("routes HARD_CLOSE only through closeAccountingPeriod with no post-close reload on gate failure", async () => {
+      mockClose.mockRejectedValue(
+        new CloseGateError("blocked", "CLOSE_BLOCKED", "BLOCKED", [
+          {
+            id: "reconciliation-missing-gl-issues",
+            group: "reconciliation",
+            severity: "BLOCKED",
+            title: "Missing GL issues",
+            detail: "resolve",
+          },
+        ])
+      )
+
+      const req = new NextRequest("http://localhost/api/finance/periods", {
+        method: "PATCH",
+        body: JSON.stringify({
+          branchId: "branch-1",
+          periodKey: "2026-05",
+          action: "HARD_CLOSE",
+        }),
+      })
+      const res = await PATCH(req)
+
+      expect(res.status).toBe(409)
+      expect(mockTransaction).toHaveBeenCalledTimes(1)
+      expect(mockClose).toHaveBeenCalledTimes(1)
+      expect(mockReopen).not.toHaveBeenCalled()
+      expect(mockFindUnique).not.toHaveBeenCalled()
+    })
+
+    it("SOFT_CLOSE bypasses close gate via ungated closeAccountingPeriod mode", async () => {
+      mockClose.mockResolvedValue(
+        periodRow({ status: AccountingPeriodStatus.SOFT_CLOSED, closedAt })
+      )
+      mockFindUnique.mockResolvedValue(
+        periodRow({ status: AccountingPeriodStatus.SOFT_CLOSED, closedAt })
+      )
+
+      const req = new NextRequest("http://localhost/api/finance/periods", {
+        method: "PATCH",
+        body: JSON.stringify({
+          branchId: "branch-1",
+          periodKey: "2026-05",
+          action: "SOFT_CLOSE",
+        }),
+      })
+      const res = await PATCH(req)
+
+      expect(res.status).toBe(200)
+      expect(mockClose).toHaveBeenCalledWith(prisma, {
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        mode: "SOFT",
+      })
+    })
+  })
+
   it("REOPEN updates period status", async () => {
     mockReopen.mockResolvedValue(periodRow())
     mockFindUnique.mockResolvedValue(periodRow())

@@ -84,6 +84,56 @@ describe("financeErrorResponse", () => {
     })
   })
 
+  it("maps CloseGateError CLOSE_BLOCKED to 409 JSON", async () => {
+    const err = new CloseGateError(
+      "Period close blocked: 1 blocker must be resolved",
+      "CLOSE_BLOCKED",
+      "BLOCKED",
+      [
+        {
+          id: "reconciliation-missing-gl-issues",
+          group: "reconciliation",
+          severity: "BLOCKED",
+          title: "Missing GL issues",
+          detail: "resolve",
+        },
+      ]
+    )
+    const res = financeErrorResponse(err, "test")
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({
+      error: err.message,
+      code: "CLOSE_BLOCKED",
+      readinessStatus: "BLOCKED",
+      blockers: err.blockers,
+    })
+  })
+
+  it("maps CloseGateError CLOSE_READINESS_FAILED to 409 JSON", async () => {
+    const err = new CloseGateError(
+      "Period close blocked: 1 blocker must be resolved",
+      "CLOSE_READINESS_FAILED",
+      "WARNING",
+      [
+        {
+          id: "snapshot-stale",
+          group: "snapshot_evidence",
+          severity: "WARNING",
+          title: "Snapshot may be stale",
+          detail: "stale",
+        },
+      ]
+    )
+    const res = financeErrorResponse(err, "test")
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({
+      error: err.message,
+      code: "CLOSE_READINESS_FAILED",
+      readinessStatus: "WARNING",
+      blockers: err.blockers,
+    })
+  })
+
   it("maps FinancePostingError PERIOD_NOT_FOUND to 404", async () => {
     const res = financeErrorResponse(
       new FinancePostingError("Accounting period 2026-05 not found", "PERIOD_NOT_FOUND"),
