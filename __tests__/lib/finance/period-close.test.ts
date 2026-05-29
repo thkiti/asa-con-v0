@@ -14,6 +14,8 @@ import { postOperationalVoucher } from "@/lib/finance/posting"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import { buildCloseChecklist } from "@/lib/finance/close-checklist"
+import * as closeGateModule from "@/lib/finance/close-gate"
+import { getHardCloseGatePolicy } from "@/lib/finance/close-gate-policy"
 import { createFinanceMockTx } from "./mock-finance-tx"
 
 const mockBuildChecklist = buildCloseReadinessChecklistForPeriod as jest.MockedFunction<
@@ -157,6 +159,33 @@ describe("period-close", () => {
     expect(closed.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
     expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
     expect(mockBuildChecklist).toHaveBeenCalledTimes(1)
+  })
+
+  describe("close gate policy integration", () => {
+    it("uses centralized HARD close policy", async () => {
+      const spy = jest.spyOn(closeGateModule, "assertCloseReadiness")
+      const { tx } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+      const checklist = gateReadyChecklist()
+      mockBuildChecklist.mockResolvedValue(checklist)
+
+      await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+
+      expect(spy).toHaveBeenCalledWith(checklist, getHardCloseGatePolicy())
+      spy.mockRestore()
+    })
+
+    it("skips close gate on SOFT close", async () => {
+      const spy = jest.spyOn(closeGateModule, "assertCloseReadiness")
+      const { tx } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+
+      await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+
+      expect(spy).not.toHaveBeenCalled()
+      expect(mockBuildChecklist).not.toHaveBeenCalled()
+      spy.mockRestore()
+    })
   })
 
   describe("close gate enforcement", () => {

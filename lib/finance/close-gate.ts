@@ -1,4 +1,9 @@
 ﻿import type { CloseBlockerRuleId } from "./close-blocker-rules"
+import {
+  getHardCloseGatePolicy,
+  normalizeCloseGatePolicy,
+  type CloseGatePolicy,
+} from "./close-gate-policy"
 import { sortCloseChecklistItems } from "./close-checklist"
 import type {
   CloseChecklistItem,
@@ -11,16 +16,15 @@ import {
   type CloseGateErrorCode,
 } from "./close-gate-errors"
 
-export type CloseGatePolicy = {
-  rejectBlocked: boolean
-  rejectWarnings: boolean
-  warningExemptRuleIds?: CloseBlockerRuleId[]
-}
-
-export const DEFAULT_CLOSE_GATE_POLICY: CloseGatePolicy = {
-  rejectBlocked: true,
-  rejectWarnings: false,
-}
+export type { CloseGatePolicy } from "./close-gate-policy"
+export {
+  closeGateAppliesToCloseMode,
+  DEFAULT_CLOSE_GATE_POLICY,
+  getHardCloseGatePolicy,
+  HARD_CLOSE_GATE_POLICY,
+  normalizeCloseGatePolicy,
+  STRICT_CLOSE_GATE_POLICY,
+} from "./close-gate-policy"
 
 const SNAPSHOT_BLOCKED_RULE_IDS = new Set<CloseBlockerRuleId>([
   "snapshot-missing",
@@ -55,14 +59,19 @@ function isWarningExempt(
 
 export function selectCloseGateFailures(
   items: CloseChecklistItem[],
-  policy: CloseGatePolicy = DEFAULT_CLOSE_GATE_POLICY
+  policy?: CloseGatePolicy
 ): CloseChecklistItem[] {
+  const resolvedPolicy = normalizeCloseGatePolicy(policy)
+
   return items.filter((item) => {
     if (item.severity === "BLOCKED") {
-      return policy.rejectBlocked
+      return resolvedPolicy.rejectBlocked
     }
     if (item.severity === "WARNING") {
-      return policy.rejectWarnings && !isWarningExempt(item.id as CloseBlockerRuleId, policy)
+      return (
+        resolvedPolicy.rejectWarnings &&
+        !isWarningExempt(item.id as CloseBlockerRuleId, resolvedPolicy)
+      )
     }
     return false
   })
@@ -111,7 +120,7 @@ export function buildCloseBlockerError(input: {
   policy?: CloseGatePolicy
   message?: string
 }): CloseGateError {
-  const policy = input.policy ?? DEFAULT_CLOSE_GATE_POLICY
+  const policy = normalizeCloseGatePolicy(input.policy)
   const failingItems = selectCloseGateFailures(input.checklist.items, policy)
   const blockers = sortCloseGateBlockers(failingItems)
   const code = resolveCloseGateErrorCode(blockers, input.checklist.status)
@@ -128,14 +137,15 @@ export function buildCloseBlockerError(input: {
 
 export function assertCloseReadiness(
   checklist: CloseChecklistResult,
-  policy: CloseGatePolicy = DEFAULT_CLOSE_GATE_POLICY
+  policy?: CloseGatePolicy
 ): void {
-  const failures = selectCloseGateFailures(checklist.items, policy)
+  const resolvedPolicy = normalizeCloseGatePolicy(policy)
+  const failures = selectCloseGateFailures(checklist.items, resolvedPolicy)
   if (failures.length === 0) {
     return
   }
 
-  throw buildCloseBlockerError({ checklist, policy })
+  throw buildCloseBlockerError({ checklist, policy: resolvedPolicy })
 }
 
 export {

@@ -1,5 +1,7 @@
-import type { AccountingPeriodStatus } from "@/generated/prisma/client"
-import type { CloseChecklistItem } from "@/lib/finance/close-checklist-types"
+import type {
+  CloseChecklistItem,
+  CloseChecklistPeriodInput,
+} from "@/lib/finance/close-checklist-types"
 import type { CloseGateBlocker } from "@/lib/finance/close-gate-errors"
 import type { CloseReadinessResult } from "./close-readiness"
 import { buildSnapshotDetailPath } from "./trace-links"
@@ -262,7 +264,7 @@ function buildBlockerLinkReadiness(
       id: context.periodId ?? "",
       branchId,
       periodKey,
-      status: "OPEN" as AccountingPeriodStatus,
+      status: "OPEN" as CloseChecklistPeriodInput["status"],
       closedAt: null,
     },
   }
