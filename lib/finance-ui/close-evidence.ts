@@ -13,8 +13,23 @@ export type CloseEvidenceApiResult = {
   evidence: CloseEvidenceDetail
 }
 
-export function buildCloseEvidencePath(periodId: string): string {
-  return `/finance/periods/${encodeURIComponent(periodId.trim())}/close-evidence`
+export type CloseEvidenceHistoryApiResult = {
+  evidence: CloseEvidenceDetail[]
+}
+
+export function buildCloseEvidencePath(
+  periodId: string,
+  evidenceId?: string
+): string {
+  const base = `/finance/periods/${encodeURIComponent(periodId.trim())}/close-evidence`
+  if (evidenceId?.trim()) {
+    return `${base}/${encodeURIComponent(evidenceId.trim())}`
+  }
+  return base
+}
+
+export function buildCloseEvidenceHistoryPath(periodId: string): string {
+  return `/finance/periods/${encodeURIComponent(periodId.trim())}/close-evidence/history`
 }
 
 export function buildCloseEvidenceTraceLinks(

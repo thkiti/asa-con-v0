@@ -77,3 +77,4 @@ generated/  Prisma client output (gitignored)
 | 20C | Close gate — enforced HARD close in `closeAccountingPeriod`, centralized policy, structured 409 errors, no bypass |
 | 20D | Close evidence — immutable HARD-close snapshot (`AccountingPeriodCloseEvidence`), GET API, `/finance/periods/[id]/close-evidence` |
 | 20E | Close evidence export/print — browser CSV pack + audit print from stored `CloseEvidenceDetail` (no export API route) |
+| 21A | Reopen control — audited HARD/soft reopen, append-only close evidence history, reopen evidence API/UI |

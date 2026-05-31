@@ -2,6 +2,8 @@ import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import {
   createCloseEvidenceForHardClose,
   getCloseEvidenceByPeriodId,
+  getLatestCloseEvidenceByPeriodId,
+  listCloseEvidenceByPeriodId,
   resolveCloseActorSnapshot,
 } from "@/lib/finance/close-evidence"
 import { DEFAULT_CLOSE_GATE_POLICY } from "@/lib/finance/close-gate-policy"
@@ -96,20 +98,20 @@ describe("close-evidence", () => {
     expect(detail.payload.close.closedByName).toBe("Close Reviewer")
   })
 
-  it("does not create duplicate evidence for the same period", async () => {
+  it("appends a new evidence row on each successful hard close", async () => {
     const { tx, state } = createFinanceMockTx()
     const period = await tx.accountingPeriod.create({
       data: { branchId, periodKey, status: AccountingPeriodStatus.HARD_CLOSED },
     })
-    const closedAt = new Date("2026-05-30T10:00:00.000Z")
-    const input = {
+    const closedAt1 = new Date("2026-05-30T10:00:00.000Z")
+    const closedAt2 = new Date("2026-06-30T10:00:00.000Z")
+    const baseInput = {
       period: {
         id: period.id,
         branchId,
         periodKey,
         statusBefore: AccountingPeriodStatus.OPEN,
         openedAt: period.openedAt,
-        closedAt,
       },
       closedBy: { staffId: "staff-1", name: "A", role: "HO_FINANCE" },
       policy: DEFAULT_CLOSE_GATE_POLICY,
@@ -118,15 +120,26 @@ describe("close-evidence", () => {
       snapshotPayload: null,
     }
 
-    const first = await createCloseEvidenceForHardClose(tx, input)
+    const first = await createCloseEvidenceForHardClose(tx, {
+      ...baseInput,
+      period: { ...baseInput.period, closedAt: closedAt1 },
+    })
     const second = await createCloseEvidenceForHardClose(tx, {
-      ...input,
+      ...baseInput,
+      period: { ...baseInput.period, closedAt: closedAt2 },
       closedBy: { staffId: "other", name: "Other", role: "HO_ADMIN" },
     })
 
-    expect(second.id).toBe(first.id)
-    expect(state.accountingPeriodCloseEvidence).toHaveLength(1)
-    expect(second.closedByName).toBe("A")
+    expect(second.id).not.toBe(first.id)
+    expect(state.accountingPeriodCloseEvidence).toHaveLength(2)
+    expect(second.closedByName).toBe("Other")
+
+    const latest = await getLatestCloseEvidenceByPeriodId(tx, period.id)
+    expect(latest.id).toBe(second.id)
+
+    const history = await listCloseEvidenceByPeriodId(tx, period.id)
+    expect(history).toHaveLength(2)
+    expect(history[0]?.id).toBe(second.id)
   })
 
   it("getCloseEvidenceByPeriodId returns stored evidence", async () => {

@@ -8,7 +8,10 @@ import {
   type CloseEvidenceDetail,
 } from "@/lib/finance-ui/close-evidence"
 import { formatCloseReadinessStatusLabel } from "@/lib/finance-ui/close-readiness"
-import { fetchCloseEvidence } from "@/lib/finance-ui/period-fetchers"
+import {
+  fetchCloseEvidence,
+  fetchCloseEvidenceById,
+} from "@/lib/finance-ui/period-fetchers"
 import {
   CloseEvidenceActionBar,
   CloseEvidenceAuditPrintHeader,
@@ -222,9 +225,10 @@ export function CloseEvidenceReview({ evidence }: { evidence: CloseEvidenceDetai
 
 type CloseEvidencePageProps = {
   periodId: string
+  evidenceId?: string
 }
 
-export function CloseEvidencePage({ periodId }: CloseEvidencePageProps) {
+export function CloseEvidencePage({ periodId, evidenceId }: CloseEvidencePageProps) {
   const [evidence, setEvidence] = useState<CloseEvidenceDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -234,7 +238,9 @@ export function CloseEvidencePage({ periodId }: CloseEvidencePageProps) {
     setError(null)
 
     try {
-      const result = await fetchCloseEvidence(periodId)
+      const result = evidenceId?.trim()
+        ? await fetchCloseEvidenceById(periodId, evidenceId)
+        : await fetchCloseEvidence(periodId)
       setEvidence(result.evidence)
     } catch (err) {
       setEvidence(null)
@@ -242,7 +248,7 @@ export function CloseEvidencePage({ periodId }: CloseEvidencePageProps) {
     } finally {
       setLoading(false)
     }
-  }, [periodId])
+  }, [periodId, evidenceId])
 
   useEffect(() => {
     void loadEvidence()

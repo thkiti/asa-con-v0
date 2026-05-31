@@ -96,10 +96,29 @@ type AccountingPeriodCloseEvidenceRow = {
   createdAt: Date
 }
 
+type AccountingPeriodReopenEvidenceRow = {
+  id: string
+  periodId: string
+  branchId: string
+  periodKey: string
+  fromStatus: string
+  toStatus: string
+  reopenedAt: Date
+  reopenedByStaffId: string
+  reopenedByName: string
+  reopenedByRole: string
+  reason: string
+  closeEvidenceId: string | null
+  payloadVersion: number
+  payload: unknown
+  createdAt: Date
+}
+
 export type FinanceMockState = MockTxState & {
   glAccounts: GlAccountRow[]
   accountingPeriods: AccountingPeriodRow[]
   accountingPeriodCloseEvidence: AccountingPeriodCloseEvidenceRow[]
+  accountingPeriodReopenEvidence: AccountingPeriodReopenEvidenceRow[]
   vouchers: VoucherRow[]
   voucherLines: VoucherLineRow[]
   journalEntries: JournalEntryRow[]
@@ -130,6 +149,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
     })),
     accountingPeriods: [],
     accountingPeriodCloseEvidence: [],
+    accountingPeriodReopenEvidence: [],
     vouchers: [],
     voucherLines: [],
     journalEntries: [],
@@ -215,13 +235,6 @@ export function createFinanceMockTx(branchId = "branch-1") {
       }: {
         where: { periodId?: string; id?: string }
       }) => {
-        if (where.periodId) {
-          return (
-            state.accountingPeriodCloseEvidence.find(
-              (row) => row.periodId === where.periodId
-            ) ?? null
-          )
-        }
         if (where.id) {
           return (
             state.accountingPeriodCloseEvidence.find((row) => row.id === where.id) ??
@@ -229,6 +242,40 @@ export function createFinanceMockTx(branchId = "branch-1") {
           )
         }
         return null
+      },
+      findFirst: async ({
+        where,
+        orderBy,
+      }: {
+        where: { periodId: string }
+        orderBy?: { closedAt: "desc" }
+      }) => {
+        const rows = state.accountingPeriodCloseEvidence
+          .filter((row) => row.periodId === where.periodId)
+          .sort((a, b) => {
+            if (orderBy?.closedAt === "desc") {
+              return b.closedAt.getTime() - a.closedAt.getTime()
+            }
+            return 0
+          })
+        return rows[0] ?? null
+      },
+      findMany: async ({
+        where,
+        orderBy,
+      }: {
+        where: { periodId: string }
+        orderBy?: { closedAt: "desc" }
+      }) => {
+        const rows = state.accountingPeriodCloseEvidence.filter(
+          (row) => row.periodId === where.periodId
+        )
+        if (orderBy?.closedAt === "desc") {
+          return [...rows].sort(
+            (a, b) => b.closedAt.getTime() - a.closedAt.getTime()
+          )
+        }
+        return rows
       },
       create: async ({
         data,
@@ -241,6 +288,38 @@ export function createFinanceMockTx(branchId = "branch-1") {
           ...data,
         }
         state.accountingPeriodCloseEvidence.push(row)
+        return row
+      },
+    },
+    accountingPeriodReopenEvidence: {
+      findMany: async ({
+        where,
+        orderBy,
+      }: {
+        where: { periodId: string }
+        orderBy?: { reopenedAt: "desc" }
+      }) => {
+        const rows = state.accountingPeriodReopenEvidence.filter(
+          (row) => row.periodId === where.periodId
+        )
+        if (orderBy?.reopenedAt === "desc") {
+          return [...rows].sort(
+            (a, b) => b.reopenedAt.getTime() - a.reopenedAt.getTime()
+          )
+        }
+        return rows
+      },
+      create: async ({
+        data,
+      }: {
+        data: Omit<AccountingPeriodReopenEvidenceRow, "id" | "createdAt">
+      }) => {
+        const row: AccountingPeriodReopenEvidenceRow = {
+          id: nextId("reopen-evidence"),
+          createdAt: new Date(),
+          ...data,
+        }
+        state.accountingPeriodReopenEvidence.push(row)
         return row
       },
     },

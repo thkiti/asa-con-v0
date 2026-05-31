@@ -336,15 +336,16 @@ model AccountingPeriod {
   branch         Branch          @relation(fields: [branchId], references: [id])
   vouchers       Voucher[]
   journalEntries JournalEntry[]
-  closeEvidence  AccountingPeriodCloseEvidence?
+  closeEvidence  AccountingPeriodCloseEvidence[]
+  reopenEvidence AccountingPeriodReopenEvidence[]
 
   @@unique([branchId, periodKey])
 }
 
-/// Immutable HARD-close audit record (Phase 20D). Actor fields are point-in-time snapshots — no Staff FK.
+/// Immutable HARD-close audit record (Phase 20D/21A). Append-only — one row per successful HARD close.
 model AccountingPeriodCloseEvidence {
   id        String @id @default(uuid())
-  periodId  String @unique
+  periodId  String
   branchId  String
   periodKey String
 
@@ -367,8 +368,39 @@ model AccountingPeriodCloseEvidence {
 
   period AccountingPeriod @relation(fields: [periodId], references: [id])
 
+  @@index([periodId, closedAt(sort: Desc)])
   @@index([branchId, periodKey])
   @@index([closedAt(sort: Desc)])
+}
+
+/// Immutable reopen audit record (Phase 21A). Actor fields are point-in-time snapshots — no Staff FK.
+model AccountingPeriodReopenEvidence {
+  id        String @id @default(uuid())
+  periodId  String
+  branchId  String
+  periodKey String
+
+  fromStatus String
+  toStatus   String
+  reopenedAt DateTime
+
+  reopenedByStaffId String
+  reopenedByName    String
+  reopenedByRole    String
+
+  reason String
+
+  closeEvidenceId String?
+
+  payloadVersion Int  @default(1)
+  payload        Json
+
+  createdAt DateTime @default(now())
+
+  period AccountingPeriod @relation(fields: [periodId], references: [id])
+
+  @@index([periodId, reopenedAt(sort: Desc)])
+  @@index([branchId, periodKey])
 }
 
 model Voucher {

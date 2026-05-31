@@ -158,21 +158,40 @@ async function main() {
   await prisma.$transaction((tx) => closeAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY, mode: "SOFT" }))
   record("H Idempotent SOFT CLOSE", true, "ok")
 
-  await prisma.$transaction((tx) => reopenAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY }))
+  const smokeStaffId = await ensureDevPeriodAdminStaff(prisma, branchId)
+  const smokeStaff = await prisma.staff.findUnique({
+    where: { id: smokeStaffId },
+    select: { name: true },
+  })
+  const smokeReopenBy = {
+    staffId: smokeStaffId,
+    name: smokeStaff?.name ?? "Dev Admin",
+    role: "HO_ADMIN" as const,
+  }
+  await prisma.$transaction((tx) =>
+    reopenAccountingPeriod(tx, {
+      branchId,
+      periodKey: PERIOD_KEY,
+      reason: "Smoke integration reopen",
+      reopenedBy: smokeReopenBy,
+    })
+  )
   const reopened = await prisma.accountingPeriod.findUnique({ where: { branchId_periodKey: { branchId, periodKey: PERIOD_KEY } } })
   record("D REOPEN", reopened?.status === "OPEN" && reopened?.closedAt === null, `status=${reopened?.status}`)
 
   const reopenCheckout = await tryCheckout(branchId, productId)
   record("D Posting after REOPEN", reopenCheckout.ok, `ok=${reopenCheckout.ok}`)
 
-  await prisma.$transaction((tx) => reopenAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY }))
+  await prisma.$transaction((tx) =>
+    reopenAccountingPeriod(tx, {
+      branchId,
+      periodKey: PERIOD_KEY,
+      reason: "Smoke idempotent reopen",
+      reopenedBy: smokeReopenBy,
+    })
+  )
   record("H Idempotent REOPEN", true, "ok")
 
-  const smokeStaffId = await ensureDevPeriodAdminStaff(prisma, branchId)
-  const smokeStaff = await prisma.staff.findUnique({
-    where: { id: smokeStaffId },
-    select: { name: true },
-  })
   const smokeClosedBy = {
     staffId: smokeStaffId,
     name: smokeStaff?.name ?? "Dev Admin",

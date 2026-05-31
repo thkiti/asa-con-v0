@@ -77,9 +77,11 @@ export function financeErrorResponse(
     const status =
       err.code === "PERIOD_NOT_FOUND" || err.code === "CLOSE_EVIDENCE_NOT_FOUND"
         ? 404
-        : err.code === "PERIOD_ALREADY_HARD_CLOSED"
-          ? 409
-          : 400
+        : err.code === "FORBIDDEN"
+          ? 403
+          : err.code === "PERIOD_ALREADY_HARD_CLOSED"
+            ? 409
+            : 400
     return NextResponse.json(
       { error: err.message, code: err.code },
       { status }

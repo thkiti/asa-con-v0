@@ -135,7 +135,8 @@ export function PeriodAdminPage() {
 
   async function handlePeriodAction(
     period: AccountingPeriodRow,
-    action: PeriodAction
+    action: PeriodAction,
+    options?: { reason?: string }
   ) {
     setMessage(null)
     setError(null)
@@ -147,6 +148,7 @@ export function PeriodAdminPage() {
         branchId: period.branchId,
         periodKey: period.periodKey,
         action,
+        reason: options?.reason,
       })
       setMessage(
         `Period ${result.period.periodKey} is now ${result.period.status}`
@@ -313,6 +315,7 @@ export function PeriodAdminPage() {
         <PeriodTable
           periods={periods}
           showControls
+          sessionRole={sessionDisplay?.role}
           actionsDisabled={controlsDisabled}
           pendingPeriodId={pendingPeriodId}
           onPeriodAction={handlePeriodAction}

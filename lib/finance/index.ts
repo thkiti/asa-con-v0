@@ -91,7 +91,14 @@ export {
   buildCloseReadinessWithSnapshotsForPeriod,
   getCloseReadinessByPeriodId,
 } from "./close-readiness"
-export { getCloseEvidenceByPeriodId } from "./close-evidence"
+export {
+  getCloseEvidenceByPeriodId,
+  getCloseEvidenceById,
+  getLatestCloseEvidenceByPeriodId,
+  listCloseEvidenceByPeriodId,
+} from "./close-evidence"
+export { listReopenEvidenceByPeriodId } from "./reopen-evidence"
+export type { ReopenEvidenceDetail } from "./reopen-evidence-types"
 export type {
   CloseReadinessChecklistPrisma,
   CloseReadinessPeriodInput,

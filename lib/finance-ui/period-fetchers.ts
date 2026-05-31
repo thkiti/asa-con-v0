@@ -1,4 +1,8 @@
-import type { CloseEvidenceApiResult } from "./close-evidence"
+import type {
+  CloseEvidenceApiResult,
+  CloseEvidenceHistoryApiResult,
+} from "./close-evidence"
+import type { ReopenEvidenceApiResult } from "./reopen-evidence"
 import type { CloseReadinessApiResult } from "./close-readiness"
 import type {
   PeriodActionError,
@@ -96,6 +100,7 @@ export function patchAccountingPeriod(body: {
   branchId: string
   periodKey: string
   action: PeriodAction
+  reason?: string
 }): Promise<AccountingPeriodMutationResult> {
   return fetch("/api/finance/periods", {
     method: "PATCH",
@@ -125,4 +130,40 @@ export function fetchCloseEvidence(periodId: string): Promise<CloseEvidenceApiRe
       return res.json() as Promise<CloseEvidenceApiResult>
     }
   )
+}
+
+export function fetchCloseEvidenceById(
+  periodId: string,
+  evidenceId: string
+): Promise<CloseEvidenceApiResult> {
+  const trimmedPeriod = periodId.trim()
+  const trimmedEvidence = evidenceId.trim()
+  return fetch(
+    `/api/finance/periods/${encodeURIComponent(trimmedPeriod)}/close-evidence/${encodeURIComponent(trimmedEvidence)}`
+  ).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<CloseEvidenceApiResult>
+  })
+}
+
+export function fetchCloseEvidenceHistory(
+  periodId: string
+): Promise<CloseEvidenceHistoryApiResult> {
+  const trimmed = periodId.trim()
+  return fetch(
+    `/api/finance/periods/${encodeURIComponent(trimmed)}/close-evidence/history`
+  ).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<CloseEvidenceHistoryApiResult>
+  })
+}
+
+export function fetchReopenEvidence(periodId: string): Promise<ReopenEvidenceApiResult> {
+  const trimmed = periodId.trim()
+  return fetch(
+    `/api/finance/periods/${encodeURIComponent(trimmed)}/reopen-evidence`
+  ).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<ReopenEvidenceApiResult>
+  })
 }

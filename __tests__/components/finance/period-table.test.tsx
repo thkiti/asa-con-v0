@@ -39,19 +39,23 @@ describe("PeriodTable", () => {
     expect(html).toContain("No accounting periods")
   })
 
-  it("shows Close evidence link only for HARD_CLOSED periods", () => {
+  it("shows Close evidence and history links for HARD_CLOSED periods", () => {
     const html = renderToStaticMarkup(<PeriodTable periods={samplePeriods} />)
     expect(html).toContain("Review")
     expect(html).toContain("Close evidence")
+    expect(html).toContain("Close history")
+    expect(html).toContain("Reopen history")
     expect(html).toContain("/finance/periods/period-2/close-evidence")
+    expect(html).toContain("/finance/periods/period-2/close-evidence/history")
+    expect(html).toContain("/finance/periods/period-2/reopen-evidence")
     expect(html).not.toContain("/finance/periods/period-1/close-evidence")
   })
 
-  it("shows locked text for hard-closed rows and action buttons for open rows", () => {
+  it("shows HO_ADMIN hard reopen for hard-closed rows when controls enabled", () => {
     const html = renderToStaticMarkup(
-      <PeriodTable periods={samplePeriods} showControls />
+      <PeriodTable periods={samplePeriods} showControls sessionRole="HO_ADMIN" />
     )
-    expect(html).toContain("Locked")
+    expect(html).toContain("HARD REOPEN")
     expect(html).toContain("SOFT CLOSE")
     expect(html).not.toContain("Update status")
   })

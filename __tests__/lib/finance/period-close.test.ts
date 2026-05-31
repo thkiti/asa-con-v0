@@ -304,21 +304,39 @@ describe("period-close", () => {
     })
   })
 
+  const defaultReopenedBy = {
+    staffId: "staff-uuid-1",
+    name: "Finance Admin",
+    role: "HO_FINANCE",
+  }
+
+  const hoAdminReopenedBy = {
+    staffId: "admin-uuid-1",
+    name: "HO Admin",
+    role: "HO_ADMIN",
+  }
+
   it("reopens SOFT_CLOSED period to OPEN with closedAt null", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
     await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
 
-    const reopened = await reopenAccountingPeriod(tx, { branchId, periodKey })
+    const reopened = await reopenAccountingPeriod(tx, {
+      branchId,
+      periodKey,
+      reason: "Resume posting",
+      reopenedBy: defaultReopenedBy,
+    })
 
     expect(reopened.status).toBe(AccountingPeriodStatus.OPEN)
     expect(reopened.closedAt).toBeNull()
     expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.OPEN)
     expect(state.accountingPeriods[0]?.closedAt).toBeNull()
+    expect(state.accountingPeriodReopenEvidence).toHaveLength(1)
   })
 
-  it("rejects reopen when HARD_CLOSED with PERIOD_ALREADY_HARD_CLOSED", async () => {
-    const { tx } = createFinanceMockTx()
+  it("reopens HARD_CLOSED to SOFT_CLOSED with HO_ADMIN", async () => {
+    const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
     await closeAccountingPeriod(tx, {
       branchId,
@@ -327,9 +345,15 @@ describe("period-close", () => {
       closedBy: defaultClosedBy,
     })
 
-    await expect(reopenAccountingPeriod(tx, { branchId, periodKey })).rejects.toMatchObject({
-      code: "PERIOD_ALREADY_HARD_CLOSED",
+    const reopened = await reopenAccountingPeriod(tx, {
+      branchId,
+      periodKey,
+      reason: "Admin hard reopen",
+      reopenedBy: hoAdminReopenedBy,
     })
+
+    expect(reopened.status).toBe(AccountingPeriodStatus.SOFT_CLOSED)
+    expect(state.accountingPeriodReopenEvidence).toHaveLength(1)
   })
 
   it("throws PERIOD_NOT_FOUND when period is missing", async () => {
@@ -339,7 +363,14 @@ describe("period-close", () => {
       closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
     ).rejects.toMatchObject({ code: "PERIOD_NOT_FOUND" })
 
-    await expect(reopenAccountingPeriod(tx, { branchId, periodKey })).rejects.toMatchObject({
+    await expect(
+      reopenAccountingPeriod(tx, {
+        branchId,
+        periodKey,
+        reason: "test",
+        reopenedBy: defaultReopenedBy,
+      })
+    ).rejects.toMatchObject({
       code: "PERIOD_NOT_FOUND",
     })
   })
@@ -383,11 +414,17 @@ describe("period-close", () => {
     const { tx, state } = createFinanceMockTx()
     const created = await seedOpenPeriod(tx, branchId, periodKey)
 
-    const reopened = await reopenAccountingPeriod(tx, { branchId, periodKey })
+    const reopened = await reopenAccountingPeriod(tx, {
+      branchId,
+      periodKey,
+      reason: "noop",
+      reopenedBy: defaultReopenedBy,
+    })
 
     expect(reopened.id).toBe(created.id)
     expect(reopened.status).toBe(AccountingPeriodStatus.OPEN)
     expect(state.accountingPeriods).toHaveLength(1)
+    expect(state.accountingPeriodReopenEvidence).toHaveLength(0)
   })
 
   it("rejects SOFT close when HARD_CLOSED with PERIOD_ALREADY_HARD_CLOSED", async () => {

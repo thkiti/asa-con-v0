@@ -1,6 +1,10 @@
 import Link from "next/link"
 import type { PeriodAction } from "@/lib/finance-ui/period-fetchers"
-import { buildCloseEvidencePath } from "@/lib/finance-ui/close-evidence"
+import {
+  buildCloseEvidenceHistoryPath,
+  buildCloseEvidencePath,
+} from "@/lib/finance-ui/close-evidence"
+import { buildReopenEvidencePath } from "@/lib/finance-ui/reopen-evidence"
 import { buildCloseReadinessPath } from "@/lib/finance-ui/close-readiness"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { PeriodAdminActions } from "./PeriodAdminActions"
@@ -18,8 +22,10 @@ type PeriodTableProps = {
   showControls?: boolean
   onPeriodAction?: (
     period: AccountingPeriodRow,
-    action: PeriodAction
+    action: PeriodAction,
+    options?: { reason?: string }
   ) => Promise<void>
+  sessionRole?: string
   actionsDisabled?: boolean
   pendingPeriodId?: string | null
 }
@@ -28,6 +34,7 @@ export function PeriodTable({
   periods,
   showControls = false,
   onPeriodAction,
+  sessionRole,
   actionsDisabled = false,
   pendingPeriodId = null,
 }: PeriodTableProps) {
@@ -83,26 +90,41 @@ export function PeriodTable({
                       Review
                     </Link>
                     {period.status === "HARD_CLOSED" ? (
-                      <Link
-                        href={buildCloseEvidencePath(period.id)}
-                        className="text-sm font-medium text-zinc-900 underline"
-                      >
-                        Close evidence
-                      </Link>
+                      <>
+                        <Link
+                          href={buildCloseEvidencePath(period.id)}
+                          className="text-sm font-medium text-zinc-900 underline"
+                        >
+                          Close evidence
+                        </Link>
+                        <Link
+                          href={buildCloseEvidenceHistoryPath(period.id)}
+                          className="text-sm font-medium text-zinc-900 underline"
+                        >
+                          Close history
+                        </Link>
+                      </>
                     ) : null}
+                    <Link
+                      href={buildReopenEvidencePath(period.id)}
+                      className="text-sm font-medium text-zinc-900 underline"
+                    >
+                      Reopen history
+                    </Link>
                   </span>
                 </td>
                 {showControls ? (
                   <td className="px-3 py-2">
                     <PeriodAdminActions
                       period={period}
+                      sessionRole={sessionRole}
                       disabled={actionsDisabled}
                       submitting={
                         Boolean(pendingPeriodId) && pendingPeriodId === period.id
                       }
-                      onAction={(action) =>
+                      onAction={(action, options) =>
                         onPeriodAction
-                          ? onPeriodAction(period, action)
+                          ? onPeriodAction(period, action, options)
                           : Promise.resolve()
                       }
                     />

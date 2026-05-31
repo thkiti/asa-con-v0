@@ -102,14 +102,6 @@ export async function createCloseEvidenceForHardClose(
   tx: Prisma.TransactionClient,
   input: CreateCloseEvidenceForHardCloseInput
 ): Promise<CloseEvidenceDetail> {
-  const existing = await tx.accountingPeriodCloseEvidence.findUnique({
-    where: { periodId: input.period.id },
-  })
-
-  if (existing) {
-    return toCloseEvidenceDetail(existing)
-  }
-
   const actor = resolveCloseActorSnapshot(input.closedBy)
   const payload = buildCloseEvidencePayload({
     period: {
@@ -149,7 +141,7 @@ export async function createCloseEvidenceForHardClose(
   return toCloseEvidenceDetail(row)
 }
 
-export async function getCloseEvidenceByPeriodId(
+export async function getLatestCloseEvidenceByPeriodId(
   prisma: Pick<PrismaClient, "accountingPeriodCloseEvidence">,
   periodId: string
 ): Promise<CloseEvidenceDetail> {
@@ -161,13 +153,68 @@ export async function getCloseEvidenceByPeriodId(
     )
   }
 
-  const row = await prisma.accountingPeriodCloseEvidence.findUnique({
+  const row = await prisma.accountingPeriodCloseEvidence.findFirst({
     where: { periodId: trimmedId },
+    orderBy: { closedAt: "desc" },
   })
 
   if (!row) {
     throw new FinancePostingError(
       `Close evidence not found for period: ${trimmedId}`,
+      "CLOSE_EVIDENCE_NOT_FOUND"
+    )
+  }
+
+  return toCloseEvidenceDetail(row)
+}
+
+/** Backward-compatible alias — returns latest close evidence by closedAt. */
+export async function getCloseEvidenceByPeriodId(
+  prisma: Pick<PrismaClient, "accountingPeriodCloseEvidence">,
+  periodId: string
+): Promise<CloseEvidenceDetail> {
+  return getLatestCloseEvidenceByPeriodId(prisma, periodId)
+}
+
+export async function listCloseEvidenceByPeriodId(
+  prisma: Pick<PrismaClient, "accountingPeriodCloseEvidence">,
+  periodId: string
+): Promise<CloseEvidenceDetail[]> {
+  const trimmedId = periodId.trim()
+  if (!trimmedId) {
+    throw new FinancePostingError(
+      "Accounting period id is required",
+      "CLOSE_EVIDENCE_NOT_FOUND"
+    )
+  }
+
+  const rows = await prisma.accountingPeriodCloseEvidence.findMany({
+    where: { periodId: trimmedId },
+    orderBy: { closedAt: "desc" },
+  })
+
+  return rows.map(toCloseEvidenceDetail)
+}
+
+export async function getCloseEvidenceById(
+  prisma: Pick<PrismaClient, "accountingPeriodCloseEvidence">,
+  evidenceId: string
+): Promise<CloseEvidenceDetail> {
+  const trimmedId = evidenceId.trim()
+  if (!trimmedId) {
+    throw new FinancePostingError(
+      "Close evidence id is required",
+      "CLOSE_EVIDENCE_NOT_FOUND"
+    )
+  }
+
+  const row = await prisma.accountingPeriodCloseEvidence.findUnique({
+    where: { id: trimmedId },
+  })
+
+  if (!row) {
+    throw new FinancePostingError(
+      `Close evidence not found: ${trimmedId}`,
       "CLOSE_EVIDENCE_NOT_FOUND"
     )
   }

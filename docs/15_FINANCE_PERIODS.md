@@ -468,6 +468,24 @@ Full scope, guardrails, and verification: [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](
 
 ---
 
+## 18. Phase 21A — Reopen control
+
+Status: **Done** — audited reopen paths, append-only close evidence history, reopen evidence
+
+| Transition | Role | Reason | Posting after |
+|------------|------|--------|---------------|
+| `HARD_CLOSED` → `SOFT_CLOSED` | `HO_ADMIN` | Required | Blocked (`SOFT_CLOSED`) |
+| `SOFT_CLOSED` → `OPEN` | `HO_FINANCE` / `HO_ADMIN` | Required | Allowed via existing kernel |
+| `HARD_CLOSED` → `OPEN` | — | — | **Rejected** |
+
+Each successful HARD close appends a new `AccountingPeriodCloseEvidence` row; prior rows are never modified. Reopen writes only `AccountingPeriodReopenEvidence`.
+
+API: `PATCH` REOPEN with `reason`; `GET` close-evidence (latest), `.../history`, `.../[evidenceId]`; `GET` reopen-evidence. UI: reopen confirm dialogs, reopen history, close history.
+
+Full policy, lifecycle example, and test map: [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md). Close evidence history: [23](./23_FINANCE_CLOSE_EVIDENCE.md). Gate: [22](./22_FINANCE_CLOSE_GATE.md). Export: [24](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md).
+
+---
+
 ## 18. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)

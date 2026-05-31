@@ -2,7 +2,7 @@
 
 Status: **Done** — immutable HARD-close evidence persisted at successful close; read-only GET API and review UI  
 Scope: Audit artifact only — no posting, reconciliation recalc, snapshot mutation, or checklist rebuild  
-Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md)
+Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md), [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md)
 
 Phase 20D records **what was true at HARD close time** after Phase 20C gate approval. Close readiness ([20B](./21_FINANCE_CLOSE_WORKFLOW.md)) is pre-close advisory; the close gate ([20C](./22_FINANCE_CLOSE_GATE.md)) enforces transition; close evidence ([20D](./23_FINANCE_CLOSE_EVIDENCE.md)) is the immutable post-close audit record.
 
@@ -12,9 +12,9 @@ Phase 20D records **what was true at HARD close time** after Phase 20C gate appr
 
 | Goal | Description |
 |------|-------------|
-| Immutable HARD close evidence | One `AccountingPeriodCloseEvidence` row per period, written only after successful HARD close |
+| Immutable HARD close evidence | One **new** `AccountingPeriodCloseEvidence` row per successful HARD close (append-only history) |
 | Audit artifact | Captures gate policy, checklist summaries, frozen reconciliation metrics, financial totals, and trace refs at close time |
-| One evidence per period | `periodId` unique — idempotent repeat HARD close does not create a second row |
+| Idempotent HARD close | Period already `HARD_CLOSED` — no additional evidence row |
 | Survives operational change | Embedded JSON payload; live reconciliation and future rule changes do not alter stored evidence |
 
 **Non-goals:** SOFT close evidence, evidence update/delete, auto snapshot capture on close, live reconciliation during read, rebuilding checklist on GET, Staff or `ReconciliationSnapshot` FK relations.
@@ -90,7 +90,7 @@ Model: `AccountingPeriodCloseEvidence` in [`prisma/schema.prisma`](../prisma/sch
 | Field | Type | Purpose |
 |-------|------|---------|
 | `id` | UUID | Primary key |
-| `periodId` | string @unique | One evidence row per accounting period |
+| `periodId` | string | Period scope; multiple rows allowed (index `periodId`, `closedAt` desc) |
 | `branchId`, `periodKey` | string | Scope headers for list/filter |
 | `closeMode` | string | `"HARD"` in v1 |
 | `closedAt` | DateTime | HARD close timestamp (aligned with period `closedAt`) |

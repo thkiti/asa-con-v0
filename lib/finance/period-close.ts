@@ -4,6 +4,7 @@ import { assertCloseReadiness } from "./close-gate"
 import { getHardCloseGatePolicy } from "./close-gate-policy"
 import { createCloseEvidenceForHardClose, type PeriodCloseActorInput } from "./close-evidence"
 import { buildCloseReadinessWithSnapshotsForPeriod } from "./close-readiness"
+import { createReopenEvidence } from "./reopen-evidence"
 import { FinancePostingError } from "./posting-errors"
 
 type PeriodCloseInput = {
@@ -16,6 +17,8 @@ type PeriodCloseInput = {
 type PeriodReopenInput = {
   branchId: string
   periodKey: string
+  reason: string
+  reopenedBy: PeriodCloseActorInput
 }
 
 async function findAccountingPeriod(
@@ -49,6 +52,27 @@ function requireHardCloseActor(closedBy: PeriodCloseActorInput | undefined): Per
     )
   }
   return closedBy
+}
+
+function requireReopenActor(reopenedBy: PeriodCloseActorInput | undefined): PeriodCloseActorInput {
+  if (!reopenedBy?.staffId?.trim()) {
+    throw new FinancePostingError(
+      "reopenedBy.staffId is required for reopen",
+      "VALIDATION_ERROR"
+    )
+  }
+  return reopenedBy
+}
+
+function requireReopenReason(reason: string | undefined): string {
+  const trimmed = reason?.trim() ?? ""
+  if (!trimmed) {
+    throw new FinancePostingError(
+      "reason is required for period reopen",
+      "VALIDATION_ERROR"
+    )
+  }
+  return trimmed
 }
 
 export async function closeAccountingPeriod(
@@ -126,18 +150,55 @@ export async function reopenAccountingPeriod(
     return period
   }
 
+  const reason = requireReopenReason(input.reason)
+  const reopenedBy = requireReopenActor(input.reopenedBy)
+
   if (period.status === AccountingPeriodStatus.HARD_CLOSED) {
-    throw new FinancePostingError(
-      `Accounting period ${input.periodKey} is hard closed and cannot be reopened`,
-      "PERIOD_ALREADY_HARD_CLOSED"
-    )
+    await createReopenEvidence(tx, {
+      period: {
+        id: period.id,
+        branchId: period.branchId,
+        periodKey: period.periodKey,
+        status: AccountingPeriodStatus.HARD_CLOSED,
+      },
+      toStatus: AccountingPeriodStatus.SOFT_CLOSED,
+      reason,
+      reopenedBy,
+    })
+
+    return tx.accountingPeriod.update({
+      where: { id: period.id },
+      data: {
+        status: AccountingPeriodStatus.SOFT_CLOSED,
+        closedAt: period.closedAt ?? new Date(),
+      },
+    })
   }
 
-  return tx.accountingPeriod.update({
-    where: { id: period.id },
-    data: {
-      status: AccountingPeriodStatus.OPEN,
-      closedAt: null,
-    },
-  })
+  if (period.status === AccountingPeriodStatus.SOFT_CLOSED) {
+    await createReopenEvidence(tx, {
+      period: {
+        id: period.id,
+        branchId: period.branchId,
+        periodKey: period.periodKey,
+        status: AccountingPeriodStatus.SOFT_CLOSED,
+      },
+      toStatus: AccountingPeriodStatus.OPEN,
+      reason,
+      reopenedBy,
+    })
+
+    return tx.accountingPeriod.update({
+      where: { id: period.id },
+      data: {
+        status: AccountingPeriodStatus.OPEN,
+        closedAt: null,
+      },
+    })
+  }
+
+  throw new FinancePostingError(
+    `Accounting period ${input.periodKey} is not in a reopenable state`,
+    "INVALID_REOPEN_TRANSITION"
+  )
 }

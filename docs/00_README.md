@@ -28,7 +28,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 22. [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md) — Phase 20C enforced HARD close gating, policy, structured errors
 23. [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md) — Phase 20D immutable HARD-close evidence snapshot
 24. [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md) — Phase 20E close evidence browser export and audit print
-25. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+25. [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md) — Phase 21A controlled reopen and append-only close/reopen evidence history
+26. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -54,3 +55,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 20C | Finance close gate (enforced HARD close, centralized policy, structured 409 errors) | Done |
 | 20D | Finance close evidence (immutable HARD-close audit record, GET API, review UI) | Done |
 | 20E | Close evidence export/print (browser CSV pack, audit print from stored evidence) | Done |
+| 21A | Reopen control (audited reopen, append-only close evidence history, reopen evidence) | Done |

@@ -127,6 +127,7 @@ export async function PATCH(req: NextRequest) {
       branchId?: unknown
       periodKey?: unknown
       action?: unknown
+      reason?: unknown
     }
 
     const branchId = String(body.branchId ?? "").trim()
@@ -148,23 +149,28 @@ export async function PATCH(req: NextRequest) {
     }
 
     const actor = requirePeriodAdminActor(await getSession())
-    const hardCloseActor =
-      action === "HARD_CLOSE"
-        ? await (async () => {
-            const staffId = await resolvePeriodAdminStaffId(prisma, actor.staffId, {
-              branchIdHint: branchId,
-            })
-            const staff = await prisma.staff.findUnique({
-              where: { id: staffId },
-              select: { name: true },
-            })
-            return {
-              staffId,
-              name: staff?.name ?? null,
-              role: actor.role,
-            }
-          })()
+
+    async function resolvePeriodActor() {
+      const staffId = await resolvePeriodAdminStaffId(prisma, actor.staffId, {
+        branchIdHint: branchId,
+      })
+      const staff = await prisma.staff.findUnique({
+        where: { id: staffId },
+        select: { name: true },
+      })
+      return {
+        staffId,
+        name: staff?.name ?? null,
+        role: actor.role,
+      }
+    }
+
+    const periodActor =
+      action === "HARD_CLOSE" || action === "REOPEN"
+        ? await resolvePeriodActor()
         : undefined
+
+    const reason = String(body.reason ?? "").trim()
 
     await prisma.$transaction(async (tx) => {
       if (action === "SOFT_CLOSE") {
@@ -174,10 +180,15 @@ export async function PATCH(req: NextRequest) {
           branchId,
           periodKey,
           mode: "HARD",
-          closedBy: hardCloseActor!,
+          closedBy: periodActor!,
         })
       } else {
-        await reopenAccountingPeriod(tx, { branchId, periodKey })
+        await reopenAccountingPeriod(tx, {
+          branchId,
+          periodKey,
+          reason,
+          reopenedBy: periodActor!,
+        })
       }
     })
 

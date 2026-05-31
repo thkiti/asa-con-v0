@@ -578,7 +578,7 @@ describe("PATCH finance/periods", () => {
     })
   })
 
-  it("REOPEN updates period status", async () => {
+  it("REOPEN updates period status with reason and actor", async () => {
     mockReopen.mockResolvedValue(periodRow())
     mockFindUnique.mockResolvedValue(periodRow())
 
@@ -588,23 +588,29 @@ describe("PATCH finance/periods", () => {
         branchId: "branch-1",
         periodKey: "2026-05",
         action: "REOPEN",
+        reason: "Resume month-end",
       }),
     })
     const res = await PATCH(req)
 
     expect(res.status).toBe(200)
-    expect(mockReopen).toHaveBeenCalledWith(prisma, {
-      branchId: "branch-1",
-      periodKey: "2026-05",
-    })
+    expect(mockReopen).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        reason: "Resume month-end",
+        reopenedBy: expect.objectContaining({
+          staffId: "staff-db-1",
+          role: "HO_FINANCE",
+        }),
+      })
+    )
   })
 
-  it("rejects reopen on a hard-closed period with 409", async () => {
+  it("rejects REOPEN without reason when period is SOFT_CLOSED with 400", async () => {
     mockReopen.mockRejectedValue(
-      new FinancePostingError(
-        "Accounting period 2026-05 is hard closed and cannot be reopened",
-        "PERIOD_ALREADY_HARD_CLOSED"
-      )
+      new FinancePostingError("reason is required for period reopen", "VALIDATION_ERROR")
     )
 
     const req = new NextRequest("http://localhost/api/finance/periods", {
@@ -617,10 +623,33 @@ describe("PATCH finance/periods", () => {
     })
     const res = await PATCH(req)
 
-    expect(res.status).toBe(409)
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toMatchObject({
+      code: "VALIDATION_ERROR",
+    })
+    expect(mockReopen).toHaveBeenCalled()
+  })
+
+  it("rejects HARD reopen for HO_FINANCE with 403", async () => {
+    mockReopen.mockRejectedValue(
+      new FinancePostingError("HARD reopen requires HO_ADMIN role", "FORBIDDEN")
+    )
+
+    const req = new NextRequest("http://localhost/api/finance/periods", {
+      method: "PATCH",
+      body: JSON.stringify({
+        branchId: "branch-1",
+        periodKey: "2026-05",
+        action: "REOPEN",
+        reason: "Should fail",
+      }),
+    })
+    const res = await PATCH(req)
+
+    expect(res.status).toBe(403)
     await expect(res.json()).resolves.toEqual({
-      error: "Accounting period 2026-05 is hard closed and cannot be reopened",
-      code: "PERIOD_ALREADY_HARD_CLOSED",
+      error: "HARD reopen requires HO_ADMIN role",
+      code: "FORBIDDEN",
     })
   })
 
