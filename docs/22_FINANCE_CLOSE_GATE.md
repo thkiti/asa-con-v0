@@ -2,7 +2,7 @@
 
 Status: **Done** — enforced HARD close gating with centralized policy, structured errors, and no-bypass guarantees  
 Scope: Domain enforcement only — no posting math, reconciliation recalc, snapshot mutation, auto-fix, or force-close override  
-Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md)
+Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md)
 
 Phase 20C upgrades Phase 20B **advisory** close readiness into **enforced** close gating. HARD close (`PATCH HARD_CLOSE` → `closeAccountingPeriod(..., mode: "HARD")`) evaluates the same frozen-snapshot checklist and rejects the transition when policy says blockers must be resolved. SOFT close remains review-only and **ungated**.
 
@@ -36,6 +36,7 @@ flowchart TD
   gate["assertCloseReadiness(checklist, getHardCloseGatePolicy())"]
   policy{"Policy failures?"}
   update["accountingPeriod.update → HARD_CLOSED"]
+  evidence["createCloseEvidenceForHardClose"]
   throw["throw CloseGateError"]
   rollback["Transaction rolls back\nperiod unchanged"]
   ok["Return period DTO"]
@@ -43,7 +44,7 @@ flowchart TD
   patch --> tx --> close --> find --> idempotent
   idempotent -->|yes| ok
   idempotent -->|no| checklist --> gate --> policy
-  policy -->|none| update --> ok
+  policy -->|none| update --> evidence --> ok
   policy -->|BLOCKED or strict WARNING| throw --> rollback
 ```
 
@@ -166,6 +167,8 @@ The close gate path must **never**:
 | Snapshot mutation | No update/delete of existing snapshot rows |
 | Nested transactions | Finance joins caller tx; close route opens one outer `$transaction` |
 
+**Allowed on successful HARD close only (Phase 20D):** one `AccountingPeriodCloseEvidence` insert after gate pass and period update — compact frozen audit JSON, not a new reconciliation snapshot. See [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md).
+
 Checklist build reuses Phase 20B logic: [`buildCloseReadinessChecklistForPeriod`](../lib/finance/close-readiness.ts) → `findSnapshotsForPeriod` → `buildCloseChecklist`. Same inputs as the read-only GET close-readiness API — no duplicated live reconciliation.
 
 ---
@@ -209,7 +212,7 @@ Future override workflows must go through explicit policy injection and audit �
 | [`__tests__/app/api/finance/finance-api-errors.test.ts`](../__tests__/app/api/finance/finance-api-errors.test.ts) | All `CloseGateErrorCode` → HTTP 409 mapping |
 | [`__tests__/lib/finance-ui/close-readiness-links.test.ts`](../__tests__/lib/finance-ui/close-readiness-links.test.ts) | Blocker deep-link resolution for failure surfaces |
 
-At Phase 20C completion: **608 tests passing**, `npm run build` clean.
+At Phase 20C completion: **608 tests passing**, `npm run build` clean. Phase 20D evidence tests extend the suite — see [23 §7](./23_FINANCE_CLOSE_EVIDENCE.md#7-test-map).
 
 ---
 
@@ -234,7 +237,7 @@ At Phase 20C completion: **608 tests passing**, `npm run build` clean.
 |------------|-------|
 | Strict WARNING policy in production | Wire `STRICT_CLOSE_GATE_POLICY` or per-branch config through `getHardCloseGatePolicy()` |
 | Rule-level WARNING exemptions | `warningExemptRuleIds` already supported in policy type |
-| Close reason capture | PATCH body `{ reason }` + audit log row on successful close |
+| Close reason capture | Optional PATCH `{ reason }`; actor + checklist snapshot in 20D evidence |
 | HO_ADMIN override with audit | Explicit override policy object + immutable audit trail — never silent bypass |
 | Evidence export audit log | Server-side record when export completes — would downgrade `audit-evidence-export-not-recorded` |
 | Scheduled / automated HARD close | Must still call `closeAccountingPeriod`; no direct status writes |
@@ -243,9 +246,18 @@ All future work must preserve: single enforcement boundary, transaction rollback
 
 ---
 
-## 13. Related docs
+## 13. Phase 20D — Close evidence (allowed side effect)
+
+Status: **Done** — see [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md)
+
+Successful HARD close (after `assertCloseReadiness` and `accountingPeriod.update`) creates immutable close evidence in the **same transaction**. Failed gate → no evidence. SOFT close → no evidence. This does not weaken the gate — it records the approved close decision for audit.
+
+---
+
+## 14. Related docs
 
 - Period lifecycle and posting lock: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 - Close readiness checklist (Phase 20B): [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md)
+- Close evidence (Phase 20D): [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md)
 - Frozen snapshots: [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md)
 - Posting lock audit: [15 §13](./15_FINANCE_PERIODS.md#13-phase-19b--posting-lock-enforcement-audit)

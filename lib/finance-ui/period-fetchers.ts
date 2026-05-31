@@ -1,3 +1,4 @@
+import type { CloseEvidenceApiResult } from "./close-evidence"
 import type { CloseReadinessApiResult } from "./close-readiness"
 import type {
   PeriodActionError,
@@ -112,6 +113,16 @@ export function fetchCloseReadiness(periodId: string): Promise<CloseReadinessApi
     async (res) => {
       if (!res.ok) await throwFetchError(res)
       return res.json() as Promise<CloseReadinessApiResult>
+    }
+  )
+}
+
+export function fetchCloseEvidence(periodId: string): Promise<CloseEvidenceApiResult> {
+  const trimmed = periodId.trim()
+  return fetch(`/api/finance/periods/${encodeURIComponent(trimmed)}/close-evidence`).then(
+    async (res) => {
+      if (!res.ok) await throwFetchError(res)
+      return res.json() as Promise<CloseEvidenceApiResult>
     }
   )
 }

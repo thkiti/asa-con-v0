@@ -1,5 +1,6 @@
 import {
   fetchAccountingPeriods,
+  fetchCloseEvidence,
   fetchSessionDisplay,
   patchAccountingPeriod,
   postAccountingPeriod,
@@ -188,6 +189,46 @@ describe("patchAccountingPeriod", () => {
         action: "HARD_CLOSE",
       })
     ).rejects.toThrow("Transition not allowed")
+  })
+})
+
+describe("fetchCloseEvidence", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("GETs close-evidence API and returns evidence DTO", async () => {
+    const dto = {
+      evidence: {
+        id: "evidence-1",
+        periodId: "period-1",
+        periodKey: "2026-05",
+      },
+    }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => dto,
+    })
+
+    await expect(fetchCloseEvidence("period-1")).resolves.toEqual(dto)
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/periods/period-1/close-evidence"
+    )
+  })
+
+  it("throws with CLOSE_EVIDENCE_NOT_FOUND on 404", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      statusText: "Not Found",
+      json: async () => ({
+        error: "Close evidence not found for period: period-open",
+        code: "CLOSE_EVIDENCE_NOT_FOUND",
+      }),
+    })
+
+    await expect(fetchCloseEvidence("period-open")).rejects.toThrow(
+      "Close evidence not found for period: period-open"
+    )
   })
 })
 

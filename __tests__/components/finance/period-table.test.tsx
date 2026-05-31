@@ -39,6 +39,14 @@ describe("PeriodTable", () => {
     expect(html).toContain("No accounting periods")
   })
 
+  it("shows Close evidence link only for HARD_CLOSED periods", () => {
+    const html = renderToStaticMarkup(<PeriodTable periods={samplePeriods} />)
+    expect(html).toContain("Review")
+    expect(html).toContain("Close evidence")
+    expect(html).toContain("/finance/periods/period-2/close-evidence")
+    expect(html).not.toContain("/finance/periods/period-1/close-evidence")
+  })
+
   it("shows locked text for hard-closed rows and action buttons for open rows", () => {
     const html = renderToStaticMarkup(
       <PeriodTable periods={samplePeriods} showControls />

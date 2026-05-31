@@ -2,13 +2,15 @@
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import { assertCloseReadiness } from "./close-gate"
 import { getHardCloseGatePolicy } from "./close-gate-policy"
-import { buildCloseReadinessChecklistForPeriod } from "./close-readiness"
+import { createCloseEvidenceForHardClose, type PeriodCloseActorInput } from "./close-evidence"
+import { buildCloseReadinessWithSnapshotsForPeriod } from "./close-readiness"
 import { FinancePostingError } from "./posting-errors"
 
 type PeriodCloseInput = {
   branchId: string
   periodKey: string
   mode: "SOFT" | "HARD"
+  closedBy?: PeriodCloseActorInput
 }
 
 type PeriodReopenInput = {
@@ -37,6 +39,16 @@ async function findAccountingPeriod(
   }
 
   return period
+}
+
+function requireHardCloseActor(closedBy: PeriodCloseActorInput | undefined): PeriodCloseActorInput {
+  if (!closedBy?.staffId?.trim()) {
+    throw new FinancePostingError(
+      "closedBy.staffId is required for HARD close",
+      "VALIDATION_ERROR"
+    )
+  }
+  return closedBy
 }
 
 export async function closeAccountingPeriod(
@@ -70,16 +82,38 @@ export async function closeAccountingPeriod(
     return period
   }
 
-  const checklist = await buildCloseReadinessChecklistForPeriod(tx, period)
-  assertCloseReadiness(checklist, getHardCloseGatePolicy())
+  const statusBefore = period.status
+  const { checklist, priorSnapshotRef, snapshotPayload } =
+    await buildCloseReadinessWithSnapshotsForPeriod(tx, period)
+  const policy = getHardCloseGatePolicy()
+  assertCloseReadiness(checklist, policy)
 
-  return tx.accountingPeriod.update({
+  const closedAt = new Date()
+  const updated = await tx.accountingPeriod.update({
     where: { id: period.id },
     data: {
       status: AccountingPeriodStatus.HARD_CLOSED,
-      closedAt: new Date(),
+      closedAt,
     },
   })
+
+  await createCloseEvidenceForHardClose(tx, {
+    period: {
+      id: updated.id,
+      branchId: updated.branchId,
+      periodKey: updated.periodKey,
+      statusBefore,
+      openedAt: updated.openedAt,
+      closedAt,
+    },
+    closedBy: requireHardCloseActor(input.closedBy),
+    policy,
+    checklist,
+    priorSnapshotRef,
+    snapshotPayload,
+  })
+
+  return updated
 }
 
 export async function reopenAccountingPeriod(

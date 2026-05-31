@@ -68,6 +68,12 @@ const mockPostStock = postStockDocumentVoucher as jest.MockedFunction<
 const branchId = "branch-1"
 const periodKey = "2026-05"
 
+const defaultClosedBy = {
+  staffId: "staff-1",
+  name: "Finance Admin",
+  role: "HO_FINANCE",
+}
+
 function readySnapshots() {
   return {
     latest: {
@@ -189,11 +195,21 @@ describe("close gate enforcement guarantees", () => {
       const updateSpy = jest.spyOn(tx.accountingPeriod, "update")
 
       await expect(
-        closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+        closeAccountingPeriod(tx, {
+          branchId,
+          periodKey,
+          mode: "HARD",
+          closedBy: defaultClosedBy,
+        })
       ).rejects.toBeInstanceOf(CloseGateError)
 
       await expect(
-        closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+        closeAccountingPeriod(tx, {
+          branchId,
+          periodKey,
+          mode: "HARD",
+          closedBy: defaultClosedBy,
+        })
       ).rejects.toMatchObject({
         code: "CLOSE_SNAPSHOT_REQUIRED",
         readinessStatus: "BLOCKED",
@@ -204,6 +220,7 @@ describe("close gate enforcement guarantees", () => {
 
       expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.OPEN)
       expect(state.accountingPeriods[0]?.closedAt).toBeNull()
+      expect(state.accountingPeriodCloseEvidence).toHaveLength(0)
       expect(updateSpy).not.toHaveBeenCalled()
       expectNoCloseSideEffects()
       updateSpy.mockRestore()
@@ -252,10 +269,19 @@ describe("close gate enforcement guarantees", () => {
         branchId,
         periodKey,
         mode: "HARD",
+        closedBy: defaultClosedBy,
       })
 
       expect(closed.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
       expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
+      expect(state.accountingPeriodCloseEvidence).toHaveLength(1)
+      expect(state.accountingPeriodCloseEvidence[0]).toMatchObject({
+        periodId: closed.id,
+        closedByStaffId: defaultClosedBy.staffId,
+        closedByName: defaultClosedBy.name,
+        closedByRole: defaultClosedBy.role,
+        reconciliationSnapshotId: "snap-1",
+      })
       expectNoCloseSideEffects()
     })
   })
@@ -315,17 +341,28 @@ describe("close gate enforcement guarantees", () => {
 
   describe("HARD_CLOSED idempotent path", () => {
     it("returns existing period without re-running readiness on repeat HARD close", async () => {
-      const { tx } = createFinanceMockTx()
+      const { tx, state } = createFinanceMockTx()
       await seedOpenPeriod(tx, branchId, periodKey)
 
-      const first = await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+      const first = await closeAccountingPeriod(tx, {
+        branchId,
+        periodKey,
+        mode: "HARD",
+        closedBy: defaultClosedBy,
+      })
       mockFindSnapshots.mockClear()
 
-      const second = await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+      const second = await closeAccountingPeriod(tx, {
+        branchId,
+        periodKey,
+        mode: "HARD",
+        closedBy: defaultClosedBy,
+      })
 
       expect(second.id).toBe(first.id)
       expect(second.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
       expect(mockFindSnapshots).not.toHaveBeenCalled()
+      expect(state.accountingPeriodCloseEvidence).toHaveLength(1)
       expectNoCloseSideEffects()
     })
   })
@@ -355,10 +392,16 @@ describe("close gate enforcement guarantees", () => {
       mockFindSnapshots.mockResolvedValue({ latest: null, prior: null })
 
       await expect(
-        closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+        closeAccountingPeriod(tx, {
+          branchId,
+          periodKey,
+          mode: "HARD",
+          closedBy: defaultClosedBy,
+        })
       ).rejects.toBeInstanceOf(CloseGateError)
 
       expect(state.vouchers).toHaveLength(0)
+      expect(state.accountingPeriodCloseEvidence).toHaveLength(0)
       expectNoCloseSideEffects()
     })
 
@@ -366,9 +409,15 @@ describe("close gate enforcement guarantees", () => {
       const { tx, state } = createFinanceMockTx()
       await seedOpenPeriod(tx, branchId, periodKey)
 
-      await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+      await closeAccountingPeriod(tx, {
+        branchId,
+        periodKey,
+        mode: "HARD",
+        closedBy: defaultClosedBy,
+      })
 
       expect(state.vouchers).toHaveLength(0)
+      expect(state.accountingPeriodCloseEvidence).toHaveLength(1)
       expectNoCloseSideEffects()
     })
 
@@ -376,11 +425,32 @@ describe("close gate enforcement guarantees", () => {
       const { tx } = createFinanceMockTx()
       await seedOpenPeriod(tx, branchId, periodKey)
 
-      await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+      await closeAccountingPeriod(tx, {
+        branchId,
+        periodKey,
+        mode: "HARD",
+        closedBy: defaultClosedBy,
+      })
 
       expect(mockFindSnapshots).toHaveBeenCalledTimes(1)
       expect(mockFindSnapshots).toHaveBeenCalledWith(tx, { branchId, periodKey })
       expect(mockRunReconciliation).not.toHaveBeenCalled()
+    })
+
+  })
+
+  describe("SOFT close evidence", () => {
+    it("does not create close evidence on SOFT close", async () => {
+      const { tx, state } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+
+      await closeAccountingPeriod(tx, {
+        branchId,
+        periodKey,
+        mode: "SOFT",
+      })
+
+      expect(state.accountingPeriodCloseEvidence).toHaveLength(0)
     })
   })
 })

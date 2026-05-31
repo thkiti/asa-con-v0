@@ -2,7 +2,7 @@
 
 Status: **Done** — read-only close readiness checklist, blocker rules, evidence navigation; Phase 20C enforces gate on HARD close  
 Scope: Workflow and orchestration — checklist is read-only; HARD close enforcement lives in `closeAccountingPeriod`  
-Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md)
+Related: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md), [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md), [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md)
 
 Phase 20B adds a **period close readiness review** surface for finance admins. Phase 20C **enforces** the same checklist on HARD close — see [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md). The readiness page remains read-only; enforcement is server-side in the domain layer.
 
@@ -34,12 +34,14 @@ flowchart TD
   evidence["Evidence links"]
   manual["Admin PATCH SOFT_CLOSE / HARD_CLOSE"]
   gate["closeAccountingPeriod gate\n(HARD only, Phase 20C)"]
+  evidence["Close evidence page\n(Phase 20D, after HARD close)"]
 
   periods --> review --> readiness
   readiness --> api --> checklist
   checklist --> evidence
   evidence --> manual
   manual --> gate
+  gate --> evidence
 ```
 
 Typical month-end path:
@@ -51,6 +53,7 @@ Typical month-end path:
 5. **Resolve blockers** — investigate via linked snapshot trace, compare, or live dashboard; fix operational/posting issues outside this workflow.
 6. **Export evidence (optional)** — browser CSV pack / audit print on snapshot detail ([18 §9](./18_RECONCILIATION_SNAPSHOTS.md#9-phase-19c--evidence-export-and-audit-print)).
 7. **Close period manually** — return to `/finance/periods` → SOFT_CLOSE (ungated) then HARD_CLOSE when satisfied. HARD close runs the gate in `closeAccountingPeriod` — BLOCKED items reject with HTTP 409; WARNING allowed by default.
+8. **Review close evidence (optional)** — on `HARD_CLOSED` periods, open **Close evidence** for the immutable audit record captured at close ([23](./23_FINANCE_CLOSE_EVIDENCE.md)).
 
 The checklist page **never** triggers PATCH close. Close remains the period admin API ([15 §4](./15_FINANCE_PERIODS.md#4-admin-flow)). Phase 20C adds a confirmation dialog before HARD close that previews the same checklist data.
 
@@ -264,7 +267,7 @@ The readiness review page and GET API are unchanged in purpose. Enforcement adds
 | Evidence export audit log | Server cannot verify client-side CSV download today |
 | Scheduled snapshot capture | Still manual ([18](./18_RECONCILIATION_SNAPSHOTS.md)) |
 | Override posting into SOFT_CLOSED | Policy hook exists in close-policy; not wired to posting kernel ([15 §16](./15_FINANCE_PERIODS.md#16-out-of-scope-future)) |
-| Close reason / audit trail | PATCH close does not capture reviewer notes |
+| Close reason / audit trail | Optional reviewer notes on PATCH; actor + checklist snapshot captured in 20D evidence |
 | Strict WARNING policy in production | `STRICT_CLOSE_GATE_POLICY` + `warningExemptRuleIds` ready; wire via `getHardCloseGatePolicy()` with audit |
 | Admin override with audit | Explicit override workflow — never silent bypass of gate |
 
@@ -272,10 +275,24 @@ All future close automation must preserve read-only reconciliation, immutable sn
 
 ---
 
-## 13. Related docs
+## 13. Phase 20D — Close evidence (post-close audit)
+
+Status: **Done** — see [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md)
+
+| Concern | Phase 20B (pre-close) | Phase 20D (post-close) |
+|---------|----------------------|------------------------|
+| Data | Live checklist from frozen snapshots | Immutable row written at successful HARD close |
+| API | `GET .../close-readiness` | `GET .../close-evidence` |
+| UI | Review before close | Close evidence after `HARD_CLOSED` |
+| Rebuild | Checklist rebuilt on each GET | **Never** — displays stored payload only |
+
+---
+
+## 14. Related docs
 
 - Period lifecycle, gate sequence, error codes: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 - Close gate policy, rollback, test map: [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md)
+- Close evidence snapshot: [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md)
 - Reconciliation dashboard: [16_FINANCE_RECONCILIATION.md](./16_FINANCE_RECONCILIATION.md)
 - Frozen snapshots: [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md)
 - Lineage navigation: [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md)

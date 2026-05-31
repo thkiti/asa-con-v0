@@ -16,7 +16,8 @@ Finance posting kernel (Phase 7+) and accounting period lifecycle (Phase 15).
 | Module | Purpose |
 |--------|---------|
 | `period-setup.ts` | `bootstrapPeriodIfMissing` — admin create only |
-| `period-close.ts` | `closeAccountingPeriod`, `reopenAccountingPeriod` |
+| `period-close.ts` | `closeAccountingPeriod`, `reopenAccountingPeriod` — HARD gate + evidence create (20D) |
+| `close-evidence.ts` | Immutable HARD-close evidence (internal create; public read) |
 | `posting-period.ts` | `assertPostingPeriodOpen` — posting enforcement |
 | `period-list.ts` | Read-only list for API/UI |
 
@@ -24,6 +25,6 @@ Auth for period admin lives in `lib/auth/period-admin.ts`, not here.
 
 ## Public API
 
-See `index.ts` — `postOperationalVoucher`, `postSaleVoucher`, `postStockDocumentVoucher`, `bootstrapPeriodIfMissing`, `closeAccountingPeriod`, `reopenAccountingPeriod`, `assertPostingPeriodOpen`.
+See `index.ts` — `postOperationalVoucher`, `postSaleVoucher`, `postStockDocumentVoucher`, `bootstrapPeriodIfMissing`, `closeAccountingPeriod`, `reopenAccountingPeriod`, `assertPostingPeriodOpen`, `getCloseEvidenceByPeriodId`.
 
-Architecture: [docs/15_FINANCE_PERIODS.md](../../docs/15_FINANCE_PERIODS.md).
+Architecture: [docs/15_FINANCE_PERIODS.md](../../docs/15_FINANCE_PERIODS.md), close evidence: [docs/23_FINANCE_CLOSE_EVIDENCE.md](../../docs/23_FINANCE_CLOSE_EVIDENCE.md).

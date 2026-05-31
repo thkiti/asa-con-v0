@@ -336,8 +336,39 @@ model AccountingPeriod {
   branch         Branch          @relation(fields: [branchId], references: [id])
   vouchers       Voucher[]
   journalEntries JournalEntry[]
+  closeEvidence  AccountingPeriodCloseEvidence?
 
   @@unique([branchId, periodKey])
+}
+
+/// Immutable HARD-close audit record (Phase 20D). Actor fields are point-in-time snapshots — no Staff FK.
+model AccountingPeriodCloseEvidence {
+  id        String @id @default(uuid())
+  periodId  String @unique
+  branchId  String
+  periodKey String
+
+  closeMode String
+  closedAt  DateTime
+
+  closedByStaffId String
+  closedByName    String
+  closedByRole    String
+
+  readinessStatus          String
+  gatePolicyKey            String  @default("default")
+  reconciliationSnapshotId String?
+  priorSnapshotId          String?
+
+  payloadVersion Int  @default(1)
+  payload        Json
+
+  createdAt DateTime @default(now())
+
+  period AccountingPeriod @relation(fields: [periodId], references: [id])
+
+  @@index([branchId, periodKey])
+  @@index([closedAt(sort: Desc)])
 }
 
 model Voucher {

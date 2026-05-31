@@ -32,11 +32,23 @@ jest.mock("@/lib/finance/period-close", () => ({
   reopenAccountingPeriod: jest.fn(),
 }))
 
+const mockStaffFindFirst = jest.fn()
+const mockStaffFindUnique = jest.fn()
+
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
     $transaction: jest.fn(),
     accountingPeriod: { findUnique: jest.fn() },
+    staff: {
+      findFirst: (...args: unknown[]) => mockStaffFindFirst(...args),
+      findUnique: (...args: unknown[]) => mockStaffFindUnique(...args),
+    },
   },
+}))
+
+jest.mock("@/lib/auth/period-admin-staff", () => ({
+  ...jest.requireActual("@/lib/auth/period-admin-staff"),
+  resolvePeriodAdminStaffId: jest.fn().mockResolvedValue("staff-db-1"),
 }))
 
 const mockList = listAccountingPeriods as jest.MockedFunction<
@@ -259,6 +271,8 @@ describe("PATCH finance/periods", () => {
     jest.clearAllMocks()
     mockGetSession.mockResolvedValue(authorizedSession)
     mockTransaction.mockImplementation(async (fn) => fn(prisma))
+    mockStaffFindFirst.mockResolvedValue({ id: "staff-db-1" })
+    mockStaffFindUnique.mockResolvedValue({ name: "Finance User" })
   })
 
   it("returns 403 when role is not period admin", async () => {
@@ -376,6 +390,11 @@ describe("PATCH finance/periods", () => {
       branchId: "branch-1",
       periodKey: "2026-05",
       mode: "HARD",
+      closedBy: {
+        staffId: "staff-db-1",
+        name: "Finance User",
+        role: "HO_FINANCE",
+      },
     })
   })
 
@@ -456,6 +475,11 @@ describe("PATCH finance/periods", () => {
         branchId: "branch-1",
         periodKey: "2026-05",
         mode: "HARD",
+        closedBy: {
+          staffId: "staff-db-1",
+          name: "Finance User",
+          role: "HO_FINANCE",
+        },
       })
       expect(mockReopen).not.toHaveBeenCalled()
       expect(mockFindUnique).not.toHaveBeenCalled()

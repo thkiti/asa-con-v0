@@ -146,6 +146,21 @@ describe("financeErrorResponse", () => {
     })
   })
 
+  it("maps FinancePostingError CLOSE_EVIDENCE_NOT_FOUND to 404", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError(
+        "Close evidence not found for period: period-1",
+        "CLOSE_EVIDENCE_NOT_FOUND"
+      ),
+      "test"
+    )
+    expect(res.status).toBe(404)
+    await expect(res.json()).resolves.toEqual({
+      error: "Close evidence not found for period: period-1",
+      code: "CLOSE_EVIDENCE_NOT_FOUND",
+    })
+  })
+
   it("maps FinancePostingError PERIOD_ALREADY_HARD_CLOSED to 409", async () => {
     const res = financeErrorResponse(
       new FinancePostingError(

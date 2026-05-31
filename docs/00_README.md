@@ -26,7 +26,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 20. [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md) — Phase 20A read-only finance lineage navigation
 21. [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md) — Phase 20B read-only period close readiness checklist
 22. [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md) — Phase 20C enforced HARD close gating, policy, structured errors
-23. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+23. [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md) — Phase 20D immutable HARD-close evidence snapshot
+24. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -50,3 +51,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 20A | Finance traceability (lineage panel, voucher read API, frozen snapshot trace) | Done |
 | 20B | Finance close readiness (checklist, blocker rules, evidence links — read-only review) | Done |
 | 20C | Finance close gate (enforced HARD close, centralized policy, structured 409 errors) | Done |
+| 20D | Finance close evidence (immutable HARD-close audit record, GET API, review UI) | Done |

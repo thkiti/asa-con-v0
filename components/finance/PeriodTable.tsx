@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { PeriodAction } from "@/lib/finance-ui/period-fetchers"
+import { buildCloseEvidencePath } from "@/lib/finance-ui/close-evidence"
 import { buildCloseReadinessPath } from "@/lib/finance-ui/close-readiness"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { PeriodAdminActions } from "./PeriodAdminActions"
@@ -40,7 +41,7 @@ export function PeriodTable({
             <th className="px-3 py-2 font-medium">Status</th>
             <th className="px-3 py-2 font-medium">Opened</th>
             <th className="px-3 py-2 font-medium">Closed</th>
-            <th className="px-3 py-2 font-medium">Close readiness</th>
+            <th className="px-3 py-2 font-medium">Close review</th>
             {showControls ? (
               <th className="px-3 py-2 font-medium">Actions</th>
             ) : null}
@@ -74,12 +75,22 @@ export function PeriodTable({
                   {formatDate(period.closedAt)}
                 </td>
                 <td className="px-3 py-2">
-                  <Link
-                    href={buildCloseReadinessPath(period.id)}
-                    className="text-sm font-medium text-zinc-900 underline"
-                  >
-                    Review
-                  </Link>
+                  <span className="flex flex-wrap items-center gap-3">
+                    <Link
+                      href={buildCloseReadinessPath(period.id)}
+                      className="text-sm font-medium text-zinc-900 underline"
+                    >
+                      Review
+                    </Link>
+                    {period.status === "HARD_CLOSED" ? (
+                      <Link
+                        href={buildCloseEvidencePath(period.id)}
+                        className="text-sm font-medium text-zinc-900 underline"
+                      >
+                        Close evidence
+                      </Link>
+                    ) : null}
+                  </span>
                 </td>
                 {showControls ? (
                   <td className="px-3 py-2">

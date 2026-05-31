@@ -6,6 +6,7 @@ import type {
 } from "./close-checklist-types"
 import { FinancePostingError } from "./posting-errors"
 import { findSnapshotsForPeriod } from "./reconciliation-snapshot"
+import type { ReconciliationSnapshotPayloadV1 } from "./reconciliation-snapshot-types"
 import type { BranchLookupPrisma } from "./resolve-branch-id"
 
 export type CloseReadinessPrisma = Pick<
@@ -32,16 +33,22 @@ export type CloseReadinessResult = CloseChecklistResult & {
   priorSnapshotRef: CloseChecklistSnapshotRef | null
 }
 
-export async function buildCloseReadinessChecklistForPeriod(
+export type CloseReadinessWithSnapshots = {
+  checklist: CloseChecklistResult
+  priorSnapshotRef: CloseChecklistSnapshotRef | null
+  snapshotPayload: ReconciliationSnapshotPayloadV1 | null
+}
+
+export async function buildCloseReadinessWithSnapshotsForPeriod(
   prisma: CloseReadinessChecklistPrisma,
   period: CloseReadinessPeriodInput
-): Promise<CloseChecklistResult> {
+): Promise<CloseReadinessWithSnapshots> {
   const snapshots = await findSnapshotsForPeriod(prisma, {
     branchId: period.branchId,
     periodKey: period.periodKey,
   })
 
-  return buildCloseChecklist({
+  const checklist = buildCloseChecklist({
     period: {
       id: period.id,
       branchId: period.branchId,
@@ -53,6 +60,22 @@ export async function buildCloseReadinessChecklistForPeriod(
     priorSnapshot: snapshots.prior,
     snapshotPayload: snapshots.latest?.payload ?? null,
   })
+
+  return {
+    checklist,
+    priorSnapshotRef: snapshots.prior
+      ? toCloseChecklistSnapshotRef(snapshots.prior)
+      : null,
+    snapshotPayload: snapshots.latest?.payload ?? null,
+  }
+}
+
+export async function buildCloseReadinessChecklistForPeriod(
+  prisma: CloseReadinessChecklistPrisma,
+  period: CloseReadinessPeriodInput
+): Promise<CloseChecklistResult> {
+  const { checklist } = await buildCloseReadinessWithSnapshotsForPeriod(prisma, period)
+  return checklist
 }
 
 export async function getCloseReadinessByPeriodId(

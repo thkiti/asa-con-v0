@@ -2,7 +2,7 @@
 
 Status: **Done** — period lifecycle, posting enforcement, admin API/UI, auth, middleware bypass; Phase 19B posting-lock audit  
 Scope: `AccountingPeriod` lifecycle, posting lock, admin operations, middleware/API boundaries  
-Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
+Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
 
 ---
 
@@ -109,6 +109,7 @@ Feature flag: `FINANCE_POSTING_ENABLED=true` (server env). When false, operation
 |-------|-----------|--------------|
 | `/finance/periods` | `PeriodAdminPage` | `HO_FINANCE`, `HO_ADMIN` (via middleware RBAC) |
 | `/finance/periods/[id]/close-readiness` | `CloseReadinessPage` | Same — read-only close checklist (Phase 20B) |
+| `/finance/periods/[id]/close-evidence` | `CloseEvidencePage` | Immutable HARD-close evidence (Phase 20D) — `HARD_CLOSED` only |
 
 Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetchers.ts) call `/api/finance/periods`.
 
@@ -120,6 +121,7 @@ Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetch
 | `POST` | `/api/finance/periods` | Period admin | Create/open period (`bootstrapPeriodIfMissing`) |
 | `PATCH` | `/api/finance/periods` | Period admin | `SOFT_CLOSE`, `HARD_CLOSE`, `REOPEN` |
 | `GET` | `/api/finance/periods/[id]/close-readiness` | None (public JSON) | Read-only close checklist for period (Phase 20B) |
+| `GET` | `/api/finance/periods/[id]/close-evidence` | None (public JSON) | Immutable HARD-close evidence (Phase 20D) |
 
 Body (POST/PATCH): `{ branchId, periodKey }` plus `action` on PATCH.
 
@@ -235,6 +237,8 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | `lib/finance/close-gate.ts` | `assertCloseReadiness`, gate helpers (20C) |
 | `lib/finance/close-gate-errors.ts` | `CloseGateError`, structured payloads (20C) |
 | `lib/finance/close-readiness.ts` | Read-only checklist build for gate + GET API (20B/20C) |
+| `lib/finance/close-evidence.ts` | Immutable evidence create (HARD close) + read (20D) |
+| `lib/finance/close-evidence-build.ts` | Compact payload builder (20D) |
 | `lib/finance/posting-period.ts` | `assertPostingPeriodOpen` — posting gate |
 | `lib/finance/period-list.ts` | Read-only list DTOs |
 | `lib/finance/posting.ts` | Voucher/journal orchestration (uses assert, never bootstrap) |
@@ -257,6 +261,7 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | `CLOSE_BLOCKED` | 409 | HARD close blocked — reconciliation/posting blockers |
 | `CLOSE_EVIDENCE_REQUIRED` | 409 | HARD close blocked — audit evidence unavailable |
 | `CLOSE_READINESS_FAILED` | 409 | HARD close blocked — WARNING items under strict policy |
+| `CLOSE_EVIDENCE_NOT_FOUND` | 404 | GET close-evidence when period has no HARD-close evidence row |
 | `UNAUTHENTICATED` | 401 | POST/PATCH without session |
 | `FORBIDDEN` | 403 | POST/PATCH with non-admin role |
 
@@ -422,7 +427,7 @@ sequenceDiagram
 | SOFT close | **Ungated** — no checklist, no `assertCloseReadiness` |
 | Default policy | BLOCKED rejects; WARNING allowed ([`close-gate-policy.ts`](../lib/finance/close-gate-policy.ts)) |
 | Rollback | Gate throw before `update` — failed HARD close leaves period unchanged |
-| Side effects | No snapshot creation, evidence export, posting, or live reconciliation during gate |
+| Side effects | Gate path: no snapshot creation, posting, or live reconciliation; **successful** HARD close creates immutable close evidence (20D) |
 | UI | `HardCloseConfirmDialog` previews readiness; server enforces regardless |
 | Override | **None** in v1 — no force-close flag |
 
@@ -430,10 +435,27 @@ Full policy, error payloads, test map, and future override notes: [22_FINANCE_CL
 
 ---
 
-## 16. Out of scope (future)
+## 16. Phase 20D — Close evidence snapshot
+
+Status: **Done** — immutable HARD-close audit record; read-only GET + review UI
+
+After successful HARD close (gate passed), [`closeAccountingPeriod`](../lib/finance/period-close.ts) writes one `AccountingPeriodCloseEvidence` row in the same transaction. Actor fields (`closedByStaffId`, `closedByName`, `closedByRole`) are snapshots — no Staff FK. Payload embeds compact checklist summaries, frozen reconciliation metrics, financial totals, and snapshot trace refs — not full `issuesPayload` or voucher detail.
+
+| Concern | Behavior |
+|---------|----------|
+| Create | Only on successful HARD close; not on SOFT, blocked HARD, or idempotent repeat |
+| Read | `GET /api/finance/periods/[id]/close-evidence`; UI at `/finance/periods/[id]/close-evidence` |
+| Immutability | No update/delete APIs or domain helpers |
+| Period table | **Close evidence** link when `status === HARD_CLOSED` |
+
+Full architecture, payload philosophy, security rules, and test map: [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md).
+
+---
+
+## 17. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
-- Period close audit trail / reason capture on PATCH
+- Optional PATCH close reason text (actor snapshot exists in 20D evidence)
 - Automated period rollover / scheduled close
 - Force-close / admin override bypass for close gate (policy hook exists for strict WARNING; no silent bypass)
 - Real login replacing cookie stub

@@ -4,6 +4,7 @@ config({ path: ".env.local" })
 process.env.FINANCE_POSTING_ENABLED = "true"
 
 import { BranchType, ProductType, GlAccountType, AccountingPeriodStatus } from "../generated/prisma/client"
+import { ensureDevPeriodAdminStaff } from "../lib/auth/period-admin-staff"
 import { prisma } from "../lib/shared/prisma"
 import { DEFAULT_ACCOUNT_CODES } from "../lib/finance/account-map"
 import { checkout } from "../lib/pos/checkout"
@@ -167,7 +168,25 @@ async function main() {
   await prisma.$transaction((tx) => reopenAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY }))
   record("H Idempotent REOPEN", true, "ok")
 
-  await prisma.$transaction((tx) => closeAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY, mode: "HARD" }))
+  const smokeStaffId = await ensureDevPeriodAdminStaff(prisma, branchId)
+  const smokeStaff = await prisma.staff.findUnique({
+    where: { id: smokeStaffId },
+    select: { name: true },
+  })
+  const smokeClosedBy = {
+    staffId: smokeStaffId,
+    name: smokeStaff?.name ?? "Dev Admin",
+    role: "HO_ADMIN" as const,
+  }
+
+  await prisma.$transaction((tx) =>
+    closeAccountingPeriod(tx, {
+      branchId,
+      periodKey: PERIOD_KEY,
+      mode: "HARD",
+      closedBy: smokeClosedBy,
+    })
+  )
   const hard = await prisma.accountingPeriod.findUnique({ where: { branchId_periodKey: { branchId, periodKey: PERIOD_KEY } } })
   record("E HARD CLOSE", hard?.status === "HARD_CLOSED", `status=${hard?.status}`)
 
@@ -180,7 +199,14 @@ async function main() {
     `code=${hardCheckout.code}`
   )
 
-  await prisma.$transaction((tx) => closeAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY, mode: "HARD" }))
+  await prisma.$transaction((tx) =>
+    closeAccountingPeriod(tx, {
+      branchId,
+      periodKey: PERIOD_KEY,
+      mode: "HARD",
+      closedBy: smokeClosedBy,
+    })
+  )
   record("H Idempotent HARD CLOSE", true, "ok")
 
   const failed = results.filter((r) => !r.pass)

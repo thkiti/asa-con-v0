@@ -9,6 +9,7 @@ import {
   getSession,
   PeriodAdminAuthError,
   requirePeriodAdminActor,
+  resolvePeriodAdminStaffId,
 } from "@/lib/auth"
 import {
   closeAccountingPeriod,
@@ -146,13 +147,35 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    requirePeriodAdminActor(await getSession())
+    const actor = requirePeriodAdminActor(await getSession())
+    const hardCloseActor =
+      action === "HARD_CLOSE"
+        ? await (async () => {
+            const staffId = await resolvePeriodAdminStaffId(prisma, actor.staffId, {
+              branchIdHint: branchId,
+            })
+            const staff = await prisma.staff.findUnique({
+              where: { id: staffId },
+              select: { name: true },
+            })
+            return {
+              staffId,
+              name: staff?.name ?? null,
+              role: actor.role,
+            }
+          })()
+        : undefined
 
     await prisma.$transaction(async (tx) => {
       if (action === "SOFT_CLOSE") {
         await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
       } else if (action === "HARD_CLOSE") {
-        await closeAccountingPeriod(tx, { branchId, periodKey, mode: "HARD" })
+        await closeAccountingPeriod(tx, {
+          branchId,
+          periodKey,
+          mode: "HARD",
+          closedBy: hardCloseActor!,
+        })
       } else {
         await reopenAccountingPeriod(tx, { branchId, periodKey })
       }

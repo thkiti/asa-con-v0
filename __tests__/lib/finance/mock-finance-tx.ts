@@ -77,9 +77,29 @@ function nextId(prefix: string) {
   return `${prefix}-${seq}`
 }
 
+type AccountingPeriodCloseEvidenceRow = {
+  id: string
+  periodId: string
+  branchId: string
+  periodKey: string
+  closeMode: string
+  closedAt: Date
+  closedByStaffId: string
+  closedByName: string
+  closedByRole: string
+  readinessStatus: string
+  gatePolicyKey: string
+  reconciliationSnapshotId: string | null
+  priorSnapshotId: string | null
+  payloadVersion: number
+  payload: unknown
+  createdAt: Date
+}
+
 export type FinanceMockState = MockTxState & {
   glAccounts: GlAccountRow[]
   accountingPeriods: AccountingPeriodRow[]
+  accountingPeriodCloseEvidence: AccountingPeriodCloseEvidenceRow[]
   vouchers: VoucherRow[]
   voucherLines: VoucherLineRow[]
   journalEntries: JournalEntryRow[]
@@ -109,6 +129,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
       deleted: false,
     })),
     accountingPeriods: [],
+    accountingPeriodCloseEvidence: [],
     vouchers: [],
     voucherLines: [],
     journalEntries: [],
@@ -185,6 +206,41 @@ export function createFinanceMockTx(branchId = "branch-1") {
           closedAt: null,
         }
         state.accountingPeriods.push(row)
+        return row
+      },
+    },
+    accountingPeriodCloseEvidence: {
+      findUnique: async ({
+        where,
+      }: {
+        where: { periodId?: string; id?: string }
+      }) => {
+        if (where.periodId) {
+          return (
+            state.accountingPeriodCloseEvidence.find(
+              (row) => row.periodId === where.periodId
+            ) ?? null
+          )
+        }
+        if (where.id) {
+          return (
+            state.accountingPeriodCloseEvidence.find((row) => row.id === where.id) ??
+            null
+          )
+        }
+        return null
+      },
+      create: async ({
+        data,
+      }: {
+        data: Omit<AccountingPeriodCloseEvidenceRow, "id" | "createdAt">
+      }) => {
+        const row: AccountingPeriodCloseEvidenceRow = {
+          id: nextId("close-evidence"),
+          createdAt: new Date(),
+          ...data,
+        }
+        state.accountingPeriodCloseEvidence.push(row)
         return row
       },
     },

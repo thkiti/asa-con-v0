@@ -21,6 +21,7 @@ export function parseAccountingPeriodStatus(
 function statusForCode(code: string): number {
   if (
     code === "PERIOD_NOT_FOUND" ||
+    code === "CLOSE_EVIDENCE_NOT_FOUND" ||
     code === "ACCOUNT_NOT_FOUND" ||
     code === "NOT_FOUND"
   ) {
@@ -74,7 +75,7 @@ export function financeErrorResponse(
 
   if (err instanceof FinancePostingError) {
     const status =
-      err.code === "PERIOD_NOT_FOUND"
+      err.code === "PERIOD_NOT_FOUND" || err.code === "CLOSE_EVIDENCE_NOT_FOUND"
         ? 404
         : err.code === "PERIOD_ALREADY_HARD_CLOSED"
           ? 409
