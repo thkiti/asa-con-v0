@@ -9,6 +9,10 @@ import {
 } from "@/lib/finance-ui/close-evidence"
 import { formatCloseReadinessStatusLabel } from "@/lib/finance-ui/close-readiness"
 import { fetchCloseEvidence } from "@/lib/finance-ui/period-fetchers"
+import {
+  CloseEvidenceActionBar,
+  CloseEvidenceAuditPrintHeader,
+} from "./close-evidence-ui"
 import { CloseReadinessStatusBadge } from "./CloseReadinessStatusBadge"
 
 function formatDateTime(value: string): string {
@@ -72,7 +76,7 @@ export function CloseEvidenceView({ evidence }: CloseEvidenceViewProps) {
           Immutable close evidence captured at HARD close. Values are frozen and are not rebuilt
           from live reconciliation.
         </p>
-        <div className="mt-4">
+        <div className="no-print mt-4">
           <Link
             href="/finance/periods"
             className="rounded border border-zinc-300 px-3 py-2 text-sm hover:bg-white"
@@ -182,7 +186,7 @@ export function CloseEvidenceView({ evidence }: CloseEvidenceViewProps) {
           <SummaryRow label="Prior snapshot" value={evidence.priorSnapshotId ?? "—"} />
         </div>
         {traceLinks.length > 0 ? (
-          <ul className="mt-4 flex flex-wrap gap-2">
+          <ul className="no-print mt-4 flex flex-wrap gap-2">
             {traceLinks.map((link) => (
               <li key={`${link.label}:${link.href}`}>
                 <Link
@@ -197,7 +201,21 @@ export function CloseEvidenceView({ evidence }: CloseEvidenceViewProps) {
         ) : (
           <p className="mt-3 text-sm text-zinc-600">No snapshot references were captured.</p>
         )}
+        <div className="print-only mt-3 text-sm text-zinc-900">
+          <p>Reconciliation snapshot: {evidence.reconciliationSnapshotId ?? "—"}</p>
+          <p>Prior snapshot: {evidence.priorSnapshotId ?? "—"}</p>
+        </div>
       </section>
+    </div>
+  )
+}
+
+export function CloseEvidenceReview({ evidence }: { evidence: CloseEvidenceDetail }) {
+  return (
+    <div className="close-evidence-audit-print space-y-6">
+      <CloseEvidenceAuditPrintHeader evidence={evidence} />
+      <CloseEvidenceActionBar evidence={evidence} />
+      <CloseEvidenceView evidence={evidence} />
     </div>
   )
 }
@@ -246,5 +264,5 @@ export function CloseEvidencePage({ periodId }: CloseEvidencePageProps) {
     return null
   }
 
-  return <CloseEvidenceView evidence={evidence} />
+  return <CloseEvidenceReview evidence={evidence} />
 }

@@ -9,12 +9,15 @@ export default async function FinancePeriodCloseEvidencePage({ params }: PagePro
   const { id } = await params
 
   return (
-    <main className="p-8">
-      <Link href="/finance/periods" className="text-sm text-zinc-600 hover:text-zinc-900">
+    <main className="close-evidence-audit-print p-8">
+      <Link
+        href="/finance/periods"
+        className="no-print text-sm text-zinc-600 hover:text-zinc-900"
+      >
         ← Accounting periods
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Close evidence</h1>
-      <p className="mt-2 text-sm text-zinc-600">
+      <h1 className="no-print mt-4 text-xl font-semibold">Close evidence</h1>
+      <p className="no-print mt-2 text-sm text-zinc-600">
         Immutable audit record captured when this period was hard closed. Read-only — no live
         reconciliation or checklist rebuild.
       </p>

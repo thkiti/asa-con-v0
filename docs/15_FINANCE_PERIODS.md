@@ -109,7 +109,7 @@ Feature flag: `FINANCE_POSTING_ENABLED=true` (server env). When false, operation
 |-------|-----------|--------------|
 | `/finance/periods` | `PeriodAdminPage` | `HO_FINANCE`, `HO_ADMIN` (via middleware RBAC) |
 | `/finance/periods/[id]/close-readiness` | `CloseReadinessPage` | Same — read-only close checklist (Phase 20B) |
-| `/finance/periods/[id]/close-evidence` | `CloseEvidencePage` | Immutable HARD-close evidence (Phase 20D) — `HARD_CLOSED` only |
+| `/finance/periods/[id]/close-evidence` | `CloseEvidencePage` | Immutable HARD-close evidence (Phase 20D) — `HARD_CLOSED` only; browser CSV export + audit print (Phase 20E) |
 
 Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetchers.ts) call `/api/finance/periods`.
 
@@ -447,12 +447,28 @@ After successful HARD close (gate passed), [`closeAccountingPeriod`](../lib/fina
 | Read | `GET /api/finance/periods/[id]/close-evidence`; UI at `/finance/periods/[id]/close-evidence` |
 | Immutability | No update/delete APIs or domain helpers |
 | Period table | **Close evidence** link when `status === HARD_CLOSED` |
+| Export / print | Browser CSV pack + audit print on close evidence page — stored evidence only ([24 §5–6](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md)) |
 
-Full architecture, payload philosophy, security rules, and test map: [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md).
+Full architecture, payload philosophy, security rules, and test map: [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md). Export and print: [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md).
 
 ---
 
-## 17. Out of scope (future)
+## 17. Phase 20E — Close evidence export / print
+
+Status: **Done** — browser CSV pack and audit print from stored evidence; no export API route
+
+| Concern | Behavior |
+|---------|----------|
+| Source | Stored `CloseEvidenceDetail` from initial page GET only |
+| Export | `buildCloseEvidenceExport` → five browser CSV downloads |
+| Print | Same in-memory evidence; `PrintAuditButton` + print-only audit header |
+| API | **None** — intentionally no `GET .../close-evidence/export` in Phase 20E |
+
+Full scope, guardrails, and verification: [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md).
+
+---
+
+## 18. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
 - Optional PATCH close reason text (actor snapshot exists in 20D evidence)

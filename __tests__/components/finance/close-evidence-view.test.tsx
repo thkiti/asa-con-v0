@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server"
-import { CloseEvidenceView } from "@/components/finance/CloseEvidencePage"
+import { CloseEvidenceReview, CloseEvidenceView } from "@/components/finance/CloseEvidencePage"
 import type { CloseEvidenceDetail } from "@/lib/finance/close-evidence-types"
 
 const evidence: CloseEvidenceDetail = {
@@ -112,5 +112,27 @@ describe("CloseEvidenceView", () => {
     expect(html).not.toContain("Refresh")
     expect(html).not.toContain("HARD CLOSE")
     expect(html).not.toContain("SOFT CLOSE")
+  })
+
+  it("marks navigation and trace links as no-print", () => {
+    const html = renderToStaticMarkup(<CloseEvidenceView evidence={evidence} />)
+
+    expect(html).toContain('class="no-print mt-4"')
+    expect(html).toContain('class="no-print mt-4 flex flex-wrap gap-2"')
+    expect(html).toContain('class="print-only mt-3 text-sm text-zinc-900"')
+  })
+})
+
+describe("CloseEvidenceReview", () => {
+  it("renders print and export controls with print-only audit header", () => {
+    const html = renderToStaticMarkup(<CloseEvidenceReview evidence={evidence} />)
+
+    expect(html).toContain("Print audit report")
+    expect(html).toContain("Export evidence pack")
+    expect(html).toContain("Accounting period close evidence audit")
+    expect(html).toContain("Frozen close evidence")
+    expect(html).toContain('class="print-only print-break-inside-avoid mb-4 border-b border-zinc-300 pb-4"')
+    expect(html).toContain("Gate summary")
+    expect(html).not.toContain("Refresh")
   })
 })

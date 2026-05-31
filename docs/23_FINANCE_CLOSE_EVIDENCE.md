@@ -194,7 +194,7 @@ Helpers: [`lib/finance-ui/close-evidence.ts`](../lib/finance-ui/close-evidence.t
 | Financial totals | `payload.financialTotals` (four compact strings) |
 | Traceability | Snapshot ids + links to existing reconciliation snapshot pages |
 
-Read-only rules: no refresh/rebuild, no close/reopen, no snapshot capture, no mutation APIs. Initial load calls GET close-evidence only.
+Read-only rules: no refresh/rebuild, no close/reopen, no snapshot capture, no mutation APIs. Initial load calls GET close-evidence only. Phase 20E adds **Print audit report** and **Export evidence pack** on the same loaded evidence — see [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md).
 
 ---
 
@@ -245,7 +245,9 @@ At Phase 20D completion: **634 tests passing**, `npm run build` clean.
 | [`lib/finance/period-close.ts`](../lib/finance/period-close.ts) | Orchestrates gate + period update + evidence create |
 | [`lib/finance/close-readiness.ts`](../lib/finance/close-readiness.ts) | `buildCloseReadinessWithSnapshotsForPeriod` — single snapshot read for gate + evidence |
 | [`app/api/finance/periods/[id]/close-evidence/route.ts`](../app/api/finance/periods/[id]/close-evidence/route.ts) | GET adapter |
-| [`components/finance/CloseEvidencePage.tsx`](../components/finance/CloseEvidencePage.tsx) | Read-only UI |
+| [`components/finance/CloseEvidencePage.tsx`](../components/finance/CloseEvidencePage.tsx) | Read-only UI + print/export (20E) |
+| [`components/finance/close-evidence-ui.tsx`](../components/finance/close-evidence-ui.tsx) | Print header, action bar, export download (20E) |
+| [`lib/finance-ui/close-evidence-export.ts`](../lib/finance-ui/close-evidence-export.ts) | Pure CSV builders from `CloseEvidenceDetail` (20E) |
 | [`lib/finance-ui/close-evidence.ts`](../lib/finance-ui/close-evidence.ts) | UI path + trace links |
 
 ---
@@ -260,6 +262,7 @@ At Phase 20D completion: **634 tests passing**, `npm run build` clean.
 | 20D-4 | `GET .../close-evidence` API |
 | 20D-5 | Close evidence UI + `PeriodTable` link |
 | 20D-6 | This document |
+| 20E | Export/print — see [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md) |
 
 ---
 
@@ -268,6 +271,7 @@ At Phase 20D completion: **634 tests passing**, `npm run build` clean.
 - Period lifecycle: [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md)
 - Close readiness (pre-close): [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md)
 - Close gate (enforcement): [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md)
+- Close evidence export/print (20E): [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md)
 - Frozen snapshots: [18_RECONCILIATION_SNAPSHOTS.md](./18_RECONCILIATION_SNAPSHOTS.md)
 - Lineage navigation: [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md)
 - Close policy (audit fields): [12 §7.5](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md)

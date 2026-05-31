@@ -3,9 +3,9 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** Phase 20D close evidence complete — see [docs/00_README.md](./docs/00_README.md)
+- **Status:** Phase 20E close evidence export/print complete — see [docs/00_README.md](./docs/00_README.md)
 
-Phase 20D persists immutable HARD-close evidence after a successful gate-approved close. Phase 20C enforces HARD close gating in `closeAccountingPeriod()` — BLOCKED checklist items reject close with HTTP 409; WARNING allowed by default. Phase 20B adds the read-only close checklist at `/finance/periods/[id]/close-readiness`. Summaries: [docs/23_FINANCE_CLOSE_EVIDENCE.md](./docs/23_FINANCE_CLOSE_EVIDENCE.md), [docs/22_FINANCE_CLOSE_GATE.md](./docs/22_FINANCE_CLOSE_GATE.md), [docs/21_FINANCE_CLOSE_WORKFLOW.md](./docs/21_FINANCE_CLOSE_WORKFLOW.md).
+Phase 20E adds browser CSV export and audit print for immutable HARD-close evidence (stored `CloseEvidenceDetail` only). Phase 20D persists that evidence after a successful gate-approved close. Phase 20C enforces HARD close gating in `closeAccountingPeriod()` — BLOCKED checklist items reject close with HTTP 409; WARNING allowed by default. Phase 20B adds the read-only close checklist at `/finance/periods/[id]/close-readiness`. Summaries: [docs/23_FINANCE_CLOSE_EVIDENCE.md](./docs/23_FINANCE_CLOSE_EVIDENCE.md), [docs/22_FINANCE_CLOSE_GATE.md](./docs/22_FINANCE_CLOSE_GATE.md), [docs/21_FINANCE_CLOSE_WORKFLOW.md](./docs/21_FINANCE_CLOSE_WORKFLOW.md).
 
 ## Docs
 
@@ -20,6 +20,7 @@ Start with [docs/00_README.md](./docs/00_README.md).
 - Close readiness: [docs/21_FINANCE_CLOSE_WORKFLOW.md](./docs/21_FINANCE_CLOSE_WORKFLOW.md) — Phase 20B period close checklist, blocker rules, evidence links
 - Close gate: [docs/22_FINANCE_CLOSE_GATE.md](./docs/22_FINANCE_CLOSE_GATE.md) — Phase 20C enforced HARD close, policy, rollback, no side effects
 - Close evidence: [docs/23_FINANCE_CLOSE_EVIDENCE.md](./docs/23_FINANCE_CLOSE_EVIDENCE.md) — Phase 20D immutable HARD-close audit record and review UI
+- Close evidence export/print: [docs/24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./docs/24_FINANCE_CLOSE_EVIDENCE_EXPORT.md) — Phase 20E browser CSV pack and audit print from stored evidence
 
 ## Setup
 
@@ -75,3 +76,4 @@ generated/  Prisma client output (gitignored)
 | 20B | Close readiness — period checklist, blocker rules, evidence deep links (read-only review before close) |
 | 20C | Close gate — enforced HARD close in `closeAccountingPeriod`, centralized policy, structured 409 errors, no bypass |
 | 20D | Close evidence — immutable HARD-close snapshot (`AccountingPeriodCloseEvidence`), GET API, `/finance/periods/[id]/close-evidence` |
+| 20E | Close evidence export/print — browser CSV pack + audit print from stored `CloseEvidenceDetail` (no export API route) |
