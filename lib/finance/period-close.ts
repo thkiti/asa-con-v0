@@ -5,6 +5,7 @@ import { getHardCloseGatePolicy } from "./close-gate-policy"
 import { createCloseEvidenceForHardClose, type PeriodCloseActorInput } from "./close-evidence"
 import { buildCloseReadinessWithSnapshotsForPeriod } from "./close-readiness"
 import { createReopenEvidence } from "./reopen-evidence"
+import type { ReopenEvidenceApprovalSnapshot } from "./reopen-evidence-types"
 import { FinancePostingError } from "./posting-errors"
 
 type PeriodCloseInput = {
@@ -19,6 +20,8 @@ type PeriodReopenInput = {
   periodKey: string
   reason: string
   reopenedBy: PeriodCloseActorInput
+  reopenRequestId?: string | null
+  approval?: ReopenEvidenceApprovalSnapshot | null
 }
 
 async function findAccountingPeriod(
@@ -164,6 +167,8 @@ export async function reopenAccountingPeriod(
       toStatus: AccountingPeriodStatus.SOFT_CLOSED,
       reason,
       reopenedBy,
+      reopenRequestId: input.reopenRequestId,
+      approval: input.approval,
     })
 
     return tx.accountingPeriod.update({
@@ -186,6 +191,8 @@ export async function reopenAccountingPeriod(
       toStatus: AccountingPeriodStatus.OPEN,
       reason,
       reopenedBy,
+      reopenRequestId: input.reopenRequestId,
+      approval: input.approval,
     })
 
     return tx.accountingPeriod.update({

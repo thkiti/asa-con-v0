@@ -579,8 +579,8 @@ describe("PATCH finance/periods", () => {
   })
 
   it("REOPEN updates period status with reason and actor", async () => {
-    mockReopen.mockResolvedValue(periodRow())
-    mockFindUnique.mockResolvedValue(periodRow())
+    mockReopen.mockResolvedValue(periodRow({ status: AccountingPeriodStatus.SOFT_CLOSED }))
+    mockFindUnique.mockResolvedValue(periodRow({ status: AccountingPeriodStatus.SOFT_CLOSED }))
 
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
@@ -609,6 +609,9 @@ describe("PATCH finance/periods", () => {
   })
 
   it("rejects REOPEN without reason when period is SOFT_CLOSED with 400", async () => {
+    mockFindUnique.mockResolvedValue(
+      periodRow({ status: AccountingPeriodStatus.SOFT_CLOSED, closedAt })
+    )
     mockReopen.mockRejectedValue(
       new FinancePostingError("reason is required for period reopen", "VALIDATION_ERROR")
     )
@@ -630,9 +633,9 @@ describe("PATCH finance/periods", () => {
     expect(mockReopen).toHaveBeenCalled()
   })
 
-  it("rejects HARD reopen for HO_FINANCE with 403", async () => {
-    mockReopen.mockRejectedValue(
-      new FinancePostingError("HARD reopen requires HO_ADMIN role", "FORBIDDEN")
+  it("rejects direct HARD reopen with REOPEN_APPROVAL_REQUIRED", async () => {
+    mockFindUnique.mockResolvedValue(
+      periodRow({ status: AccountingPeriodStatus.HARD_CLOSED, closedAt })
     )
 
     const req = new NextRequest("http://localhost/api/finance/periods", {
@@ -641,16 +644,16 @@ describe("PATCH finance/periods", () => {
         branchId: "branch-1",
         periodKey: "2026-05",
         action: "REOPEN",
-        reason: "Should fail",
+        reason: "Should require approval",
       }),
     })
     const res = await PATCH(req)
 
-    expect(res.status).toBe(403)
-    await expect(res.json()).resolves.toEqual({
-      error: "HARD reopen requires HO_ADMIN role",
-      code: "FORBIDDEN",
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toMatchObject({
+      code: "REOPEN_APPROVAL_REQUIRED",
     })
+    expect(mockReopen).not.toHaveBeenCalled()
   })
 
   it("returns 400 for invalid action", async () => {

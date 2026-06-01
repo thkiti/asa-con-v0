@@ -114,11 +114,49 @@ type AccountingPeriodReopenEvidenceRow = {
   createdAt: Date
 }
 
+type AccountingPeriodReopenRequestRow = {
+  id: string
+  requestNo: string
+  periodId: string
+  branchId: string
+  periodKey: string
+  fromStatus: string
+  toStatus: string
+  reason: string
+  status: string
+  requestedAt: Date
+  requestedByStaffId: string
+  requestedByName: string
+  requestedByRole: string
+  approvedAt: Date | null
+  approvedByStaffId: string | null
+  approvedByName: string | null
+  approvedByRole: string | null
+  approvalNote: string | null
+  rejectedAt: Date | null
+  rejectedByStaffId: string | null
+  rejectedByName: string | null
+  rejectedByRole: string | null
+  rejectionNote: string | null
+  cancelledAt: Date | null
+  cancelledByStaffId: string | null
+  cancelledByName: string | null
+  cancelledByRole: string | null
+  executedAt: Date | null
+  reopenEvidenceId: string | null
+  closeEvidenceId: string | null
+  policyKey: string
+  payloadVersion: number
+  payload: unknown
+  createdAt: Date
+}
+
 export type FinanceMockState = MockTxState & {
   glAccounts: GlAccountRow[]
   accountingPeriods: AccountingPeriodRow[]
   accountingPeriodCloseEvidence: AccountingPeriodCloseEvidenceRow[]
   accountingPeriodReopenEvidence: AccountingPeriodReopenEvidenceRow[]
+  accountingPeriodReopenRequest: AccountingPeriodReopenRequestRow[]
   vouchers: VoucherRow[]
   voucherLines: VoucherLineRow[]
   journalEntries: JournalEntryRow[]
@@ -150,6 +188,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
     accountingPeriods: [],
     accountingPeriodCloseEvidence: [],
     accountingPeriodReopenEvidence: [],
+    accountingPeriodReopenRequest: [],
     vouchers: [],
     voucherLines: [],
     journalEntries: [],
@@ -321,6 +360,112 @@ export function createFinanceMockTx(branchId = "branch-1") {
         }
         state.accountingPeriodReopenEvidence.push(row)
         return row
+      },
+      findFirst: async ({
+        where,
+        orderBy,
+      }: {
+        where: { periodId: string }
+        orderBy?: { reopenedAt: "desc" }
+      }) => {
+        const rows = state.accountingPeriodReopenEvidence.filter(
+          (row) => row.periodId === where.periodId
+        )
+        if (orderBy?.reopenedAt === "desc") {
+          return (
+            [...rows].sort(
+              (a, b) => b.reopenedAt.getTime() - a.reopenedAt.getTime()
+            )[0] ?? null
+          )
+        }
+        return rows[0] ?? null
+      },
+    },
+    accountingPeriodReopenRequest: {
+      count: async ({ where }: { where?: { periodKey?: string } }) => {
+        if (!where?.periodKey) {
+          return state.accountingPeriodReopenRequest.length
+        }
+        return state.accountingPeriodReopenRequest.filter(
+          (row) => row.periodKey === where.periodKey
+        ).length
+      },
+      findUnique: async ({ where }: { where: { id: string } }) => {
+        return (
+          state.accountingPeriodReopenRequest.find((row) => row.id === where.id) ??
+          null
+        )
+      },
+      findFirst: async ({
+        where,
+        orderBy,
+      }: {
+        where: { periodId?: string; status?: string }
+        orderBy?: { requestedAt: "desc" }
+      }) => {
+        let rows = state.accountingPeriodReopenRequest
+        if (where.periodId) {
+          rows = rows.filter((row) => row.periodId === where.periodId)
+        }
+        if (where.status) {
+          rows = rows.filter((row) => row.status === where.status)
+        }
+        if (orderBy?.requestedAt === "desc") {
+          return (
+            [...rows].sort(
+              (a, b) => b.requestedAt.getTime() - a.requestedAt.getTime()
+            )[0] ?? null
+          )
+        }
+        return rows[0] ?? null
+      },
+      findMany: async ({
+        where,
+        orderBy,
+      }: {
+        where?: { periodId?: string; status?: string }
+        orderBy?: { requestedAt: "desc" }
+      }) => {
+        let rows = state.accountingPeriodReopenRequest
+        if (where?.periodId) {
+          rows = rows.filter((row) => row.periodId === where.periodId)
+        }
+        if (where?.status) {
+          rows = rows.filter((row) => row.status === where.status)
+        }
+        if (orderBy?.requestedAt === "desc") {
+          return [...rows].sort(
+            (a, b) => b.requestedAt.getTime() - a.requestedAt.getTime()
+          )
+        }
+        return rows
+      },
+      create: async ({
+        data,
+      }: {
+        data: Omit<AccountingPeriodReopenRequestRow, "id" | "createdAt">
+      }) => {
+        const row: AccountingPeriodReopenRequestRow = {
+          id: nextId("reopen-request"),
+          createdAt: new Date(),
+          ...data,
+        }
+        state.accountingPeriodReopenRequest.push(row)
+        return row
+      },
+      update: async ({
+        where,
+        data,
+      }: {
+        where: { id: string }
+        data: Partial<
+          Omit<AccountingPeriodReopenRequestRow, "id" | "createdAt" | "requestNo">
+        >
+      }) => {
+        const row = state.accountingPeriodReopenRequest.find((r) => r.id === where.id)
+        if (!row) throw new Error(`reopen request not found: ${where.id}`)
+        Object.assign(row, data)
+        return { ...row }
       },
     },
     voucher: {

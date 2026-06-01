@@ -16,7 +16,7 @@ Related docs:
 |------|-----|------|--------|----------|
 | `OPEN` | `OPEN` | — | — | None (idempotent) |
 | `SOFT_CLOSED` | `OPEN` | `HO_FINANCE` or `HO_ADMIN` | Required | `AccountingPeriodReopenEvidence` |
-| `HARD_CLOSED` | `SOFT_CLOSED` | `HO_ADMIN` only | Required | `AccountingPeriodReopenEvidence` |
+| `HARD_CLOSED` | `SOFT_CLOSED` | `HO_ADMIN` only (via approved request in 21B) | Required | `AccountingPeriodReopenEvidence` |
 | `HARD_CLOSED` | `OPEN` | — | — | **Rejected** (no direct reopen) |
 
 HARD reopen reads the **latest** close evidence row (by `closedAt` desc) for `closeEvidenceId` — read-only; close evidence is never updated on reopen.
@@ -68,3 +68,5 @@ Expected counts: **2** close evidence rows, **2** reopen evidence rows (distinct
 - Posting override into closed periods
 - CSV export for reopen/close history lists
 - Automated reopen workflows
+
+Phase 21B adds HARD reopen approval workflow — see [26_FINANCE_REOPEN_APPROVAL.md](./26_FINANCE_REOPEN_APPROVAL.md).

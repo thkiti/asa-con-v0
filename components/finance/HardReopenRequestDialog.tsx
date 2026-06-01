@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 
-type HardReopenConfirmDialogProps = {
+type HardReopenRequestDialogProps = {
   period: AccountingPeriodRow
   open: boolean
   submitting?: boolean
@@ -11,13 +11,13 @@ type HardReopenConfirmDialogProps = {
   onConfirm: (reason: string) => Promise<void>
 }
 
-export function HardReopenConfirmDialog({
+export function HardReopenRequestDialog({
   period,
   open,
   submitting = false,
   onClose,
   onConfirm,
-}: HardReopenConfirmDialogProps) {
+}: HardReopenRequestDialogProps) {
   const [reason, setReason] = useState("")
 
   if (!open) {
@@ -37,18 +37,19 @@ export function HardReopenConfirmDialog({
         className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-lg"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="hard-reopen-title"
+        aria-labelledby="hard-reopen-request-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="hard-reopen-title" className="text-lg font-semibold text-zinc-900">
-          Confirm hard reopen
+        <h2 id="hard-reopen-request-title" className="text-lg font-semibold text-zinc-900">
+          Request hard reopen
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
           Period {period.periodKey} · Branch {period.branchId}
         </p>
         <p className="mt-4 text-sm text-zinc-700">
-          Hard reopen moves the period from HARD_CLOSED to SOFT_CLOSED. Posting remains
-          blocked until a full soft reopen to OPEN. HO_ADMIN role required.
+          Submit a reopen request for HO_ADMIN approval. If approved, the period moves from
+          HARD_CLOSED to SOFT_CLOSED. Posting remains blocked until a separate soft reopen to
+          OPEN.
         </p>
         <label className="mt-4 block">
           <span className="text-sm text-zinc-600">Reason (required)</span>
@@ -58,7 +59,7 @@ export function HardReopenConfirmDialog({
             disabled={submitting}
             rows={3}
             className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-            placeholder="Document why this hard-closed period is being reopened"
+            placeholder="Document why this hard-closed period should be reopened"
           />
         </label>
         <div className="mt-6 flex flex-wrap justify-end gap-2">
@@ -76,7 +77,7 @@ export function HardReopenConfirmDialog({
             onClick={() => void onConfirm(trimmedReason)}
             className="rounded border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Reopening…" : "Hard reopen to soft closed"}
+            {submitting ? "Submitting…" : "Submit reopen request"}
           </button>
         </div>
       </div>

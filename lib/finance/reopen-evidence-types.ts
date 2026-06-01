@@ -24,6 +24,22 @@ export type ReopenEvidencePayloadV1 = {
     reason: string
   }
   closeEvidenceId: string | null
+  reopenRequestId?: string | null
+  approval?: ReopenEvidenceApprovalSnapshot | null
+}
+
+export type ReopenEvidenceApprovalSnapshot = {
+  reopenRequestId: string
+  requestNo: string
+  requestedByStaffId: string
+  requestedByName: string
+  requestedByRole: ClosePolicyRole
+  requestedAt: string
+  approvedByStaffId: string
+  approvedByName: string
+  approvedByRole: ClosePolicyRole
+  approvedAt: string
+  approvalNote?: string | null
 }
 
 export type ReopenEvidenceDetail = {

@@ -15,6 +15,7 @@ import {
   closeAccountingPeriod,
   reopenAccountingPeriod,
 } from "@/lib/finance/period-close"
+import { assertDirectReopenAllowed } from "@/lib/finance/reopen-request"
 import {
   listAccountingPeriods,
   toAccountingPeriodListRow,
@@ -183,6 +184,14 @@ export async function PATCH(req: NextRequest) {
           closedBy: periodActor!,
         })
       } else {
+        const existing = await tx.accountingPeriod.findUnique({
+          where: {
+            branchId_periodKey: { branchId, periodKey },
+          },
+        })
+        if (existing && existing.status !== "OPEN") {
+          assertDirectReopenAllowed(existing.status)
+        }
         await reopenAccountingPeriod(tx, {
           branchId,
           periodKey,

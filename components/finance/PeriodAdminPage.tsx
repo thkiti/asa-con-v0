@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   fetchAccountingPeriods,
+  fetchReopenRequests,
   fetchSessionDisplay,
   patchAccountingPeriod,
   postAccountingPeriod,
+  postReopenRequest,
   type PeriodAction,
 } from "@/lib/finance-ui/period-fetchers"
+import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
 import { getPeriodActionErrorDetails } from "@/lib/finance-ui/period-errors"
 import type {
   AccountingPeriodRow,
@@ -50,6 +53,9 @@ export function PeriodAdminPage() {
     } | null
   >(null)
   const [pendingPeriodId, setPendingPeriodId] = useState<string | null>(null)
+  const [pendingReopenRequests, setPendingReopenRequests] = useState<
+    Record<string, ReopenRequestDetail>
+  >({})
 
   const branchOptions = useMemo(() => {
     const ids = [...new Set(periods.map((period) => period.branchId))].sort()
@@ -84,6 +90,26 @@ export function PeriodAdminPage() {
 
       const result = await fetchAccountingPeriods(filter)
       setPeriods(result.periods)
+
+      const hardClosed = result.periods.filter((period) => period.status === "HARD_CLOSED")
+      const pendingEntries = await Promise.all(
+        hardClosed.map(async (period) => {
+          try {
+            const pending = await fetchReopenRequests(period.id, { status: "PENDING" })
+            const first = pending.requests[0]
+            return first ? ([period.id, first] as const) : null
+          } catch {
+            return null
+          }
+        })
+      )
+      const pendingMap: Record<string, ReopenRequestDetail> = {}
+      for (const entry of pendingEntries) {
+        if (entry) {
+          pendingMap[entry[0]] = entry[1]
+        }
+      }
+      setPendingReopenRequests(pendingMap)
     } catch (err) {
       setPeriods([])
       setError(err instanceof Error ? err.message : "Request failed")
@@ -129,6 +155,27 @@ export function PeriodAdminPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed")
     } finally {
+      setPendingAction(false)
+    }
+  }
+
+  async function handleReopenRequest(period: AccountingPeriodRow, reason: string) {
+    setMessage(null)
+    setError(null)
+    setActionError(null)
+    setPendingPeriodId(period.id)
+    setPendingAction(true)
+    try {
+      const result = await postReopenRequest({ periodId: period.id, reason })
+      setMessage(
+        `Reopen request ${result.request.requestNo} submitted for period ${period.periodKey}`
+      )
+      await loadPeriods()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Request failed")
+      throw err
+    } finally {
+      setPendingPeriodId(null)
       setPendingAction(false)
     }
   }
@@ -318,7 +365,9 @@ export function PeriodAdminPage() {
           sessionRole={sessionDisplay?.role}
           actionsDisabled={controlsDisabled}
           pendingPeriodId={pendingPeriodId}
+          pendingReopenRequests={pendingReopenRequests}
           onPeriodAction={handlePeriodAction}
+          onReopenRequest={handleReopenRequest}
         />
       )}
     </div>

@@ -8,6 +8,7 @@ import type { PeriodCloseActorInput } from "./close-evidence"
 import { resolveCloseActorSnapshot } from "./close-evidence"
 import {
   REOPEN_EVIDENCE_PAYLOAD_VERSION,
+  type ReopenEvidenceApprovalSnapshot,
   type ReopenEvidenceDetail,
   type ReopenEvidencePayloadV1,
 } from "./reopen-evidence-types"
@@ -85,6 +86,8 @@ function buildReopenEvidencePayload(input: {
   actor: ReturnType<typeof resolveCloseActorSnapshot>
   reason: string
   closeEvidenceId: string | null
+  reopenRequestId?: string | null
+  approval?: ReopenEvidenceApprovalSnapshot | null
 }): ReopenEvidencePayloadV1 {
   return {
     payloadVersion: REOPEN_EVIDENCE_PAYLOAD_VERSION,
@@ -103,6 +106,8 @@ function buildReopenEvidencePayload(input: {
       reason: input.reason,
     },
     closeEvidenceId: input.closeEvidenceId,
+    reopenRequestId: input.reopenRequestId ?? null,
+    approval: input.approval ?? null,
   }
 }
 
@@ -116,6 +121,8 @@ export type CreateReopenEvidenceInput = {
   toStatus: AccountingPeriodStatus
   reason: string
   reopenedBy: PeriodCloseActorInput
+  reopenRequestId?: string | null
+  approval?: ReopenEvidenceApprovalSnapshot | null
 }
 
 export async function createReopenEvidence(
@@ -162,6 +169,8 @@ export async function createReopenEvidence(
     actor,
     reason,
     closeEvidenceId,
+    reopenRequestId: input.reopenRequestId,
+    approval: input.approval,
   })
 
   const row = await tx.accountingPeriodReopenEvidence.create({

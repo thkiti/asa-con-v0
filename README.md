@@ -3,9 +3,9 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** Phase 20E close evidence export/print complete — see [docs/00_README.md](./docs/00_README.md)
+- **Status:** Phase 21B reopen approval workflow complete — see [docs/00_README.md](./docs/00_README.md)
 
-Phase 20E adds browser CSV export and audit print for immutable HARD-close evidence (stored `CloseEvidenceDetail` only). Phase 20D persists that evidence after a successful gate-approved close. Phase 20C enforces HARD close gating in `closeAccountingPeriod()` — BLOCKED checklist items reject close with HTTP 409; WARNING allowed by default. Phase 20B adds the read-only close checklist at `/finance/periods/[id]/close-readiness`. Summaries: [docs/23_FINANCE_CLOSE_EVIDENCE.md](./docs/23_FINANCE_CLOSE_EVIDENCE.md), [docs/22_FINANCE_CLOSE_GATE.md](./docs/22_FINANCE_CLOSE_GATE.md), [docs/21_FINANCE_CLOSE_WORKFLOW.md](./docs/21_FINANCE_CLOSE_WORKFLOW.md).
+Phase 21B adds request → approve → execute for HARD reopen (`RRO-{periodKey}-{seq}` audit ids, explicit approval/rejection fields). Phase 21A direct SOFT reopen unchanged. Summaries: [docs/26_FINANCE_REOPEN_APPROVAL.md](./docs/26_FINANCE_REOPEN_APPROVAL.md), [docs/25_FINANCE_REOPEN_CONTROL.md](./docs/25_FINANCE_REOPEN_CONTROL.md).
 
 ## Docs
 
@@ -78,3 +78,4 @@ generated/  Prisma client output (gitignored)
 | 20D | Close evidence — immutable HARD-close snapshot (`AccountingPeriodCloseEvidence`), GET API, `/finance/periods/[id]/close-evidence` |
 | 20E | Close evidence export/print — browser CSV pack + audit print from stored `CloseEvidenceDetail` (no export API route) |
 | 21A | Reopen control — audited HARD/soft reopen, append-only close evidence history, reopen evidence API/UI |
+| 21B | Reopen approval — HARD reopen request workflow, HO_ADMIN approve, separation of duties |

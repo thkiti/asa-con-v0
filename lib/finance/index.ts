@@ -99,6 +99,27 @@ export {
 } from "./close-evidence"
 export { listReopenEvidenceByPeriodId } from "./reopen-evidence"
 export type { ReopenEvidenceDetail } from "./reopen-evidence-types"
+export {
+  approveReopenRequest,
+  assertDirectReopenAllowed,
+  cancelReopenRequest,
+  createReopenRequest,
+  findPendingReopenRequestByPeriodId,
+  getReopenRequestById,
+  listReopenRequestsByPeriodId,
+  rejectReopenRequest,
+} from "./reopen-request"
+export type { ReopenRequestDetail } from "./reopen-request-types"
+export {
+  DEFAULT_REOPEN_APPROVAL_POLICY,
+  STRICT_REOPEN_APPROVAL_POLICY,
+  getReopenApprovalPolicy,
+  normalizeReopenApprovalPolicy,
+  reopenApprovalRequired,
+} from "./reopen-approval-policy"
+export type { ReopenApprovalPolicy } from "./reopen-approval-policy"
+export { ReopenRequestError } from "./reopen-request-errors"
+export type { ReopenRequestErrorCode } from "./reopen-request-errors"
 export type {
   CloseReadinessChecklistPrisma,
   CloseReadinessPeriodInput,

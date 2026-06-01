@@ -5,6 +5,8 @@ import {
   buildCloseEvidencePath,
 } from "@/lib/finance-ui/close-evidence"
 import { buildReopenEvidencePath } from "@/lib/finance-ui/reopen-evidence"
+import { buildReopenRequestsPath } from "@/lib/finance-ui/reopen-requests"
+import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
 import { buildCloseReadinessPath } from "@/lib/finance-ui/close-readiness"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { PeriodAdminActions } from "./PeriodAdminActions"
@@ -25,6 +27,8 @@ type PeriodTableProps = {
     action: PeriodAction,
     options?: { reason?: string }
   ) => Promise<void>
+  onReopenRequest?: (period: AccountingPeriodRow, reason: string) => Promise<void>
+  pendingReopenRequests?: Record<string, ReopenRequestDetail>
   sessionRole?: string
   actionsDisabled?: boolean
   pendingPeriodId?: string | null
@@ -34,6 +38,8 @@ export function PeriodTable({
   periods,
   showControls = false,
   onPeriodAction,
+  onReopenRequest,
+  pendingReopenRequests = {},
   sessionRole,
   actionsDisabled = false,
   pendingPeriodId = null,
@@ -111,6 +117,14 @@ export function PeriodTable({
                     >
                       Reopen history
                     </Link>
+                    {period.status === "HARD_CLOSED" ? (
+                      <Link
+                        href={buildReopenRequestsPath(period.id)}
+                        className="text-sm font-medium text-zinc-900 underline"
+                      >
+                        Reopen requests
+                      </Link>
+                    ) : null}
                   </span>
                 </td>
                 {showControls ? (
@@ -118,6 +132,7 @@ export function PeriodTable({
                     <PeriodAdminActions
                       period={period}
                       sessionRole={sessionRole}
+                      pendingReopenRequest={pendingReopenRequests[period.id] ?? null}
                       disabled={actionsDisabled}
                       submitting={
                         Boolean(pendingPeriodId) && pendingPeriodId === period.id
@@ -126,6 +141,11 @@ export function PeriodTable({
                         onPeriodAction
                           ? onPeriodAction(period, action, options)
                           : Promise.resolve()
+                      }
+                      onReopenRequest={
+                        onReopenRequest
+                          ? (reason) => onReopenRequest(period, reason)
+                          : undefined
                       }
                     />
                   </td>

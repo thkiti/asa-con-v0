@@ -3,6 +3,11 @@ import type {
   CloseEvidenceHistoryApiResult,
 } from "./close-evidence"
 import type { ReopenEvidenceApiResult } from "./reopen-evidence"
+import type {
+  ReopenRequestAction,
+  ReopenRequestApiResult,
+  ReopenRequestsApiResult,
+} from "./reopen-requests"
 import type { CloseReadinessApiResult } from "./close-readiness"
 import type {
   PeriodActionError,
@@ -165,5 +170,65 @@ export function fetchReopenEvidence(periodId: string): Promise<ReopenEvidenceApi
   ).then(async (res) => {
     if (!res.ok) await throwFetchError(res)
     return res.json() as Promise<ReopenEvidenceApiResult>
+  })
+}
+
+export function fetchReopenRequests(
+  periodId: string,
+  filter?: { status?: string }
+): Promise<ReopenRequestsApiResult> {
+  const trimmed = periodId.trim()
+  const params = new URLSearchParams()
+  if (filter?.status?.trim()) {
+    params.set("status", filter.status.trim())
+  }
+  const query = params.toString()
+  const suffix = query ? `?${query}` : ""
+  return fetch(
+    `/api/finance/periods/${encodeURIComponent(trimmed)}/reopen-requests${suffix}`
+  ).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<ReopenRequestsApiResult>
+  })
+}
+
+export function postReopenRequest(input: {
+  periodId: string
+  reason: string
+}): Promise<ReopenRequestApiResult> {
+  return fetch(
+    `/api/finance/periods/${encodeURIComponent(input.periodId.trim())}/reopen-requests`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: input.reason }),
+    }
+  ).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<ReopenRequestApiResult>
+  })
+}
+
+export function patchReopenRequest(input: {
+  periodId: string
+  requestId: string
+  action: ReopenRequestAction
+  approvalNote?: string
+  rejectionNote?: string
+}): Promise<ReopenRequestApiResult> {
+  return fetch(
+    `/api/finance/periods/${encodeURIComponent(input.periodId.trim())}/reopen-requests/${encodeURIComponent(input.requestId.trim())}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: input.action,
+        approvalNote: input.approvalNote,
+        rejectionNote: input.rejectionNote,
+      }),
+    }
+  ).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<ReopenRequestApiResult>
   })
 }

@@ -50,6 +50,12 @@ jest.mock("@/generated/prisma/client", () => {
       SOFT_CLOSED: "SOFT_CLOSED",
       HARD_CLOSED: "HARD_CLOSED",
     },
+    AccountingPeriodReopenRequestStatus: {
+      PENDING: "PENDING",
+      REJECTED: "REJECTED",
+      CANCELLED: "CANCELLED",
+      EXECUTED: "EXECUTED",
+    },
     DocType: {
       PURCHASE: "PURCHASE",
       TRANSFER_OUT: "TRANSFER_OUT",

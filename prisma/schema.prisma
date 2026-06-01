@@ -308,6 +308,13 @@ enum AccountingPeriodStatus {
   HARD_CLOSED
 }
 
+enum AccountingPeriodReopenRequestStatus {
+  PENDING
+  REJECTED
+  CANCELLED
+  EXECUTED
+}
+
 model GlAccount {
   id          String         @id @default(uuid())
   code        String         @unique
@@ -338,6 +345,7 @@ model AccountingPeriod {
   journalEntries JournalEntry[]
   closeEvidence  AccountingPeriodCloseEvidence[]
   reopenEvidence AccountingPeriodReopenEvidence[]
+  reopenRequests AccountingPeriodReopenRequest[]
 
   @@unique([branchId, periodKey])
 }
@@ -400,6 +408,59 @@ model AccountingPeriodReopenEvidence {
   period AccountingPeriod @relation(fields: [periodId], references: [id])
 
   @@index([periodId, reopenedAt(sort: Desc)])
+  @@index([branchId, periodKey])
+}
+
+/// Reopen approval workflow request (Phase 21B). Mutable until terminal status; execution creates reopen evidence.
+model AccountingPeriodReopenRequest {
+  id        String @id @default(uuid())
+  requestNo String @unique
+  periodId  String
+  branchId  String
+  periodKey String
+
+  fromStatus String
+  toStatus   String
+  reason     String
+
+  status AccountingPeriodReopenRequestStatus @default(PENDING)
+
+  requestedAt        DateTime
+  requestedByStaffId String
+  requestedByName    String
+  requestedByRole    String
+
+  approvedAt        DateTime?
+  approvedByStaffId String?
+  approvedByName    String?
+  approvedByRole    String?
+  approvalNote      String?
+
+  rejectedAt        DateTime?
+  rejectedByStaffId String?
+  rejectedByName    String?
+  rejectedByRole    String?
+  rejectionNote     String?
+
+  cancelledAt        DateTime?
+  cancelledByStaffId String?
+  cancelledByName    String?
+  cancelledByRole    String?
+
+  executedAt       DateTime?
+  reopenEvidenceId String?
+
+  closeEvidenceId String?
+  policyKey       String @default("default")
+  payloadVersion  Int    @default(1)
+  payload         Json
+
+  createdAt DateTime @default(now())
+
+  period AccountingPeriod @relation(fields: [periodId], references: [id])
+
+  @@index([periodId, status])
+  @@index([periodId, requestedAt(sort: Desc)])
   @@index([branchId, periodKey])
 }
 

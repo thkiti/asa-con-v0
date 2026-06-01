@@ -1,10 +1,13 @@
 ﻿"use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import type { PeriodAction } from "@/lib/finance-ui/period-fetchers"
+import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
+import { buildReopenRequestsPath } from "@/lib/finance-ui/reopen-requests"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { HardCloseConfirmDialog } from "./HardCloseConfirmDialog"
-import { HardReopenConfirmDialog } from "./HardReopenConfirmDialog"
+import { HardReopenRequestDialog } from "./HardReopenRequestDialog"
 import { SoftReopenConfirmDialog } from "./SoftReopenConfirmDialog"
 
 export type PeriodActionOptions = {
@@ -14,9 +17,11 @@ export type PeriodActionOptions = {
 type PeriodAdminActionsProps = {
   period: AccountingPeriodRow
   sessionRole?: string
+  pendingReopenRequest?: ReopenRequestDetail | null
   disabled?: boolean
   submitting?: boolean
   onAction: (action: PeriodAction, options?: PeriodActionOptions) => Promise<void>
+  onReopenRequest?: (reason: string) => Promise<void>
 }
 
 const buttonClassName =
@@ -25,15 +30,18 @@ const buttonClassName =
 export function PeriodAdminActions({
   period,
   sessionRole = "",
+  pendingReopenRequest = null,
   disabled = false,
   submitting = false,
   onAction,
+  onReopenRequest,
 }: PeriodAdminActionsProps) {
   const [hardCloseOpen, setHardCloseOpen] = useState(false)
-  const [hardReopenOpen, setHardReopenOpen] = useState(false)
+  const [hardReopenRequestOpen, setHardReopenRequestOpen] = useState(false)
   const [softReopenOpen, setSoftReopenOpen] = useState(false)
 
-  const isHoAdmin = sessionRole.trim().toUpperCase() === "HO_ADMIN"
+  const role = sessionRole.trim().toUpperCase()
+  const canRequestHardReopen = role === "HO_FINANCE" || role === "HO_ADMIN"
 
   async function handleAction(action: PeriodAction) {
     if (action === "HARD_CLOSE") {
@@ -42,7 +50,7 @@ export function PeriodAdminActions({
     }
     if (action === "REOPEN") {
       if (period.status === "HARD_CLOSED") {
-        setHardReopenOpen(true)
+        setHardReopenRequestOpen(true)
         return
       }
       setSoftReopenOpen(true)
@@ -60,10 +68,11 @@ export function PeriodAdminActions({
     }
   }
 
-  async function confirmHardReopen(reason: string) {
+  async function confirmHardReopenRequest(reason: string) {
+    if (!onReopenRequest) return
     try {
-      await onAction("REOPEN", { reason })
-      setHardReopenOpen(false)
+      await onReopenRequest(reason)
+      setHardReopenRequestOpen(false)
     } catch {
       // Parent surfaces errors.
     }
@@ -83,26 +92,40 @@ export function PeriodAdminActions({
   if (period.status === "HARD_CLOSED") {
     return (
       <>
-        <div className="flex flex-wrap gap-2">
-          {isHoAdmin ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {pendingReopenRequest ? (
+            <>
+              <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+                Pending: {pendingReopenRequest.requestNo}
+              </span>
+              <Link
+                href={buildReopenRequestsPath(period.id)}
+                className="text-sm underline"
+              >
+                Review requests
+              </Link>
+            </>
+          ) : canRequestHardReopen ? (
             <button
               type="button"
               disabled={controlsDisabled}
               onClick={() => void handleAction("REOPEN")}
               className={buttonClassName}
             >
-              HARD REOPEN
+              REQUEST REOPEN
             </button>
           ) : (
-            <span className="text-sm text-zinc-500">Locked (HO_ADMIN to reopen)</span>
+            <span className="text-sm text-zinc-500">
+              Locked (HO_FINANCE or HO_ADMIN to request reopen)
+            </span>
           )}
         </div>
-        <HardReopenConfirmDialog
+        <HardReopenRequestDialog
           period={period}
-          open={hardReopenOpen}
+          open={hardReopenRequestOpen}
           submitting={submitting}
-          onClose={() => setHardReopenOpen(false)}
-          onConfirm={confirmHardReopen}
+          onClose={() => setHardReopenRequestOpen(false)}
+          onConfirm={confirmHardReopenRequest}
         />
       </>
     )

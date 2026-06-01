@@ -9,6 +9,11 @@ import {
   closeAccountingPeriod,
   reopenAccountingPeriod,
 } from "@/lib/finance/period-close"
+import {
+  approveReopenRequest,
+  assertDirectReopenAllowed,
+  createReopenRequest,
+} from "@/lib/finance/reopen-request"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
 import { postOperationalVoucher } from "@/lib/finance/posting"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
@@ -195,7 +200,7 @@ describe("period-reopen-control (21A)", () => {
     ).rejects.toMatchObject({ code: "VALIDATION_ERROR" })
   })
 
-  it("HO_FINANCE cannot HARD reopen", async () => {
+  it("HO_FINANCE cannot HARD reopen via execution kernel", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
     await closeAccountingPeriod(tx, {
@@ -308,9 +313,15 @@ describe("period-reopen-control (21A)", () => {
     expect(state.accountingPeriods[0]?.id).toBe(created.id)
   })
 
-  it("full lifecycle: 2 close evidence + 2 reopen evidence rows", async () => {
+  it("direct HARD reopen is blocked by approval guard", () => {
+    expect(() =>
+      assertDirectReopenAllowed(AccountingPeriodStatus.HARD_CLOSED)
+    ).toThrow(expect.objectContaining({ code: "REOPEN_APPROVAL_REQUIRED" }))
+  })
+
+  it("full lifecycle with approval: request → approve → soft reopen → OPEN", async () => {
     const { tx, state } = createFinanceMockTx()
-    await seedOpenPeriod(tx, branchId, periodKey)
+    const period = await seedOpenPeriod(tx, branchId, periodKey)
 
     await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
     await closeAccountingPeriod(tx, {
@@ -319,12 +330,17 @@ describe("period-reopen-control (21A)", () => {
       mode: "HARD",
       closedBy: defaultClosedBy,
     })
-    await reopenAccountingPeriod(tx, {
-      branchId,
-      periodKey,
+
+    const request = await createReopenRequest(tx, {
+      periodId: period.id,
       reason: "Hard reopen 1",
-      reopenedBy: hoAdminActor,
+      requestedBy: defaultClosedBy,
     })
+    await approveReopenRequest(tx, {
+      requestId: request.id,
+      approvedBy: hoAdminActor,
+    })
+
     await reopenAccountingPeriod(tx, {
       branchId,
       periodKey,
@@ -344,6 +360,7 @@ describe("period-reopen-control (21A)", () => {
 
     expect(state.accountingPeriodCloseEvidence).toHaveLength(2)
     expect(state.accountingPeriodReopenEvidence).toHaveLength(2)
+    expect(state.accountingPeriodReopenRequest.filter((r) => r.status === "EXECUTED")).toHaveLength(1)
     expect(new Set(closeIds).size).toBe(2)
     expect(new Set(reopenIds).size).toBe(2)
     expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
