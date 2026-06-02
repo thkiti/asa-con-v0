@@ -247,6 +247,7 @@ export const STOCK_INNER_UNEXPECTED_TX: AuditRule = {
 
 export const STOCK_DOCUMENT_STATUS_ALLOWED = [
   "lib/stock/document/document-status.ts",
+  "lib/stock/document/document-save.ts",
   "scripts/",
 ]
 

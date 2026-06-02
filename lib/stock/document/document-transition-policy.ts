@@ -39,6 +39,7 @@ const WORKFLOW_TRANSITIONS: readonly TransitionRule[] = [
     to: "SHIPPED",
     docTypes: ["TRANSFER_OUT", "PURCHASE", "TRANSFER_IN"],
   },
+  { action: "CONFIRM", from: "SUBMITTED", to: "CONFIRMED" },
   {
     action: "CONFIRM",
     from: "SHIPPED",

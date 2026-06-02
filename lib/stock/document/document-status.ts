@@ -4,9 +4,12 @@ import {
   assertTransitionAllowed,
   resolveVoidAction,
 } from "./document-transition-policy"
+import { DocumentErrorCodes } from "./document-errors"
 import type {
   ApplyCancelledTransitionInput,
+  ApplyConfirmedTransitionInput,
   ApplyPostedTransitionInput,
+  ApplySubmittedTransitionInput,
   DeleteDraftDocumentInput,
   StockDocumentWithLines,
 } from "./document-types"
@@ -124,4 +127,57 @@ export async function deleteDraftDocument(
   })
 
   await tx.stockDocument.delete({ where: { id: input.documentId } })
+}
+
+export async function applySubmittedTransition(
+  tx: Prisma.TransactionClient,
+  input: ApplySubmittedTransitionInput
+): Promise<StockDocumentWithLines> {
+  const doc = await loadDocumentWithLines(tx, input.documentId)
+  if (!doc) {
+    throw new DocumentError("Document not found", DocumentErrorCodes.DOCUMENT_NOT_FOUND, 404)
+  }
+
+  assertTransitionAllowed({
+    docType: doc.docType,
+    fromStatus: doc.status,
+    action: "SUBMIT",
+  })
+
+  const now = new Date()
+  return tx.stockDocument.update({
+    where: { id: input.documentId },
+    data: {
+      status: "SUBMITTED",
+      submittedAt: now,
+    },
+    include: { lines: true },
+  })
+}
+
+export async function applyConfirmedTransition(
+  tx: Prisma.TransactionClient,
+  input: ApplyConfirmedTransitionInput
+): Promise<StockDocumentWithLines> {
+  const doc = await loadDocumentWithLines(tx, input.documentId)
+  if (!doc) {
+    throw new DocumentError("Document not found", DocumentErrorCodes.DOCUMENT_NOT_FOUND, 404)
+  }
+
+  assertTransitionAllowed({
+    docType: doc.docType,
+    fromStatus: doc.status,
+    action: "CONFIRM",
+  })
+
+  const now = new Date()
+  return tx.stockDocument.update({
+    where: { id: input.documentId },
+    data: {
+      status: "CONFIRMED",
+      confirmedAt: now,
+      confirmedByStaffId: input.confirmedByStaffId,
+    },
+    include: { lines: true },
+  })
 }

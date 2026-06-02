@@ -2,7 +2,9 @@ import type { StockDocumentWithLines } from "@/lib/stock/posting-types"
 import { DocumentError } from "@/lib/stock/document/document-errors"
 import {
   applyCancelledTransition,
+  applyConfirmedTransition,
   applyPostedTransition,
+  applySubmittedTransition,
   deleteDraftDocument,
 } from "@/lib/stock/document/document-status"
 import { createPostingMockTx } from "../posting/mock-posting-tx"
@@ -128,6 +130,40 @@ describe("document-status", () => {
           cancelledByStaffId: "staff-1",
         })
       ).rejects.toMatchObject({ code: "IMMUTABLE_DOCUMENT" })
+    })
+  })
+
+  describe("applySubmittedTransition", () => {
+    it("sets SUBMITTED and submittedAt", async () => {
+      const initial = doc({ docType: "PERFORMANCE", status: "DRAFT" })
+      const { tx, getDocument } = createPostingMockTx(initial)
+
+      const updated = await applySubmittedTransition(tx, { documentId: "doc-1" })
+
+      expect(updated.status).toBe("SUBMITTED")
+      expect(updated.submittedAt).toBeInstanceOf(Date)
+      expect(getDocument().status).toBe("SUBMITTED")
+    })
+  })
+
+  describe("applyConfirmedTransition", () => {
+    it("sets CONFIRMED and confirm audit fields", async () => {
+      const initial = doc({
+        docType: "ADJUSTMENT",
+        status: "SUBMITTED",
+        submittedAt: new Date("2026-01-10"),
+      })
+      const { tx, getDocument } = createPostingMockTx(initial)
+
+      const updated = await applyConfirmedTransition(tx, {
+        documentId: "doc-1",
+        confirmedByStaffId: "staff-confirm",
+      })
+
+      expect(updated.status).toBe("CONFIRMED")
+      expect(updated.confirmedByStaffId).toBe("staff-confirm")
+      expect(updated.confirmedAt).toBeInstanceOf(Date)
+      expect(getDocument().status).toBe("CONFIRMED")
     })
   })
 

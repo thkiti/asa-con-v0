@@ -123,6 +123,13 @@ describe("document-transition-policy", () => {
       assertForbidden("ADJUSTMENT", "SUBMITTED", "SHIP")
     })
 
+    it("allows CONFIRM from SUBMITTED for all doc types", () => {
+      for (const docType of ALL_DOC_TYPES) {
+        assertAllowed(docType, "SUBMITTED", "CONFIRM")
+        expect(targetStatusForAction("CONFIRM", "SUBMITTED")).toBe("CONFIRMED")
+      }
+    })
+
     it("allows CANCEL from pre-posted workflow statuses", () => {
       assertAllowed("TRANSFER_OUT", "SUBMITTED", "CANCEL")
       assertAllowed("ADJUSTMENT", "TRANSFERRED", "CANCEL")

@@ -1,4 +1,4 @@
-import type { DocStatus, DocType } from "@/generated/prisma/client"
+import type { DocStatus, DocType, Prisma } from "@/generated/prisma/client"
 import type { StockDocumentWithLines } from "../posting-types"
 
 export type DocumentWorkflowAction =
@@ -38,6 +38,57 @@ export type ApplyCancelledTransitionInput = {
 
 export type DeleteDraftDocumentInput = {
   documentId: string
+}
+
+export type ApplySubmittedTransitionInput = {
+  documentId: string
+}
+
+export type ApplyConfirmedTransitionInput = {
+  documentId: string
+  confirmedByStaffId: string
+}
+
+export type SaveDocumentLineInput = {
+  productId: string
+  qty: number
+  endingQty?: number | null
+  reviewPostingDelta?: number | null
+}
+
+export type SaveDocumentInput = {
+  id?: string | null
+  docType: DocType
+  date: Date | string
+  branchId: string
+  fromLocId?: string | null
+  toLocId?: string | null
+  createdByStaffId?: string | null
+  lines: SaveDocumentLineInput[]
+  tx?: Prisma.TransactionClient
+}
+
+export type SubmitDocumentInput = {
+  documentId: string
+  tx?: Prisma.TransactionClient
+}
+
+export type ConfirmDocumentInput = {
+  documentId: string
+  confirmedByStaffId: string
+  tx?: Prisma.TransactionClient
+}
+
+export type CancelDocumentInput = {
+  documentId: string
+  cancelledByStaffId: string
+  cancelReason?: string | null
+  tx?: Prisma.TransactionClient
+}
+
+export type DeleteDraftDocumentOrchestratorInput = {
+  documentId: string
+  tx?: Prisma.TransactionClient
 }
 
 export type { StockDocumentWithLines }
