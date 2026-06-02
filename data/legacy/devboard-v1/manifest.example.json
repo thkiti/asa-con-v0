@@ -1,0 +1,36 @@
+{
+  "archiveName": "devboard-v1",
+  "createdAt": "2026-06-03T00:00:00.000Z",
+  "sourceRoot": "D:/_projects/asa-con/scripts",
+  "targetRoot": "data/legacy/devboard-v1",
+  "files": [
+    {
+      "filename": "SHP.DBF",
+      "category": "dbf",
+      "importRole": "branch",
+      "required": true,
+      "exists": true,
+      "sourcePath": "D:/_projects/asa-con/scripts/SHP.DBF",
+      "archivePath": "data/legacy/devboard-v1/dbf/SHP.DBF",
+      "sizeBytes": 12345,
+      "sha256": "example-sha256-hash",
+      "encoding": "TIS-620",
+      "copiedAt": "2026-06-03T00:00:00.000Z",
+      "notes": "Shop branch master (SH-{S_ID})"
+    },
+    {
+      "filename": "oCode.csv",
+      "category": "csv",
+      "importRole": "optional-reference-stock",
+      "required": false,
+      "exists": false,
+      "sourcePath": "D:/_projects/asa-con/scripts/oCode.csv",
+      "archivePath": "data/legacy/devboard-v1/csv/oCode.csv",
+      "sizeBytes": null,
+      "sha256": null,
+      "encoding": "UTF-8",
+      "copiedAt": null,
+      "notes": "Other Special Key reference stock (hookGroup O)"
+    }
+  ]
+}

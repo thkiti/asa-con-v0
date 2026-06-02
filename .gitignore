@@ -44,5 +44,12 @@ next-env.d.ts
 
 /generated/
 
-
 backups/*.dump
+
+# Legacy raw archive evidence (local-only; structure/docs are committed)
+data/legacy/**/dbf/*
+!data/legacy/**/dbf/.gitkeep
+data/legacy/**/csv/*
+!data/legacy/**/csv/.gitkeep
+data/legacy/**/manifest.json
+tmp/import-reports/
