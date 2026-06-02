@@ -1,4 +1,5 @@
 import { messageForDocumentErrorCode, StockDocumentUiError } from "./document-errors"
+import type { SaveStockDocumentPayload } from "./editor-types"
 import type {
   StockDocumentDetailVM,
   StockDocumentListFilter,
@@ -64,4 +65,52 @@ export async function fetchStockDocumentDetail(
   const res = await fetch(`/api/stock-document/${encodeURIComponent(id)}`)
   await throwOnError(res)
   return parseJson<StockDocumentDetailVM>(res)
+}
+
+export async function saveStockDocument(
+  payload: SaveStockDocumentPayload
+): Promise<StockDocumentDetailVM> {
+  const res = await fetch("/api/stock-document", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...payload,
+      items: payload.lines,
+    }),
+  })
+  await throwOnError(res)
+  const raw = await parseJson<StockDocumentDetailVM & { lines: StockDocumentDetailVM["lines"] }>(
+    res
+  )
+  return normalizeSavedDocument(raw)
+}
+
+function normalizeSavedDocument(
+  raw: StockDocumentDetailVM & {
+    lines?: Array<{
+      id: string
+      productId: string
+      qty: number
+      endingQty: number | null
+      reviewPostingDelta: number | null
+      product?: { id: string; code: string; name: string }
+    }>
+  }
+): StockDocumentDetailVM {
+  return {
+    ...raw,
+    date: typeof raw.date === "string" ? raw.date : new Date(raw.date).toISOString(),
+    lines: (raw.lines ?? []).map((line) => ({
+      id: line.id,
+      productId: line.productId,
+      qty: line.qty,
+      endingQty: line.endingQty,
+      reviewPostingDelta: line.reviewPostingDelta,
+      product: line.product ?? {
+        id: line.productId,
+        code: line.productId,
+        name: line.productId,
+      },
+    })),
+  }
 }
