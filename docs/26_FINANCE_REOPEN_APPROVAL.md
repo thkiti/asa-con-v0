@@ -7,6 +7,7 @@ Related docs:
 - [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md) — Phase 21A execution kernel and evidence
 - [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md) — period lifecycle
 - [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md) — immutable close evidence
+- [27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./27_FINANCE_PERIOD_AUDIT_TIMELINE.md) — Phase 22A read-only period audit timeline
 
 ## Workflow (HARD reopen)
 

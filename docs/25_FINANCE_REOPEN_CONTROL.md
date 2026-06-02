@@ -9,6 +9,8 @@ Related docs:
 - [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md) — HARD close gate
 - [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md) — close evidence (append-only history)
 - [24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md) — export/print from loaded evidence
+- [26_FINANCE_REOPEN_APPROVAL.md](./26_FINANCE_REOPEN_APPROVAL.md) — Phase 21B HARD reopen approval workflow
+- [27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./27_FINANCE_PERIOD_AUDIT_TIMELINE.md) — Phase 22A read-only period audit timeline
 
 ## Reopen matrix
 

@@ -1,13 +1,13 @@
-# Finance ó Period Audit Timeline (Phase 22A)
+# Finance ù Period Audit Timeline (Phase 22A)
 
-Phase 22A adds a **read-only audit timeline** for one accounting period. Events are derived from existing immutable and workflow tables ó no new schema, no mutations, no close/reopen behavior changes.
+Phase 22A adds a **read-only audit timeline** for one accounting period. Events are derived from existing immutable and workflow tables ù no new schema, no mutations, no close/reopen behavior changes.
 
 Related docs:
 
-- [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md) ó period lifecycle
-- [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md) ó close evidence
-- [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md) ó reopen evidence
-- [26_FINANCE_REOPEN_APPROVAL.md](./26_FINANCE_REOPEN_APPROVAL.md) ó reopen approval workflow
+- [15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md) ù period lifecycle
+- [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md) ù close evidence
+- [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md) ù reopen evidence
+- [26_FINANCE_REOPEN_APPROVAL.md](./26_FINANCE_REOPEN_APPROVAL.md) ù reopen approval workflow
 
 ## Scope
 
@@ -43,16 +43,16 @@ SOFT close does not write an immutable audit row. After HARD close, `closedAt` r
 |--------|------|----------|
 | `GET` | `/api/finance/periods/[id]/timeline` | `{ period, timeline }` |
 
-Errors: `PERIOD_NOT_FOUND`  404.
+Errors: `PERIOD_NOT_FOUND` ? 404.
 
 ## Domain
 
-- [`lib/finance/period-audit-timeline.ts`](../lib/finance/period-audit-timeline.ts) ó `getPeriodAuditTimelineByPeriodId`
-- [`lib/finance/period-audit-timeline-types.ts`](../lib/finance/period-audit-timeline-types.ts) ó item types
+- [`lib/finance/period-audit-timeline.ts`](../lib/finance/period-audit-timeline.ts) ù `getPeriodAuditTimelineByPeriodId`
+- [`lib/finance/period-audit-timeline-types.ts`](../lib/finance/period-audit-timeline-types.ts) ù item types
 
 ## UI
 
-- `/finance/periods/[id]/timeline` ó read-only timeline page
+- `/finance/periods/[id]/timeline` ù read-only timeline page
 - Period table link: **Audit timeline** (all periods)
 
 ## Tests

@@ -79,3 +79,4 @@ generated/  Prisma client output (gitignored)
 | 20E | Close evidence export/print — browser CSV pack + audit print from stored `CloseEvidenceDetail` (no export API route) |
 | 21A | Reopen control — audited HARD/soft reopen, append-only close evidence history, reopen evidence API/UI |
 | 21B | Reopen approval — HARD reopen request workflow, HO_ADMIN approve, separation of duties |
+| 22A | Period audit timeline — read-only merge of lifecycle, close/reopen evidence, reopen requests (`GET .../timeline`) |

@@ -482,17 +482,13 @@ Each successful HARD close appends a new `AccountingPeriodCloseEvidence` row; pr
 
 API: `PATCH` REOPEN with `reason`; `GET` close-evidence (latest), `.../history`, `.../[evidenceId]`; `GET` reopen-evidence. UI: reopen confirm dialogs, reopen history, close history.
 
-Full policy, lifecycle example, and test map: [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md). Close evidence history: [23](./23_FINANCE_CLOSE_EVIDENCE.md). Gate: [22](./22_FINANCE_CLOSE_GATE.md). Export: [24](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md).
+Full policy, lifecycle example, and test map: [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md). HARD reopen approval: [26_FINANCE_REOPEN_APPROVAL.md](./26_FINANCE_REOPEN_APPROVAL.md). Close evidence history: [23](./23_FINANCE_CLOSE_EVIDENCE.md). Gate: [22](./22_FINANCE_CLOSE_GATE.md). Export: [24](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md).
 
 ---
 
+## 19. Phase 22A — Period audit timeline
 
-
----
-
-## 19. Phase 22A � Period audit timeline
-
-Status: **Done** � read-only chronological audit view per period
+Status: **Done** — read-only chronological audit view per period
 
 | Surface | Path |
 |---------|------|
@@ -501,11 +497,11 @@ Status: **Done** � read-only chronological audit view per period
 
 Combines period opened/soft-closed (when observable), HARD close + close evidence rows, reopen request workflow events, and reopen evidence. No schema changes; no mutation APIs.
 
-Full catalog and limitations: [27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./27_FINANCE_PERIOD_AUDIT_TIMELINE.md).
+Full catalog and limitations: [27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./27_FINANCE_PERIOD_AUDIT_TIMELINE.md). Reopen approval workflow: [26_FINANCE_REOPEN_APPROVAL.md](./26_FINANCE_REOPEN_APPROVAL.md).
 
 ---
 
-## 18. Out of scope (future)
+## 20. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
 - Optional PATCH close reason text (actor snapshot exists in 20D evidence)
