@@ -40,7 +40,7 @@ describe("architecture audit rules integration", () => {
 
   it("full architecture audit passes on clean repo", () => {
     const results = runArchitectureAudits(REPO_ROOT)
-    expect(results.length).toBeGreaterThanOrEqual(8)
+    expect(results.length).toBeGreaterThanOrEqual(10)
     expectAllPassed(results)
   })
 })

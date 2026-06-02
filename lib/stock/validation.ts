@@ -1,15 +1,9 @@
-import type { DocStatus, DocType } from "@/generated/prisma/client"
+import { POSTABLE_BY_DOC_TYPE } from "./document/document-transition-policy"
 import { mapDocumentToLedgerMoves } from "./document-mapper"
 import { PostingError } from "./posting-errors"
 import type { StockDocumentWithLines } from "./posting-types"
 
-const POSTABLE_BY_DOC_TYPE: Record<DocType, ReadonlySet<DocStatus>> = {
-  TRANSFER_OUT: new Set(["SUBMITTED", "CONFIRMED"]),
-  PERFORMANCE: new Set(["SUBMITTED", "CONFIRMED"]),
-  ADJUSTMENT: new Set(["SUBMITTED", "CONFIRMED"]),
-  PURCHASE: new Set(["SUBMITTED", "CONFIRMED", "RECEIVED"]),
-  TRANSFER_IN: new Set(["SUBMITTED", "CONFIRMED", "RECEIVED"]),
-}
+export { POSTABLE_BY_DOC_TYPE }
 
 export function assertCanPost(
   doc: StockDocumentWithLines | null
@@ -20,6 +14,10 @@ export function assertCanPost(
 
   if (doc.status === "POSTED") {
     throw new PostingError("Document is already POSTED", "ALREADY_POSTED", 400)
+  }
+
+  if (doc.status === "CANCELLED") {
+    throw new PostingError("Document is CANCELLED", "INVALID_STATUS", 400)
   }
 
   const postable = POSTABLE_BY_DOC_TYPE[doc.docType]

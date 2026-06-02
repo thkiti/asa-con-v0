@@ -245,6 +245,25 @@ export const STOCK_INNER_UNEXPECTED_TX: AuditRule = {
   message: "Inner stock modules must not open prisma.$transaction",
 }
 
+export const STOCK_DOCUMENT_STATUS_ALLOWED = [
+  "lib/stock/document/document-status.ts",
+  "scripts/",
+]
+
+export const STOCK_DOCUMENT_UPDATE: AuditRule = {
+  id: "STOCK_DOCUMENT_UPDATE",
+  pattern: /stockDocument\.update\b/,
+  allowedRelativePaths: STOCK_DOCUMENT_STATUS_ALLOWED,
+  message: "stockDocument.update only allowed in document-status.ts",
+}
+
+export const STOCK_DOCUMENT_DELETE: AuditRule = {
+  id: "STOCK_DOCUMENT_DELETE",
+  pattern: /stockDocument\.delete\b/,
+  allowedRelativePaths: STOCK_DOCUMENT_STATUS_ALLOWED,
+  message: "stockDocument.delete only allowed in document-status.ts",
+}
+
 export const FINANCE_INNER_UNEXPECTED_TX: AuditRule = {
   id: "FINANCE_INNER_UNEXPECTED_TX",
   pattern: NESTED_TX_PATTERN,
@@ -379,6 +398,38 @@ export function auditLedgerCallers(repoRoot?: string): AuditResult {
   return scanFiles("Ledger caller allowlist", files, [LEDGER_CALLERS], root)
 }
 
+export function auditStockDocumentUpdate(repoRoot?: string): AuditResult {
+  const root = repoRoot ?? getRepoRoot()
+  const scanRoots = ["app", "lib", "components", "scripts"].map((d) =>
+    path.join(root, d)
+  )
+  const files = scanRoots.flatMap((dir) =>
+    listSourceFiles(dir, { extensions: [".ts"], excludeTest: true })
+  )
+  return scanFiles(
+    "Stock document update allowlist (STOCK_DOCUMENT_UPDATE)",
+    files,
+    [STOCK_DOCUMENT_UPDATE],
+    root
+  )
+}
+
+export function auditStockDocumentDelete(repoRoot?: string): AuditResult {
+  const root = repoRoot ?? getRepoRoot()
+  const scanRoots = ["app", "lib", "components", "scripts"].map((d) =>
+    path.join(root, d)
+  )
+  const files = scanRoots.flatMap((dir) =>
+    listSourceFiles(dir, { extensions: [".ts"], excludeTest: true })
+  )
+  return scanFiles(
+    "Stock document delete allowlist (STOCK_DOCUMENT_DELETE)",
+    files,
+    [STOCK_DOCUMENT_DELETE],
+    root
+  )
+}
+
 export function auditStockPrismaWriters(repoRoot?: string): AuditResult {
   const root = repoRoot ?? getRepoRoot()
   const scanRoots = ["app", "lib", "components", "scripts"].map((d) =>
@@ -445,6 +496,8 @@ export function runArchitectureAudits(repoRoot?: string): AuditResult[] {
     ...runNestedTxAudits(repoRoot),
     auditLedgerCallers(repoRoot),
     auditStockPrismaWriters(repoRoot),
+    auditStockDocumentUpdate(repoRoot),
+    auditStockDocumentDelete(repoRoot),
     auditLibFrameworkBoundaries(repoRoot),
   ]
 }

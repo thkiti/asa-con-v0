@@ -3,7 +3,9 @@ import type { StockDocumentWithLines } from "@/lib/stock/posting-types"
 import { createMockTx, type MockTxState } from "../helpers/mock-tx"
 
 export function createPostingMockTx(doc: StockDocumentWithLines) {
-  let current = structuredClone(doc) as StockDocumentWithLines
+  let current: StockDocumentWithLines | null = structuredClone(
+    doc
+  ) as StockDocumentWithLines
   const { tx: baseTx, state } = createMockTx()
 
   const tx = {
@@ -12,13 +14,28 @@ export function createPostingMockTx(doc: StockDocumentWithLines) {
       findUnique: async ({
         where,
         include,
+        select,
       }: {
         where: { id: string }
         include?: { lines?: boolean }
+        select?: Record<string, boolean>
       }) => {
-        if (where.id !== current.id) return null
+        if (!current || where.id !== current.id) return null
+        if (select) {
+          const picked: Record<string, unknown> = { id: current.id }
+          for (const key of Object.keys(select)) {
+            if (select[key]) {
+              picked[key] = (current as Record<string, unknown>)[key]
+            }
+          }
+          return picked
+        }
         if (include?.lines) return current
         return current
+      },
+      delete: async ({ where }: { where: { id: string } }) => {
+        if (!current || where.id !== current.id) throw new Error("document not found")
+        current = null
       },
       update: async ({
         where,
@@ -29,7 +46,7 @@ export function createPostingMockTx(doc: StockDocumentWithLines) {
         data: Partial<StockDocumentWithLines>
         include?: { lines?: boolean }
       }) => {
-        if (where.id !== current.id) throw new Error("document not found")
+        if (!current || where.id !== current.id) throw new Error("document not found")
         current = {
           ...current,
           ...data,
@@ -41,9 +58,17 @@ export function createPostingMockTx(doc: StockDocumentWithLines) {
     },
   } as unknown as PrismaTypes.TransactionClient
 
-  return { tx, state, getDocument: () => current, restoreDocument: (doc: StockDocumentWithLines) => {
-    current = structuredClone(doc) as StockDocumentWithLines
-  } }
+  return {
+    tx,
+    state,
+    getDocument: () => {
+      if (!current) throw new Error("document deleted")
+      return current
+    },
+    restoreDocument: (doc: StockDocumentWithLines) => {
+      current = structuredClone(doc) as StockDocumentWithLines
+    },
+  }
 }
 
 export type PostingMockTx = ReturnType<typeof createPostingMockTx>

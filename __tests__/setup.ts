@@ -66,9 +66,12 @@ jest.mock("@/generated/prisma/client", () => {
     DocStatus: {
       DRAFT: "DRAFT",
       SUBMITTED: "SUBMITTED",
+      SHIPPED: "SHIPPED",
       CONFIRMED: "CONFIRMED",
+      RECEIVED: "RECEIVED",
       POSTED: "POSTED",
-      VOID: "VOID",
+      TRANSFERRED: "TRANSFERRED",
+      CANCELLED: "CANCELLED",
     },
     Role: {
       HO_FINANCE: "HO_FINANCE",

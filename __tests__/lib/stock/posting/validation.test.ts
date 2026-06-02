@@ -39,6 +39,12 @@ describe("assertCanPost", () => {
     ).toThrow(expect.objectContaining({ code: "ALREADY_POSTED" }))
   })
 
+  it("rejects CANCELLED", () => {
+    expect(() =>
+      assertCanPost(doc({ docType: "TRANSFER_OUT", status: "CANCELLED" }))
+    ).toThrow(expect.objectContaining({ code: "INVALID_STATUS" }))
+  })
+
   it("rejects DRAFT for TRANSFER_OUT", () => {
     expect(() =>
       assertCanPost(doc({ docType: "TRANSFER_OUT", status: "DRAFT" }))

@@ -86,11 +86,18 @@ rg "(\.stock\.(create|update|upsert|delete)|\.stockLayer\.(create|update|delete)
 
 ### 2.1 Rule
 
-**Only `lib/stock/posting.ts` may mutate `StockDocument.status`.**
+**Only `lib/stock/document/document-status.ts` may mutate `StockDocument.status` and workflow timestamps** (`submittedAt`, `confirmedAt`, `postedAt`, `cancelledAt`, `*ByStaffId`).
 
-Related workflow timestamp fields (`submittedAt`, `confirmedAt`, `postedAt`, `*ByStaffId`) are owned by the same posting orchestration layer when they accompany a status transition.
+| Operation | Owner |
+|-----------|--------|
+| Status transitions (POST, CANCEL, future SEND/CONFIRM/…) | `document-status.ts` |
+| POST orchestration + ledger | `lib/stock/posting.ts` — calls `applyPostedTransition()`; **no** direct `stockDocument.update` |
+| DRAFT hard delete | `document-status.ts` — `deleteDraftDocument()` only when `status === DRAFT` |
+| SUBMITTED+ void | `document-status.ts` — `applyCancelledTransition()` → `CANCELLED` (never delete) |
 
-> **Note:** SAVE may update `StockDocument` header fields and lines while **keeping** `status: DRAFT`. That is a document persist concern (future `lib/stock/document-save.ts` or equivalent) — it must **not** change `status` away from draft lifecycle rules. Any `status` field write = `posting.ts` only.
+> **Note:** SAVE (Phase 23B) may update `StockDocument` header fields and lines while **keeping** `status: DRAFT` via `document-save.ts` — it must **not** change `status` or call `stockDocument.delete` outside `document-status.ts`.
+
+**Terminal statuses:** `POSTED` and `CANCELLED` are immutable — no edit, cancel, delete, or re-POST.
 
 ### 2.2 Grep patterns to audit violations
 
@@ -112,7 +119,7 @@ rg "stockDocument\.update" app/ lib/ --glob "*.ts" -A 8 | rg "status\s*:"
 rg "stockDocument\.create" app/ lib/ --glob "*.ts" -A 8 | rg "status\s*:"
 ```
 
-Initial create with `status: "DRAFT"` may live in save module; transitions away from DRAFT require `posting.ts`.
+Initial create with `status: "DRAFT"` may live in save module; transitions away from DRAFT require `document-status.ts` (via workflow helpers in 23B+).
 
 ### 2.3 Forbidden direct updates
 
@@ -123,7 +130,7 @@ await prisma.stockDocument.update({
   data: { status: "POSTED", postedAt: new Date() },
 })
 
-// FORBIDDEN — workflow helper outside posting.ts
+// FORBIDDEN — workflow helper outside document-status.ts
 export async function confirmDocument(id: string) {
   return prisma.stockDocument.update({ data: { status: "CONFIRMED" } })
 }
@@ -354,7 +361,8 @@ Prefer code review for new ledger/finance modules; tighten patterns when CI is a
 | Check | Fail condition |
 |-------|----------------|
 | Stock Prisma writes outside allowlist | Any hit outside `lib/stock/{issue-stock,receive-stock,layers}.ts` |
-| `stockDocument.update` with `status` outside `posting.ts` | Any hit |
+| `stockDocument.update` outside `document-status.ts` | Any hit |
+| `stockDocument.delete` outside `document-status.ts` | Any hit |
 | `issueStock` / `receiveStock` outside allowlist | Any hit outside posting, pos, ledger definition, scripts |
 | `$transaction` in inner stock modules | Hit in layers / issue / receive |
 | `NextResponse` in `lib/stock/**` | Any hit |
@@ -385,7 +393,7 @@ Scripts should:
 | Boundary | Owner | Enforcement |
 |----------|-------|-------------|
 | Stock qty / layers / ledger rows | `lib/stock/*` ledger | §1, §3 |
-| Document workflow status | `lib/stock/posting.ts` | §2 |
+| Document workflow status | `lib/stock/document/document-status.ts` | §2 |
 | HTTP / React | `app/`, `components/` | §5 |
 | Permissions | `lib/permissions/` | separate RBAC audits |
 | Decimal math | `lib/stock/decimal.ts`, future finance helpers | §6 |
@@ -444,7 +452,7 @@ If `rg` is not installed, use `Select-String` on a narrowed path — or install 
 | `stockDocument.update` | none yet |
 | `NextResponse` in `lib/stock/**` | none |
 
-After Phase 4: add `lib/stock/posting.ts` to ledger caller and `$transaction` allowlists; `stockDocument.update` should appear **only** in `posting.ts`.
+After Phase 4: add `lib/stock/posting.ts` to ledger caller and `$transaction` allowlists. After Phase 23B-0: `stockDocument.update` / `stockDocument.delete` appear **only** in `lib/stock/document/document-status.ts`.
 
 ---
 

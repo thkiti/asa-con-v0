@@ -7,13 +7,14 @@ import { issueStock, receiveStock } from "./ledger"
 import { assertPostingRequiredString } from "./posting-errors"
 import type { PostDocumentInput, PostDocumentResult } from "./posting-types"
 import { buildPostStockDocumentVoucherInput } from "./posting-finance"
+import { applyPostedTransition } from "./document/document-status"
 import { assertCanPost } from "./validation"
 
 const EMPTY_LEDGER = { applied: 0, skippedZeroQty: 0 }
 
 /**
  * Post a stock document: ledger mutations + status POSTED in one transaction.
- * Only this module may mutate StockDocument.status for POST.
+ * Status writes delegate to document-status.ts (sole status writer).
  */
 export async function postDocument(
   input: PostDocumentInput
@@ -60,24 +61,12 @@ export async function postDocument(
       })
     }
 
-    const now = new Date()
-    const implicitConfirm =
-      priorStatus === "SUBMITTED" && doc.confirmedAt == null
-        ? {
-            confirmedByStaffId: doc.confirmedByStaffId ?? postedByStaffId,
-            confirmedAt: now,
-          }
-        : {}
-
-    const updated = await tx.stockDocument.update({
-      where: { id: documentId },
-      data: {
-        status: "POSTED",
-        postedByStaffId,
-        postedAt: now,
-        ...implicitConfirm,
-      },
-      include: { lines: true },
+    const updated = await applyPostedTransition(tx, {
+      documentId,
+      postedByStaffId,
+      priorStatus,
+      confirmedAt: doc.confirmedAt,
+      confirmedByStaffId: doc.confirmedByStaffId,
     })
 
     if (isFinancePostingEnabled()) {
