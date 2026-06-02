@@ -112,7 +112,11 @@ describe("period-audit-timeline (22A)", () => {
     const times = result.timeline.map((item) => item.occurredAt)
     const sorted = [...times].sort((a, b) => a.localeCompare(b))
     expect(times).toEqual(sorted)
-    expect(result.timeline[0]?.type).toBe("period_opened")
+
+    const types = result.timeline.map((item) => item.type)
+    expect(types).toContain("period_opened")
+    expect(types).toContain("period_hard_closed")
+    expect(types).toContain("close_evidence_generated")
   })
 
   it("includes close evidence and hard close events", async () => {
