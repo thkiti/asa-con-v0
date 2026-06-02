@@ -82,10 +82,10 @@ export async function saveStockDocument(
   const raw = await parseJson<StockDocumentDetailVM & { lines: StockDocumentDetailVM["lines"] }>(
     res
   )
-  return normalizeSavedDocument(raw)
+  return normalizeStockDocumentDetail(raw)
 }
 
-function normalizeSavedDocument(
+export function normalizeStockDocumentDetail(
   raw: StockDocumentDetailVM & {
     lines?: Array<{
       id: string
@@ -99,7 +99,7 @@ function normalizeSavedDocument(
 ): StockDocumentDetailVM {
   return {
     ...raw,
-    date: typeof raw.date === "string" ? raw.date : new Date(raw.date).toISOString(),
+    date: typeof raw.date === "string" ? raw.date : new Date(raw.date as string | Date).toISOString(),
     lines: (raw.lines ?? []).map((line) => ({
       id: line.id,
       productId: line.productId,

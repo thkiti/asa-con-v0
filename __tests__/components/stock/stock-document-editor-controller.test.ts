@@ -7,10 +7,14 @@ const CONTROLLER = path.join(ROOT, "components", "stock", "StockDocumentEditorCo
 describe("StockDocumentEditorController integration boundaries", () => {
   const source = fs.readFileSync(CONTROLLER, "utf8")
 
-  it("uses stock-ui fetchers and save helper only", () => {
+  it("uses stock-ui fetchers, save, and workflow helpers only", () => {
     expect(source).toContain("fetchShopSession")
     expect(source).toContain("fetchStockDocumentDetail")
     expect(source).toContain("saveStockDocumentEditor")
+    expect(source).toContain("getEditorWorkflowActions")
+    expect(source).toContain("submitStockDocument")
+    expect(source).toContain("confirmStockDocument")
+    expect(source).toContain("cancelStockDocument")
     expect(source).toContain("useRouter")
     expect(source).toContain("router.replace")
     expect(source).not.toMatch(/fetch\s*\(\s*[`'"]\/api\//)

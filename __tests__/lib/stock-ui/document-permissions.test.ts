@@ -39,6 +39,22 @@ describe("getStockDocumentActions", () => {
     expect(actions.find((a) => a.id === "post")?.enabled).toBe(true)
   })
 
+  it("hides cancel for POSTED and CANCELLED", () => {
+    const posted = getStockDocumentActions({
+      role: "SH_STAFF",
+      docType: "PERFORMANCE",
+      status: "POSTED",
+    })
+    expect(posted.find((a) => a.id === "cancel")?.visible).toBe(false)
+
+    const cancelled = getStockDocumentActions({
+      role: "SH_STAFF",
+      docType: "PERFORMANCE",
+      status: "CANCELLED",
+    })
+    expect(cancelled.find((a) => a.id === "cancel")?.visible).toBe(false)
+  })
+
   it("shows confirm only from SUBMITTED", () => {
     const actions = getStockDocumentActions({
       role: "SH_STAFF",

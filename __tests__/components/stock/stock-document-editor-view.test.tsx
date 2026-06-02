@@ -1,10 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { StockDocumentEditorView } from "@/components/stock/StockDocumentEditorView"
+import { getEditorWorkflowActions } from "@/lib/stock-ui/document-permissions"
 import type { StockDocumentEditorStateVM } from "@/lib/stock-ui/editor-types"
 
 const draftState: StockDocumentEditorStateVM = {
-  documentId: null,
-  refNo: null,
+  documentId: "doc-1",
+  refNo: "PERF-1",
   docType: "PERFORMANCE",
   status: "DRAFT",
   date: "2026-06-02",
@@ -25,65 +26,96 @@ const draftState: StockDocumentEditorStateVM = {
   ],
 }
 
-describe("StockDocumentEditorView", () => {
-  it("renders header, lines, and save for draft", () => {
-    const html = renderToStaticMarkup(
-      <StockDocumentEditorView
-        state={draftState}
-        loading={false}
-        saving={false}
-        error={null}
-        saveMessage={null}
-        onHeaderChange={() => {}}
-        onAddLine={() => {}}
-        onRemoveLine={() => {}}
-        onLineChange={() => {}}
-        onSave={() => {}}
-      />
-    )
+function renderEditor(
+  state: StockDocumentEditorStateVM,
+  overrides?: Partial<{
+    saving: boolean
+    actionBusy: import("@/lib/stock-ui/types").StockDocumentActionId | null
+    error: string | null
+    statusMessage: string | null
+  }>
+) {
+  const actions = getEditorWorkflowActions(
+    { role: "SH_STAFF", docType: state.docType, status: state.status },
+    { hasDocumentId: Boolean(state.documentId) }
+  )
 
-    expect(html).toContain("Document header")
-    expect(html).toContain("Lines")
-    expect(html).toContain("Save draft")
-    expect(html).toContain("prod-1")
+  return renderToStaticMarkup(
+    <StockDocumentEditorView
+      state={state}
+      loading={false}
+      saving={overrides?.saving ?? false}
+      actionBusy={overrides?.actionBusy ?? null}
+      actions={actions}
+      error={overrides?.error ?? null}
+      statusMessage={overrides?.statusMessage ?? null}
+      onHeaderChange={() => {}}
+      onAddLine={() => {}}
+      onRemoveLine={() => {}}
+      onLineChange={() => {}}
+      onWorkflowAction={() => {}}
+    />
+  )
+}
+
+describe("StockDocumentEditorView", () => {
+  it("renders save and submit for DRAFT", () => {
+    const html = renderEditor(draftState)
+    expect(html).toContain("Save")
+    expect(html).toContain("Submit")
+    expect(html).not.toContain("Confirm")
+  })
+
+  it("renders confirm and cancel for SUBMITTED", () => {
+    const html = renderEditor({
+      ...draftState,
+      status: "SUBMITTED",
+      readOnly: true,
+    })
+    expect(html).toContain("Confirm")
+    expect(html).toContain("Cancel")
+    expect(html).not.toContain("Save")
+  })
+
+  it("renders cancel for CONFIRMED", () => {
+    const html = renderEditor({
+      ...draftState,
+      status: "CONFIRMED",
+      readOnly: true,
+    })
+    expect(html).toContain("Cancel")
+    expect(html).not.toContain("Submit")
+  })
+
+  it("shows no workflow buttons for POSTED", () => {
+    const html = renderEditor({
+      ...draftState,
+      status: "POSTED",
+      readOnly: true,
+    })
+    expect(html).not.toContain("Submit")
+    expect(html).not.toContain("Confirm")
+    expect(html).not.toContain("Cancel")
   })
 
   it("shows API error message", () => {
-    const html = renderToStaticMarkup(
-      <StockDocumentEditorView
-        state={draftState}
-        loading={false}
-        saving={false}
-        error="Document must have at least one line"
-        saveMessage={null}
-        onHeaderChange={() => {}}
-        onAddLine={() => {}}
-        onRemoveLine={() => {}}
-        onLineChange={() => {}}
-        onSave={() => {}}
-      />
-    )
-
+    const html = renderEditor(draftState, {
+      error: "Document must have at least one line",
+    })
     expect(html).toContain("Document must have at least one line")
   })
 
-  it("shows read-only banner when not draft", () => {
-    const html = renderToStaticMarkup(
-      <StockDocumentEditorView
-        state={{ ...draftState, status: "SUBMITTED", readOnly: true }}
-        loading={false}
-        saving={false}
-        error={null}
-        saveMessage={null}
-        onHeaderChange={() => {}}
-        onAddLine={() => {}}
-        onRemoveLine={() => {}}
-        onLineChange={() => {}}
-        onSave={() => {}}
-      />
-    )
+  it("shows submit loading label", () => {
+    const html = renderEditor(draftState, { actionBusy: "submit" })
+    expect(html).toContain("Submitting…")
+  })
 
+  it("shows read-only banner when not draft", () => {
+    const html = renderEditor({
+      ...draftState,
+      status: "SUBMITTED",
+      readOnly: true,
+    })
     expect(html).toContain("not a draft")
-    expect(html).not.toContain("Save draft")
   })
 })

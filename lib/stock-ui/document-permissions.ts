@@ -110,3 +110,27 @@ export function getStockDocumentActions(
 
   return actions
 }
+
+export const EDITOR_WORKFLOW_ACTION_IDS: readonly StockDocumentActionId[] = [
+  "save",
+  "submit",
+  "confirm",
+  "cancel",
+]
+
+/**
+ * Shop editor toolbar — excludes post, delete, print (Phase 23D-3).
+ */
+export function getEditorWorkflowActions(
+  ctx: StockDocumentPermissionContext,
+  opts: { hasDocumentId: boolean }
+): StockDocumentActionVM[] {
+  return getStockDocumentActions(ctx)
+    .filter((action) => EDITOR_WORKFLOW_ACTION_IDS.includes(action.id))
+    .map((action) => {
+      if (!opts.hasDocumentId && action.id !== "save") {
+        return { ...action, enabled: false }
+      }
+      return action
+    })
+}
