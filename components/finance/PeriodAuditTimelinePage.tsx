@@ -1,10 +1,19 @@
-﻿"use client"
+"use client"
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { buildCloseEvidencePath } from "@/lib/finance-ui/close-evidence"
+import type { PeriodAuditExportBundle } from "@/lib/finance/period-audit-export-types"
 import type { PeriodAuditTimelineApiResult } from "@/lib/finance-ui/period-audit-timeline"
-import { fetchPeriodAuditTimeline } from "@/lib/finance-ui/period-fetchers"
+import {
+  PeriodAuditExportActionBar,
+  PeriodAuditReportPrintBody,
+  PeriodAuditReportPrintHeader,
+} from "@/components/finance/period-audit-export-ui"
+import {
+  fetchPeriodAuditExport,
+  fetchPeriodAuditTimeline,
+} from "@/lib/finance-ui/period-fetchers"
 
 function formatDateTime(value: string): string {
   const date = new Date(value)
@@ -20,17 +29,25 @@ type PeriodAuditTimelinePageProps = {
 
 export function PeriodAuditTimelinePage({ periodId }: PeriodAuditTimelinePageProps) {
   const [data, setData] = useState<PeriodAuditTimelineApiResult | null>(null)
+  const [exportBundle, setExportBundle] = useState<PeriodAuditExportBundle | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadTimeline = useCallback(async () => {
+  const loadPage = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setData(null)
+    setExportBundle(null)
     try {
-      const result = await fetchPeriodAuditTimeline(periodId)
-      setData(result)
+      const [timelineResult, exportResult] = await Promise.all([
+        fetchPeriodAuditTimeline(periodId),
+        fetchPeriodAuditExport(periodId),
+      ])
+      setData(timelineResult)
+      setExportBundle(exportResult.export)
     } catch (err) {
       setData(null)
+      setExportBundle(null)
       setError(err instanceof Error ? err.message : "Request failed")
     } finally {
       setLoading(false)
@@ -38,48 +55,62 @@ export function PeriodAuditTimelinePage({ periodId }: PeriodAuditTimelinePagePro
   }, [periodId])
 
   useEffect(() => {
-    void loadTimeline()
-  }, [loadTimeline])
+    void loadPage()
+  }, [loadPage])
 
   const showCloseEvidence = data?.period.status === "HARD_CLOSED"
 
   return (
     <>
+      {exportBundle ? (
+        <>
+          <PeriodAuditReportPrintHeader bundle={exportBundle} />
+          <PeriodAuditReportPrintBody bundle={exportBundle} />
+        </>
+      ) : null}
+
       <Link
         href="/finance/periods"
-        className="text-sm text-zinc-600 hover:text-zinc-900"
+        className="no-print text-sm text-zinc-600 hover:text-zinc-900"
       >
         &larr; Accounting periods
       </Link>
       {showCloseEvidence ? (
         <Link
           href={buildCloseEvidencePath(periodId)}
-          className="ml-4 text-sm text-zinc-600 hover:text-zinc-900"
+          className="no-print ml-4 text-sm text-zinc-600 hover:text-zinc-900"
         >
           Close evidence
         </Link>
       ) : null}
-      <h1 className="mt-4 text-xl font-semibold">Period audit timeline</h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        Read-only chronological view of period lifecycle, close evidence, reopen workflow, and reopen execution.
+      <h1 className="no-print mt-4 text-xl font-semibold">Period audit timeline</h1>
+      <p className="no-print mt-2 text-sm text-zinc-600">
+        Read-only chronological view of period lifecycle, close evidence, reopen workflow,
+        and reopen execution.
       </p>
 
       {loading ? (
-        <p className="mt-6 text-zinc-600">Loading audit timeline...</p>
+        <p className="no-print mt-6 text-zinc-600">Loading audit timeline...</p>
       ) : null}
 
       {error ? (
-        <p className="mt-6 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="no-print mt-6 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
         </p>
       ) : null}
 
+      {!loading && !error && exportBundle ? (
+        <div className="no-print mt-6">
+          <PeriodAuditExportActionBar bundle={exportBundle} />
+        </div>
+      ) : null}
+
       {!loading && !error && data && data.timeline.length === 0 ? (
-        <p className="mt-6 text-sm text-zinc-600">No audit events for this period.</p>
+        <p className="no-print mt-6 text-sm text-zinc-600">No audit events for this period.</p>
       ) : null}
 
       {!loading && !error && data && data.timeline.length > 0 ? (
-        <div className="mt-6">
+        <div className="no-print mt-6">
           <p className="mb-4 text-sm text-zinc-600">
             Period {data.period.periodKey} - {data.period.status}
           </p>

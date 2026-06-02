@@ -1,6 +1,7 @@
 import {
   fetchAccountingPeriods,
   fetchCloseEvidence,
+  fetchPeriodAuditExport,
   fetchPeriodAuditTimeline,
   fetchSessionDisplay,
   patchAccountingPeriod,
@@ -288,5 +289,47 @@ describe("fetchPeriodAuditTimeline", () => {
 
     await expect(fetchPeriodAuditTimeline("period-1")).resolves.toEqual(dto)
     expect(global.fetch).toHaveBeenCalledWith("/api/finance/periods/period-1/timeline")
+  })
+})
+
+describe("fetchPeriodAuditExport", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("calls audit-export API and returns wrapped export on success", async () => {
+    const exportBundle = {
+      exportVersion: 1,
+      exportedAt: "2026-06-02T12:00:00.000Z",
+      period: {
+        id: "period-1",
+        periodKey: "2026-05",
+        branchId: "branch-1",
+        status: "OPEN",
+        openedAt: "2026-05-01T00:00:00.000Z",
+        closedAt: null,
+      },
+      timeline: [],
+      closeEvidence: [],
+      reopenEvidence: [],
+      reopenRequests: [],
+      counts: {
+        timelineEventCount: 0,
+        closeEvidenceCount: 0,
+        reopenEvidenceCount: 0,
+        reopenRequestCount: 0,
+      },
+    }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ export: exportBundle }),
+    })
+
+    await expect(fetchPeriodAuditExport("period-1")).resolves.toEqual({
+      export: exportBundle,
+    })
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/periods/period-1/audit-export"
+    )
   })
 })

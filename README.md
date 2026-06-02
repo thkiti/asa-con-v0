@@ -3,9 +3,9 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** Phase 22A period audit timeline complete — see [docs/00_README.md](./docs/00_README.md)
+- **Status:** Phase 22B period audit export complete — see [docs/00_README.md](./docs/00_README.md)
 
-Phase 22A adds a read-only period audit timeline API and UI. Phase 21B adds request → approve → execute for HARD reopen (`RRO-{periodKey}-{seq}` audit ids, explicit approval/rejection fields). Phase 21A direct SOFT reopen unchanged. Summaries: [docs/26_FINANCE_REOPEN_APPROVAL.md](./docs/26_FINANCE_REOPEN_APPROVAL.md), [docs/25_FINANCE_REOPEN_CONTROL.md](./docs/25_FINANCE_REOPEN_CONTROL.md).
+Phase 22B adds a composed period audit export bundle with browser CSV pack and print on the timeline page. Phase 22A adds the read-only audit timeline. Phase 21B adds request → approve → execute for HARD reopen (`RRO-{periodKey}-{seq}` audit ids, explicit approval/rejection fields). Summaries: [docs/28_FINANCE_PERIOD_AUDIT_EXPORT.md](./docs/28_FINANCE_PERIOD_AUDIT_EXPORT.md), [docs/27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./docs/27_FINANCE_PERIOD_AUDIT_TIMELINE.md).
 
 ## Docs
 
@@ -80,3 +80,4 @@ generated/  Prisma client output (gitignored)
 | 21A | Reopen control — audited HARD/soft reopen, append-only close evidence history, reopen evidence API/UI |
 | 21B | Reopen approval — HARD reopen request workflow, HO_ADMIN approve, separation of duties |
 | 22A | Period audit timeline — read-only merge of lifecycle, close/reopen evidence, reopen requests (`GET .../timeline`) |
+| 22B | Period audit export — composed bundle, CSV pack, print (`GET .../audit-export`) |

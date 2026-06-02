@@ -103,6 +103,14 @@ export type {
   PeriodAuditTimelineResult,
   PeriodAuditTimelineEventType,
 } from "./period-audit-timeline-types"
+export { getPeriodAuditExportByPeriodId } from "./period-audit-export"
+export type {
+  PeriodAuditExportBundle,
+  PeriodAuditCloseEvidenceSummary,
+  PeriodAuditReopenEvidenceSummary,
+  PeriodAuditReopenRequestSummary,
+  PeriodAuditExportCounts,
+} from "./period-audit-export-types"
 export { listReopenEvidenceByPeriodId } from "./reopen-evidence"
 export type { ReopenEvidenceDetail } from "./reopen-evidence-types"
 export {

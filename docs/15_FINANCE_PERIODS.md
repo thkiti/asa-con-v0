@@ -501,7 +501,22 @@ Full catalog and limitations: [27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./27_FINANCE
 
 ---
 
-## 20. Out of scope (future)
+## 20. Phase 22B — Period audit export
+
+Status: **Done** — composed export bundle, browser CSV pack, audit print on timeline page
+
+| Surface | Path |
+|---------|------|
+| API | `GET /api/finance/periods/[id]/audit-export` → `{ export }` |
+| UI | `/finance/periods/[id]/timeline` — Download audit CSV pack, Print audit report |
+
+Composes 22A timeline with close evidence, reopen evidence, and reopen request **summary** indexes. Full close evidence payload export remains [24](./24_FINANCE_CLOSE_EVIDENCE_EXPORT.md) on the close evidence page.
+
+Full export/print contract: [28_FINANCE_PERIOD_AUDIT_EXPORT.md](./28_FINANCE_PERIOD_AUDIT_EXPORT.md).
+
+---
+
+## 21. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
 - Optional PATCH close reason text (actor snapshot exists in 20D evidence)

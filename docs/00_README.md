@@ -31,7 +31,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 25. [25_FINANCE_REOPEN_CONTROL.md](./25_FINANCE_REOPEN_CONTROL.md) — Phase 21A controlled reopen and append-only close/reopen evidence history
 26. [26_FINANCE_REOPEN_APPROVAL.md](./26_FINANCE_REOPEN_APPROVAL.md) — Phase 21B HARD reopen approval workflow
 27. [27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./27_FINANCE_PERIOD_AUDIT_TIMELINE.md) — Phase 22A read-only period audit timeline
-28. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+28. [28_FINANCE_PERIOD_AUDIT_EXPORT.md](./28_FINANCE_PERIOD_AUDIT_EXPORT.md) — Phase 22B period audit export bundle, CSV pack, print
+29. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 
 ## Phase status
 
@@ -60,3 +61,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 21A | Reopen control (audited reopen, append-only close evidence history, reopen evidence) | Done |
 | 21B | Reopen approval workflow (HARD reopen request → approve → execute) | Done |
 | 22A | Period audit timeline (read-only lifecycle + evidence + reopen workflow) | Done |
+| 22B | Period audit export (composed bundle, CSV pack, print on timeline page) | Done |

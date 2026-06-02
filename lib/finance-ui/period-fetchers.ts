@@ -8,7 +8,10 @@ import type {
   ReopenRequestApiResult,
   ReopenRequestsApiResult,
 } from "./reopen-requests"
-import type { PeriodAuditTimelineApiResult } from "./period-audit-timeline"
+import type {
+  PeriodAuditExportApiResult,
+  PeriodAuditTimelineApiResult,
+} from "./period-audit-timeline"
 import type { CloseReadinessApiResult } from "./close-readiness"
 import type {
   PeriodActionError,
@@ -127,6 +130,18 @@ export function fetchPeriodAuditTimeline(
   ).then(async (res) => {
     if (!res.ok) await throwFetchError(res)
     return res.json() as Promise<PeriodAuditTimelineApiResult>
+  })
+}
+
+export function fetchPeriodAuditExport(
+  periodId: string
+): Promise<PeriodAuditExportApiResult> {
+  const trimmed = periodId.trim()
+  return fetch(
+    `/api/finance/periods/${encodeURIComponent(trimmed)}/audit-export`
+  ).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<PeriodAuditExportApiResult>
   })
 }
 
