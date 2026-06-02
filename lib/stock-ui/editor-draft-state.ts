@@ -1,10 +1,19 @@
 import { SHOP_STOCK_DOC_TYPES } from "./constants"
 import type {
+  MergeInputListResult,
+  MergedCountingRowVM,
+} from "./merge-input-list-with-saved-lines"
+import type {
   EditorLineRowVM,
   SaveStockDocumentPayload,
   StockDocumentEditorStateVM,
 } from "./editor-types"
 import type { DocType, StockDocumentDetailVM } from "./types"
+
+export type CountingEditorHeader = Omit<
+  StockDocumentEditorStateVM,
+  "lines" | "readOnly"
+>
 
 let lineKeySeq = 0
 
@@ -42,6 +51,104 @@ export function defaultLocationsForDocType(
     default:
       return { fromLocId: shopBranchId, toLocId: "" }
   }
+}
+
+export function isCountingEditorMode(state: StockDocumentEditorStateVM): boolean {
+  return state.docType === "ADJUSTMENT" && !state.readOnly
+}
+
+export function countingEditorHeaderFromDetail(
+  detail: StockDocumentDetailVM
+): CountingEditorHeader {
+  return {
+    documentId: detail.id,
+    refNo: detail.refNo,
+    docType: detail.docType,
+    status: detail.status,
+    date: detail.date.slice(0, 10),
+    branchId: detail.branchId,
+    fromLocId: detail.fromLocId ?? "",
+    toLocId: detail.toLocId ?? "",
+  }
+}
+
+export function countingEditorHeaderFromDraft(
+  docType: DocType,
+  branchId: string
+): CountingEditorHeader {
+  const draft = createDraftEditorState(docType, branchId)
+  return {
+    documentId: draft.documentId,
+    refNo: draft.refNo,
+    docType: draft.docType,
+    status: draft.status,
+    date: draft.date,
+    branchId: draft.branchId,
+    fromLocId: draft.fromLocId,
+    toLocId: draft.toLocId,
+  }
+}
+
+export function mergedRowToEditorLine(row: MergedCountingRowVM): EditorLineRowVM {
+  return {
+    key: row.rowKey,
+    rowKey: row.rowKey,
+    productId: row.productId,
+    productCode: row.productCode,
+    productName: row.productName,
+    displayCode: row.displayCode,
+    hookGroup: row.hookGroup,
+    hookNo: row.hookNo,
+    hookLabel: row.hookLabel,
+    sourceType: row.sourceType,
+    isOrphan: row.isOrphan,
+    qty: row.qty,
+    endingQty: row.endingQty,
+    reviewPostingDelta: row.reviewPostingDelta,
+  }
+}
+
+export function mergedRowsToEditorLines(
+  mergeResult: MergeInputListResult
+): EditorLineRowVM[] {
+  return [...mergeResult.rows, ...mergeResult.orphans].map(mergedRowToEditorLine)
+}
+
+export function hydrateCountingEditorState(
+  header: CountingEditorHeader,
+  mergeResult: MergeInputListResult
+): StockDocumentEditorStateVM {
+  return {
+    ...header,
+    readOnly: false,
+    lines: mergedRowsToEditorLines(mergeResult),
+  }
+}
+
+export function applyCountingSaveToEditorState(
+  prev: StockDocumentEditorStateVM,
+  saved: StockDocumentDetailVM
+): StockDocumentEditorStateVM {
+  return {
+    ...prev,
+    documentId: saved.id,
+    refNo: saved.refNo,
+    status: saved.status,
+    date: saved.date.slice(0, 10),
+    branchId: saved.branchId,
+    fromLocId: saved.fromLocId ?? "",
+    toLocId: saved.toLocId ?? "",
+  }
+}
+
+export function countEditedLinesInHookGroup(
+  lines: EditorLineRowVM[],
+  hookGroup: string
+): number {
+  return lines.filter(
+    (line) =>
+      line.hookGroup === hookGroup && Number(line.qty.trim() || 0) > 0
+  ).length
 }
 
 export function createDraftEditorState(
@@ -131,14 +238,29 @@ export function editorStateToSavePayload(
   state: StockDocumentEditorStateVM,
   staffId: string
 ): SaveStockDocumentPayload {
-  const lines = state.lines
-    .filter((line) => line.productId.trim() || line.qty.trim())
-    .map((line) => ({
+  const sourceLines = isCountingEditorMode(state)
+    ? state.lines.filter(
+        (line) =>
+          line.productId.trim() && Number(line.qty.trim() || 0) > 0
+      )
+    : state.lines.filter((line) => line.productId.trim() || line.qty.trim())
+
+  const lines = sourceLines.map((line) => {
+    const base = {
       productId: line.productId.trim(),
       qty: Number(line.qty.trim() || 0),
+    }
+
+    if (isCountingEditorMode(state)) {
+      return base
+    }
+
+    return {
+      ...base,
       endingQty: parseOptionalInt(line.endingQty),
       reviewPostingDelta: parseOptionalInt(line.reviewPostingDelta),
-    }))
+    }
+  })
 
   return {
     id: state.documentId,

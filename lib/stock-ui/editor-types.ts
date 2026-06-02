@@ -8,6 +8,14 @@ export type EditorLineRowVM = {
   qty: string
   endingQty: string
   reviewPostingDelta: string
+  /** Counting mode metadata — populated for ADJUSTMENT DRAFT only. */
+  rowKey?: string
+  hookGroup?: string
+  hookNo?: number | null
+  hookLabel?: string
+  displayCode?: string
+  sourceType?: "REFERENCE" | "SHOE"
+  isOrphan?: boolean
 }
 
 export type StockDocumentEditorStateVM = {

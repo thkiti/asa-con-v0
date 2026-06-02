@@ -2,13 +2,21 @@
 
 import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import type { CountingHookGroup } from "@/lib/stock-ui/counting-hook-groups"
+import {
+  loadCountingEditorStateForCreate,
+  loadCountingEditorStateForEdit,
+} from "@/lib/stock-ui/counting-editor-load"
 import { toStockDocumentUiError } from "@/lib/stock-ui/document-errors"
 import { getEditorWorkflowActions } from "@/lib/stock-ui/document-permissions"
 import {
   addEditorLine,
+  applyCountingSaveToEditorState,
   createDraftEditorState,
   detailToEditorState,
+  isCountingEditorMode,
   isShopDocType,
+  mergeSavedDetailWithEditorLines,
   postSaveEditorPath,
   removeEditorLine,
   updateEditorLine,
@@ -61,6 +69,10 @@ function workflowSuccessMessage(actionId: StockDocumentActionId): string {
   }
 }
 
+function orphanWarning(count: number): string {
+  return `${count} saved line(s) are not in the current product master and are shown separately.`
+}
+
 export function StockDocumentEditorController(props: StockDocumentEditorControllerProps) {
   const router = useRouter()
   const [state, setState] = useState<StockDocumentEditorStateVM | null>(null)
@@ -72,6 +84,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [staffId, setStaffId] = useState<string | null>(null)
+  const [activeHookGroup, setActiveHookGroup] = useState<CountingHookGroup>("K")
 
   const applyDetail = useCallback((detail: StockDocumentDetailVM) => {
     setDetailSnapshot(detail)
@@ -86,9 +99,20 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     )
   }, [role, state])
 
+  const countingMode = state ? isCountingEditorMode(state) : false
+
   const refreshDocument = useCallback(
     async (documentId: string) => {
       const detail = await fetchStockDocumentDetail(documentId)
+      if (detail.docType === "ADJUSTMENT" && detail.status === "DRAFT") {
+        const loaded = await loadCountingEditorStateForEdit(detail)
+        setDetailSnapshot(detail)
+        setState(loaded.state)
+        if (loaded.orphans.length > 0) {
+          setStatusMessage(orphanWarning(loaded.orphans.length))
+        }
+        return detail
+      }
       applyDetail(detail)
       return detail
     },
@@ -113,6 +137,19 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
           if (!isShopDocType(props.docType)) {
             throw new Error("Invalid document type for shop editor")
           }
+
+          if (props.docType === "ADJUSTMENT") {
+            const loaded = await loadCountingEditorStateForCreate(session.branchId)
+            if (cancelled) return
+            setDetailSnapshot(null)
+            setState(loaded.state)
+            if (loaded.orphans.length > 0) {
+              setStatusMessage(orphanWarning(loaded.orphans.length))
+            }
+            setLoading(false)
+            return
+          }
+
           setDetailSnapshot(null)
           setState(createDraftEditorState(props.docType, session.branchId))
           setLoading(false)
@@ -121,6 +158,19 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
 
         const detail = await fetchStockDocumentDetail(props.documentId)
         if (cancelled) return
+
+        if (detail.docType === "ADJUSTMENT" && detail.status === "DRAFT") {
+          const loaded = await loadCountingEditorStateForEdit(detail)
+          if (cancelled) return
+          setDetailSnapshot(detail)
+          setState(loaded.state)
+          if (loaded.orphans.length > 0) {
+            setStatusMessage(orphanWarning(loaded.orphans.length))
+          }
+          setLoading(false)
+          return
+        }
+
         applyDetail(detail)
       } catch (err: unknown) {
         if (!cancelled) {
@@ -145,13 +195,15 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
 
   const handleAddLine = useCallback(() => {
     setState((prev) =>
-      prev && !prev.readOnly ? { ...prev, lines: addEditorLine(prev.lines) } : prev
+      prev && !prev.readOnly && !isCountingEditorMode(prev)
+        ? { ...prev, lines: addEditorLine(prev.lines) }
+        : prev
     )
   }, [])
 
   const handleRemoveLine = useCallback((key: string) => {
     setState((prev) =>
-      prev && !prev.readOnly
+      prev && !prev.readOnly && !isCountingEditorMode(prev)
         ? { ...prev, lines: removeEditorLine(prev.lines, key) }
         : prev
     )
@@ -178,7 +230,14 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     try {
       const priorLines = state.lines
       const saved = await saveStockDocumentEditor(state, staffId, priorLines)
-      applyDetail(saved)
+
+      if (isCountingEditorMode(state)) {
+        setDetailSnapshot(mergeSavedDetailWithEditorLines(saved, priorLines))
+        setState(applyCountingSaveToEditorState(state, saved))
+      } else {
+        applyDetail(saved)
+      }
+
       setStatusMessage(workflowSuccessMessage("save"))
 
       const redirect = postSaveEditorPath(props.mode, saved.id)
@@ -276,6 +335,9 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
       actions={actions}
       error={error}
       statusMessage={statusMessage}
+      countingMode={countingMode}
+      activeHookGroup={activeHookGroup}
+      onHookGroupChange={setActiveHookGroup}
       onHeaderChange={handleHeaderChange}
       onAddLine={handleAddLine}
       onRemoveLine={handleRemoveLine}

@@ -10,6 +10,8 @@ describe("StockDocumentEditorController integration boundaries", () => {
   it("uses stock-ui fetchers, save, and workflow helpers only", () => {
     expect(source).toContain("fetchShopSession")
     expect(source).toContain("fetchStockDocumentDetail")
+    expect(source).toContain("loadCountingEditorStateForCreate")
+    expect(source).toContain("loadCountingEditorStateForEdit")
     expect(source).toContain("saveStockDocumentEditor")
     expect(source).toContain("getEditorWorkflowActions")
     expect(source).toContain("submitStockDocument")

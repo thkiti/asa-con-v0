@@ -1,4 +1,6 @@
 import Link from "next/link"
+import type { CountingHookGroup } from "@/lib/stock-ui/counting-hook-groups"
+import { isCountingEditorMode } from "@/lib/stock-ui/editor-draft-state"
 import type {
   EditorLineRowVM,
   StockDocumentEditorStateVM,
@@ -8,6 +10,7 @@ import type {
   StockDocumentActionVM,
   StockDocumentDetailVM,
 } from "@/lib/stock-ui/types"
+import { StockDocumentCountingGrid } from "./StockDocumentCountingGrid"
 import { StockDocumentHeaderForm } from "./StockDocumentHeaderForm"
 import { StockDocumentLinesTable } from "./StockDocumentLinesTable"
 import {
@@ -24,6 +27,9 @@ type StockDocumentEditorViewProps = {
   actions: StockDocumentActionVM[]
   error: string | null
   statusMessage: string | null
+  countingMode: boolean
+  activeHookGroup: CountingHookGroup
+  onHookGroupChange: (hookGroup: CountingHookGroup) => void
   onHeaderChange: (patch: Partial<StockDocumentEditorStateVM>) => void
   onAddLine: () => void
   onRemoveLine: (key: string) => void
@@ -69,6 +75,9 @@ export function StockDocumentEditorView({
   actions,
   error,
   statusMessage,
+  countingMode,
+  activeHookGroup,
+  onHookGroupChange,
   onHeaderChange,
   onAddLine,
   onRemoveLine,
@@ -77,6 +86,7 @@ export function StockDocumentEditorView({
 }: StockDocumentEditorViewProps) {
   const visibleActions = actions.filter((action) => action.visible)
   const busy = saving || actionBusy !== null
+  const showCountingGrid = countingMode && isCountingEditorMode(state)
 
   return (
     <div className="stock-document-print-shell space-y-6">
@@ -114,14 +124,24 @@ export function StockDocumentEditorView({
           </div>
 
           <div className="no-print">
-            <StockDocumentLinesTable
-              docType={state.docType}
-              lines={state.lines}
-              readOnly={state.readOnly}
-              onAddLine={onAddLine}
-              onRemoveLine={onRemoveLine}
-              onLineChange={onLineChange}
-            />
+            {showCountingGrid ? (
+              <StockDocumentCountingGrid
+                lines={state.lines}
+                activeHookGroup={activeHookGroup}
+                readOnly={state.readOnly}
+                onHookGroupChange={onHookGroupChange}
+                onLineChange={onLineChange}
+              />
+            ) : (
+              <StockDocumentLinesTable
+                docType={state.docType}
+                lines={state.lines}
+                readOnly={state.readOnly}
+                onAddLine={onAddLine}
+                onRemoveLine={onRemoveLine}
+                onLineChange={onLineChange}
+              />
+            )}
           </div>
 
           <div className="no-print flex flex-wrap items-center gap-3">

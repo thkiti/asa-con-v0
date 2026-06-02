@@ -84,6 +84,9 @@ function renderEditor(
       actions={actions}
       error={overrides?.error ?? null}
       statusMessage={overrides?.statusMessage ?? null}
+      countingMode={false}
+      activeHookGroup="K"
+      onHookGroupChange={() => {}}
       onHeaderChange={() => {}}
       onAddLine={() => {}}
       onRemoveLine={() => {}}
@@ -209,5 +212,70 @@ describe("StockDocumentEditorView", () => {
     expect(printLinesSection).not.toContain("WRONG")
     expect(printLinesSection).not.toContain("Wrong name")
     expect(printLinesSection).not.toContain("999")
+  })
+
+  it("renders counting grid for ADJUSTMENT draft mode", () => {
+    const html = renderToStaticMarkup(
+      <StockDocumentEditorView
+        state={{
+          ...draftState,
+          docType: "ADJUSTMENT",
+          lines: [
+            {
+              key: "K-1",
+              rowKey: "K-1",
+              productId: "prod-k",
+              productCode: "0101001",
+              productName: "Home key",
+              displayCode: "#K1",
+              hookGroup: "K",
+              hookNo: 1,
+              hookLabel: "K.1",
+              qty: "3",
+              endingQty: "",
+              reviewPostingDelta: "",
+            },
+          ],
+        }}
+        detailSnapshot={null}
+        loading={false}
+        saving={false}
+        actionBusy={null}
+        actions={getEditorWorkflowActions(
+          { role: "SH_STAFF", docType: "ADJUSTMENT", status: "DRAFT" },
+          { hasDocumentId: false }
+        )}
+        error={null}
+        statusMessage={null}
+        countingMode
+        activeHookGroup="K"
+        onHookGroupChange={() => {}}
+        onHeaderChange={() => {}}
+        onAddLine={() => {}}
+        onRemoveLine={() => {}}
+        onLineChange={() => {}}
+        onWorkflowAction={() => {}}
+      />
+    )
+
+    expect(html).toContain("Stock count")
+    expect(html).toContain("Home Key")
+    expect(html).toContain("#K1")
+    expect(html).not.toContain("Product ID")
+  })
+
+  it("renders sparse lines table for submitted adjustment", () => {
+    const html = renderEditor(
+      {
+        ...draftState,
+        docType: "ADJUSTMENT",
+        status: "SUBMITTED",
+        readOnly: true,
+      },
+      { detailSnapshot: { ...sampleDetail, docType: "ADJUSTMENT" } }
+    )
+
+    expect(html).toContain("Lines")
+    expect(html).not.toContain("Stock count")
   })
 })
