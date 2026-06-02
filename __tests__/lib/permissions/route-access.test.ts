@@ -5,9 +5,13 @@ import {
 } from "@/lib/permissions/route-access"
 
 describe("API_BYPASS_PATHS", () => {
-  it("includes finance and pos API prefixes", () => {
+  it("includes finance, pos, and stock-document API prefixes", () => {
     expect(API_BYPASS_PATHS).toEqual(
-      expect.arrayContaining(["/api/finance", "/api/pos"])
+      expect.arrayContaining([
+        "/api/finance",
+        "/api/pos",
+        "/api/stock-document",
+      ])
     )
   })
 })
@@ -24,6 +28,11 @@ describe("isApiBypassPath", () => {
   it("bypasses existing health and session paths", () => {
     expect(isApiBypassPath("/api/health")).toBe(true)
     expect(isApiBypassPath("/api/auth/session")).toBe(true)
+  })
+
+  it("bypasses stock-document API", () => {
+    expect(isApiBypassPath("/api/stock-document")).toBe(true)
+    expect(isApiBypassPath("/api/stock-document/doc-1")).toBe(true)
   })
 
   it("does not bypass unrelated API paths", () => {

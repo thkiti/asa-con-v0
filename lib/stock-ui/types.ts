@@ -1,0 +1,91 @@
+import type { DocStatus, DocType } from "@/generated/prisma/client"
+
+/** View-model aliases aligned with read services (Phase 23F will extend, not replace). */
+export type StockDocumentListItemVM = {
+  id: string
+  refNo: string
+  docType: DocType
+  status: DocStatus
+  date: string
+  periodMonth: string | null
+  branchId: string
+  fromLocId: string | null
+  toLocId: string | null
+  submittedAt: string | null
+  confirmedAt: string | null
+  postedAt: string | null
+  cancelledAt: string | null
+  lineCount: number
+  createdAt: string
+}
+
+export type StockDocumentListResultVM = {
+  items: StockDocumentListItemVM[]
+  nextCursor: string | null
+  hasMore: boolean
+}
+
+export type StockDocumentLineVM = {
+  id: string
+  productId: string
+  qty: number
+  endingQty: number | null
+  reviewPostingDelta: number | null
+  product: {
+    id: string
+    code: string
+    name: string
+  }
+}
+
+export type StockDocumentDetailVM = {
+  id: string
+  refNo: string
+  docType: DocType
+  status: DocStatus
+  date: string
+  periodMonth: string | null
+  branchId: string
+  fromLocId: string | null
+  toLocId: string | null
+  submittedAt: string | null
+  confirmedAt: string | null
+  postedAt: string | null
+  createdByStaffId: string | null
+  confirmedByStaffId: string | null
+  postedByStaffId: string | null
+  cancelledAt: string | null
+  cancelledByStaffId: string | null
+  cancelReason: string | null
+  createdAt: string
+  lines: StockDocumentLineVM[]
+}
+
+export type StockDocumentListFilter = {
+  branchId?: string
+  docType?: DocType
+  status?: DocStatus
+  periodMonth?: string
+  from?: string
+  to?: string
+  cursor?: string | null
+  limit?: number
+}
+
+export type StockDocumentActionId =
+  | "save"
+  | "submit"
+  | "confirm"
+  | "cancel"
+  | "deleteDraft"
+  | "post"
+  | "print"
+
+export type StockDocumentActionVM = {
+  id: StockDocumentActionId
+  label: string
+  visible: boolean
+  enabled: boolean
+  destructive?: boolean
+  primary?: boolean
+}

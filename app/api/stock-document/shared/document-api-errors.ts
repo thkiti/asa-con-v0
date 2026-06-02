@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { StockDocumentAuthError } from "@/lib/stock/document-read/document-access"
 import {
   documentRouteErrorMessage,
   mapDocumentRouteError,
@@ -10,6 +11,13 @@ export function documentErrorResponse(
   err: unknown,
   logLabel: string
 ): NextResponse {
+  if (err instanceof StockDocumentAuthError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: err.httpStatus }
+    )
+  }
+
   const mapped = mapDocumentRouteError(err)
   if (mapped) {
     return NextResponse.json(mapped.body, { status: mapped.status })
