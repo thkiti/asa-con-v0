@@ -6,6 +6,7 @@ const AREA_PREFIX: Record<AppArea, string> = {
   admin: "/admin",
   operations: "/operations",
   shop: "/shop",
+  system: "/system",
 }
 
 /** Paths that never require RBAC (still may require session — see middleware). */
@@ -15,9 +16,12 @@ export const PUBLIC_PATHS = ["/login", "/unauthorized"] as const
 export const API_BYPASS_PATHS = [
   "/api/health",
   "/api/auth/session",
+  "/api/auth/login",
+  "/api/auth/logout",
   "/api/finance",
   "/api/pos",
   "/api/stock-document",
+  "/api/system",
 ] as const
 
 function pathnameArea(pathname: string): AppArea | null {
