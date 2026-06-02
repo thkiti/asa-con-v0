@@ -1,6 +1,7 @@
 import {
   fetchStockDocumentDetail,
   fetchStockDocumentList,
+  fetchStockInputList,
   saveStockDocument,
 } from "@/lib/stock-ui/fetchers"
 import { DocumentErrorCodes } from "@/lib/stock/document/document-errors"
@@ -25,6 +26,36 @@ describe("stock-ui fetchers", () => {
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/stock-document?branchId=b1")
     )
+  })
+
+  it("fetchStockInputList returns normalized rows", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          rowKey: "K-1",
+          source: "REFERENCE",
+          referenceStockId: "ref-1",
+          productId: "prod-1",
+          productCode: "0101001",
+          productName: "Key",
+          hookGroup: "K",
+          hookNo: 1,
+          hookLabel: "K.1",
+          supplierCode: "#K1",
+          displayCode: "#K1",
+          displayName: "Key",
+          productGroup: "0101900",
+          groupCode: "0101900",
+          sortKey: "0101900|K|000001|#K1|0101001",
+        },
+      ],
+    })
+
+    const rows = await fetchStockInputList()
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.sourceType).toBe("REFERENCE")
+    expect(global.fetch).toHaveBeenCalledWith("/api/stock-document/input-list")
   })
 
   it("fetchStockDocumentDetail throws UiError with code", async () => {

@@ -1,5 +1,9 @@
 import { messageForDocumentErrorCode, StockDocumentUiError } from "./document-errors"
 import type { SaveStockDocumentPayload } from "./editor-types"
+import {
+  normalizeStockInputList,
+  type StockInputRowVM,
+} from "./stock-input-list"
 import type {
   StockDocumentDetailVM,
   StockDocumentListFilter,
@@ -47,6 +51,13 @@ function buildListQuery(filter: StockDocumentListFilter): string {
   if (filter.limit != null) params.set("limit", String(filter.limit))
   const q = params.toString()
   return q ? `?${q}` : ""
+}
+
+export async function fetchStockInputList(): Promise<StockInputRowVM[]> {
+  const res = await fetch("/api/stock-document/input-list")
+  await throwOnError(res)
+  const raw = await parseJson<unknown>(res)
+  return normalizeStockInputList(raw)
 }
 
 export async function fetchStockDocumentList(
