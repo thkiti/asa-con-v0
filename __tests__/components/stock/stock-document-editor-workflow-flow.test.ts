@@ -12,14 +12,16 @@ describe("StockDocumentEditorController workflow flow", () => {
     expect(source).toContain("submitStockDocument")
     expect(source).toContain("confirmStockDocument")
     expect(source).toContain("cancelStockDocument")
+    expect(source).toContain("postStockDocument")
   })
 
   it("refetches document after workflow failure", () => {
     expect(source).toContain("refreshDocument")
   })
 
-  it("redirects to list after successful cancel", () => {
+  it("redirects to list after successful cancel only", () => {
     expect(source).toContain('router.replace("/shop/stock-documents")')
     expect(source).toContain('detail.status === "CANCELLED"')
+    expect(source).not.toContain('actionId === "post"')
   })
 })

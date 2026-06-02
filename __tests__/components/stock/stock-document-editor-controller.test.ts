@@ -15,6 +15,7 @@ describe("StockDocumentEditorController integration boundaries", () => {
     expect(source).toContain("submitStockDocument")
     expect(source).toContain("confirmStockDocument")
     expect(source).toContain("cancelStockDocument")
+    expect(source).toContain("postStockDocument")
     expect(source).toContain("useRouter")
     expect(source).toContain("router.replace")
     expect(source).not.toMatch(/fetch\s*\(\s*[`'"]\/api\//)

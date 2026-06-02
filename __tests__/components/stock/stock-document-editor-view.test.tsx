@@ -66,7 +66,7 @@ describe("StockDocumentEditorView", () => {
     expect(html).not.toContain("Confirm")
   })
 
-  it("renders confirm and cancel for SUBMITTED", () => {
+  it("renders confirm, cancel, and post for SUBMITTED", () => {
     const html = renderEditor({
       ...draftState,
       status: "SUBMITTED",
@@ -74,16 +74,18 @@ describe("StockDocumentEditorView", () => {
     })
     expect(html).toContain("Confirm")
     expect(html).toContain("Cancel")
+    expect(html).toContain("Post")
     expect(html).not.toContain("Save")
   })
 
-  it("renders cancel for CONFIRMED", () => {
+  it("renders cancel and post for CONFIRMED", () => {
     const html = renderEditor({
       ...draftState,
       status: "CONFIRMED",
       readOnly: true,
     })
     expect(html).toContain("Cancel")
+    expect(html).toContain("Post")
     expect(html).not.toContain("Submit")
   })
 
@@ -96,6 +98,7 @@ describe("StockDocumentEditorView", () => {
     expect(html).not.toContain("Submit")
     expect(html).not.toContain("Confirm")
     expect(html).not.toContain("Cancel")
+    expect(html).not.toMatch(/>Post</)
   })
 
   it("shows API error message", () => {
@@ -108,6 +111,14 @@ describe("StockDocumentEditorView", () => {
   it("shows submit loading label", () => {
     const html = renderEditor(draftState, { actionBusy: "submit" })
     expect(html).toContain("Submitting…")
+  })
+
+  it("shows post loading label", () => {
+    const html = renderEditor(
+      { ...draftState, status: "CONFIRMED", readOnly: true },
+      { actionBusy: "post" }
+    )
+    expect(html).toContain("Posting…")
   })
 
   it("shows read-only banner when not draft", () => {

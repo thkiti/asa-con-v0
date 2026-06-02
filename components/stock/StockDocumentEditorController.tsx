@@ -20,6 +20,7 @@ import { saveStockDocumentEditor } from "@/lib/stock-ui/stock-document-editor-sa
 import {
   cancelStockDocument,
   confirmStockDocument,
+  postStockDocument,
   submitStockDocument,
 } from "@/lib/stock-ui/stock-document-workflow-actions"
 import type { DocType, StockDocumentActionId, StockDocumentActionVM } from "@/lib/stock-ui/types"
@@ -48,6 +49,8 @@ function workflowSuccessMessage(actionId: StockDocumentActionId): string {
       return "Document confirmed."
     case "cancel":
       return "Document cancelled."
+    case "post":
+      return "Document posted."
     default:
       return "Done."
   }
@@ -199,6 +202,9 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
             break
           case "cancel":
             detail = await cancelStockDocument(state.documentId, staffId)
+            break
+          case "post":
+            detail = await postStockDocument(state.documentId, staffId)
             break
           default:
             return

@@ -32,6 +32,8 @@ function actionBusyLabel(actionId: StockDocumentActionId): string {
       return "Confirming…"
     case "cancel":
       return "Cancelling…"
+    case "post":
+      return "Posting…"
     default:
       return "Working…"
   }

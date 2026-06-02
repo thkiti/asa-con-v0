@@ -116,10 +116,11 @@ export const EDITOR_WORKFLOW_ACTION_IDS: readonly StockDocumentActionId[] = [
   "submit",
   "confirm",
   "cancel",
+  "post",
 ]
 
 /**
- * Shop editor toolbar — excludes post, delete, print (Phase 23D-3).
+ * Shop editor toolbar — excludes delete, print (Phase 23D-4 includes post).
  */
 export function getEditorWorkflowActions(
   ctx: StockDocumentPermissionContext,

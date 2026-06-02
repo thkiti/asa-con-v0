@@ -33,7 +33,7 @@ async function throwOnError(res: Response): Promise<void> {
 
 async function postWorkflow(
   documentId: string,
-  action: "submit" | "confirm" | "cancel",
+  action: "submit" | "confirm" | "cancel" | "post",
   body?: Record<string, unknown>
 ): Promise<StockDocumentDetailVM> {
   const id = String(documentId ?? "").trim()
@@ -79,4 +79,12 @@ export async function cancelStockDocument(
     staffId,
     cancelReason: cancelReason ?? null,
   })
+}
+
+export async function postStockDocument(
+  documentId: string,
+  postedByStaffId: string
+): Promise<StockDocumentDetailVM> {
+  const staffId = String(postedByStaffId ?? "").trim()
+  return postWorkflow(documentId, "post", { staffId })
 }

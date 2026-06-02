@@ -1,6 +1,7 @@
 import {
   cancelStockDocument,
   confirmStockDocument,
+  postStockDocument,
   submitStockDocument,
 } from "@/lib/stock-ui/stock-document-workflow-actions"
 import { DocumentErrorCodes } from "@/lib/stock/document/document-errors"
@@ -78,6 +79,41 @@ describe("stock-document-workflow-actions", () => {
     const body = JSON.parse(String(init.body))
     expect(body.cancelledByStaffId).toBe("staff-9")
     expect(body.cancelReason).toBe("mistake")
+  })
+
+  it("postStockDocument POSTs post endpoint with staffId", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...detailBody, status: "POSTED" }),
+    })
+
+    const result = await postStockDocument("doc-1", "staff-9")
+
+    expect(result.status).toBe("POSTED")
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/stock-document/doc-1/post",
+      expect.objectContaining({ method: "POST" })
+    )
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(String(init.body))
+    expect(body.staffId).toBe("staff-9")
+  })
+
+  it("postStockDocument surfaces API errors with mapped codes", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      json: async () => ({
+        error: "The accounting period is closed. Posting is blocked.",
+        code: "PERIOD_CLOSED",
+      }),
+    })
+
+    await expect(postStockDocument("doc-1", "staff-9")).rejects.toMatchObject({
+      code: "PERIOD_CLOSED",
+      message: "The accounting period is closed. Posting is blocked.",
+    })
   })
 
   it("surfaces API errors", async () => {
