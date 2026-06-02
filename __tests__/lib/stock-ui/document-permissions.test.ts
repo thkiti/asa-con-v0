@@ -70,4 +70,26 @@ describe("getStockDocumentActions", () => {
     })
     expect(confirmed.find((a) => a.id === "confirm")?.visible).toBe(false)
   })
+
+  it("hides print for DRAFT", () => {
+    const actions = getStockDocumentActions({
+      role: "SH_STAFF",
+      docType: "PERFORMANCE",
+      status: "DRAFT",
+    })
+    expect(actions.find((a) => a.id === "print")?.visible).toBe(false)
+    expect(actions.find((a) => a.id === "print")?.enabled).toBe(false)
+  })
+
+  it("allows print for SUBMITTED, CONFIRMED, POSTED, and CANCELLED", () => {
+    for (const status of ["SUBMITTED", "CONFIRMED", "POSTED", "CANCELLED"] as const) {
+      const actions = getStockDocumentActions({
+        role: "SH_STAFF",
+        docType: "PERFORMANCE",
+        status,
+      })
+      expect(actions.find((a) => a.id === "print")?.visible).toBe(true)
+      expect(actions.find((a) => a.id === "print")?.enabled).toBe(true)
+    }
+  })
 })

@@ -20,6 +20,17 @@ function isShopDocType(docType: DocType): boolean {
   return (SHOP_STOCK_DOC_TYPES as readonly DocType[]).includes(docType)
 }
 
+const PRINTABLE_DOCUMENT_STATUSES: ReadonlySet<DocStatus> = new Set([
+  "SUBMITTED",
+  "CONFIRMED",
+  "POSTED",
+  "CANCELLED",
+])
+
+function isPrintableStockDocumentStatus(status: DocStatus): boolean {
+  return PRINTABLE_DOCUMENT_STATUSES.has(status)
+}
+
 function canShopPost(role: Role, docType: DocType, status: DocStatus): boolean {
   if (role !== "SH_STAFF" && role !== "HO_OPERATIONS" && role !== "HO_ADMIN" && role !== "HO_FINANCE") {
     return false
@@ -102,11 +113,15 @@ export function getStockDocumentActions(
         !isImmutableStatus(status) && canShopPost(role, docType, status),
         canShopPost(role, docType, status),
         { primary: status === "CONFIRMED" || status === "SUBMITTED" }
+      ),
+      buildAction(
+        "print",
+        "Print",
+        isPrintableStockDocumentStatus(status),
+        isPrintableStockDocumentStatus(status)
       )
     )
   }
-
-  actions.push(buildAction("print", "Print", false, false))
 
   return actions
 }
@@ -117,10 +132,11 @@ export const EDITOR_WORKFLOW_ACTION_IDS: readonly StockDocumentActionId[] = [
   "confirm",
   "cancel",
   "post",
+  "print",
 ]
 
 /**
- * Shop editor toolbar — excludes delete, print (Phase 23D-4 includes post).
+ * Shop editor toolbar — excludes delete (Phase 23E-2 includes print).
  */
 export function getEditorWorkflowActions(
   ctx: StockDocumentPermissionContext,

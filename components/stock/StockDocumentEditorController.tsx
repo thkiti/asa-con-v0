@@ -23,7 +23,12 @@ import {
   postStockDocument,
   submitStockDocument,
 } from "@/lib/stock-ui/stock-document-workflow-actions"
-import type { DocType, StockDocumentActionId, StockDocumentActionVM } from "@/lib/stock-ui/types"
+import type {
+  DocType,
+  StockDocumentActionId,
+  StockDocumentActionVM,
+  StockDocumentDetailVM,
+} from "@/lib/stock-ui/types"
 import type { Role } from "@/lib/shared"
 import { StockDocumentEditorView } from "./StockDocumentEditorView"
 
@@ -59,6 +64,7 @@ function workflowSuccessMessage(actionId: StockDocumentActionId): string {
 export function StockDocumentEditorController(props: StockDocumentEditorControllerProps) {
   const router = useRouter()
   const [state, setState] = useState<StockDocumentEditorStateVM | null>(null)
+  const [detailSnapshot, setDetailSnapshot] = useState<StockDocumentDetailVM | null>(null)
   const [role, setRole] = useState<Role | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -66,6 +72,11 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [staffId, setStaffId] = useState<string | null>(null)
+
+  const applyDetail = useCallback((detail: StockDocumentDetailVM) => {
+    setDetailSnapshot(detail)
+    setState(detailToEditorState(detail))
+  }, [])
 
   const actions: StockDocumentActionVM[] = useMemo(() => {
     if (!state || !role) return []
@@ -75,11 +86,14 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     )
   }, [role, state])
 
-  const refreshDocument = useCallback(async (documentId: string) => {
-    const detail = await fetchStockDocumentDetail(documentId)
-    setState(detailToEditorState(detail))
-    return detail
-  }, [])
+  const refreshDocument = useCallback(
+    async (documentId: string) => {
+      const detail = await fetchStockDocumentDetail(documentId)
+      applyDetail(detail)
+      return detail
+    },
+    [applyDetail]
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -99,6 +113,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
           if (!isShopDocType(props.docType)) {
             throw new Error("Invalid document type for shop editor")
           }
+          setDetailSnapshot(null)
           setState(createDraftEditorState(props.docType, session.branchId))
           setLoading(false)
           return
@@ -106,7 +121,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
 
         const detail = await fetchStockDocumentDetail(props.documentId)
         if (cancelled) return
-        setState(detailToEditorState(detail))
+        applyDetail(detail)
       } catch (err: unknown) {
         if (!cancelled) {
           setError(toStockDocumentUiError(err).message)
@@ -122,7 +137,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     return () => {
       cancelled = true
     }
-  }, [props])
+  }, [applyDetail, props])
 
   const handleHeaderChange = useCallback((patch: Partial<StockDocumentEditorStateVM>) => {
     setState((prev) => (prev ? { ...prev, ...patch } : prev))
@@ -163,8 +178,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     try {
       const priorLines = state.lines
       const saved = await saveStockDocumentEditor(state, staffId, priorLines)
-      const nextState = detailToEditorState(saved)
-      setState(nextState)
+      applyDetail(saved)
       setStatusMessage(workflowSuccessMessage("save"))
 
       const redirect = postSaveEditorPath(props.mode, saved.id)
@@ -176,10 +190,17 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     } finally {
       setSaving(false)
     }
-  }, [props, router, staffId, state])
+  }, [applyDetail, props, router, staffId, state])
 
   const handleWorkflowAction = useCallback(
     async (actionId: StockDocumentActionId) => {
+      if (actionId === "print") {
+        if (detailSnapshot) {
+          window.print()
+        }
+        return
+      }
+
       if (actionId === "save") {
         await handleSave()
         return
@@ -210,7 +231,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
             return
         }
 
-        setState(detailToEditorState(detail))
+        applyDetail(detail)
         setStatusMessage(workflowSuccessMessage(actionId))
 
         if (actionId === "cancel" && detail.status === "CANCELLED") {
@@ -229,7 +250,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
         setActionBusy(null)
       }
     },
-    [handleSave, refreshDocument, router, staffId, state]
+    [applyDetail, detailSnapshot, handleSave, refreshDocument, router, staffId, state]
   )
 
   const placeholderState: StockDocumentEditorStateVM = {
@@ -248,6 +269,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
   return (
     <StockDocumentEditorView
       state={state ?? placeholderState}
+      detailSnapshot={detailSnapshot}
       loading={loading}
       saving={saving}
       actionBusy={actionBusy}

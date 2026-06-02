@@ -33,30 +33,32 @@ describe("getEditorWorkflowActions", () => {
     expect(visibleIds("DRAFT")).not.toContain("post")
   })
 
-  it("SUBMITTED shows confirm, cancel, and post", () => {
+  it("SUBMITTED shows confirm, cancel, post, and print", () => {
     expect(visibleIds("SUBMITTED")).toEqual(
-      expect.arrayContaining(["confirm", "cancel", "post"])
+      expect.arrayContaining(["confirm", "cancel", "post", "print"])
     )
     expect(enabledIds("SUBMITTED")).toEqual(
-      expect.arrayContaining(["confirm", "cancel", "post"])
+      expect.arrayContaining(["confirm", "cancel", "post", "print"])
     )
     expect(visibleIds("SUBMITTED")).not.toContain("save")
   })
 
-  it("CONFIRMED shows cancel and post", () => {
+  it("CONFIRMED shows cancel, post, and print", () => {
     expect(visibleIds("CONFIRMED")).toContain("cancel")
     expect(visibleIds("CONFIRMED")).toContain("post")
+    expect(visibleIds("CONFIRMED")).toContain("print")
     expect(enabledIds("CONFIRMED")).toContain("post")
+    expect(enabledIds("CONFIRMED")).toContain("print")
     expect(visibleIds("CONFIRMED")).not.toContain("confirm")
     expect(visibleIds("CONFIRMED")).not.toContain("submit")
   })
 
-  it("POSTED and CANCELLED show no workflow actions", () => {
-    expect(visibleIds("POSTED")).toEqual([])
-    expect(visibleIds("CANCELLED")).toEqual([])
+  it("POSTED and CANCELLED show print only", () => {
+    expect(visibleIds("POSTED")).toEqual(["print"])
+    expect(visibleIds("CANCELLED")).toEqual(["print"])
   })
 
-  it("includes post in editor when permission allows, excludes delete and print", () => {
+  it("includes print in editor when printable, excludes delete", () => {
     const all = getStockDocumentActions({
       role: "SH_STAFF",
       docType: "PERFORMANCE",
@@ -69,8 +71,12 @@ describe("getEditorWorkflowActions", () => {
 
     expect(all.find((a) => a.id === "post")?.visible).toBe(true)
     expect(editor.find((a) => a.id === "post")?.visible).toBe(true)
+    expect(editor.find((a) => a.id === "print")?.visible).toBe(true)
     expect(editor.find((a) => a.id === "deleteDraft")).toBeUndefined()
-    expect(editor.find((a) => a.id === "print")).toBeUndefined()
+  })
+
+  it("excludes print from DRAFT editor toolbar", () => {
+    expect(visibleIds("DRAFT")).not.toContain("print")
   })
 
   it("hides post for SH_STAFF TRANSFER_OUT when canShopPost forbids it", () => {
@@ -96,5 +102,13 @@ describe("getEditorWorkflowActions", () => {
       { hasDocumentId: false }
     )
     expect(actions.find((a) => a.id === "post")?.enabled).toBe(false)
+  })
+
+  it("disables print when document id is missing", () => {
+    const actions = getEditorWorkflowActions(
+      { role: "SH_STAFF", docType: "PERFORMANCE", status: "SUBMITTED" },
+      { hasDocumentId: false }
+    )
+    expect(actions.find((a) => a.id === "print")?.enabled).toBe(false)
   })
 })

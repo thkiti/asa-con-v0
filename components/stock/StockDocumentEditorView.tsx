@@ -3,12 +3,21 @@ import type {
   EditorLineRowVM,
   StockDocumentEditorStateVM,
 } from "@/lib/stock-ui/editor-types"
-import type { StockDocumentActionId, StockDocumentActionVM } from "@/lib/stock-ui/types"
+import type {
+  StockDocumentActionId,
+  StockDocumentActionVM,
+  StockDocumentDetailVM,
+} from "@/lib/stock-ui/types"
 import { StockDocumentHeaderForm } from "./StockDocumentHeaderForm"
 import { StockDocumentLinesTable } from "./StockDocumentLinesTable"
+import {
+  StockDocumentPrintHeader,
+  StockDocumentPrintLinesTable,
+} from "./stock-document-print-ui"
 
 type StockDocumentEditorViewProps = {
   state: StockDocumentEditorStateVM
+  detailSnapshot: StockDocumentDetailVM | null
   loading: boolean
   saving: boolean
   actionBusy: StockDocumentActionId | null
@@ -53,6 +62,7 @@ function actionButtonClass(action: StockDocumentActionVM): string {
 
 export function StockDocumentEditorView({
   state,
+  detailSnapshot,
   loading,
   saving,
   actionBusy,
@@ -69,41 +79,52 @@ export function StockDocumentEditorView({
   const busy = saving || actionBusy !== null
 
   return (
-    <div className="space-y-6">
+    <div className="stock-document-print-shell space-y-6">
+      {detailSnapshot ? (
+        <>
+          <StockDocumentPrintHeader detail={detailSnapshot} />
+          <StockDocumentPrintLinesTable detail={detailSnapshot} />
+        </>
+      ) : null}
+
       {loading ? <p className="text-sm text-zinc-600">Loading document…</p> : null}
 
       {state.readOnly && !loading ? (
-        <p className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="no-print rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           This document is not a draft. Editing is disabled.
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="no-print rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
         </p>
       ) : null}
 
       {statusMessage ? (
-        <p className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p className="no-print rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
           {statusMessage}
         </p>
       ) : null}
 
       {!loading ? (
         <>
-          <StockDocumentHeaderForm state={state} onChange={onHeaderChange} />
+          <div className="no-print">
+            <StockDocumentHeaderForm state={state} onChange={onHeaderChange} />
+          </div>
 
-          <StockDocumentLinesTable
-            docType={state.docType}
-            lines={state.lines}
-            readOnly={state.readOnly}
-            onAddLine={onAddLine}
-            onRemoveLine={onRemoveLine}
-            onLineChange={onLineChange}
-          />
+          <div className="no-print">
+            <StockDocumentLinesTable
+              docType={state.docType}
+              lines={state.lines}
+              readOnly={state.readOnly}
+              onAddLine={onAddLine}
+              onRemoveLine={onRemoveLine}
+              onLineChange={onLineChange}
+            />
+          </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="no-print flex flex-wrap items-center gap-3">
             {visibleActions.map((action) => {
               if (action.id === "save" && state.readOnly) {
                 return null
