@@ -1,5 +1,7 @@
 import type { DocStatus, DocType } from "@/generated/prisma/client"
 
+export type { DocStatus, DocType }
+
 /** View-model aliases aligned with read services (Phase 23F will extend, not replace). */
 export type StockDocumentListItemVM = {
   id: string
