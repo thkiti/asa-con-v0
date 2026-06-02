@@ -1,6 +1,7 @@
 import {
   fetchAccountingPeriods,
   fetchCloseEvidence,
+  fetchPeriodAuditTimeline,
   fetchSessionDisplay,
   patchAccountingPeriod,
   postAccountingPeriod,
@@ -259,5 +260,33 @@ describe("fetchSessionDisplay", () => {
     })
 
     await expect(fetchSessionDisplay()).resolves.toBeNull()
+  })
+})
+
+
+describe("fetchPeriodAuditTimeline", () => {
+  beforeEach(() => {
+    global.fetch = jest.fn()
+  })
+
+  it("calls timeline API and returns JSON on success", async () => {
+    const dto = {
+      period: {
+        id: "period-1",
+        periodKey: "2026-05",
+        branchId: "branch-1",
+        status: "OPEN",
+        openedAt: "2026-05-01T00:00:00.000Z",
+        closedAt: null,
+      },
+      timeline: [],
+    }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => dto,
+    })
+
+    await expect(fetchPeriodAuditTimeline("period-1")).resolves.toEqual(dto)
+    expect(global.fetch).toHaveBeenCalledWith("/api/finance/periods/period-1/timeline")
   })
 })

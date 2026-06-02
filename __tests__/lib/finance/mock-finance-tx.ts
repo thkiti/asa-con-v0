@@ -218,21 +218,82 @@ export function createFinanceMockTx(branchId = "branch-1") {
     accountingPeriod: {
       findUnique: async ({
         where,
+        include,
       }: {
         where: { id?: string; branchId_periodKey?: { branchId: string; periodKey: string } }
-      }) => {
-        if (where.id) {
-          return state.accountingPeriods.find((p) => p.id === where.id) ?? null
+        include?: {
+          closeEvidence?: { orderBy?: { closedAt: "asc" | "desc" } }
+          reopenEvidence?: { orderBy?: { reopenedAt: "asc" | "desc" } }
+          reopenRequests?: { orderBy?: { requestedAt: "asc" | "desc" } }
         }
-        if (where.branchId_periodKey) {
+      }) => {
+        let period: AccountingPeriodRow | null = null
+        if (where.id) {
+          period = state.accountingPeriods.find((p) => p.id === where.id) ?? null
+        } else if (where.branchId_periodKey) {
           const { branchId: b, periodKey } = where.branchId_periodKey
-          return (
+          period =
             state.accountingPeriods.find(
               (p) => p.branchId === b && p.periodKey === periodKey
             ) ?? null
-          )
         }
-        return null
+        if (!period || !include) {
+          return period
+        }
+        const result = { ...period } as AccountingPeriodRow & {
+          closeEvidence?: AccountingPeriodCloseEvidenceRow[]
+          reopenEvidence?: AccountingPeriodReopenEvidenceRow[]
+          reopenRequests?: AccountingPeriodReopenRequestRow[]
+        }
+        if (include.closeEvidence) {
+          let rows = state.accountingPeriodCloseEvidence.filter(
+            (row) => row.periodId === period.id
+          )
+          const closedOrder = include.closeEvidence.orderBy?.closedAt
+          if (closedOrder === "asc") {
+            rows = [...rows].sort(
+              (a, b) => a.closedAt.getTime() - b.closedAt.getTime()
+            )
+          } else if (closedOrder === "desc") {
+            rows = [...rows].sort(
+              (a, b) => b.closedAt.getTime() - a.closedAt.getTime()
+            )
+          }
+          result.closeEvidence = rows
+        }
+        if (include.reopenEvidence) {
+          let rows = state.accountingPeriodReopenEvidence.filter(
+            (row) => row.periodId === period.id
+          )
+          const reopenedOrder = include.reopenEvidence.orderBy?.reopenedAt
+          if (reopenedOrder === "asc") {
+            rows = [...rows].sort(
+              (a, b) => a.reopenedAt.getTime() - b.reopenedAt.getTime()
+            )
+          } else if (reopenedOrder === "desc") {
+            rows = [...rows].sort(
+              (a, b) => b.reopenedAt.getTime() - a.reopenedAt.getTime()
+            )
+          }
+          result.reopenEvidence = rows
+        }
+        if (include.reopenRequests) {
+          let rows = state.accountingPeriodReopenRequest.filter(
+            (row) => row.periodId === period.id
+          )
+          const requestedOrder = include.reopenRequests.orderBy?.requestedAt
+          if (requestedOrder === "asc") {
+            rows = [...rows].sort(
+              (a, b) => a.requestedAt.getTime() - b.requestedAt.getTime()
+            )
+          } else if (requestedOrder === "desc") {
+            rows = [...rows].sort(
+              (a, b) => b.requestedAt.getTime() - a.requestedAt.getTime()
+            )
+          }
+          result.reopenRequests = rows
+        }
+        return result
       },
       update: async ({
         where,

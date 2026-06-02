@@ -8,6 +8,7 @@ import { buildReopenEvidencePath } from "@/lib/finance-ui/reopen-evidence"
 import { buildReopenRequestsPath } from "@/lib/finance-ui/reopen-requests"
 import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
 import { buildCloseReadinessPath } from "@/lib/finance-ui/close-readiness"
+import { buildPeriodAuditTimelinePath } from "@/lib/finance-ui/period-audit-timeline"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { PeriodAdminActions } from "./PeriodAdminActions"
 import { PeriodStatusBadge } from "./PeriodStatusBadge"
@@ -111,6 +112,12 @@ export function PeriodTable({
                         </Link>
                       </>
                     ) : null}
+                    <Link
+                      href={buildPeriodAuditTimelinePath(period.id)}
+                      className="text-sm font-medium text-zinc-900 underline"
+                    >
+                      Audit timeline
+                    </Link>
                     <Link
                       href={buildReopenEvidencePath(period.id)}
                       className="text-sm font-medium text-zinc-900 underline"

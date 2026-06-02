@@ -49,6 +49,9 @@ describe("PeriodTable", () => {
     expect(html).toContain("/finance/periods/period-2/close-evidence/history")
     expect(html).toContain("/finance/periods/period-2/reopen-evidence")
     expect(html).toContain("/finance/periods/period-2/reopen-requests")
+    expect(html).toContain("/finance/periods/period-1/timeline")
+    expect(html).toContain("/finance/periods/period-2/timeline")
+    expect(html).toContain("Audit timeline")
     expect(html).not.toContain("/finance/periods/period-1/close-evidence")
   })
 

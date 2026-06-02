@@ -486,6 +486,25 @@ Full policy, lifecycle example, and test map: [25_FINANCE_REOPEN_CONTROL.md](./2
 
 ---
 
+
+
+---
+
+## 19. Phase 22A � Period audit timeline
+
+Status: **Done** � read-only chronological audit view per period
+
+| Surface | Path |
+|---------|------|
+| API | `GET /api/finance/periods/[id]/timeline` |
+| UI | `/finance/periods/[id]/timeline` |
+
+Combines period opened/soft-closed (when observable), HARD close + close evidence rows, reopen request workflow events, and reopen evidence. No schema changes; no mutation APIs.
+
+Full catalog and limitations: [27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./27_FINANCE_PERIOD_AUDIT_TIMELINE.md).
+
+---
+
 ## 18. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)

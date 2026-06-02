@@ -3,9 +3,9 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** Phase 21B reopen approval workflow complete — see [docs/00_README.md](./docs/00_README.md)
+- **Status:** Phase 22A period audit timeline complete — see [docs/00_README.md](./docs/00_README.md)
 
-Phase 21B adds request → approve → execute for HARD reopen (`RRO-{periodKey}-{seq}` audit ids, explicit approval/rejection fields). Phase 21A direct SOFT reopen unchanged. Summaries: [docs/26_FINANCE_REOPEN_APPROVAL.md](./docs/26_FINANCE_REOPEN_APPROVAL.md), [docs/25_FINANCE_REOPEN_CONTROL.md](./docs/25_FINANCE_REOPEN_CONTROL.md).
+Phase 22A adds a read-only period audit timeline API and UI. Phase 21B adds request → approve → execute for HARD reopen (`RRO-{periodKey}-{seq}` audit ids, explicit approval/rejection fields). Phase 21A direct SOFT reopen unchanged. Summaries: [docs/26_FINANCE_REOPEN_APPROVAL.md](./docs/26_FINANCE_REOPEN_APPROVAL.md), [docs/25_FINANCE_REOPEN_CONTROL.md](./docs/25_FINANCE_REOPEN_CONTROL.md).
 
 ## Docs
 

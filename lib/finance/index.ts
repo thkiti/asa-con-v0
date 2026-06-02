@@ -97,6 +97,12 @@ export {
   getLatestCloseEvidenceByPeriodId,
   listCloseEvidenceByPeriodId,
 } from "./close-evidence"
+export { getPeriodAuditTimelineByPeriodId } from "./period-audit-timeline"
+export type {
+  PeriodAuditTimelineItem,
+  PeriodAuditTimelineResult,
+  PeriodAuditTimelineEventType,
+} from "./period-audit-timeline-types"
 export { listReopenEvidenceByPeriodId } from "./reopen-evidence"
 export type { ReopenEvidenceDetail } from "./reopen-evidence-types"
 export {
