@@ -74,8 +74,14 @@ export type ImportReportView = {
 export type ImportStatusResponse = {
   archive: ImportArchiveStatusView
   latestReports: ImportReportListItemView[]
+  staffBootstrap: StaffBootstrapStatusView
   productionGuardActive: boolean
   importAllowProduction: boolean
+}
+
+export type StaffBootstrapStatusView = {
+  importedStaffCount: number
+  hasBootstrapAdmin: boolean
 }
 
 export type ImportReportsResponse = {

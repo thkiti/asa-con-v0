@@ -16,6 +16,7 @@ describe("system import fetchers", () => {
     const dto = {
       archive: { archiveRoot: "data/legacy/devboard-v1", manifestPresent: true, files: [], warnings: [] },
       latestReports: [],
+      staffBootstrap: { importedStaffCount: 0, hasBootstrapAdmin: false },
       productionGuardActive: false,
       importAllowProduction: false,
     }

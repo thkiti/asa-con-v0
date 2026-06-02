@@ -8,6 +8,13 @@ import {
   defaultRedirectForRole,
   resolveSafeReturnTo,
 } from "./session-cookies"
+import { DEV_PERIOD_ADMIN_STAFF_CODE } from "./period-admin-staff"
+
+export const BOOTSTRAP_LOGIN_STAFF_NOT_FOUND_MESSAGE =
+  "ไม่พบรหัสพนักงานนี้ กรุณานำเข้าข้อมูลพนักงานก่อน"
+
+export const BOOTSTRAP_LOGIN_DEV_STAFF_BLOCKED_MESSAGE =
+  "รหัส DEV ใช้สำหรับ development เท่านั้น ไม่สามารถ Login ผ่านหน้านี้"
 
 export class BootstrapLoginError extends Error {
   readonly code: string
@@ -42,6 +49,14 @@ export async function bootstrapLogin(input: {
     throw new BootstrapLoginError("Staff ID is required", "STAFF_ID_REQUIRED", 400)
   }
 
+  if (staffId === DEV_PERIOD_ADMIN_STAFF_CODE) {
+    throw new BootstrapLoginError(
+      BOOTSTRAP_LOGIN_DEV_STAFF_BLOCKED_MESSAGE,
+      "DEV_STAFF_NOT_ALLOWED",
+      403
+    )
+  }
+
   const staff = await prisma.staff.findUnique({
     where: { staffId },
     include: {
@@ -52,7 +67,11 @@ export async function bootstrapLogin(input: {
   })
 
   if (!staff || staff.deleted) {
-    throw new BootstrapLoginError("Staff not found", "STAFF_NOT_FOUND", 404)
+    throw new BootstrapLoginError(
+      BOOTSTRAP_LOGIN_STAFF_NOT_FOUND_MESSAGE,
+      "STAFF_NOT_FOUND",
+      404
+    )
   }
 
   if (staff.branch.deleted || !staff.branch.isActive) {

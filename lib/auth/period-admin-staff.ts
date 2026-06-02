@@ -1,6 +1,7 @@
 ﻿import { BranchType, Role, type PrismaClient } from "@/generated/prisma/client"
 import { PeriodAdminAuthError } from "./period-admin"
 
+/** Dev-only period-admin seed — not for bootstrap login (see bootstrap-login.ts). */
 export const DEV_PERIOD_ADMIN_STAFF_CODE = "DEV"
 
 const DEV_BRANCH_CODE = "DEV01"

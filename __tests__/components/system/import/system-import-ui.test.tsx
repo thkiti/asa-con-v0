@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server"
+import { StaffImportNotices } from "@/components/system/import/StaffImportNotices"
 import { ApplyConfirmDialog } from "@/components/system/import/ApplyConfirmDialog"
 import { EntityImportCard } from "@/components/system/import/EntityImportCard"
 import { ImportDashboard } from "@/components/system/import/ImportDashboard"
@@ -8,6 +9,8 @@ import {
   SYSTEM_IMPORT_DESCRIPTION,
   IMPORT_ENTITY_CONFIGS,
   getImportEntityConfig,
+  STAFF_IMPORT_LOGIN_NOTE,
+  STAFF_IMPORT_NO_STAFF_WARNING,
 } from "@/lib/system-ui/import-entity-config"
 import type { ImportReportView } from "@/lib/system-ui/import-types"
 
@@ -86,6 +89,10 @@ const statusPayload = {
       mtimeMs: 1,
     },
   ],
+  staffBootstrap: {
+    importedStaffCount: 0,
+    hasBootstrapAdmin: false,
+  },
   productionGuardActive: false,
   importAllowProduction: false,
 }
@@ -246,6 +253,20 @@ describe("System Import UI", () => {
     expect(html).toContain("พนักงานอื่น → พนักงานสาขา")
     expect(html).not.toContain("HO_ADMIN")
     expect(html).not.toContain("SH_STAFF")
+  })
+
+  it("staff page shows login note and no-staff warning when empty", () => {
+    const emptyHtml = renderToStaticMarkup(
+      <StaffImportNotices staffBootstrap={{ importedStaffCount: 0, hasBootstrapAdmin: false }} />
+    )
+    expect(emptyHtml).toContain(STAFF_IMPORT_LOGIN_NOTE)
+    expect(emptyHtml).toContain(STAFF_IMPORT_NO_STAFF_WARNING)
+
+    const loadedHtml = renderToStaticMarkup(
+      <StaffImportNotices staffBootstrap={{ importedStaffCount: 5, hasBootstrapAdmin: true }} />
+    )
+    expect(loadedHtml).toContain(STAFF_IMPORT_LOGIN_NOTE)
+    expect(loadedHtml).not.toContain(STAFF_IMPORT_NO_STAFF_WARNING)
   })
 
   it("dashboard renders Logout control", () => {

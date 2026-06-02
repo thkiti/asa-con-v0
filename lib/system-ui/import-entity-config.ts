@@ -59,3 +59,8 @@ export const APPLY_CONFIRM_MESSAGE =
 
 export const APPLY_CONFIRM_DETAIL =
   "ตรวจสอบ Report จาก Dry Run แล้ว หากแหล่งข้อมูลไม่เปลี่ยน ให้กดยืนยันเพื่อบันทึก"
+
+export const STAFF_IMPORT_LOGIN_NOTE =
+  "หลังจากนำเข้าข้อมูลพนักงานแล้ว สามารถเข้าสู่ระบบด้วยรหัสพนักงานที่นำเข้าได้"
+
+export const STAFF_IMPORT_NO_STAFF_WARNING = "ยังไม่มีข้อมูลพนักงานในระบบ"

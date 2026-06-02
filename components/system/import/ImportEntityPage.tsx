@@ -16,6 +16,7 @@ import { canEnableApply } from "@/lib/system-ui/import-state"
 import { ApplyConfirmDialog } from "./ApplyConfirmDialog"
 import { ArchiveStatusPanel } from "./ArchiveStatusPanel"
 import { ImportReportSummary } from "./ImportReportSummary"
+import { StaffImportNotices } from "./StaffImportNotices"
 import { SystemImportShell } from "./SystemImportShell"
 
 type ImportEntityPageProps = {
@@ -162,6 +163,9 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
           <p className="mt-3 rounded border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
             {config.bootstrapNote}
           </p>
+        ) : null}
+        {entity === "staff" ? (
+          <StaffImportNotices staffBootstrap={status?.staffBootstrap} />
         ) : null}
       </section>
 

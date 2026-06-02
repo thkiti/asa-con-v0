@@ -1,4 +1,9 @@
-import { bootstrapLogin, BootstrapLoginError } from "@/lib/auth/bootstrap-login"
+import {
+  bootstrapLogin,
+  BootstrapLoginError,
+  BOOTSTRAP_LOGIN_DEV_STAFF_BLOCKED_MESSAGE,
+  BOOTSTRAP_LOGIN_STAFF_NOT_FOUND_MESSAGE,
+} from "@/lib/auth/bootstrap-login"
 
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
@@ -10,26 +15,32 @@ jest.mock("@/lib/shared/prisma", () => ({
 
 import { prisma } from "@/lib/shared/prisma"
 
+const importedAdminStaff = {
+  id: "staff-1",
+  staffId: "001",
+  name: "Admin User",
+  role: "HO_ADMIN",
+  branchId: "branch-ho",
+  password: "stub",
+  deleted: false,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  branch: {
+    id: "branch-ho",
+    code: "HO999",
+    name: "Head Office",
+    isActive: true,
+    deleted: false,
+  },
+}
+
 describe("bootstrapLogin", () => {
-  it("returns staff view without role field", async () => {
-    jest.mocked(prisma.staff.findUnique).mockResolvedValue({
-      id: "staff-1",
-      staffId: "001",
-      name: "Admin User",
-      role: "HO_ADMIN",
-      branchId: "branch-ho",
-      password: "stub",
-      deleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      branch: {
-        id: "branch-ho",
-        code: "HO999",
-        name: "Head Office",
-        isActive: true,
-        deleted: false,
-      },
-    } as never)
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it("returns staff view without role field after staff import", async () => {
+    jest.mocked(prisma.staff.findUnique).mockResolvedValue(importedAdminStaff as never)
 
     const result = await bootstrapLogin({ staffId: "001" })
     expect(result.staff).toEqual({
@@ -44,24 +55,7 @@ describe("bootstrapLogin", () => {
   })
 
   it("supports HO_ADMIN returnTo for system import", async () => {
-    jest.mocked(prisma.staff.findUnique).mockResolvedValue({
-      id: "staff-1",
-      staffId: "001",
-      name: "Admin User",
-      role: "HO_ADMIN",
-      branchId: "branch-ho",
-      password: "stub",
-      deleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      branch: {
-        id: "branch-ho",
-        code: "HO999",
-        name: "Head Office",
-        isActive: true,
-        deleted: false,
-      },
-    } as never)
+    jest.mocked(prisma.staff.findUnique).mockResolvedValue(importedAdminStaff as never)
 
     const result = await bootstrapLogin({
       staffId: "001",
@@ -70,7 +64,26 @@ describe("bootstrapLogin", () => {
     expect(result.redirectTo).toBe("/system/import")
   })
 
-  it("throws when staff is missing", async () => {
+  it("fails before staff import with Thai not-found message", async () => {
+    jest.mocked(prisma.staff.findUnique).mockResolvedValue(null)
+
+    await expect(bootstrapLogin({ staffId: "001" })).rejects.toMatchObject({
+      message: BOOTSTRAP_LOGIN_STAFF_NOT_FOUND_MESSAGE,
+      code: "STAFF_NOT_FOUND",
+      httpStatus: 404,
+    })
+  })
+
+  it("blocks DEV seed from bootstrap login", async () => {
+    await expect(bootstrapLogin({ staffId: "DEV" })).rejects.toMatchObject({
+      message: BOOTSTRAP_LOGIN_DEV_STAFF_BLOCKED_MESSAGE,
+      code: "DEV_STAFF_NOT_ALLOWED",
+      httpStatus: 403,
+    })
+    expect(prisma.staff.findUnique).not.toHaveBeenCalled()
+  })
+
+  it("throws BootstrapLoginError when staff is missing", async () => {
     jest.mocked(prisma.staff.findUnique).mockResolvedValue(null)
     await expect(bootstrapLogin({ staffId: "999" })).rejects.toBeInstanceOf(
       BootstrapLoginError

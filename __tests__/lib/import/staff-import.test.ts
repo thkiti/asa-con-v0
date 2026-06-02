@@ -156,6 +156,18 @@ describe("staff bootstrap mapping", () => {
     await expect(verifyDefaultStaffPassword(String(shop?.password))).resolves.toBe(true)
   })
 
+  it("creates 001 as HO_ADMIN on HO999 with default password 1234 on apply", async () => {
+    const { db, staff } = makeDb()
+    await runStaffImport({ db, profile, apply: true })
+
+    const admin = staff.get("001")
+    expect(admin).toMatchObject({
+      role: "HO_ADMIN",
+      branchId: "branch-ho",
+    })
+    await expect(verifyDefaultStaffPassword(String(admin?.password))).resolves.toBe(true)
+  })
+
   it("preserves existing 001 password and updates safe fields only", async () => {
     const { db, staff } = makeDb({
       "001": {
