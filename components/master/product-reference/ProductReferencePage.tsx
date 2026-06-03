@@ -198,7 +198,6 @@ export function ProductReferencePage() {
 
         <MasterTable
           columns={COLUMNS}
-          stickyScroll
           isEmpty={!loading && !error && items.length === 0}
         >
           {items.map((row) => (

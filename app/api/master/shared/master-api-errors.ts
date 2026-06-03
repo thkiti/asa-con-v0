@@ -1,3 +1,4 @@
+import { MasterDomainError } from "@/lib/master/errors"
 import { MasterDatabaseAuthError } from "@/lib/permissions/master"
 import { NextResponse } from "next/server"
 
@@ -5,6 +6,13 @@ export function masterErrorResponse(err: unknown, logLabel: string): NextRespons
   console.error(logLabel, err)
 
   if (err instanceof MasterDatabaseAuthError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: err.httpStatus }
+    )
+  }
+
+  if (err instanceof MasterDomainError) {
     return NextResponse.json(
       { error: err.message, code: err.code },
       { status: err.httpStatus }

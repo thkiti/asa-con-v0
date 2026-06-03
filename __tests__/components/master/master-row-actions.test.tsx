@@ -17,6 +17,39 @@ describe("MasterRowActions", () => {
     expect(html).not.toContain("opacity-50")
   })
 
+  it("renders enabled buttons when handlers provided", () => {
+    const html = renderToStaticMarkup(
+      <MasterRowActions
+        editTitle="Edit branch"
+        deleteTitle="Delete branch"
+        editDisabled={false}
+        deleteDisabled={false}
+        onEdit={() => {}}
+        onDelete={() => {}}
+      />
+    )
+    expect(html).not.toContain('disabled=""')
+    expect(html).toContain("Edit branch")
+  })
+
+  it("renders restore in trash mode", () => {
+    const html = renderToStaticMarkup(
+      <MasterRowActions
+        trashMode
+        editTitle="Edit"
+        deleteTitle="Delete"
+        restoreTitle="Restore branch"
+        editDisabled={false}
+        restoreDisabled={false}
+        onEdit={() => {}}
+        onRestore={() => {}}
+      />
+    )
+    expect(html).toContain("Restore branch")
+    expect(html).toContain("↩")
+    expect(html).not.toContain("🗑")
+  })
+
   it("uses no-reference delete title when configured", () => {
     const html = renderToStaticMarkup(
       <MasterRowActions

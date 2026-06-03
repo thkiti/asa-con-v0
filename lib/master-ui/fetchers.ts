@@ -35,6 +35,45 @@ function toSearchParams(
   return params
 }
 
+export type CreateMasterBranchInput = {
+  code: string
+  name: string
+  type: BranchListItem["type"]
+  isActive: boolean
+}
+
+export type UpdateMasterBranchInput = {
+  name: string
+  isActive: boolean
+}
+
+export function createMasterBranch(
+  input: CreateMasterBranchInput
+): Promise<{ item: BranchListItem }> {
+  return fetch("/api/master/branches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ item: BranchListItem }>
+  })
+}
+
+export function patchMasterBranch(
+  id: string,
+  body: UpdateMasterBranchInput | { deleted: true } | { deleted: false }
+): Promise<{ item: BranchListItem }> {
+  return fetch(`/api/master/branches/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ item: BranchListItem }>
+  })
+}
+
 export function fetchMasterBranches(
   query: BranchListQuery
 ): Promise<MasterListResponse<BranchListItem>> {

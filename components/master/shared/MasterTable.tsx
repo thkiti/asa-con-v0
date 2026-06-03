@@ -4,10 +4,7 @@ import {
   masterTable,
   masterTableHead,
   masterTableHeadCell,
-  masterTableHeadCellSticky,
-  masterTableHeadSticky,
   masterTableWrap,
-  masterTableWrapSticky,
 } from "@/lib/master-ui/table-classes"
 import type { MasterTableColumn } from "@/lib/master-ui/types"
 
@@ -18,33 +15,27 @@ type MasterTableProps = {
   children?: ReactNode
   emptyMessage?: string
   isEmpty?: boolean
-  /** Enables bounded scroll + sticky header row (semantic bg-card). */
-  stickyScroll?: boolean
 }
 
+/** Master Database table — bounded scroll with sticky semantic header (bg-card). */
 export function MasterTable({
   columns,
   children,
   emptyMessage = "No rows to display.",
   isEmpty = false,
-  stickyScroll = false,
 }: MasterTableProps) {
-  const wrapClass = stickyScroll ? masterTableWrapSticky : masterTableWrap
-  const headClass = stickyScroll ? masterTableHeadSticky : masterTableHead
-  const headCellClass = stickyScroll ? masterTableHeadCellSticky : masterTableHeadCell
-
   return (
-    <div className={wrapClass} data-sticky-scroll={stickyScroll ? "true" : undefined}>
+    <div className={masterTableWrap} data-sticky-scroll="true">
       <table className={masterTable}>
         <colgroup>
           {columns.map((col) => (
             <col key={col.key} style={col.width ? { width: col.width } : undefined} />
           ))}
         </colgroup>
-        <thead className={headClass}>
+        <thead className={masterTableHead}>
           <tr>
             {columns.map((col) => (
-              <th key={col.key} className={headCellClass} scope="col">
+              <th key={col.key} className={masterTableHeadCell} scope="col">
                 {col.label}
               </th>
             ))}

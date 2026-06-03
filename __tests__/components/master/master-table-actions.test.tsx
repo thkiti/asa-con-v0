@@ -22,48 +22,45 @@ const PRODUCT_REF_COLUMNS = [
   MASTER_ACTIONS_COLUMN,
 ] as const
 
-describe("MasterTable sticky scroll", () => {
-  it("sets data-sticky-scroll for Product-Reference layout", () => {
+describe("MasterTable sticky header", () => {
+  it.each([
+    ["product-reference", PRODUCT_REF_COLUMNS],
+    ["branch", BRANCH_COLUMNS],
+    ["staff", STAFF_COLUMNS],
+  ] as const)("applies sticky scroll for %s", (_label, columns) => {
     const html = renderToStaticMarkup(
-      <MasterTable columns={PRODUCT_REF_COLUMNS} stickyScroll>
+      <MasterTable columns={columns}>
         <tbody />
       </MasterTable>
     )
     expect(html).toContain('data-sticky-scroll="true"')
     expect(html).toContain("sticky")
     expect(html).toContain("top-0")
-  })
-
-  it("does not set sticky scroll on default Branch table", () => {
-    const html = renderToStaticMarkup(
-      <MasterTable columns={BRANCH_COLUMNS}>
-        <tbody />
-      </MasterTable>
-    )
-    expect(html).not.toContain('data-sticky-scroll="true"')
+    expect(html).toContain("bg-card")
   })
 })
 
 describe("Branch table actions column", () => {
-  it("renders disabled edit/delete with branch labels", () => {
+  it("renders enabled edit/delete when handlers provided", () => {
     const html = renderToStaticMarkup(
       <MasterTable columns={BRANCH_COLUMNS}>
         <MasterTableRow
-          cells={["HO999"]}
+          cells={["SH010"]}
           actions={
             <MasterRowActions
-              editTitle="Edit planned"
-              deleteTitle="Delete planned"
-              editAriaLabel="Edit branch planned"
-              deleteAriaLabel="Delete branch planned"
+              editTitle="Edit branch"
+              deleteTitle="Delete branch"
+              editDisabled={false}
+              deleteDisabled={false}
+              onEdit={() => {}}
+              onDelete={() => {}}
             />
           }
         />
       </MasterTable>
     )
-    expect(html).toContain("Edit branch planned")
-    expect(html).toContain("Delete branch planned")
-    expect(html).toContain('disabled=""')
+    expect(html).toContain("Edit branch")
+    expect(html).not.toContain('disabled=""')
   })
 })
 
@@ -92,7 +89,7 @@ describe("Staff table actions column", () => {
 describe("Product-Reference table actions column", () => {
   it("renders reference link actions when hasReference", () => {
     const html = renderToStaticMarkup(
-      <MasterTable columns={PRODUCT_REF_COLUMNS} stickyScroll>
+      <MasterTable columns={PRODUCT_REF_COLUMNS}>
         <MasterTableRow
           cells={["5101001"]}
           actions={
@@ -112,7 +109,7 @@ describe("Product-Reference table actions column", () => {
 
   it("explains no reference on delete when hasReference is false", () => {
     const html = renderToStaticMarkup(
-      <MasterTable columns={PRODUCT_REF_COLUMNS} stickyScroll>
+      <MasterTable columns={PRODUCT_REF_COLUMNS}>
         <MasterTableRow
           cells={["6101001"]}
           actions={
