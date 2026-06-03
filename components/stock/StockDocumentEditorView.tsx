@@ -1,4 +1,3 @@
-import Link from "next/link"
 import type { CountingHookGroup } from "@/lib/stock-ui/counting-hook-groups"
 import { isCountingEditorMode } from "@/lib/stock-ui/editor-draft-state"
 import type {
@@ -10,7 +9,8 @@ import type {
   StockDocumentActionVM,
   StockDocumentDetailVM,
 } from "@/lib/stock-ui/types"
-import { StockDocumentCountingGrid } from "./StockDocumentCountingGrid"
+import { StockDocumentCountingSheet } from "./StockDocumentCountingSheet"
+import { StockDocumentEditorToolbarActions } from "./StockDocumentEditorToolbarActions"
 import { StockDocumentHeaderForm } from "./StockDocumentHeaderForm"
 import { StockDocumentLinesTable } from "./StockDocumentLinesTable"
 import {
@@ -37,35 +37,6 @@ type StockDocumentEditorViewProps = {
   onWorkflowAction: (actionId: StockDocumentActionId) => void
 }
 
-function actionBusyLabel(actionId: StockDocumentActionId): string {
-  switch (actionId) {
-    case "save":
-      return "Saving…"
-    case "submit":
-      return "Submitting…"
-    case "confirm":
-      return "Confirming…"
-    case "cancel":
-      return "Cancelling…"
-    case "post":
-      return "Posting…"
-    default:
-      return "Working…"
-  }
-}
-
-function actionButtonClass(action: StockDocumentActionVM): string {
-  const base =
-    "rounded px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
-  if (action.destructive) {
-    return `${base} border border-red-300 bg-white text-red-800 hover:bg-red-50`
-  }
-  if (action.primary) {
-    return `${base} bg-zinc-900 text-white hover:bg-zinc-800`
-  }
-  return `${base} border border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-100`
-}
-
 export function StockDocumentEditorView({
   state,
   detailSnapshot,
@@ -84,9 +55,17 @@ export function StockDocumentEditorView({
   onLineChange,
   onWorkflowAction,
 }: StockDocumentEditorViewProps) {
-  const visibleActions = actions.filter((action) => action.visible)
-  const busy = saving || actionBusy !== null
   const showCountingGrid = countingMode && isCountingEditorMode(state)
+
+  const toolbarActions = (
+    <StockDocumentEditorToolbarActions
+      state={state}
+      actions={actions}
+      saving={saving}
+      actionBusy={actionBusy}
+      onWorkflowAction={onWorkflowAction}
+    />
+  )
 
   return (
     <div className="stock-document-print-shell space-y-6">
@@ -125,53 +104,29 @@ export function StockDocumentEditorView({
 
           <div className="no-print">
             {showCountingGrid ? (
-              <StockDocumentCountingGrid
+              <StockDocumentCountingSheet
                 lines={state.lines}
                 activeHookGroup={activeHookGroup}
                 readOnly={state.readOnly}
                 onHookGroupChange={onHookGroupChange}
                 onLineChange={onLineChange}
+                toolbarActions={toolbarActions}
               />
             ) : (
-              <StockDocumentLinesTable
-                docType={state.docType}
-                lines={state.lines}
-                readOnly={state.readOnly}
-                onAddLine={onAddLine}
-                onRemoveLine={onRemoveLine}
-                onLineChange={onLineChange}
-              />
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-end gap-4 rounded border border-zinc-200 bg-zinc-50 px-3 py-3">
+                  {toolbarActions}
+                </div>
+                <StockDocumentLinesTable
+                  docType={state.docType}
+                  lines={state.lines}
+                  readOnly={state.readOnly}
+                  onAddLine={onAddLine}
+                  onRemoveLine={onRemoveLine}
+                  onLineChange={onLineChange}
+                />
+              </div>
             )}
-          </div>
-
-          <div className="no-print flex flex-wrap items-center gap-3">
-            {visibleActions.map((action) => {
-              if (action.id === "save" && state.readOnly) {
-                return null
-              }
-
-              const isBusy =
-                (action.id === "save" && saving) || actionBusy === action.id
-              const label = isBusy ? actionBusyLabel(action.id) : action.label
-
-              return (
-                <button
-                  key={action.id}
-                  type="button"
-                  className={actionButtonClass(action)}
-                  disabled={!action.enabled || busy}
-                  onClick={() => onWorkflowAction(action.id)}
-                >
-                  {label}
-                </button>
-              )
-            })}
-            <Link
-              href="/shop/stock-documents"
-              className="text-sm text-zinc-600 hover:text-zinc-900"
-            >
-              Back to list
-            </Link>
           </div>
         </>
       ) : null}

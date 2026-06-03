@@ -1,4 +1,10 @@
-﻿const { Decimal } = require("@prisma/client/runtime/client")
+﻿if (typeof globalThis.TextEncoder === "undefined") {
+  const { TextEncoder, TextDecoder } = require("util")
+  globalThis.TextEncoder = TextEncoder
+  globalThis.TextDecoder = TextDecoder as typeof globalThis.TextDecoder
+}
+
+const { Decimal } = require("@prisma/client/runtime/client")
 
 jest.mock("@/generated/prisma/client", () => {
   class PrismaClientKnownRequestError extends Error {

@@ -6,9 +6,10 @@ import { getSession, requireSystemImportActor } from "@/lib/auth"
 import { assertImportApplyGate } from "@/lib/import/apply-gate"
 import { collectSourceChecksums } from "@/lib/import/archive/read-manifest"
 import type { ImportEntity } from "@/lib/import"
+import { toImportApiResult } from "@/lib/import/import-api-result"
 import { resolveImportProfile } from "@/lib/import/profiles/devboard-v1"
 import { runImportPhase } from "@/lib/import/run-phase"
-import { createImportDb } from "@/lib/import/run-import"
+import { createImportDb } from "@/lib/import/import-db"
 
 const ENTITIES: ImportEntity[] = ["branch", "product", "reference-stock", "staff"]
 
@@ -53,7 +54,12 @@ export async function POST(req: NextRequest) {
       createImportDb()
     )
 
-    return NextResponse.json(report)
+    const result = toImportApiResult(entity, report)
+    if (result.failed) {
+      return NextResponse.json(result, { status: 409 })
+    }
+
+    return NextResponse.json(result)
   } catch (err) {
     return importErrorResponse(err, "POST /api/system/import/apply")
   }

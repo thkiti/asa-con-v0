@@ -48,7 +48,7 @@ const lines: EditorLineRowVM[] = [
 ]
 
 describe("StockDocumentCountingGrid", () => {
-  it("renders key group columns for active K tab", () => {
+  it("re-exports counting sheet with compact columns for active K tab", () => {
     const html = renderToStaticMarkup(
       <StockDocumentCountingGrid
         lines={lines}
@@ -59,13 +59,15 @@ describe("StockDocumentCountingGrid", () => {
       />
     )
 
-    expect(html).toContain("Hook")
+    expect(html).toContain("ตรวจนับสต็อก — รายชิ้น")
     expect(html).toContain("#K1")
-    expect(html).toContain("Home key")
-    expect(html).not.toContain("Auto key")
+    expect(html).toContain(">Hook</th>")
+    const itemArea = html.split("lg:col-span-3")[1]?.split("lg:col-span-1")[0] ?? ""
+    expect(itemArea).not.toContain(">Name</th>")
+    expect(html).not.toContain("#C1")
   })
 
-  it("renders shoe prefix section for active S tab", () => {
+  it("re-exports counting sheet with Thai shoe section for active S tab", () => {
     const html = renderToStaticMarkup(
       <StockDocumentCountingGrid
         lines={lines}
@@ -76,9 +78,9 @@ describe("StockDocumentCountingGrid", () => {
       />
     )
 
-    expect(html).toContain("51 - Ladies")
+    expect(html).toContain("51 ส้นแตะสตรี")
     expect(html).toContain("5101001")
-    expect(html).not.toContain(">Hook<")
+    expect(html).not.toContain(">ตะขอ</th>")
   })
 
   it("shows counted badge on hook tabs", () => {

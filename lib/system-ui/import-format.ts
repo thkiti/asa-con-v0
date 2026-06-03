@@ -1,4 +1,8 @@
-import type { ImportArchiveFileView, ImportReportView } from "./import-types"
+import type {
+  ImportApiResultView,
+  ImportArchiveFileView,
+  ImportReportView,
+} from "./import-types"
 
 export function formatReportTimestamp(iso: string): string {
   const date = new Date(iso)
@@ -50,4 +54,30 @@ export function collectReportWarnings(report: ImportReportView): string[] {
 
 export function collectMissingProductReferences(report: ImportReportView): string[] {
   return report.phases.flatMap((phase) => phase.missingProductReferences)
+}
+
+const OUTCOME_ERROR_PREVIEW = 5
+
+export function formatImportOutcomeSuccess(result: ImportApiResultView): string {
+  const modeLabel = result.mode === "apply" ? "Apply" : "Dry Run"
+  return `${modeLabel} สำเร็จ — Insert ${result.inserted}, Update ${result.updated}, Skip ${result.skipped}`
+}
+
+export function formatImportOutcomeFailure(result: ImportApiResultView): string {
+  const modeLabel = result.mode === "apply" ? "Apply" : "Dry Run"
+  const preview = result.errors.slice(0, OUTCOME_ERROR_PREVIEW)
+  const suffix =
+    result.errors.length > OUTCOME_ERROR_PREVIEW
+      ? ` (+${result.errors.length - OUTCOME_ERROR_PREVIEW} more)`
+      : ""
+  const detail = preview.length > 0 ? `: ${preview.join("; ")}${suffix}` : ""
+  return `${modeLabel} ไม่สำเร็จ — พบ ${result.errors.length} error(s)${detail}`
+}
+
+export function previewImportOutcomeErrors(errors: string[]): string[] {
+  return errors.slice(0, OUTCOME_ERROR_PREVIEW)
+}
+
+export function hasMoreImportOutcomeErrors(errors: string[]): boolean {
+  return errors.length > OUTCOME_ERROR_PREVIEW
 }

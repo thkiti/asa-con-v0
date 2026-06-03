@@ -1,4 +1,4 @@
-import { canEnableApply } from "@/lib/system-ui/import-state"
+import { canEnableApply, canEnableApplyFromResult } from "@/lib/system-ui/import-state"
 import type { ImportReportView } from "@/lib/system-ui/import-types"
 
 function sampleReport(overrides: Partial<ImportReportView> = {}): ImportReportView {
@@ -54,5 +54,44 @@ describe("canEnableApply", () => {
 
   it("returns true for successful dry-run with report id", () => {
     expect(canEnableApply(sampleReport())).toBe(true)
+  })
+})
+
+describe("canEnableApplyFromResult", () => {
+  it("returns false when envelope failed", () => {
+    expect(
+      canEnableApplyFromResult({
+        success: false,
+        failed: true,
+        mode: "dry-run",
+        entity: "branch",
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        errors: ["err"],
+        warnings: [],
+        report: sampleReport({
+          totals: { ...sampleReport().totals, errors: 1 },
+        }),
+      })
+    ).toBe(false)
+  })
+
+  it("returns true when envelope success and report is valid dry-run", () => {
+    const report = sampleReport()
+    expect(
+      canEnableApplyFromResult({
+        success: true,
+        failed: false,
+        mode: "dry-run",
+        entity: "branch",
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        errors: [],
+        warnings: [],
+        report,
+      })
+    ).toBe(true)
   })
 })

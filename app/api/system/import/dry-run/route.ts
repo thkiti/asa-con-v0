@@ -4,8 +4,9 @@ export const dynamic = "force-dynamic"
 import { importErrorResponse } from "@/app/api/system/import/shared/import-api-errors"
 import { getSession, requireSystemImportActor } from "@/lib/auth"
 import type { ImportEntity } from "@/lib/import"
+import { toImportApiResult } from "@/lib/import/import-api-result"
 import { runImportPhase } from "@/lib/import/run-phase"
-import { createImportDb } from "@/lib/import/run-import"
+import { createImportDb } from "@/lib/import/import-db"
 
 const ENTITIES: ImportEntity[] = ["branch", "product", "reference-stock", "staff"]
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       createImportDb()
     )
 
-    return NextResponse.json(report)
+    return NextResponse.json(toImportApiResult(entity, report))
   } catch (err) {
     return importErrorResponse(err, "POST /api/system/import/dry-run")
   }

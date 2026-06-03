@@ -3,6 +3,10 @@ import {
   takeSampleRows,
 } from "../report"
 import {
+  flushImportPendingWrites,
+  type ImportPendingWrite,
+} from "../flush-pending-writes"
+import {
   parseBranchDbf,
   resolveBranchDbfPath,
 } from "../parsers/branch-dbf"
@@ -39,6 +43,8 @@ export async function runBranchImport(input: {
   report.errors.push(...parsed.errors)
   report.sampleRows = takeSampleRows(parsed.rows)
 
+  const pending: ImportPendingWrite[] = []
+
   for (const row of parsed.rows) {
     const existing = await input.db.branch.findUnique({
       where: { code: row.code },
@@ -48,17 +54,19 @@ export async function runBranchImport(input: {
     if (!existing) {
       report.wouldInsert++
       if (input.apply) {
-        await input.db.branch.upsert({
-          where: { code: row.code },
-          create: row,
-          update: {
-            name: row.name,
-            type: row.type,
-            isActive: row.isActive,
-            deleted: row.deleted,
-          },
+        pending.push(async () => {
+          await input.db.branch.upsert({
+            where: { code: row.code },
+            create: row,
+            update: {
+              name: row.name,
+              type: row.type,
+              isActive: row.isActive,
+              deleted: row.deleted,
+            },
+          })
+          report.inserted++
         })
-        report.inserted++
       }
       continue
     }
@@ -66,17 +74,19 @@ export async function runBranchImport(input: {
     if (branchNeedsUpdate(existing, row)) {
       report.wouldUpdate++
       if (input.apply) {
-        await input.db.branch.upsert({
-          where: { code: row.code },
-          create: row,
-          update: {
-            name: row.name,
-            type: row.type,
-            isActive: row.isActive,
-            deleted: row.deleted,
-          },
+        pending.push(async () => {
+          await input.db.branch.upsert({
+            where: { code: row.code },
+            create: row,
+            update: {
+              name: row.name,
+              type: row.type,
+              isActive: row.isActive,
+              deleted: row.deleted,
+            },
+          })
+          report.updated++
         })
-        report.updated++
       }
       continue
     }
@@ -84,5 +94,6 @@ export async function runBranchImport(input: {
     report.skipped++
   }
 
+  await flushImportPendingWrites(report, input.apply, pending)
   return report
 }

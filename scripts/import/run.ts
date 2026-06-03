@@ -4,6 +4,8 @@
  * Examples:
  *   npx tsx scripts/import/run.ts --profile=devboard-v1 --dry-run
  *   npx tsx scripts/import/run.ts --profile=devboard-v1 --apply
+ *   npx tsx scripts/import/run.ts --profile=devboard-v1 --entity=staff --dry-run
+ *   npx tsx scripts/import/run.ts --profile=devboard-v1 --entity=staff --apply
  */
 import "dotenv/config"
 

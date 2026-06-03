@@ -11,8 +11,8 @@ describe("StockDocumentHookTabs", () => {
       />
     )
 
-    expect(html).toContain("Home Key")
-    expect(html).toContain("Shoe Materials")
+    expect(html).toContain("กุญแจบ้าน")
+    expect(html).toContain("วัสดุรองเท้า")
     expect(html).toContain('aria-selected="true"')
   })
 })

@@ -9,6 +9,10 @@ import {
   createEmptyPhaseReport,
   takeSampleRows,
 } from "../report"
+import {
+  flushImportPendingWrites,
+  type ImportPendingWrite,
+} from "../flush-pending-writes"
 import { parseStaffDbf, resolveStaffDbfPath } from "../parsers/staff-dbf"
 import { getDefaultStaffPasswordHash } from "../staff-password"
 import {
@@ -80,6 +84,7 @@ export async function runStaffImport(input: {
   report.sampleRows = takeSampleRows(parsed.rows)
 
   const passwordHash = input.apply ? await getDefaultStaffPasswordHash() : null
+  const pending: ImportPendingWrite[] = []
 
   for (const row of parsed.rows) {
     const branch = bootstrap.branches[row.branchCode]
@@ -97,25 +102,27 @@ export async function runStaffImport(input: {
     if (!existing) {
       report.wouldInsert++
       if (input.apply && passwordHash) {
-        await input.db.staff.upsert({
-          where: { staffId: row.staffId },
-          create: {
-            staffId: row.staffId,
-            name: row.name,
-            role: row.role,
-            branchId: branch.id,
-            password: passwordHash,
-            deleted: row.deleted,
-          },
-          update: {
-            name: row.name,
-            role: row.role,
-            branchId: branch.id,
-            password: passwordHash,
-            deleted: row.deleted,
-          },
+        pending.push(async () => {
+          await input.db.staff.upsert({
+            where: { staffId: row.staffId },
+            create: {
+              staffId: row.staffId,
+              name: row.name,
+              role: row.role,
+              branchId: branch.id,
+              password: passwordHash,
+              deleted: row.deleted,
+            },
+            update: {
+              name: row.name,
+              role: row.role,
+              branchId: branch.id,
+              password: passwordHash,
+              deleted: row.deleted,
+            },
+          })
+          report.inserted++
         })
-        report.inserted++
       }
       continue
     }
@@ -124,25 +131,27 @@ export async function runStaffImport(input: {
       if (bootstrapAdminSafeUpdateNeeded(existing, row, branch.id)) {
         report.wouldUpdate++
         report.warnings.push(STAFF_BOOTSTRAP_ADMIN_EXISTS_WARNING)
-        if (input.apply) {
-          await input.db.staff.upsert({
-            where: { staffId: row.staffId },
-            create: {
-              staffId: row.staffId,
-              name: row.name,
-              role: "HO_ADMIN",
-              branchId: branch.id,
-              password: passwordHash!,
-              deleted: false,
-            },
-            update: {
-              name: row.name,
-              role: "HO_ADMIN",
-              branchId: branch.id,
-              deleted: false,
-            },
+        if (input.apply && passwordHash) {
+          pending.push(async () => {
+            await input.db.staff.upsert({
+              where: { staffId: row.staffId },
+              create: {
+                staffId: row.staffId,
+                name: row.name,
+                role: "HO_ADMIN",
+                branchId: branch.id,
+                password: passwordHash,
+                deleted: false,
+              },
+              update: {
+                name: row.name,
+                role: "HO_ADMIN",
+                branchId: branch.id,
+                deleted: false,
+              },
+            })
+            report.updated++
           })
-          report.updated++
         }
       } else {
         report.skipped++
@@ -154,25 +163,27 @@ export async function runStaffImport(input: {
     if (staffNeedsUpdate(existing, row, branch.id)) {
       report.wouldUpdate++
       if (input.apply && passwordHash) {
-        await input.db.staff.upsert({
-          where: { staffId: row.staffId },
-          create: {
-            staffId: row.staffId,
-            name: row.name,
-            role: row.role,
-            branchId: branch.id,
-            password: passwordHash,
-            deleted: row.deleted,
-          },
-          update: {
-            name: row.name,
-            role: row.role,
-            branchId: branch.id,
-            password: passwordHash,
-            deleted: row.deleted,
-          },
+        pending.push(async () => {
+          await input.db.staff.upsert({
+            where: { staffId: row.staffId },
+            create: {
+              staffId: row.staffId,
+              name: row.name,
+              role: row.role,
+              branchId: branch.id,
+              password: passwordHash,
+              deleted: row.deleted,
+            },
+            update: {
+              name: row.name,
+              role: row.role,
+              branchId: branch.id,
+              password: passwordHash,
+              deleted: row.deleted,
+            },
+          })
+          report.updated++
         })
-        report.updated++
       }
       continue
     }
@@ -180,5 +191,6 @@ export async function runStaffImport(input: {
     report.skipped++
   }
 
+  await flushImportPendingWrites(report, input.apply, pending)
   return report
 }

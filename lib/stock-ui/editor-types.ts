@@ -15,6 +15,8 @@ export type EditorLineRowVM = {
   hookLabel?: string
   displayCode?: string
   sourceType?: "REFERENCE" | "SHOE"
+  /** Supplier-facing group from reference stock — counting display only. */
+  productGroup?: string | null
   isOrphan?: boolean
 }
 

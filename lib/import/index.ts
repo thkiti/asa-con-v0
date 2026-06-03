@@ -59,6 +59,12 @@ export {
   readImportReport,
   writePhaseImportReport,
 } from "./report-store"
+export {
+  flattenPhaseErrors,
+  flattenPhaseWarnings,
+  toImportApiResult,
+} from "./import-api-result"
+export type { ImportApiResult } from "./import-api-result"
 export { runImportPhase } from "./run-phase"
 export {
   collectSourceChecksums,
@@ -77,8 +83,8 @@ export {
   parseLegacyArchiveCliArgs,
   summarizeLegacyArchiveManifest,
 } from "./archive"
+export { createImportDb } from "./import-db"
 export {
-  createImportDb,
   parseImportCliArgs,
   runMasterDataImport,
 } from "./run-import"

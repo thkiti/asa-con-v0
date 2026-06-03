@@ -2,6 +2,10 @@ import {
   createEmptyPhaseReport,
   takeSampleRows,
 } from "../report"
+import {
+  flushImportPendingWrites,
+  type ImportPendingWrite,
+} from "../flush-pending-writes"
 import { parseReferenceCsvFiles } from "../parsers/reference-csv"
 import type {
   ImportDb,
@@ -102,6 +106,8 @@ export async function runReferenceStockImport(input: {
   report.warnings.push(...parsed.warnings)
   report.sampleRows = takeSampleRows(parsed.rows)
 
+  const pending: ImportPendingWrite[] = []
+
   for (const row of parsed.rows) {
     let productId = await resolveProductId(
       input.db,
@@ -155,8 +161,11 @@ export async function runReferenceStockImport(input: {
     if (!existing) {
       report.wouldInsert++
       if (input.apply) {
-        await upsertReferenceStockRow(input.db, productId, row)
-        report.inserted++
+        const resolvedProductId = productId
+        pending.push(async () => {
+          await upsertReferenceStockRow(input.db, resolvedProductId, row)
+          report.inserted++
+        })
       }
       continue
     }
@@ -164,8 +173,11 @@ export async function runReferenceStockImport(input: {
     if (referenceNeedsUpdate(existing, row)) {
       report.wouldUpdate++
       if (input.apply) {
-        await upsertReferenceStockRow(input.db, productId, row)
-        report.updated++
+        const resolvedProductId = productId
+        pending.push(async () => {
+          await upsertReferenceStockRow(input.db, resolvedProductId, row)
+          report.updated++
+        })
       }
       continue
     }
@@ -173,5 +185,6 @@ export async function runReferenceStockImport(input: {
     report.skipped++
   }
 
+  await flushImportPendingWrites(report, input.apply, pending)
   return report
 }

@@ -3,6 +3,10 @@ import {
   takeSampleRows,
 } from "../report"
 import {
+  flushImportPendingWrites,
+  type ImportPendingWrite,
+} from "../flush-pending-writes"
+import {
   parseProductDbf,
   resolveProductDbfPath,
 } from "../parsers/product-dbf"
@@ -49,6 +53,8 @@ export async function runProductImport(input: {
   report.errors.push(...parsed.errors)
   report.sampleRows = takeSampleRows(parsed.rows)
 
+  const pending: ImportPendingWrite[] = []
+
   for (const row of parsed.rows) {
     const existing = await input.db.product.findUnique({
       where: { code: row.code },
@@ -66,19 +72,21 @@ export async function runProductImport(input: {
     if (!existing) {
       report.wouldInsert++
       if (input.apply) {
-        await input.db.product.upsert({
-          where: { code: row.code },
-          create: row,
-          update: {
-            name: row.name,
-            groupCode: row.groupCode,
-            typeCode: row.typeCode,
-            runningCode: row.runningCode,
-            productType: row.productType,
-            deleted: row.deleted,
-          },
+        pending.push(async () => {
+          await input.db.product.upsert({
+            where: { code: row.code },
+            create: row,
+            update: {
+              name: row.name,
+              groupCode: row.groupCode,
+              typeCode: row.typeCode,
+              runningCode: row.runningCode,
+              productType: row.productType,
+              deleted: row.deleted,
+            },
+          })
+          report.inserted++
         })
-        report.inserted++
       }
       continue
     }
@@ -86,19 +94,21 @@ export async function runProductImport(input: {
     if (productNeedsUpdate(existing, row)) {
       report.wouldUpdate++
       if (input.apply) {
-        await input.db.product.upsert({
-          where: { code: row.code },
-          create: row,
-          update: {
-            name: row.name,
-            groupCode: row.groupCode,
-            typeCode: row.typeCode,
-            runningCode: row.runningCode,
-            productType: row.productType,
-            deleted: row.deleted,
-          },
+        pending.push(async () => {
+          await input.db.product.upsert({
+            where: { code: row.code },
+            create: row,
+            update: {
+              name: row.name,
+              groupCode: row.groupCode,
+              typeCode: row.typeCode,
+              runningCode: row.runningCode,
+              productType: row.productType,
+              deleted: row.deleted,
+            },
+          })
+          report.updated++
         })
-        report.updated++
       }
       continue
     }
@@ -106,5 +116,6 @@ export async function runProductImport(input: {
     report.skipped++
   }
 
+  await flushImportPendingWrites(report, input.apply, pending)
   return report
 }

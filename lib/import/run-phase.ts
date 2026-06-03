@@ -1,3 +1,5 @@
+import { prisma } from "@/lib/shared/prisma"
+
 import { collectSourceChecksums } from "./archive/read-manifest"
 import { resolveImportProfile } from "./profiles/devboard-v1"
 import { finalizeImportReport } from "./report"
@@ -8,17 +10,14 @@ import { runHoManifestImport } from "./services/ho-manifest"
 import { loadProductImportCodes, runProductImport } from "./services/product-import"
 import { runReferenceStockImport } from "./services/reference-stock-import"
 import { runStaffImport } from "./services/staff-import"
+import { createImportDb } from "./import-db"
 import type { ImportDb, ImportEntity, ImportReport, ImportRunOptions } from "./types"
 
-export async function runImportPhase(
+async function executeImportPhases(
   entity: ImportEntity,
   options: ImportRunOptions,
   db: ImportDb
 ): Promise<ImportReport> {
-  if (options.apply) {
-    assertImportApplyAllowed(true)
-  }
-
   const profile = resolveImportProfile(options)
   const mode = options.apply ? "apply" : "dry-run"
   const sourceChecksums = await collectSourceChecksums(profile.sourceDir)
@@ -80,4 +79,19 @@ export async function runImportPhase(
   }
   await writePhaseImportReport(finalized, entity)
   return finalized
+}
+
+export async function runImportPhase(
+  entity: ImportEntity,
+  options: ImportRunOptions,
+  db: ImportDb = createImportDb()
+): Promise<ImportReport> {
+  if (options.apply) {
+    assertImportApplyAllowed(true)
+    return prisma.$transaction((tx) =>
+      executeImportPhases(entity, options, createImportDb(tx as unknown as ImportDb))
+    )
+  }
+
+  return executeImportPhases(entity, options, db)
 }

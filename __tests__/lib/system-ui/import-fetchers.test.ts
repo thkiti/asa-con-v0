@@ -29,14 +29,33 @@ describe("system import fetchers", () => {
     expect(global.fetch).toHaveBeenCalledWith("/api/system/import/status")
   })
 
-  it("postImportDryRun sends entity in body", async () => {
-    const report = { profile: "devboard-v1", mode: "dry-run", totals: { errors: 0 } }
+  it("postImportDryRun sends entity in body and returns envelope", async () => {
+    const envelope = {
+      success: true,
+      failed: false,
+      mode: "dry-run",
+      entity: "product",
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [],
+      warnings: [],
+      report: {
+        profile: "devboard-v1",
+        mode: "dry-run",
+        sourceDir: "data/legacy/devboard-v1",
+        startedAt: "",
+        completedAt: "",
+        phases: [],
+        totals: { errors: 0 },
+      },
+    }
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => report,
+      json: async () => envelope,
     })
 
-    await postImportDryRun("product")
+    await expect(postImportDryRun("product")).resolves.toEqual(envelope)
     expect(global.fetch).toHaveBeenCalledWith("/api/system/import/dry-run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -44,10 +63,56 @@ describe("system import fetchers", () => {
     })
   })
 
+  it("postImportApply returns failed envelope on 409 without throwing", async () => {
+    const failedEnvelope = {
+      success: false,
+      failed: true,
+      mode: "apply",
+      entity: "staff",
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      errors: ["missing branch"],
+      warnings: [],
+      report: {
+        profile: "devboard-v1",
+        mode: "apply",
+        sourceDir: "data/legacy/devboard-v1",
+        startedAt: "",
+        completedAt: "",
+        phases: [],
+        totals: { errors: 1, inserted: 0, updated: 0 },
+      },
+    }
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => failedEnvelope,
+    })
+
+    await expect(
+      postImportApply({
+        entity: "staff",
+        dryRunReportId: "report-1.json",
+      })
+    ).resolves.toEqual(failedEnvelope)
+  })
+
   it("postImportApply sends confirm true and dryRunReportId", async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ mode: "apply" }),
+      json: async () => ({
+        success: true,
+        failed: false,
+        mode: "apply",
+        entity: "staff",
+        inserted: 1,
+        updated: 0,
+        skipped: 0,
+        errors: [],
+        warnings: [],
+        report: { mode: "apply", totals: { errors: 0 } },
+      }),
     })
 
     await postImportApply({

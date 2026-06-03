@@ -100,6 +100,7 @@ export function mergedRowToEditorLine(row: MergedCountingRowVM): EditorLineRowVM
     hookGroup: row.hookGroup,
     hookNo: row.hookNo,
     hookLabel: row.hookLabel,
+    productGroup: row.productGroup,
     sourceType: row.sourceType,
     isOrphan: row.isOrphan,
     qty: row.qty,

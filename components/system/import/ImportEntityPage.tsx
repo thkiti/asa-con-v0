@@ -10,9 +10,20 @@ import {
   postImportDryRun,
   postLogout,
 } from "@/lib/system-ui/import-fetchers"
+import {
+  formatImportOutcomeFailure,
+  formatImportOutcomeSuccess,
+  hasMoreImportOutcomeErrors,
+  previewImportOutcomeErrors,
+} from "@/lib/system-ui/import-format"
 import { getImportEntityConfig } from "@/lib/system-ui/import-entity-config"
-import type { ImportEntityKey, ImportReportView, ImportStatusResponse } from "@/lib/system-ui/import-types"
-import { canEnableApply } from "@/lib/system-ui/import-state"
+import type {
+  ImportApiResultView,
+  ImportEntityKey,
+  ImportReportView,
+  ImportStatusResponse,
+} from "@/lib/system-ui/import-types"
+import { canEnableApplyFromResult } from "@/lib/system-ui/import-state"
 import { ApplyConfirmDialog } from "./ApplyConfirmDialog"
 import { ArchiveStatusPanel } from "./ArchiveStatusPanel"
 import { ImportReportSummary } from "./ImportReportSummary"
@@ -28,17 +39,18 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
   const config = useMemo(() => getImportEntityConfig(entity), [entity])
 
   const [status, setStatus] = useState<ImportStatusResponse | null>(null)
-  const [dryRunReport, setDryRunReport] = useState<ImportReportView | null>(null)
+  const [dryRunResult, setDryRunResult] = useState<ImportApiResultView | null>(null)
   const [latestReport, setLatestReport] = useState<ImportReportView | null>(null)
+  const [lastApplyResult, setLastApplyResult] = useState<ImportApiResultView | null>(null)
   const [loading, setLoading] = useState(true)
   const [dryRunPending, setDryRunPending] = useState(false)
   const [applyPending, setApplyPending] = useState(false)
   const [logoutPending, setLogoutPending] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
 
-  const applyEnabled = canEnableApply(dryRunReport)
+  const applyEnabled = canEnableApplyFromResult(dryRunResult)
+  const outcomeBanner = lastApplyResult ?? dryRunResult
 
   const loadPage = useCallback(async () => {
     setLoading(true)
@@ -58,7 +70,18 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
       if (latestDryRun) {
         const report = await fetchImportReport(latestDryRun.reportId)
         if (report.totals.errors === 0) {
-          setDryRunReport(report)
+          setDryRunResult({
+            success: true,
+            failed: false,
+            mode: "dry-run",
+            entity,
+            inserted: report.totals.inserted,
+            updated: report.totals.updated,
+            skipped: report.totals.skipped,
+            errors: [],
+            warnings: report.phases.flatMap((phase) => phase.warnings),
+            report,
+          })
         }
       }
 
@@ -82,17 +105,13 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
   const onDryRun = useCallback(async () => {
     setDryRunPending(true)
     setError(null)
-    setMessage(null)
+    setLastApplyResult(null)
     try {
-      const report = await postImportDryRun(entity)
-      setDryRunReport(report.totals.errors === 0 ? report : null)
-      setLatestReport(report)
-      setMessage(
-        report.totals.errors > 0
-          ? "Dry Run เสร็จแล้ว แต่มี errors — แก้ไขก่อน Apply"
-          : "Dry Run สำเร็จ — สามารถ Apply ได้"
-      )
+      const result = await postImportDryRun(entity)
+      setDryRunResult(result)
+      setLatestReport(result.report)
     } catch (err) {
+      setDryRunResult(null)
       setError(err instanceof Error ? err.message : "Dry Run ไม่สำเร็จ")
     } finally {
       setDryRunPending(false)
@@ -100,26 +119,31 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
   }, [entity])
 
   const onApplyConfirm = useCallback(async () => {
-    if (!dryRunReport?.meta?.reportId) return
+    if (!dryRunResult?.report.meta?.reportId) return
 
     setApplyPending(true)
     setError(null)
-    setMessage(null)
     try {
-      const report = await postImportApply({
+      const result = await postImportApply({
         entity,
-        dryRunReportId: dryRunReport.meta.reportId,
+        dryRunReportId: dryRunResult.report.meta.reportId,
       })
-      setLatestReport(report)
-      setDryRunReport(null)
+      setLastApplyResult(result)
+      setLatestReport(result.report)
       setConfirmOpen(false)
-      setMessage("Apply สำเร็จ")
+
+      if (result.failed) {
+        setDryRunResult(null)
+        return
+      }
+
+      setDryRunResult(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Apply ไม่สำเร็จ")
     } finally {
       setApplyPending(false)
     }
-  }, [dryRunReport, entity])
+  }, [dryRunResult, entity])
 
   const onLogout = useCallback(async () => {
     setLogoutPending(true)
@@ -135,7 +159,7 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
     }
   }, [router])
 
-  const displayReport = latestReport ?? dryRunReport
+  const displayReport = latestReport ?? dryRunResult?.report ?? null
 
   return (
     <SystemImportShell
@@ -144,8 +168,37 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
       logoutPending={logoutPending}
     >
       {loading ? <p className="text-sm text-zinc-600">กำลังโหลด…</p> : null}
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      {message ? <p className="text-sm text-green-800">{message}</p> : null}
+      {error ? (
+        <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {error}
+        </p>
+      ) : null}
+
+      {outcomeBanner && !loading ? (
+        <div
+          className={
+            outcomeBanner.success
+              ? "mb-4 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900"
+              : "mb-4 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900"
+          }
+        >
+          <p className="font-medium">
+            {outcomeBanner.success
+              ? formatImportOutcomeSuccess(outcomeBanner)
+              : formatImportOutcomeFailure(outcomeBanner)}
+          </p>
+          {outcomeBanner.failed && outcomeBanner.errors.length > 0 ? (
+            <ul className="mt-2 list-inside list-disc text-xs">
+              {previewImportOutcomeErrors(outcomeBanner.errors).map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+              {hasMoreImportOutcomeErrors(outcomeBanner.errors) ? (
+                <li>…และ error เพิ่มเติม</li>
+              ) : null}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       {status?.productionGuardActive ? (
         <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

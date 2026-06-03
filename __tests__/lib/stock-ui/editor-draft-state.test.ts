@@ -162,6 +162,7 @@ describe("editor-draft-state", () => {
       productId: "prod-1",
       displayCode: "#K1",
       hookGroup: "K",
+      productGroup: "0101900",
       qty: "4",
     })
     expect(mergedRowsToEditorLines).toBeDefined()

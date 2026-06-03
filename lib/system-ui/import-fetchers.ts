@@ -1,4 +1,5 @@
 import type {
+  ImportApiResultView,
   ImportEntityKey,
   ImportReportView,
   ImportReportsResponse,
@@ -21,6 +22,16 @@ async function throwImportFetchError(res: Response): Promise<never> {
   throw err
 }
 
+function isImportApiResult(body: unknown): body is ImportApiResultView {
+  if (!body || typeof body !== "object") return false
+  const candidate = body as ImportApiResultView
+  return (
+    typeof candidate.success === "boolean" &&
+    typeof candidate.failed === "boolean" &&
+    candidate.report != null
+  )
+}
+
 export function fetchImportStatus(): Promise<ImportStatusResponse> {
   return fetch("/api/system/import/status").then(async (res) => {
     if (!res.ok) return throwImportFetchError(res)
@@ -28,21 +39,25 @@ export function fetchImportStatus(): Promise<ImportStatusResponse> {
   })
 }
 
-export function postImportDryRun(entity: ImportEntityKey): Promise<ImportReportView> {
+export function postImportDryRun(entity: ImportEntityKey): Promise<ImportApiResultView> {
   return fetch("/api/system/import/dry-run", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ entity, profile: "devboard-v1" }),
   }).then(async (res) => {
     if (!res.ok) return throwImportFetchError(res)
-    return res.json() as Promise<ImportReportView>
+    const body: unknown = await res.json()
+    if (!isImportApiResult(body)) {
+      throw new Error("Invalid import dry-run response")
+    }
+    return body
   })
 }
 
 export function postImportApply(input: {
   entity: ImportEntityKey
   dryRunReportId: string
-}): Promise<ImportReportView> {
+}): Promise<ImportApiResultView> {
   return fetch("/api/system/import/apply", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -53,8 +68,12 @@ export function postImportApply(input: {
       profile: "devboard-v1",
     }),
   }).then(async (res) => {
+    const body: unknown = await res.json()
+    if (isImportApiResult(body)) {
+      return body
+    }
     if (!res.ok) return throwImportFetchError(res)
-    return res.json() as Promise<ImportReportView>
+    throw new Error("Invalid import apply response")
   })
 }
 

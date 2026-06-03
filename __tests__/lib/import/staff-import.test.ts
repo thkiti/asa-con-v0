@@ -141,6 +141,18 @@ describe("staff bootstrap mapping", () => {
     expect(report.wouldInsert).toBe(0)
   })
 
+  it("does not write staff on apply when bootstrap branches are missing", async () => {
+    const { db } = makeDb()
+    ;(db.branch.findUnique as jest.Mock).mockResolvedValue(null)
+
+    const report = await runStaffImport({ db, profile, apply: true })
+
+    expect(report.errors.length).toBeGreaterThan(0)
+    expect(report.inserted).toBe(0)
+    expect(report.updated).toBe(0)
+    expect(db.staff.upsert).not.toHaveBeenCalled()
+  })
+
   it("includes simplified bootstrap warning on successful dry-run", async () => {
     const report = await runStaffImport({ db: makeDb().db, profile, apply: false })
     expect(report.warnings).toContain(STAFF_BOOTSTRAP_MAPPING_WARNING)

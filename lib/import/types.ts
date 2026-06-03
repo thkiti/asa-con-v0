@@ -95,6 +95,7 @@ export type ImportRunOptions = {
   profile: string
   apply: boolean
   sourceDir?: string
+  entity?: ImportEntity
 }
 
 export type ImportProfile = {

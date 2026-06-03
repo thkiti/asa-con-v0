@@ -97,6 +97,26 @@ const statusPayload = {
   importAllowProduction: false,
 }
 
+function sampleApiResult(
+  overrides: Partial<import("@/lib/system-ui/import-types").ImportApiResultView> = {}
+): import("@/lib/system-ui/import-types").ImportApiResultView {
+  const report = sampleReport(overrides.report ?? {})
+  return {
+    success: true,
+    failed: false,
+    mode: report.mode,
+    entity: report.meta?.entity ?? "branch",
+    inserted: report.totals.inserted,
+    updated: report.totals.updated,
+    skipped: report.totals.skipped,
+    errors: [],
+    warnings: [],
+    report,
+    ...overrides,
+    report: overrides.report ?? report,
+  }
+}
+
 function sampleReport(overrides: Partial<ImportReportView> = {}): ImportReportView {
   return {
     profile: "devboard-v1",
@@ -146,8 +166,10 @@ describe("System Import UI", () => {
     mockFetchImportStatus.mockResolvedValue(statusPayload)
     mockFetchImportReports.mockResolvedValue({ reports: [] })
     mockFetchImportReport.mockResolvedValue(sampleReport())
-    mockPostImportDryRun.mockResolvedValue(sampleReport())
-    mockPostImportApply.mockResolvedValue(sampleReport({ mode: "apply" }))
+    mockPostImportDryRun.mockResolvedValue(sampleApiResult())
+    mockPostImportApply.mockResolvedValue(
+      sampleApiResult({ mode: "apply", report: sampleReport({ mode: "apply" }) })
+    )
     mockPostLogout.mockResolvedValue({ redirectTo: "/login" })
   })
 

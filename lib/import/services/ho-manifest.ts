@@ -1,4 +1,8 @@
 import { createEmptyPhaseReport } from "../report"
+import {
+  flushImportPendingWrites,
+  type ImportPendingWrite,
+} from "../flush-pending-writes"
 import type { BranchImportRow, ImportDb, ImportPhaseReport, ImportProfile } from "../types"
 
 export async function runHoManifestImport(input: {
@@ -23,21 +27,26 @@ export async function runHoManifestImport(input: {
     select: { id: true, name: true, type: true, isActive: true, deleted: true },
   })
 
+  const pending: ImportPendingWrite[] = []
+
   if (!existing) {
     report.wouldInsert++
     if (input.apply) {
-      await input.db.branch.upsert({
-        where: { code: row.code },
-        create: row,
-        update: {
-          name: row.name,
-          type: row.type,
-          isActive: row.isActive,
-          deleted: row.deleted,
-        },
+      pending.push(async () => {
+        await input.db.branch.upsert({
+          where: { code: row.code },
+          create: row,
+          update: {
+            name: row.name,
+            type: row.type,
+            isActive: row.isActive,
+            deleted: row.deleted,
+          },
+        })
+        report.inserted++
       })
-      report.inserted++
     }
+    await flushImportPendingWrites(report, input.apply, pending)
     return report
   }
 
@@ -50,21 +59,25 @@ export async function runHoManifestImport(input: {
   if (needsUpdate) {
     report.wouldUpdate++
     if (input.apply) {
-      await input.db.branch.upsert({
-        where: { code: row.code },
-        create: row,
-        update: {
-          name: row.name,
-          type: row.type,
-          isActive: row.isActive,
-          deleted: row.deleted,
-        },
+      pending.push(async () => {
+        await input.db.branch.upsert({
+          where: { code: row.code },
+          create: row,
+          update: {
+            name: row.name,
+            type: row.type,
+            isActive: row.isActive,
+            deleted: row.deleted,
+          },
+        })
+        report.updated++
       })
-      report.updated++
     }
+    await flushImportPendingWrites(report, input.apply, pending)
     return report
   }
 
   report.skipped++
+  await flushImportPendingWrites(report, input.apply, pending)
   return report
 }

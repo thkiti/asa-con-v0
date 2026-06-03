@@ -71,6 +71,19 @@ export type ImportReportView = {
   meta?: ImportReportMetaView
 }
 
+export type ImportApiResultView = {
+  success: boolean
+  failed: boolean
+  mode: ImportMode
+  entity: ImportEntityKey
+  inserted: number
+  updated: number
+  skipped: number
+  errors: string[]
+  warnings: string[]
+  report: ImportReportView
+}
+
 export type ImportStatusResponse = {
   archive: ImportArchiveStatusView
   latestReports: ImportReportListItemView[]

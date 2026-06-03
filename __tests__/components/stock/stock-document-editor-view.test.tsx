@@ -103,6 +103,8 @@ describe("StockDocumentEditorView", () => {
     expect(html).toContain("Submit")
     expect(html).not.toContain("Confirm")
     expect(html).not.toMatch(/>Print</)
+    expect(html.match(/>Save</g)?.length).toBe(1)
+    expect(html.match(/Back to list/g)?.length).toBe(1)
   })
 
   it("renders confirm, cancel, post, and print for SUBMITTED", () => {
@@ -214,7 +216,7 @@ describe("StockDocumentEditorView", () => {
     expect(printLinesSection).not.toContain("999")
   })
 
-  it("renders counting grid for ADJUSTMENT draft mode", () => {
+  it("renders counting sheet for ADJUSTMENT draft mode", () => {
     const html = renderToStaticMarkup(
       <StockDocumentEditorView
         state={{
@@ -258,10 +260,23 @@ describe("StockDocumentEditorView", () => {
       />
     )
 
-    expect(html).toContain("Stock count")
-    expect(html).toContain("Home Key")
+    expect(html).toContain("ตรวจนับสต็อก — รายชิ้น")
+    expect(html).toContain("กุญแจบ้าน")
     expect(html).toContain("#K1")
+    expect(html).toContain("สรุปตามกลุ่มสินค้า")
     expect(html).not.toContain("Product ID")
+    expect(html).toContain(">ชื่อ<")
+    expect(html).toContain('role="tablist"')
+    expect(html).toContain(">Save<")
+    expect(html).toContain(">Submit<")
+    expect(html).toContain("Back to list")
+    expect(html.match(/>Save</g)?.length).toBe(1)
+    const toolbarSection = html.match(
+      /flex flex-wrap items-center justify-between gap-4[\s\S]*?lg:grid-cols-4/
+    )?.[0]
+    expect(toolbarSection).toBeDefined()
+    expect(toolbarSection).toContain('role="tablist"')
+    expect(toolbarSection).toContain(">Save<")
   })
 
   it("renders sparse lines table for submitted adjustment", () => {
@@ -276,6 +291,6 @@ describe("StockDocumentEditorView", () => {
     )
 
     expect(html).toContain("Lines")
-    expect(html).not.toContain("Stock count")
+    expect(html).not.toContain("ตรวจนับสต็อก")
   })
 })
