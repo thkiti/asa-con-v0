@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { MasterPageShell } from "@/components/master/MasterPageShell"
 import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
+import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
+import { MASTER_ACTIONS_COLUMN } from "@/lib/master-ui/table-columns"
 import { MasterToolbar } from "@/components/master/shared/MasterToolbar"
 import { fetchMasterBranches } from "@/lib/master-ui/fetchers"
 import { masterPageLayout } from "@/lib/master-ui/table-classes"
@@ -17,6 +19,7 @@ const COLUMNS = [
   { key: "type", label: "Type", width: "56px" },
   { key: "active", label: "Active", width: "56px" },
   { key: "status", label: "Status", width: "72px" },
+  MASTER_ACTIONS_COLUMN,
 ] as const
 
 export function BranchPage() {
@@ -87,6 +90,14 @@ export function BranchPage() {
                 row.isActive ? "Yes" : "No",
                 row.deleted ? "Deleted" : "Active",
               ]}
+              actions={
+                <MasterRowActions
+                  editTitle="Edit planned"
+                  deleteTitle="Delete planned"
+                  editAriaLabel="Edit branch planned"
+                  deleteAriaLabel="Delete branch planned"
+                />
+              }
             />
           ))}
         </MasterTable>

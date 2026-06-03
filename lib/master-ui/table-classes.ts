@@ -19,12 +19,28 @@ export const masterToolbarButtonActive =
 export const masterTableWrap =
   "mt-3 min-h-0 flex-1 overflow-auto rounded border border-border"
 
+/** Scroll container for sticky header (Product-Reference and similar dense grids). */
+export const masterTableWrapSticky =
+  "mt-3 min-h-0 flex-1 max-h-[calc(100vh-20rem)] overflow-auto rounded border border-border"
+
 export const masterTable = "w-full table-fixed border-collapse text-xs"
 
 export const masterTableHead =
   "sticky top-0 z-10 border-b border-border bg-[var(--btn-secondary-hover)] text-left text-xs font-semibold text-foreground"
 
+export const masterTableHeadSticky =
+  "sticky top-0 z-10 border-b border-border bg-card text-left text-xs font-semibold text-foreground"
+
 export const masterTableHeadCell = "px-2 py-1.5"
+
+export const masterTableHeadCellSticky = "px-2 py-1.5 bg-card"
+
+export const masterTableActionsCell = "px-1 py-0.5 text-right whitespace-nowrap"
+
+export const masterRowActionBtn =
+  "inline-flex h-6 min-w-[1.75rem] items-center justify-center rounded border border-border bg-card px-1 text-xs leading-none text-foreground disabled:cursor-not-allowed disabled:border-border disabled:bg-[var(--btn-disabled-bg)] disabled:text-[var(--btn-disabled-fg)]"
+
+export const masterRowActionsWrap = "flex items-center justify-end gap-0.5"
 
 export const masterTableRow =
   "h-7 border-b border-border hover:bg-[var(--btn-secondary-hover)]"

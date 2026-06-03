@@ -3,9 +3,11 @@ import { masterTableCell, masterTableRow } from "@/lib/master-ui/table-classes"
 
 type MasterTableRowProps = {
   cells: ReactNode[]
+  /** Rightmost actions cell (e.g. MasterRowActions). */
+  actions?: ReactNode
 }
 
-export function MasterTableRow({ cells }: MasterTableRowProps) {
+export function MasterTableRow({ cells, actions }: MasterTableRowProps) {
   return (
     <tr className={masterTableRow}>
       {cells.map((cell, index) => (
@@ -13,6 +15,7 @@ export function MasterTableRow({ cells }: MasterTableRowProps) {
           {cell}
         </td>
       ))}
+      {actions}
     </tr>
   )
 }

@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { MasterPageShell } from "@/components/master/MasterPageShell"
 import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
+import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
+import { MASTER_ACTIONS_COLUMN } from "@/lib/master-ui/table-columns"
 import { MasterToolbar } from "@/components/master/shared/MasterToolbar"
 import { fetchMasterBranches, fetchMasterStaff } from "@/lib/master-ui/fetchers"
 import { masterPageLayout, masterToolbarLabel } from "@/lib/master-ui/table-classes"
@@ -17,6 +19,7 @@ const COLUMNS = [
   { key: "role", label: "Role", width: "120px" },
   { key: "branch", label: "Branch", width: "120px" },
   { key: "status", label: "Status", width: "72px" },
+  MASTER_ACTIONS_COLUMN,
 ] as const
 
 const ROLE_OPTIONS = [
@@ -144,6 +147,14 @@ export function StaffPage() {
                 `${row.branchCode}`,
                 row.deleted ? "Deleted" : "Active",
               ]}
+              actions={
+                <MasterRowActions
+                  editTitle="Edit planned"
+                  deleteTitle="Delete planned"
+                  editAriaLabel="Edit staff planned"
+                  deleteAriaLabel="Delete staff planned"
+                />
+              }
             />
           ))}
         </MasterTable>

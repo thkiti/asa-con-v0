@@ -16,4 +16,12 @@ export {
   parseProductReferenceListQuery,
   parseStaffListQuery,
 } from "./parse-queries"
-export { applyProductReferenceFilters } from "./filters/product-reference-list"
+export {
+  applyProductReferenceFilters,
+  matchesHookGroup,
+  matchesHookNo,
+  matchesProductCode,
+  matchesProductName,
+  matchesProductGroup,
+  matchesSupplierCode,
+} from "./filters/product-reference-list"

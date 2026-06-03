@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { MasterPageShell } from "@/components/master/MasterPageShell"
 import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
+import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
+import { MASTER_ACTIONS_COLUMN } from "@/lib/master-ui/table-columns"
 import { MasterToolbar } from "@/components/master/shared/MasterToolbar"
 import { fetchMasterProductReference } from "@/lib/master-ui/fetchers"
 import { masterPageLayout, masterToolbarLabel } from "@/lib/master-ui/table-classes"
@@ -22,6 +24,7 @@ const COLUMNS = [
   { key: "refCode", label: "Ref code", width: "100px" },
   { key: "group", label: "Group", width: "80px" },
   { key: "type", label: "Type", width: "88px" },
+  MASTER_ACTIONS_COLUMN,
 ] as const
 
 function formatHookLabel(row: ProductReferenceListItem): string {
@@ -94,13 +97,13 @@ export function ProductReferencePage() {
   return (
     <MasterPageShell
       title="Product & Reference Stock"
-      description="Search products and hook reference links. Read-only maintenance view."
+      description="Search products and hook reference links. Product code, supplier, and group use prefix match from the start; hook group/no are exact. Read-only."
     >
       <div className={masterPageLayout}>
         <div className="mt-3 space-y-2">
           <MasterToolbar
             searchLabel="Product code"
-            searchPlaceholder="e.g. 5101001"
+            searchPlaceholder="Starts with, e.g. 5101"
             searchValue={productCode}
             onSearchChange={setProductCode}
             mode={mode}
@@ -125,9 +128,9 @@ export function ProductReferencePage() {
                     maxLength={1}
                     value={hookGroup}
                     onChange={(e) => setHookGroup(e.target.value)}
-                    placeholder="G"
+                    placeholder="Exact, e.g. K"
                     className="mt-0.5 w-full rounded border border-border bg-card px-2 py-1 text-xs"
-                    aria-label="Hook group"
+                    aria-label="Hook group (exact)"
                   />
                 </label>
                 <label>
@@ -138,9 +141,9 @@ export function ProductReferencePage() {
                     maxLength={3}
                     value={hookNo}
                     onChange={(e) => setHookNo(e.target.value)}
-                    placeholder="001"
+                    placeholder="Exact, e.g. 12"
                     className="mt-0.5 w-full rounded border border-border bg-card px-2 py-1 text-xs"
-                    aria-label="Hook number"
+                    aria-label="Hook number (exact)"
                   />
                 </label>
               </>
@@ -193,7 +196,11 @@ export function ProductReferencePage() {
 
         <MasterListStatus loading={loading} error={error} count={items.length} />
 
-        <MasterTable columns={COLUMNS} isEmpty={!loading && !error && items.length === 0}>
+        <MasterTable
+          columns={COLUMNS}
+          stickyScroll
+          isEmpty={!loading && !error && items.length === 0}
+        >
           {items.map((row) => (
             <MasterTableRow
               key={row.rowId}
@@ -208,6 +215,26 @@ export function ProductReferencePage() {
                 row.productGroup ?? "",
                 row.productType,
               ]}
+              actions={
+                <MasterRowActions
+                  editTitle={
+                    row.hasReference ? "Edit planned" : "Add/Edit link planned"
+                  }
+                  deleteTitle={
+                    row.hasReference ? "Delete planned" : "No reference to delete"
+                  }
+                  editAriaLabel={
+                    row.hasReference
+                      ? "Edit reference link planned"
+                      : "Add or edit reference link planned"
+                  }
+                  deleteAriaLabel={
+                    row.hasReference
+                      ? "Delete reference link planned"
+                      : "No reference to delete"
+                  }
+                />
+              }
             />
           ))}
         </MasterTable>

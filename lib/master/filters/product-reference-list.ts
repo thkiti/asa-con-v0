@@ -3,9 +3,65 @@ import type {
   ProductReferenceListQuery,
 } from "../types"
 
+function normalizeDigits(value: string): string {
+  return value.replace(/\D/g, "")
+}
+
 function containsInsensitive(haystack: string, needle: string): boolean {
   if (!needle) return true
   return haystack.toLowerCase().includes(needle.toLowerCase())
+}
+
+function prefixInsensitive(haystack: string, needle: string): boolean {
+  if (!needle) return true
+  const h = haystack.toLowerCase()
+  const n = needle.toLowerCase()
+  return h.startsWith(n)
+}
+
+/** Product code: prefix from first character (digit-normalized). */
+export function matchesProductCode(row: ProductReferenceListItem, search: string): boolean {
+  const key = normalizeDigits(search)
+  if (!key) return true
+  const code = normalizeDigits(row.productCode)
+  return code.startsWith(key)
+}
+
+/** Product name: substring search. */
+export function matchesProductName(row: ProductReferenceListItem, search: string): boolean {
+  if (!search) return true
+  return containsInsensitive(row.productName, search)
+}
+
+/** Hook group: exact match (case-insensitive). */
+export function matchesHookGroup(row: ProductReferenceListItem, search: string): boolean {
+  const key = search.trim()
+  if (!key) return true
+  return row.hookGroup.toUpperCase() === key.toUpperCase()
+}
+
+/** Hook no: exact numeric match. */
+export function matchesHookNo(row: ProductReferenceListItem, search: string): boolean {
+  const key = search.trim()
+  if (!key) return true
+  if (!/^\d+$/.test(key)) return false
+  if (row.hookNo == null) return false
+  return row.hookNo === Number.parseInt(key, 10)
+}
+
+/** Supplier code: prefix match. */
+export function matchesSupplierCode(row: ProductReferenceListItem, search: string): boolean {
+  const key = search.trim()
+  if (!key) return true
+  return prefixInsensitive(row.supplierCode, key)
+}
+
+/** Product group: prefix match. */
+export function matchesProductGroup(row: ProductReferenceListItem, search: string): boolean {
+  const key = search.trim()
+  if (!key) return true
+  if (row.productGroup == null) return false
+  return prefixInsensitive(row.productGroup, key)
 }
 
 export function applyProductReferenceFilters(
@@ -15,42 +71,27 @@ export function applyProductReferenceFilters(
   let result = rows
 
   if (query.productCode) {
-    result = result.filter((row) =>
-      containsInsensitive(row.productCode, query.productCode)
-    )
+    result = result.filter((row) => matchesProductCode(row, query.productCode))
   }
 
   if (query.productName) {
-    result = result.filter((row) =>
-      containsInsensitive(row.productName, query.productName)
-    )
+    result = result.filter((row) => matchesProductName(row, query.productName))
   }
 
   if (query.hookGroup) {
-    result = result.filter((row) =>
-      containsInsensitive(row.hookGroup, query.hookGroup)
-    )
+    result = result.filter((row) => matchesHookGroup(row, query.hookGroup))
   }
 
   if (query.hookNo) {
-    const hookNoText = query.hookNo.trim()
-    result = result.filter((row) => {
-      if (row.hookNo == null) return false
-      return String(row.hookNo).includes(hookNoText)
-    })
+    result = result.filter((row) => matchesHookNo(row, query.hookNo))
   }
 
   if (query.supplierCode) {
-    result = result.filter((row) =>
-      containsInsensitive(row.supplierCode, query.supplierCode)
-    )
+    result = result.filter((row) => matchesSupplierCode(row, query.supplierCode))
   }
 
   if (query.productGroup) {
-    result = result.filter((row) =>
-      row.productGroup != null &&
-      containsInsensitive(row.productGroup, query.productGroup)
-    )
+    result = result.filter((row) => matchesProductGroup(row, query.productGroup))
   }
 
   if (query.referenceStatus === "has") {
