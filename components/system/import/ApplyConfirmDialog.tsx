@@ -2,6 +2,10 @@ import {
   APPLY_CONFIRM_DETAIL,
   APPLY_CONFIRM_MESSAGE,
 } from "@/lib/system-ui/import-entity-config"
+import {
+  importButtonPrimaryClass,
+  importButtonSecondaryClass,
+} from "@/lib/system-ui/import-button-styles"
 
 type ApplyConfirmDialogProps = {
   open: boolean
@@ -36,7 +40,7 @@ export function ApplyConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={pending}
-            className="rounded border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-50 disabled:opacity-50"
+            className={importButtonSecondaryClass}
           >
             ยกเลิก
           </button>
@@ -44,7 +48,7 @@ export function ApplyConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className="rounded bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-800 disabled:opacity-50"
+            className={importButtonPrimaryClass}
           >
             {pending ? "กำลัง Apply…" : "ยืนยัน Apply"}
           </button>

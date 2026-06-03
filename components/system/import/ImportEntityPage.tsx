@@ -24,6 +24,10 @@ import type {
   ImportStatusResponse,
 } from "@/lib/system-ui/import-types"
 import { canEnableApplyFromResult } from "@/lib/system-ui/import-state"
+import {
+  importButtonPrimaryClass,
+  importButtonSecondaryClass,
+} from "@/lib/system-ui/import-button-styles"
 import { ApplyConfirmDialog } from "./ApplyConfirmDialog"
 import { ArchiveStatusPanel } from "./ArchiveStatusPanel"
 import { ImportReportSummary } from "./ImportReportSummary"
@@ -233,7 +237,7 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
           type="button"
           onClick={() => void onDryRun()}
           disabled={dryRunPending || loading}
-          className="rounded bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-zinc-800 disabled:opacity-50"
+          className={importButtonPrimaryClass}
         >
           {dryRunPending ? "กำลัง Dry Run…" : "Dry Run"}
         </button>
@@ -246,7 +250,7 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
               ? undefined
               : "ต้อง Dry Run สำเร็จก่อน (ไม่มี errors) จึงจะ Apply ได้"
           }
-          className="rounded border border-zinc-900 px-4 py-2 text-sm text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className={importButtonSecondaryClass}
         >
           {applyPending ? "กำลัง Apply…" : "Apply"}
         </button>

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { SYSTEM_IMPORT_DESCRIPTION } from "@/lib/system-ui/import-entity-config"
+import { importButtonSecondaryClass } from "@/lib/system-ui/import-button-styles"
 
 type SystemImportShellProps = {
   title: string
@@ -36,7 +37,7 @@ export function SystemImportShell({
             type="button"
             onClick={onLogout}
             disabled={logoutPending}
-            className="rounded border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+            className={importButtonSecondaryClass}
           >
             {logoutPending ? "กำลัง Logout…" : "Logout"}
           </button>

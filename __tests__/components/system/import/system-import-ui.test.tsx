@@ -208,6 +208,37 @@ describe("System Import UI", () => {
     expect(html).toContain("Dry Run")
   })
 
+  it("entity card always renders open link and readable disabled apply", () => {
+    const html = renderToStaticMarkup(
+      <EntityImportCard
+        config={getImportEntityConfig("branch")}
+        archive={archiveStatus}
+        latestReport={null}
+        applyEnabled={false}
+        onDryRun={() => undefined}
+        onApplyClick={() => undefined}
+      />
+    )
+    expect(html).toContain("/system/import/branch")
+    expect(html).toContain("เปิดหน้า Import")
+    expect(html).toContain("disabled:opacity-100")
+    expect(html).toContain('type="button"')
+  })
+
+  it("entity card open link is present while archive is still loading", () => {
+    const html = renderToStaticMarkup(
+      <EntityImportCard
+        config={getImportEntityConfig("reference-stock")}
+        archive={null}
+        latestReport={null}
+        onDryRun={() => undefined}
+      />
+    )
+    expect(html).toContain("/system/import/reference-stock")
+    expect(html).toContain("เปิดหน้า Import")
+    expect(html).toContain("…")
+  })
+
   it("entity page disables Apply before successful dry-run", () => {
     const html = renderToStaticMarkup(<ImportEntityPage entity="branch" />)
     expect(html).toContain("ต้อง Dry Run สำเร็จก่อน (ไม่มี errors) จึงจะ Apply ได้")
