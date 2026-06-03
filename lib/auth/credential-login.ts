@@ -1,0 +1,124 @@
+import { randomUUID } from "crypto"
+
+import type { Role } from "@/generated/prisma/client"
+import { prisma } from "@/lib/shared/prisma"
+
+import { DEV_PERIOD_ADMIN_STAFF_CODE } from "./period-admin-staff"
+import {
+  defaultRedirectForRole,
+  resolveSafeReturnTo,
+} from "./session-cookies"
+import type { SessionUser } from "./types"
+import { verifyStaffPassword } from "./verify-staff-password"
+
+export const CREDENTIAL_LOGIN_INVALID_MESSAGE =
+  "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"
+
+export const CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE = "สาขาของพนักงานไม่พร้อมใช้งาน"
+
+export const CREDENTIAL_LOGIN_DEV_STAFF_BLOCKED_MESSAGE =
+  "รหัส DEV ใช้สำหรับ development เท่านั้น ไม่สามารถ Login ผ่านหน้านี้"
+
+export class CredentialLoginError extends Error {
+  readonly code: string
+  readonly httpStatus: number
+
+  constructor(message: string, code: string, httpStatus: number) {
+    super(message)
+    this.name = "CredentialLoginError"
+    this.code = code
+    this.httpStatus = httpStatus
+  }
+}
+
+export type CredentialLoginInput = {
+  username: string
+  password: string
+  returnTo?: string
+}
+
+export type CredentialLoginResult = {
+  sessionUser: SessionUser
+  redirectTo: string
+}
+
+function rejectInvalidCredentials(): never {
+  throw new CredentialLoginError(
+    CREDENTIAL_LOGIN_INVALID_MESSAGE,
+    "INVALID_CREDENTIALS",
+    401
+  )
+}
+
+export async function credentialLogin(
+  input: CredentialLoginInput
+): Promise<CredentialLoginResult> {
+  const username = input.username.trim()
+  const password = input.password
+
+  if (!username) {
+    throw new CredentialLoginError(
+      "Username is required",
+      "USERNAME_REQUIRED",
+      400
+    )
+  }
+
+  if (!password) {
+    throw new CredentialLoginError(
+      "Password is required",
+      "PASSWORD_REQUIRED",
+      400
+    )
+  }
+
+  if (username === DEV_PERIOD_ADMIN_STAFF_CODE) {
+    throw new CredentialLoginError(
+      CREDENTIAL_LOGIN_DEV_STAFF_BLOCKED_MESSAGE,
+      "DEV_STAFF_NOT_ALLOWED",
+      403
+    )
+  }
+
+  const staff = await prisma.staff.findUnique({
+    where: { staffId: username },
+    include: {
+      branch: {
+        select: { id: true, code: true, name: true, isActive: true, deleted: true },
+      },
+    },
+  })
+
+  if (!staff || staff.deleted) {
+    rejectInvalidCredentials()
+  }
+
+  if (staff.branch.deleted || !staff.branch.isActive) {
+    throw new CredentialLoginError(
+      CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE,
+      "BRANCH_INACTIVE",
+      409
+    )
+  }
+
+  const passwordValid = await verifyStaffPassword(password, staff.password)
+  if (!passwordValid) {
+    rejectInvalidCredentials()
+  }
+
+  const sessionUser: SessionUser = {
+    sessionId: randomUUID(),
+    userId: staff.id,
+    role: staff.role as Role,
+    staffId: staff.staffId,
+    name: staff.name,
+    branchId: staff.branch.id,
+    branchCode: staff.branch.code,
+    branchName: staff.branch.name,
+  }
+
+  const safeReturnTo = resolveSafeReturnTo(input.returnTo, staff.role as Role)
+  const redirectTo = safeReturnTo ?? defaultRedirectForRole(staff.role as Role)
+
+  return { sessionUser, redirectTo }
+}

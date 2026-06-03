@@ -23,6 +23,14 @@ export {
   bootstrapLogin,
 } from "./bootstrap-login"
 export {
+  CredentialLoginError,
+  credentialLogin,
+  CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE,
+  CREDENTIAL_LOGIN_DEV_STAFF_BLOCKED_MESSAGE,
+  CREDENTIAL_LOGIN_INVALID_MESSAGE,
+} from "./credential-login"
+export { verifyStaffPassword } from "./verify-staff-password"
+export {
   clearSessionCookies,
   createSessionUser,
   defaultRedirectForRole,

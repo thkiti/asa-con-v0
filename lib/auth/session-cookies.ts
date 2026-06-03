@@ -58,13 +58,19 @@ export function createSessionUser(input: {
   staffId: string
   name: string
   branchId: string
+  userId?: string
+  branchCode?: string
+  branchName?: string
 }): SessionUser {
   return {
     sessionId: input.sessionId,
+    userId: input.userId ?? "",
     role: input.role,
     staffId: input.staffId,
     name: input.name,
     branchId: input.branchId,
+    branchCode: input.branchCode ?? "",
+    branchName: input.branchName ?? "",
   }
 }
 
