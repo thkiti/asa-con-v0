@@ -2,6 +2,7 @@ import { Prisma } from "@/generated/prisma/client"
 import { ProductType } from "@/generated/prisma/client"
 import { createReferenceStock } from "@/lib/master/create-reference-stock"
 import { deleteProduct } from "@/lib/master/delete-product"
+import { restoreProduct } from "@/lib/master/restore-product"
 import { deleteReferenceStock } from "@/lib/master/delete-reference-stock"
 import { MasterDomainError } from "@/lib/master/errors"
 import { parsePatchProductBody } from "@/lib/master/parse-product-mutation"
@@ -135,36 +136,75 @@ describe("deleteReferenceStock", () => {
 })
 
 describe("deleteProduct", () => {
-  it("blocks delete when active references exist", async () => {
+  it("soft-deletes product and all references in one transaction", async () => {
+    const txProductUpdate = jest.fn().mockResolvedValue({ ...product, deleted: true })
+    const txReferenceUpdateMany = jest.fn().mockResolvedValue({ count: 2 })
+
     const db = {
       product: {
         findUnique: jest.fn().mockResolvedValue(product),
-        update: jest.fn(),
       },
-      referenceStock: {
-        count: jest.fn().mockResolvedValue(1),
-      },
+      referenceStock: {},
+      $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn({
+          product: { update: txProductUpdate },
+          referenceStock: { updateMany: txReferenceUpdateMany },
+        })
+      ),
     }
 
-    await expect(deleteProduct(db, product.id)).rejects.toMatchObject({
-      code: "PRODUCT_HAS_ACTIVE_REFERENCE",
+    const item = await deleteProduct(db, product.id)
+
+    expect(db.$transaction).toHaveBeenCalledTimes(1)
+    expect(txProductUpdate).toHaveBeenCalledWith({
+      where: { id: product.id },
+      data: { deleted: true },
+      select: expect.any(Object),
     })
-    expect(db.product.update).not.toHaveBeenCalled()
+    expect(txReferenceUpdateMany).toHaveBeenCalledWith({
+      where: { productId: product.id },
+      data: { deleted: true },
+    })
+    expect(item.deleted).toBe(true)
+    expect(item.hasReference).toBe(false)
   })
 
-  it("allows delete when no active references", async () => {
+  it("cascades when active references exist", async () => {
+    const txReferenceUpdateMany = jest.fn().mockResolvedValue({ count: 1 })
     const db = {
       product: {
         findUnique: jest.fn().mockResolvedValue(product),
-        update: jest.fn().mockResolvedValue({ ...product, deleted: true }),
       },
-      referenceStock: {
-        count: jest.fn().mockResolvedValue(0),
-      },
+      referenceStock: {},
+      $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn({
+          product: {
+            update: jest.fn().mockResolvedValue({ ...product, deleted: true }),
+          },
+          referenceStock: { updateMany: txReferenceUpdateMany },
+        })
+      ),
     }
 
     const item = await deleteProduct(db, product.id)
     expect(item.deleted).toBe(true)
+    expect(txReferenceUpdateMany).toHaveBeenCalled()
+  })
+})
+
+describe("restoreProduct", () => {
+  it("restores product only without touching referenceStock", async () => {
+    const db = {
+      product: {
+        findUnique: jest.fn().mockResolvedValue({ ...product, deleted: true }),
+        update: jest.fn().mockResolvedValue({ ...product, deleted: false }),
+      },
+    }
+
+    const item = await restoreProduct(db, product.id)
+
+    expect(item.deleted).toBe(false)
+    expect(db).not.toHaveProperty("referenceStock")
   })
 })
 

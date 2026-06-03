@@ -23,7 +23,8 @@ import { themeSelect } from "@/lib/theme/theme-classes"
 import { ProductReferenceConfirmDialog } from "./ProductReferenceConfirmDialog"
 import {
   ProductReferenceFormModal,
-  type ProductReferenceFormMode,
+  type ProductReferenceSaveAllValues,
+  type ProductReferenceSaveProductValues,
 } from "./ProductReferenceFormModal"
 
 const COLUMNS = [
@@ -71,15 +72,12 @@ export function ProductReferencePage() {
   const [error, setError] = useState<string | null>(null)
 
   const [formOpen, setFormOpen] = useState(false)
-  const [formMode, setFormMode] = useState<ProductReferenceFormMode>("edit")
   const [selectedRow, setSelectedRow] = useState<ProductReferenceListItem | null>(null)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [confirmAction, setConfirmAction] = useState<"deleteRef" | "deleteProduct" | "restore">(
-    "deleteRef"
-  )
+  const [confirmAction, setConfirmAction] = useState<"deleteProduct" | "restore">("deleteProduct")
   const [confirmPending, setConfirmPending] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
 
@@ -123,18 +121,13 @@ export function ProductReferencePage() {
 
   const openEdit = (row: ProductReferenceListItem) => {
     setSelectedRow(row)
-    setFormMode(row.hasReference ? "edit" : "create")
     setFormError(null)
     setFormOpen(true)
   }
 
   const openDeleteConfirm = (row: ProductReferenceListItem) => {
     setSelectedRow(row)
-    if (row.hasReference) {
-      setConfirmAction("deleteRef")
-    } else {
-      setConfirmAction("deleteProduct")
-    }
+    setConfirmAction("deleteProduct")
     setConfirmError(null)
     setConfirmOpen(true)
   }
@@ -146,15 +139,25 @@ export function ProductReferencePage() {
     setConfirmOpen(true)
   }
 
-  const handleFormSubmit = async (values: {
-    name: string
-    productType: ProductReferenceListItem["productType"]
-    hookGroup: string
-    hookNo: string
-    supplierCode: string
-    productCode: string
-    productGroup: string
-  }) => {
+  const handleSaveProduct = async (values: ProductReferenceSaveProductValues) => {
+    if (!selectedRow) return
+    setFormSubmitting(true)
+    setFormError(null)
+    try {
+      await patchMasterProduct(selectedRow.productId, {
+        name: values.name,
+        productType: values.productType,
+      })
+      setFormOpen(false)
+      await load()
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Save failed")
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
+  const handleSaveAll = async (values: ProductReferenceSaveAllValues) => {
     if (!selectedRow) return
     setFormSubmitting(true)
     setFormError(null)
@@ -165,22 +168,20 @@ export function ProductReferencePage() {
       })
 
       const refId = referenceIdFromRow(selectedRow)
+      const refPayload = {
+        hookGroup: values.hookGroup,
+        hookNo: values.hookNo,
+        supplierCode: values.supplierCode,
+        productCode: selectedRow.productCode,
+        productGroup: values.productGroup || null,
+      }
+
       if (refId) {
-        await patchMasterProductReference(refId, {
-          hookGroup: values.hookGroup,
-          hookNo: Number(values.hookNo),
-          supplierCode: values.supplierCode,
-          productCode: values.productCode,
-          productGroup: values.productGroup || null,
-        })
+        await patchMasterProductReference(refId, refPayload)
       } else {
         await createMasterProductReference({
           productId: selectedRow.productId,
-          hookGroup: values.hookGroup,
-          hookNo: Number(values.hookNo),
-          supplierCode: values.supplierCode,
-          productCode: values.productCode,
-          productGroup: values.productGroup || null,
+          ...refPayload,
         })
       }
 
@@ -193,23 +194,34 @@ export function ProductReferencePage() {
     }
   }
 
+  const handleTrashReference = async () => {
+    if (!selectedRow) return
+    const refId = referenceIdFromRow(selectedRow)
+    if (!refId) throw new Error("No reference to trash")
+
+    setFormSubmitting(true)
+    setFormError(null)
+    try {
+      await patchMasterProductReference(refId, { deleted: true })
+      setFormOpen(false)
+      await load()
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Trash reference failed")
+      throw err
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
   const handleConfirm = async () => {
     if (!selectedRow) return
     setConfirmPending(true)
     setConfirmError(null)
     try {
-      if (confirmAction === "deleteRef") {
-        const refId = referenceIdFromRow(selectedRow)
-        if (!refId) throw new Error("No reference to delete")
-        await patchMasterProductReference(refId, { deleted: true })
-      } else if (confirmAction === "deleteProduct") {
+      if (confirmAction === "deleteProduct") {
         await patchMasterProduct(selectedRow.productId, { deleted: true })
       } else if (confirmAction === "restore") {
         await patchMasterProduct(selectedRow.productId, { deleted: false })
-        const refId = referenceIdFromRow(selectedRow)
-        if (refId) {
-          await patchMasterProductReference(refId, { deleted: false })
-        }
       }
       setConfirmOpen(false)
       await load()
@@ -337,35 +349,25 @@ export function ProductReferencePage() {
               actions={
                 <MasterRowActions
                   trashMode={trashMode}
-                  editTitle={row.hasReference ? "Edit" : "Add / Edit link"}
-                  deleteTitle={
-                    trashMode
-                      ? "Restore"
-                      : row.hasReference
-                        ? "Delete reference link"
-                        : "No reference to delete"
+                  editTitle={
+                    row.hasReference ? "Edit Product Reference" : "Add Product Reference"
                   }
+                  deleteTitle={trashMode ? "Restore" : "Trash product"}
                   editAriaLabel={
                     row.hasReference
                       ? `Edit ${row.productCode}`
-                      : `Add reference link for ${row.productCode}`
+                      : `Add product reference for ${row.productCode}`
                   }
                   deleteAriaLabel={
-                    trashMode
-                      ? `Restore ${row.productCode}`
-                      : row.hasReference
-                        ? `Delete reference for ${row.productCode}`
-                        : "No reference to delete"
+                    trashMode ? `Restore ${row.productCode}` : `Trash product ${row.productCode}`
                   }
                   restoreTitle="Restore product"
                   restoreAriaLabel={`Restore ${row.productCode}`}
                   editDisabled={trashMode}
-                  deleteDisabled={!trashMode && !row.hasReference}
+                  deleteDisabled={trashMode}
                   restoreDisabled={false}
                   onEdit={trashMode ? undefined : () => openEdit(row)}
-                  onDelete={
-                    !trashMode && row.hasReference ? () => openDeleteConfirm(row) : undefined
-                  }
+                  onDelete={!trashMode ? () => openDeleteConfirm(row) : undefined}
                   onRestore={trashMode ? () => openRestoreConfirm(row) : undefined}
                 />
               }
@@ -376,43 +378,30 @@ export function ProductReferencePage() {
 
       <ProductReferenceFormModal
         open={formOpen}
-        mode={formMode}
         row={selectedRow}
         submitting={formSubmitting}
         error={formError}
         onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
+        onSaveProduct={handleSaveProduct}
+        onSaveAll={handleSaveAll}
+        onTrashReference={
+          selectedRow?.hasReference ? () => handleTrashReference() : undefined
+        }
       />
 
       <ProductReferenceConfirmDialog
         open={confirmOpen}
-        title={
-          confirmAction === "deleteRef"
-            ? "Delete reference link"
-            : confirmAction === "deleteProduct"
-              ? "Delete product"
-              : "Restore"
-        }
+        title={confirmAction === "deleteProduct" ? "Trash product" : "Restore product"}
         message={
-          confirmAction === "deleteRef"
+          confirmAction === "deleteProduct"
             ? selectedRow
-              ? `Move reference for ${selectedRow.productCode} to trash? Product stays active.`
+              ? "Trash this product? All linked ReferenceStock rows will also be moved to trash."
               : ""
-            : confirmAction === "deleteProduct"
-              ? selectedRow
-                ? `Move product ${selectedRow.productCode} to trash? Active reference links must be removed first.`
-                : ""
-              : selectedRow
-                ? `Restore ${selectedRow.productCode}?`
-                : ""
+            : selectedRow
+              ? `Restore product ${selectedRow.productCode}? Reference links stay in trash until restored separately.`
+              : ""
         }
-        confirmLabel={
-          confirmAction === "restore"
-            ? "Restore"
-            : confirmAction === "deleteProduct"
-              ? "Delete product"
-              : "Delete"
-        }
+        confirmLabel={confirmAction === "restore" ? "Restore" : "Trash product"}
         pending={confirmPending}
         error={confirmError}
         onClose={() => {

@@ -23,7 +23,6 @@ jest.mock("@/lib/shared/prisma", () => ({
 }))
 
 import { getSession } from "@/lib/auth/session"
-import { MasterDomainError } from "@/lib/master/errors"
 import { createReferenceStock, patchProduct } from "@/lib/master"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
@@ -120,21 +119,24 @@ describe("PATCH /api/master/product-reference/[id]", () => {
 })
 
 describe("PATCH /api/master/products/[productId]", () => {
-  it("returns PRODUCT_HAS_ACTIVE_REFERENCE from domain", async () => {
+  it("soft-deletes product for HO_ADMIN", async () => {
     mockedGetSession.mockResolvedValue(hoAdminSession)
-    mockedPatchProduct.mockRejectedValue(
-      new MasterDomainError(
-        "Delete or trash ReferenceStock links first",
-        "PRODUCT_HAS_ACTIVE_REFERENCE",
-        409
-      )
-    )
+    mockedPatchProduct.mockResolvedValue({
+      ...sampleItem,
+      hasReference: false,
+      deleted: true,
+      hookGroup: "",
+      hookNo: null,
+      supplierCode: "",
+      referenceProductCode: "",
+    })
 
     const req = new NextRequest("http://localhost/api/master/products/p1", {
       method: "PATCH",
       body: JSON.stringify({ deleted: true }),
     })
     const res = await PATCHProduct(req, { params: Promise.resolve({ productId: "p1" }) })
-    expect(res.status).toBe(409)
+    expect(res.status).toBe(200)
+    expect(mockedPatchProduct).toHaveBeenCalledWith(expect.anything(), "p1", { action: "delete" })
   })
 })

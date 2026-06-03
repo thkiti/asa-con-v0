@@ -2,6 +2,8 @@ import {
   createMasterBranch,
   createMasterStaff,
   fetchMasterBranches,
+  fetchMasterLatestHookNo,
+  fetchMasterProductByCode,
   fetchMasterProductReference,
   fetchMasterStaff,
   patchMasterBranch,
@@ -94,6 +96,32 @@ describe("master fetchers URL params", () => {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: "Renamed", isActive: false }),
+    })
+  })
+
+  it("fetchMasterLatestHookNo encodes hookGroup", async () => {
+    await fetchMasterLatestHookNo("K")
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/master/reference-stock/latest-hook-no?hookGroup=K"
+    )
+  })
+
+  it("fetchMasterProductByCode returns null on 404", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+    }) as typeof fetch
+    await expect(fetchMasterProductByCode("0101999")).resolves.toBeNull()
+  })
+
+  it("fetchMasterProductByCode returns product on success", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ product: { code: "0101900", name: "Group" } }),
+    }) as typeof fetch
+    await expect(fetchMasterProductByCode("0101900")).resolves.toEqual({
+      code: "0101900",
+      name: "Group",
     })
   })
 

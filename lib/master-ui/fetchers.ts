@@ -210,6 +210,28 @@ export function patchMasterProduct(
   })
 }
 
+export function fetchMasterLatestHookNo(
+  hookGroup: string
+): Promise<{ nextHookNo: number }> {
+  const params = toSearchParams({ hookGroup })
+  return fetch(`/api/master/reference-stock/latest-hook-no?${params}`).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ nextHookNo: number }>
+  })
+}
+
+export function fetchMasterProductByCode(
+  code: string
+): Promise<{ code: string; name: string } | null> {
+  const params = toSearchParams({ code })
+  return fetch(`/api/master/products/by-code?${params}`).then(async (res) => {
+    if (res.status === 404) return null
+    if (!res.ok) return throwMasterFetchError(res)
+    const body = (await res.json()) as { product: { code: string; name: string } }
+    return body.product
+  })
+}
+
 export function fetchMasterProductReference(
   query: ProductReferenceListQuery
 ): Promise<MasterListResponse<ProductReferenceListItem>> {

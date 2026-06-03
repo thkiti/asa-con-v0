@@ -5,7 +5,7 @@ import { restoreProduct } from "./restore-product"
 import { updateProduct } from "./update-product"
 import type { ProductReferenceListItem } from "./types"
 
-type ProductDb = Pick<PrismaClient, "product" | "referenceStock">
+type ProductDb = Pick<PrismaClient, "product" | "referenceStock" | "$transaction">
 
 export async function patchProduct(
   db: ProductDb,

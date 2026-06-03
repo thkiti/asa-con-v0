@@ -50,15 +50,18 @@ describe("MasterRowActions", () => {
     expect(html).not.toContain("🗑")
   })
 
-  it("uses no-reference delete title when configured", () => {
+  it("enables product trash when handler provided and delete not disabled", () => {
     const html = renderToStaticMarkup(
       <MasterRowActions
-        editTitle="Add/Edit link planned"
-        deleteTitle="No reference to delete"
-        deleteAriaLabel="No reference to delete"
+        editTitle="Edit"
+        deleteTitle="Trash product"
+        editDisabled={false}
+        deleteDisabled={false}
+        onEdit={() => {}}
+        onDelete={() => {}}
       />
     )
-    expect(html).toContain("No reference to delete")
-    expect(html).toContain("Add/Edit link planned")
+    expect(html).toContain("Trash product")
+    expect(html).not.toMatch(/title="Trash product"[^>]*disabled/)
   })
 })
