@@ -58,10 +58,19 @@ describe("MainMenuView", () => {
     expect(html).toContain('href="/finance"')
   })
 
-  it("renders Master Database group", () => {
+  it("renders Master Database group with maintenance links for HO_ADMIN", () => {
     const html = renderToStaticMarkup(<MainMenuView user={hoAdmin} />)
     expect(html).toContain("Master Database")
     expect(html).toContain("Product / Reference Stock")
+    expect(html).toContain('href="/master/product-reference"')
+    expect(html).toContain('href="/master/branch"')
+    expect(html).toContain('href="/master/staff"')
+  })
+
+  it("SH_STAFF does not render Master Database group", () => {
+    const html = renderToStaticMarkup(<MainMenuView user={shStaff} />)
+    expect(html).not.toContain("Master Database")
+    expect(html).not.toContain('href="/master/product-reference"')
   })
 
   it("HO_ADMIN sees System group with System Import link", () => {

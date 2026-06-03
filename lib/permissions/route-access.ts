@@ -7,6 +7,7 @@ const AREA_PREFIX: Record<AppArea, string> = {
   operations: "/operations",
   shop: "/shop",
   system: "/system",
+  master: "/master",
 }
 
 /** Paths that never require RBAC (still may require session — see middleware). */

@@ -28,12 +28,24 @@ describe("getMainMenuGroups", () => {
     expect(findItem("HO_ADMIN", "stock-new")).toBeUndefined()
   })
 
-  it("includes Master Database group with planned items only", () => {
+  it("includes Master Database group with links for HO_ADMIN", () => {
     const group = findGroup("HO_ADMIN", "master-database")
     expect(group?.label).toBe("Master Database")
-    const product = findItem("HO_ADMIN", "product-reference-stock")
-    expect(product?.status).toBe("planned")
-    expect(product?.href).toBeUndefined()
+    expect(findItem("HO_ADMIN", "product-reference-stock")?.href).toBe(
+      "/master/product-reference"
+    )
+    expect(findItem("HO_ADMIN", "branch")?.href).toBe("/master/branch")
+    expect(findItem("HO_ADMIN", "staff")?.href).toBe("/master/staff")
+    expect(findItem("HO_ADMIN", "product-reference-stock")?.status).toBe("available")
+  })
+
+  it("SH_STAFF does not see Master Database group", () => {
+    expect(findGroup("SH_STAFF", "master-database")).toBeUndefined()
+    expect(findItem("SH_STAFF", "product-reference-stock")).toBeUndefined()
+  })
+
+  it("HO_FINANCE does not see Master Database group", () => {
+    expect(findGroup("HO_FINANCE", "master-database")).toBeUndefined()
   })
 
   it("HO_ADMIN sees System Import in System group", () => {

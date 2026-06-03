@@ -61,4 +61,12 @@ describe("canAccessRoute", () => {
     expect(canAccessRoute("/main", "HO_ADMIN")).toBe(true)
     expect(canAccessRoute("/main", null)).toBe(false)
   })
+
+  it("allows /master only for HO_ADMIN", () => {
+    expect(canAccessRoute("/master", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/master/product-reference", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/master/branch", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/master/branch", "HO_FINANCE")).toBe(false)
+    expect(canAccessRoute("/master/staff", "SH_STAFF")).toBe(false)
+  })
 })

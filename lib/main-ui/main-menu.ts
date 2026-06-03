@@ -1,4 +1,5 @@
 import { canAccessMenu } from "@/lib/permissions/menu"
+import { canAccessMasterDatabase } from "@/lib/permissions/master"
 import type { Role } from "@/lib/shared"
 
 export type MainMenuItemStatus = "available" | "planned"
@@ -67,15 +68,32 @@ export function getMainMenuGroups(role: Role): MainMenuGroup[] {
   )
   groups.push({ key: "stock", label: "Stock", items: stockItems })
 
-  groups.push({
-    key: "master-database",
-    label: "Master Database",
-    items: [
-      planned("product-reference-stock", "Product / Reference Stock"),
-      planned("branch", "Branch"),
-      planned("staff", "Staff"),
-    ],
-  })
+  if (canAccessMasterDatabase(role)) {
+    groups.push({
+      key: "master-database",
+      label: "Master Database",
+      items: [
+        available(
+          "product-reference-stock",
+          "Product / Reference Stock",
+          "/master/product-reference",
+          "Search product and hook reference links"
+        ),
+        available(
+          "branch",
+          "Branch",
+          "/master/branch",
+          "Branch codes, types, active status"
+        ),
+        available(
+          "staff",
+          "Staff",
+          "/master/staff",
+          "Staff accounts, roles, branch assignment"
+        ),
+      ],
+    })
+  }
 
   const systemItems: MainMenuItem[] = []
   if (canAccessMenu(role, "system")) {

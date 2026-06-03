@@ -11,12 +11,14 @@ Centralized role access, session stub, route/menu guards.
 
 ## Role / area matrix
 
-| Role | finance | admin | operations | shop | Landing |
-|------|---------|-------|------------|------|---------|
-| `HO_FINANCE` | yes | yes | yes | yes | `/finance` |
-| `HO_ADMIN` | yes | yes | yes | yes | `/finance` |
-| `HO_OPERATIONS` | yes | no | yes | yes | `/operations` |
-| `SH_STAFF` | no | no | no | yes | `/shop` |
+| Role | finance | admin | operations | shop | master | system | Landing |
+|------|---------|-------|------------|------|--------|--------|---------|
+| `HO_FINANCE` | yes | yes | yes | yes | no | no | `/main` |
+| `HO_ADMIN` | yes | yes | yes | yes | yes | yes | `/main` |
+| `HO_OPERATIONS` | yes | no | yes | yes | no | no | `/main` |
+| `SH_STAFF` | no | no | no | yes | no | no | `/main` |
+
+**Master Database** (`/master/*`): maintenance UI for product/reference, branch, and staff — **HO_ADMIN only** (same bar as System Import). Bulk load remains `/system/import`.
 
 ## Route matrix (examples)
 
@@ -26,6 +28,8 @@ Centralized role access, session stub, route/menu guards.
 | `/admin` | allow | allow | deny | deny |
 | `/operations` | allow | allow | allow | deny |
 | `/shop` | allow | allow | allow | allow |
+| `/master` | deny | allow | deny | deny |
+| `/master/product-reference` | deny | allow | deny | deny |
 | `/login` | public | public | public | public |
 | `/unauthorized` | public | public | public | public |
 | `/api/health` | bypass RBAC | bypass | bypass | bypass |
