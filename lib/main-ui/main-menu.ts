@@ -12,10 +12,64 @@ export type MainMenuItem = {
   status: MainMenuItemStatus
 }
 
+export type MainMenuSectionKey =
+  | "administration"
+  | "finance"
+  | "operations"
+  | "shop"
+  | "system"
+
+export type MainMenuSection = {
+  key: MainMenuSectionKey
+  label: string
+  description: string
+  href: string
+}
+
+export type MainMenuSectionDetail = MainMenuSection & {
+  items: MainMenuItem[]
+}
+
 export type MainMenuGroup = {
   key: string
   label: string
   items: MainMenuItem[]
+}
+
+const MAIN_MENU_SECTION_ORDER: readonly MainMenuSectionKey[] = [
+  "administration",
+  "finance",
+  "operations",
+  "shop",
+  "system",
+] as const
+
+const SECTION_META: Record<
+  MainMenuSectionKey,
+  Pick<MainMenuSection, "label" | "description">
+> = {
+  administration: {
+    label: "ADMINISTRATION",
+    description: "Product-Reference, Branch, Staff",
+  },
+  finance: {
+    label: "FINANCE",
+    description:
+      "Journal, Chart of Accounts, Transfer List, Receivable, Reports",
+  },
+  operations: {
+    label: "OPERATIONS",
+    description: "Stock Documents, Stock Card, Stock Movement, Supplier Order",
+  },
+  shop: {
+    label: "SHOP",
+    description: "Sales, shop stock, daily closing, monthly closing, worktime",
+  },
+  system: {
+    label: "SYSTEM",
+    description:
+      "Import Master Database, Import Accounting Data, Settings, Maintenance",
+  },
 }
 
 function available(
@@ -31,48 +85,48 @@ function planned(key: string, label: string, hint?: string): MainMenuItem {
   return { key, label, hint, status: "planned" }
 }
 
-/** Domain-grouped main menu for `/main` — visibility uses existing menu/area guards. */
-export function getMainMenuGroups(role: Role): MainMenuGroup[] {
-  const groups: MainMenuGroup[] = []
+function sectionHref(key: MainMenuSectionKey): string {
+  return `/main/${key}`
+}
 
-  const financeItems: MainMenuItem[] = []
-  if (canAccessMenu(role, "finance")) {
-    financeItems.push(
-      available(
-        "finance",
-        "Finance",
-        "/finance",
-        "Periods, reconciliation, vouchers"
+/** HO Control Center only — branch staff use the branch working screen instead. */
+export function isHoMainMenuRole(role: Role): boolean {
+  return role !== "SH_STAFF"
+}
+
+export function canAccessMainMenuSection(
+  role: Role,
+  key: MainMenuSectionKey
+): boolean {
+  if (!isHoMainMenuRole(role)) {
+    return false
+  }
+
+  switch (key) {
+    case "administration":
+      return canAccessMasterDatabase(role)
+    case "finance":
+      return (
+        isHoMainMenuRole(role) &&
+        canAccessMenu(role, "finance") &&
+        role !== "HO_OPERATIONS"
       )
-    )
+    case "operations":
+      return canAccessMenu(role, "operations")
+    case "shop":
+      return canAccessMenu(role, "shop")
+    case "system":
+      return canAccessMenu(role, "system")
+    default:
+      return false
   }
-  if (financeItems.length > 0) {
-    groups.push({ key: "finance", label: "Finance", items: financeItems })
-  }
+}
 
-  const stockItems: MainMenuItem[] = []
-  if (canAccessMenu(role, "shop")) {
-    stockItems.push(
-      available(
-        "stock-documents",
-        "Stock Documents",
-        "/shop/stock-documents",
-        "Transfers, performance, adjustments"
-      )
-    )
-  }
-  stockItems.push(
-    planned("stock-card", "Stock Card"),
-    planned("stock-movement", "Stock Movement"),
-    planned("stock-reports", "Stock Reports")
-  )
-  groups.push({ key: "stock", label: "Stock", items: stockItems })
-
-  if (canAccessMasterDatabase(role)) {
-    groups.push({
-      key: "master-database",
-      label: "Master Database",
-      items: [
+function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] {
+  switch (key) {
+    case "administration":
+      if (!canAccessMasterDatabase(role)) return []
+      return [
         available(
           "product-reference-stock",
           "Product / Reference Stock",
@@ -91,31 +145,121 @@ export function getMainMenuGroups(role: Role): MainMenuGroup[] {
           "/master/staff",
           "Staff accounts, roles, branch assignment"
         ),
-      ],
-    })
-  }
+      ]
 
-  const systemItems: MainMenuItem[] = []
-  if (canAccessMenu(role, "system")) {
-    systemItems.push(
-      available(
-        "system-import",
-        "System Import",
-        "/system/import",
-        "Import master database"
+    case "finance":
+      if (!canAccessMenu(role, "finance")) return []
+      return [
+        available(
+          "finance",
+          "Finance",
+          "/finance",
+          "Periods, reconciliation, vouchers"
+        ),
+        planned("journal", "Journal"),
+        planned("chart-of-accounts", "Chart of Accounts"),
+        planned("transfer-list", "Transfer List"),
+        planned("receivable", "Receivable"),
+        planned("reports", "Reports"),
+      ]
+
+    case "operations":
+      if (!canAccessMenu(role, "operations")) return []
+      return [
+        available(
+          "stock-documents",
+          "Stock Documents",
+          "/shop/stock-documents",
+          "Transfers, performance, adjustments"
+        ),
+        planned("stock-card", "Stock Card"),
+        planned("stock-movement", "Stock Movement"),
+        planned("supplier-order", "Supplier Order"),
+      ]
+
+    case "shop":
+      if (!canAccessMenu(role, "shop") || !isHoMainMenuRole(role)) return []
+      return [
+        planned("sales", "Sales"),
+        planned("shop-stock", "Shop stock"),
+        planned("daily-closing", "Daily closing"),
+        planned("monthly-closing", "Monthly closing"),
+        planned("worktime", "Worktime"),
+      ]
+
+    case "system": {
+      const items: MainMenuItem[] = []
+      if (canAccessMenu(role, "system")) {
+        items.push(
+          available(
+            "import-master-database",
+            "Import Master Database",
+            "/system/import",
+            "Bulk load master database from legacy files"
+          )
+        )
+      }
+      items.push(
+        planned("import-accounting", "Import Accounting Data"),
+        planned("settings", "Settings"),
+        planned("maintenance", "Maintenance")
       )
-    )
-  }
-  systemItems.push(
-    planned("import-accounting", "Import Accounting Data"),
-    planned("settings-maintenance", "Settings / Maintenance")
-  )
-  groups.push({ key: "system", label: "System", items: systemItems })
+      return items
+    }
 
-  return groups
+    default:
+      return []
+  }
+}
+
+function toSection(key: MainMenuSectionKey): MainMenuSection {
+  const meta = SECTION_META[key]
+  return {
+    key,
+    label: meta.label,
+    description: meta.description,
+    href: sectionHref(key),
+  }
+}
+
+/** Top-level HO Control Center cards for `/main`. */
+export function getMainMenuSections(role: Role): MainMenuSection[] {
+  return MAIN_MENU_SECTION_ORDER.filter((key) =>
+    canAccessMainMenuSection(role, key)
+  ).map((key) => toSection(key))
+}
+
+/** Detail menu for `/main/{section}` — null when role may not open the section. */
+export function getMainMenuSectionDetail(
+  role: Role,
+  key: MainMenuSectionKey
+): MainMenuSectionDetail | null {
+  if (!canAccessMainMenuSection(role, key)) {
+    return null
+  }
+
+  return {
+    ...toSection(key),
+    items: buildSectionItems(role, key),
+  }
+}
+
+export function isMainMenuSectionKey(value: string): value is MainMenuSectionKey {
+  return (MAIN_MENU_SECTION_ORDER as readonly string[]).includes(value)
+}
+
+/** @deprecated Use getMainMenuSectionDetail — kept for transitional tests/diagnostics. */
+export function getMainMenuGroups(role: Role): MainMenuGroup[] {
+  return getMainMenuSections(role).map((section) => ({
+    key: section.key,
+    label: section.label,
+    items: buildSectionItems(role, section.key),
+  }))
 }
 
 /** Flat list of all menu entries (available + planned) for tests and diagnostics. */
 export function getMainMenuItems(role: Role): MainMenuItem[] {
-  return getMainMenuGroups(role).flatMap((group) => group.items)
+  return getMainMenuSections(role).flatMap((section) =>
+    buildSectionItems(role, section.key)
+  )
 }

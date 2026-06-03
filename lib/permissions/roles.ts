@@ -1,4 +1,9 @@
 import type { Role } from "@/lib/shared"
+import { branchStaffLandingPath } from "@/lib/main-ui/landing-paths"
+
+function usesHoMainMenu(role: Role): boolean {
+  return role !== "SH_STAFF"
+}
 
 /** Area keys used for menu and route prefix checks. */
 export type AppArea =
@@ -22,6 +27,9 @@ export function roleHasArea(role: Role, area: AppArea): boolean {
 }
 
 /** Default landing route after login or when visiting `/`. */
-export function roleLandingPath(_role: Role): string {
+export function roleLandingPath(role: Role): string {
+  if (!usesHoMainMenu(role)) {
+    return branchStaffLandingPath(role)
+  }
   return "/main"
 }

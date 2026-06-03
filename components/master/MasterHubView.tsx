@@ -30,7 +30,7 @@ export function MasterHubView() {
   return (
     <main className={`mx-auto max-w-5xl p-6 ${themePage}`}>
       <header className="border-b border-border pb-4">
-        <Link href="/main" className={`text-sm ${themeMuted} underline hover:text-foreground`}>
+        <Link href="/main/administration" className={`text-sm ${themeMuted} underline hover:text-foreground`}>
           ← Main Menu
         </Link>
         <h1 className={`mt-3 ${themePageTitle}`}>Master Database</h1>

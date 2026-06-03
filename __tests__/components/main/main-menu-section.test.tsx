@@ -1,0 +1,66 @@
+/**
+ * @jest-environment jsdom
+ */
+import { renderToStaticMarkup } from "react-dom/server"
+import { MainMenuSectionView } from "@/components/main/MainMenuSectionView"
+import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { getMainMenuSectionDetail } from "@/lib/main-ui/main-menu"
+
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    refresh: jest.fn(),
+  }),
+}))
+
+const hoAdmin: SessionUserApi = {
+  userId: "u1",
+  staffId: "001",
+  name: "Admin User",
+  role: "HO_ADMIN",
+  branchId: "b1",
+  branchCode: "HO999",
+  branchName: "Head Office",
+}
+
+describe("MainMenuSectionView", () => {
+  it("renders back link to main menu", () => {
+    const section = getMainMenuSectionDetail("HO_ADMIN", "finance")
+    expect(section).not.toBeNull()
+    const html = renderToStaticMarkup(
+      <MainMenuSectionView user={hoAdmin} section={section!} />
+    )
+    expect(html).toContain('href="/main"')
+    expect(html).toContain("Back to Main Menu")
+  })
+
+  it("renders available finance hub link on finance section", () => {
+    const section = getMainMenuSectionDetail("HO_ADMIN", "finance")
+    const html = renderToStaticMarkup(
+      <MainMenuSectionView user={hoAdmin} section={section!} />
+    )
+    expect(html).toContain('href="/finance"')
+    expect(html).toContain("Journal")
+    expect(html).toContain("Planned")
+  })
+
+  it("renders administration master links", () => {
+    const section = getMainMenuSectionDetail("HO_ADMIN", "administration")
+    const html = renderToStaticMarkup(
+      <MainMenuSectionView user={hoAdmin} section={section!} />
+    )
+    expect(html).toContain('href="/master/product-reference"')
+    expect(html).toContain('href="/master/branch"')
+    expect(html).toContain('href="/master/staff"')
+  })
+
+  it("renders planned items without href", () => {
+    const section = getMainMenuSectionDetail("HO_ADMIN", "operations")
+    const html = renderToStaticMarkup(
+      <MainMenuSectionView user={hoAdmin} section={section!} />
+    )
+    expect(html).toContain("Stock Card")
+    expect(html).toContain('aria-disabled="true"')
+    expect(html).toContain('href="/shop/stock-documents"')
+  })
+})

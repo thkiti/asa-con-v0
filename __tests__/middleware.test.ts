@@ -58,6 +58,30 @@ describe("middleware page protection", () => {
     expect(res.status).toBe(200)
     expect(res.headers.get("location")).toBeNull()
   })
+
+  it("redirects SH_STAFF away from HO main menu to branch screen", () => {
+    const res = middleware(
+      requestFor("/main", {
+        sessionId: "sess-1",
+        role: "SH_STAFF",
+        staffId: "002",
+      })
+    )
+    expect(res.status).toBe(307)
+    expect(res.headers.get("location")).toBe("http://localhost/shop")
+  })
+
+  it("redirects SH_STAFF away from HO main menu section pages", () => {
+    const res = middleware(
+      requestFor("/main/operations", {
+        sessionId: "sess-1",
+        role: "SH_STAFF",
+        staffId: "002",
+      })
+    )
+    expect(res.status).toBe(307)
+    expect(res.headers.get("location")).toBe("http://localhost/shop")
+  })
 })
 
 describe("middleware unrelated API behavior", () => {

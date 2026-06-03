@@ -48,6 +48,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(roleLandingPath(role!), request.url))
   }
 
+  if (
+    role === "SH_STAFF" &&
+    (pathname === "/main" || pathname.startsWith("/main/"))
+  ) {
+    return NextResponse.redirect(
+      new URL(roleLandingPath(role!), request.url)
+    )
+  }
+
   if (!canAccessRoute(pathname, role)) {
     return NextResponse.redirect(new URL("/unauthorized", request.url))
   }
