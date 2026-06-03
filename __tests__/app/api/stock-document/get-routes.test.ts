@@ -36,10 +36,13 @@ const mockedDetail = getStockDocumentDetail as jest.MockedFunction<
 
 const shopSession = {
   sessionId: "s1",
+  userId: "staff-internal-1",
   role: "SH_STAFF" as const,
   staffId: "staff-1",
   name: "Shop",
   branchId: "branch-shop",
+  branchCode: "SH001",
+  branchName: "Shop Branch",
 }
 
 describe("GET /api/stock-document", () => {

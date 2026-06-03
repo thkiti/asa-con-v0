@@ -14,8 +14,11 @@ export type SessionUser = {
 
 export type SessionCookiePayload = {
   sessionId: string | undefined
+  userId: string | undefined
   role: string | undefined
   staffId: string | undefined
   name: string | undefined
   branchId: string | undefined
+  branchCode: string | undefined
+  branchName: string | undefined
 }

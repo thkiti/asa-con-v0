@@ -15,10 +15,7 @@ function parseRole(value: string | undefined): Role | null {
   return value as Role
 }
 
-/**
- * Server session reader — Phase 2 stub.
- * Trusts cookie values only; no DB / Staff lookup until real login (later phase).
- */
+/** Server session reader — trusts httpOnly cookies set at credential login. */
 export async function getSession(): Promise<SessionUser | null> {
   const store = await cookies()
   const payload = readSessionCookies(store)
@@ -30,9 +27,12 @@ export async function getSession(): Promise<SessionUser | null> {
 
   return {
     sessionId: String(payload.sessionId),
+    userId: payload.userId?.trim() || "",
     role,
     staffId: payload.staffId?.trim() || "",
     name: payload.name?.trim() || "",
     branchId: payload.branchId?.trim() || "",
+    branchCode: payload.branchCode?.trim() || "",
+    branchName: payload.branchName?.trim() || "",
   }
 }

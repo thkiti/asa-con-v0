@@ -2,6 +2,7 @@ import { ImportApplyGateError } from "@/lib/import/apply-gate"
 import { assertImportApplyAllowed } from "@/lib/import/safety"
 import { SystemImportAuthError } from "@/lib/auth/system-import"
 import { BootstrapLoginError } from "@/lib/auth/bootstrap-login"
+import { CredentialLoginError } from "@/lib/auth/credential-login"
 import { NextResponse } from "next/server"
 
 export function importErrorResponse(err: unknown, logLabel: string): NextResponse {
@@ -14,7 +15,7 @@ export function importErrorResponse(err: unknown, logLabel: string): NextRespons
     )
   }
 
-  if (err instanceof BootstrapLoginError) {
+  if (err instanceof BootstrapLoginError || err instanceof CredentialLoginError) {
     return NextResponse.json(
       { error: err.message, code: err.code },
       { status: err.httpStatus }
