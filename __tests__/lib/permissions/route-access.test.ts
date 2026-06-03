@@ -55,4 +55,10 @@ describe("canAccessRoute", () => {
   it("denies unknown paths without a matching area", () => {
     expect(canAccessRoute("/api/finance/periods", "HO_FINANCE")).toBe(false)
   })
+
+  it("allows /main for any authenticated role", () => {
+    expect(canAccessRoute("/main", "SH_STAFF")).toBe(true)
+    expect(canAccessRoute("/main", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/main", null)).toBe(false)
+  })
 })

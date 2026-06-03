@@ -16,16 +16,6 @@ export function roleHasArea(role: Role, area: AppArea): boolean {
 }
 
 /** Default landing route after login or when visiting `/`. */
-export function roleLandingPath(role: Role): string {
-  switch (role) {
-    case "HO_FINANCE":
-    case "HO_ADMIN":
-      return "/finance"
-    case "HO_OPERATIONS":
-      return "/operations"
-    case "SH_STAFF":
-      return "/shop"
-    default:
-      return "/login"
-  }
+export function roleLandingPath(_role: Role): string {
+  return "/main"
 }

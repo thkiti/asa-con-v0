@@ -105,7 +105,7 @@ describe("LoginForm", () => {
 
   it("submits username and password via credential login", async () => {
     mockPostCredentialLogin.mockResolvedValue({
-      redirectTo: "/shop/stock-documents",
+      redirectTo: "/main",
       user: {
         userId: "uid-1",
         staffId: "001",

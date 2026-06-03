@@ -93,19 +93,18 @@ export function resolveSafeReturnTo(returnTo: unknown, role: Role): string | nul
     return raw
   }
 
-  if (raw.startsWith("/shop") || raw.startsWith("/finance") || raw.startsWith("/system")) {
+  if (
+    raw.startsWith("/main") ||
+    raw.startsWith("/shop") ||
+    raw.startsWith("/finance") ||
+    raw.startsWith("/system")
+  ) {
     return raw
   }
 
   return null
 }
 
-export function defaultRedirectForRole(role: Role): string {
-  if (role === "SH_STAFF") {
-    return "/shop/stock-documents"
-  }
-  if (role === "HO_ADMIN") {
-    return "/shop/stock-documents"
-  }
-  return "/shop/stock-documents"
+export function defaultRedirectForRole(_role: Role): string {
+  return "/main"
 }

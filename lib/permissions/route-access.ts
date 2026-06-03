@@ -48,6 +48,8 @@ export function canAccessRoute(
 
   if (
     pathname === "/" ||
+    pathname === "/main" ||
+    pathname.startsWith("/main/") ||
     PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   ) {
     return true

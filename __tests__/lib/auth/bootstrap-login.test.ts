@@ -51,7 +51,7 @@ describe("bootstrapLogin", () => {
       status: "active",
     })
     expect(result.sessionUser.role).toBe("HO_ADMIN")
-    expect(result.redirectTo).toBe("/shop/stock-documents")
+    expect(result.redirectTo).toBe("/main")
   })
 
   it("supports HO_ADMIN returnTo for system import", async () => {

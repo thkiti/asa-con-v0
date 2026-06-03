@@ -8,7 +8,7 @@ describe("postCredentialLogin", () => {
     global.fetch = jest.fn()
   })
 
-  it("posts username and password to login API", async () => {
+  it("posts username and password to login API and honors returnTo redirect", async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -49,7 +49,7 @@ describe("postCredentialLogin", () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
-        redirectTo: "/shop/stock-documents",
+        redirectTo: "/main",
         user: {
           userId: "uid-1",
           staffId: "001",

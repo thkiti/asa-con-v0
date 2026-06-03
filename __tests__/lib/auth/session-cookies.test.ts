@@ -18,9 +18,16 @@ import {
 import { readSessionCookies } from "@/lib/auth/cookies"
 
 describe("session cookie helpers", () => {
-  it("defaults redirect to shop stock documents", () => {
-    expect(defaultRedirectForRole("SH_STAFF")).toBe("/shop/stock-documents")
-    expect(defaultRedirectForRole("HO_ADMIN")).toBe("/shop/stock-documents")
+  it("defaults redirect to main menu", () => {
+    expect(defaultRedirectForRole("SH_STAFF")).toBe("/main")
+    expect(defaultRedirectForRole("HO_ADMIN")).toBe("/main")
+  })
+
+  it("allows returnTo /main and /shop paths", () => {
+    expect(resolveSafeReturnTo("/main", "SH_STAFF")).toBe("/main")
+    expect(resolveSafeReturnTo("/shop/stock-documents", "SH_STAFF")).toBe(
+      "/shop/stock-documents"
+    )
   })
 
   it("allows HO_ADMIN returnTo under /system/import", () => {

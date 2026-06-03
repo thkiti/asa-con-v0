@@ -61,7 +61,7 @@ describe("POST /api/auth/login", () => {
     mockCookies.mockResolvedValue({ set: jest.fn(), delete: jest.fn() })
     mockCredentialLogin.mockResolvedValue({
       sessionUser,
-      redirectTo: "/shop/stock-documents",
+      redirectTo: "/main",
     })
   })
 
@@ -104,7 +104,7 @@ describe("POST /api/auth/login", () => {
     const body = await res.json()
     expect(mockSetSessionCookies).toHaveBeenCalledWith(cookieStore, sessionUser)
     expect(body).toEqual({
-      redirectTo: "/shop/stock-documents",
+      redirectTo: "/main",
       user: apiUser,
     })
     expect(body.user).not.toHaveProperty("sessionId")

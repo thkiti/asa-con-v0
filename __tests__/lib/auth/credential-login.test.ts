@@ -76,7 +76,7 @@ describe("credentialLogin", () => {
       branchCode: "HO999",
       branchName: "Head Office",
     })
-    expect(result.redirectTo).toBe("/shop/stock-documents")
+    expect(result.redirectTo).toBe("/main")
   })
 
   it("rejects wrong password with generic invalid credentials", async () => {
@@ -190,6 +190,20 @@ describe("credentialLogin", () => {
     await expect(
       credentialLogin({ username: "001", password: "1234" })
     ).rejects.toBeInstanceOf(CredentialLoginError)
+  })
+
+  it("uses returnTo when safe instead of default /main", async () => {
+    jest
+      .mocked(prisma.staff.findUnique)
+      .mockResolvedValue((await activeStaffRecord()) as never)
+
+    const result = await credentialLogin({
+      username: "001",
+      password: "1234",
+      returnTo: "/shop/stock-documents",
+    })
+
+    expect(result.redirectTo).toBe("/shop/stock-documents")
   })
 
   it("accepts custom password hash via bcrypt.compare", async () => {
