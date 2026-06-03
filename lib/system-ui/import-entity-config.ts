@@ -40,11 +40,11 @@ export const IMPORT_ENTITY_CONFIGS: ImportEntityConfig[] = [
     key: "staff",
     title: "Staff Import",
     purpose:
-      "นำเข้าพนักงานจาก EME.DBF ด้วยกฎ bootstrap ที่กำหนดไว้ — ต้องมีสาขา HO999 และ SH001 ก่อน",
+      "นำเข้าพนักงานจาก EME.DBF ด้วยกฎ bootstrap ที่กำหนดไว้ — ต้องมีสาขา HO999 และ SH999 ก่อน (SH999 = สาขาพัก/บัฟเฟอร์โอนสินค้า)",
     sourceFiles: ["dbf/EME.DBF"],
     archiveRoles: ["staff"],
     bootstrapNote:
-      "staffId 001 → สำนักงานใหญ่ HO999 · staffId 001 → ผู้ดูแลระบบ · พนักงานอื่น → สาขา SH001 · พนักงานอื่น → พนักงานสาขา",
+      "staffId 001 → สำนักงานใหญ่ HO999 · staffId 001 → ผู้ดูแลระบบ · พนักงานอื่น → สาขา SH999 (พัก/โอน) · พนักงานอื่น → พนักงานสาขา",
   },
 ]
 

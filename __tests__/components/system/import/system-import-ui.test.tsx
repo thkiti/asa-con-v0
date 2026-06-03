@@ -302,7 +302,7 @@ describe("System Import UI", () => {
     const html = renderToStaticMarkup(<ImportEntityPage entity="staff" />)
     expect(html).toContain("staffId 001 → สำนักงานใหญ่ HO999")
     expect(html).toContain("staffId 001 → ผู้ดูแลระบบ")
-    expect(html).toContain("พนักงานอื่น → สาขา SH001")
+    expect(html).toContain("พนักงานอื่น → สาขา SH999")
     expect(html).toContain("พนักงานอื่น → พนักงานสาขา")
     expect(html).not.toContain("HO_ADMIN")
     expect(html).not.toContain("SH_STAFF")

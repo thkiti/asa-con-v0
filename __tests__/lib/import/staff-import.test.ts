@@ -20,7 +20,11 @@ const profile: ImportProfile = {
   staffFile: "EME.DBF",
   referenceStockFiles: [],
   hoBranch: { code: "HO999", name: "Head Office", type: "HO" },
-  bootstrapShopBranch: { code: "SH001", name: "Bootstrap Shop", type: "SH" },
+  bootstrapShopBranch: {
+    code: "SH999",
+    name: "Temporary Shop / Transfer Buffer",
+    type: "SH",
+  },
 }
 
 jest.mock("@/lib/import/parsers/staff-dbf", () => ({
@@ -38,7 +42,7 @@ jest.mock("@/lib/import/parsers/staff-dbf", () => ({
         staffId: "002",
         name: "Shop User",
         role: "SH_STAFF",
-        branchCode: "SH001",
+        branchCode: "SH999",
         deleted: false,
       },
     ],
@@ -54,7 +58,7 @@ function makeDb(initialStaff: Record<
 > = {}) {
   const branches = new Map([
     ["HO999", { id: "branch-ho", name: "Head Office", isActive: true, deleted: false }],
-    ["SH001", { id: "branch-sh", name: "Bootstrap Shop", isActive: true, deleted: false }],
+    ["SH999", { id: "branch-sh999", name: "Temporary Shop / Transfer Buffer", isActive: true, deleted: false }],
   ])
   const staff = new Map(Object.entries(initialStaff))
 
@@ -118,7 +122,7 @@ describe("staff bootstrap mapping", () => {
     })
   })
 
-  it("maps other staff to SH_STAFF on SH001", () => {
+  it("maps other staff to SH_STAFF on SH999", () => {
     expect(
       mapStaffBootstrapRow({
         E_ID: "002",
@@ -128,7 +132,7 @@ describe("staff bootstrap mapping", () => {
     ).toMatchObject({
       staffId: "002",
       role: "SH_STAFF",
-      branchCode: "SH001",
+      branchCode: "SH999",
     })
   })
 
@@ -138,6 +142,7 @@ describe("staff bootstrap mapping", () => {
 
     const report = await runStaffImport({ db, profile, apply: false })
     expect(report.errors.some((error) => error.includes("HO999"))).toBe(true)
+    expect(report.errors.some((error) => error.includes("SH999"))).toBe(true)
     expect(report.wouldInsert).toBe(0)
   })
 

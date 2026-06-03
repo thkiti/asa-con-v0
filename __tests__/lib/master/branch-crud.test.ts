@@ -195,6 +195,33 @@ describe("deleteBranch", () => {
     })
   })
 
+  it("allows soft delete of normal shop SH001", async () => {
+    const db = {
+      branch: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "b-sh001",
+          code: "SH001",
+          name: "Shop One",
+          type: BranchType.SH,
+          isActive: true,
+          deleted: false,
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: "b-sh001",
+          code: "SH001",
+          name: "Shop One",
+          type: BranchType.SH,
+          isActive: true,
+          deleted: true,
+        }),
+      },
+    }
+
+    const item = await deleteBranch(db, "b-sh001")
+    expect(item.deleted).toBe(true)
+    expect(db.branch.update).toHaveBeenCalled()
+  })
+
   it.each([BOOTSTRAP_HO_BRANCH_CODE, BOOTSTRAP_SHOP_BRANCH_CODE])(
     "protects bootstrap code %s",
     async (code) => {

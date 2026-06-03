@@ -3,6 +3,7 @@ import path from "path"
 import {
   BOOTSTRAP_HO_BRANCH_CODE,
   BOOTSTRAP_SHOP_BRANCH_CODE,
+  BOOTSTRAP_SHOP_BRANCH_NAME,
 } from "../constants"
 import type { ImportProfile, ImportRunOptions } from "../types"
 
@@ -38,7 +39,7 @@ export function getDevboardV1Profile(sourceDir?: string): ImportProfile {
     },
     bootstrapShopBranch: {
       code: BOOTSTRAP_SHOP_BRANCH_CODE,
-      name: "Bootstrap Shop",
+      name: BOOTSTRAP_SHOP_BRANCH_NAME,
       type: "SH",
     },
   }

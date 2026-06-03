@@ -130,7 +130,11 @@ const branchProfile: ImportProfile = {
   staffFile: "EME.DBF",
   referenceStockFiles: [],
   hoBranch: { code: "HO999", name: "Head Office", type: "HO" },
-  bootstrapShopBranch: { code: "SH001", name: "Bootstrap Shop", type: "SH" },
+  bootstrapShopBranch: {
+    code: "SH999",
+    name: "Temporary Shop / Transfer Buffer",
+    type: "SH",
+  },
 }
 
 jest.mock("@/lib/import/parsers/branch-dbf", () => ({

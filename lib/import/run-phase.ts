@@ -5,6 +5,7 @@ import { resolveImportProfile } from "./profiles/devboard-v1"
 import { finalizeImportReport } from "./report"
 import { writePhaseImportReport, buildImportReportId } from "./report-store"
 import { assertImportApplyAllowed } from "./safety"
+import { runBootstrapBranchEnsure } from "./services/bootstrap-branches"
 import { runBranchImport } from "./services/branch-import"
 import { runHoManifestImport } from "./services/ho-manifest"
 import { loadProductImportCodes, runProductImport } from "./services/product-import"
@@ -44,6 +45,9 @@ async function executeImportPhases(
 
   switch (entity) {
     case "branch":
+      report.phases.push(
+        await runBootstrapBranchEnsure({ db, profile, apply: options.apply })
+      )
       report.phases.push(await runBranchImport({ db, profile, apply: options.apply }))
       report.phases.push(await runHoManifestImport({ db, profile, apply: options.apply }))
       break
@@ -63,6 +67,9 @@ async function executeImportPhases(
       break
     }
     case "staff":
+      report.phases.push(
+        await runBootstrapBranchEnsure({ db, profile, apply: options.apply })
+      )
       report.phases.push(await runStaffImport({ db, profile, apply: options.apply }))
       break
     default:

@@ -26,7 +26,7 @@ function makeProfile(): ImportProfile {
       type: "HO",
     },
     bootstrapShopBranch: {
-      code: "SH001",
+      code: "SH999",
       name: "Bootstrap Shop",
       type: "SH",
     },
