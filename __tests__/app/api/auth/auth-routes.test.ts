@@ -1,8 +1,12 @@
+import { POST as POSTBranchPreview } from "@/app/api/auth/branch-preview/route"
 import { POST as POSTLogin } from "@/app/api/auth/login/route"
+import { POST as POSTStaffPreview } from "@/app/api/auth/staff-preview/route"
 import { GET as GETSession } from "@/app/api/auth/session/route"
 import type { SessionUser } from "@/lib/auth/types"
 
 const mockCredentialLogin = jest.fn()
+const mockPreviewStaffByStaffId = jest.fn()
+const mockPreviewBranchByCode = jest.fn()
 const mockSetSessionCookies = jest.fn()
 const mockGetSession = jest.fn()
 const mockCookies = jest.fn()
@@ -21,6 +25,19 @@ const { CredentialLoginError, CREDENTIAL_LOGIN_INVALID_MESSAGE } =
   jest.requireActual<typeof import("@/lib/auth/credential-login")>(
     "@/lib/auth/credential-login"
   )
+
+const { LoginPreviewError } = jest.requireActual<
+  typeof import("@/lib/auth/login-preview")
+>("@/lib/auth/login-preview")
+
+jest.mock("@/lib/auth/staff-preview", () => ({
+  previewStaffByStaffId: (...args: unknown[]) =>
+    mockPreviewStaffByStaffId(...args),
+}))
+
+jest.mock("@/lib/auth/branch-preview", () => ({
+  previewBranchByCode: (...args: unknown[]) => mockPreviewBranchByCode(...args),
+}))
 
 jest.mock("@/lib/auth/session-cookies", () => ({
   setSessionCookies: (...args: unknown[]) => mockSetSessionCookies(...args),
@@ -73,6 +90,7 @@ describe("POST /api/auth/login", () => {
         body: JSON.stringify({
           username: "001",
           password: "1234",
+          branchCode: "HO999",
           returnTo: "/shop",
         }),
       })
@@ -82,6 +100,7 @@ describe("POST /api/auth/login", () => {
     expect(mockCredentialLogin).toHaveBeenCalledWith({
       username: "001",
       password: "1234",
+      branchCode: "HO999",
       returnTo: "/shop",
     })
     expect(mockCredentialLogin).not.toHaveBeenCalledWith(
@@ -97,7 +116,11 @@ describe("POST /api/auth/login", () => {
       new Request("http://localhost/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: "001", password: "1234" }),
+        body: JSON.stringify({
+          username: "001",
+          password: "1234",
+          branchCode: "HO999",
+        }),
       })
     )
 
@@ -185,9 +208,106 @@ describe("POST /api/auth/login", () => {
     expect(mockCredentialLogin).toHaveBeenCalledWith({
       username: "",
       password: "",
+      branchCode: "",
       returnTo: undefined,
     })
     expect(mockSetSessionCookies).not.toHaveBeenCalled()
+  })
+})
+
+describe("POST /api/auth/staff-preview", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockPreviewStaffByStaffId.mockResolvedValue({
+      staffId: "001",
+      staffName: "Admin User",
+      branchId: "branch-ho",
+      branchCode: "HO999",
+      branchName: "Head Office",
+    })
+  })
+
+  it("returns staff preview without role", async () => {
+    const res = await POSTStaffPreview(
+      new Request("http://localhost/api/auth/staff-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId: "001" }),
+      })
+    )
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({
+      staffId: "001",
+      staffName: "Admin User",
+      branchId: "branch-ho",
+      branchCode: "HO999",
+      branchName: "Head Office",
+    })
+    expect(body).not.toHaveProperty("role")
+    expect(body).not.toHaveProperty("password")
+  })
+
+  it("returns 404 NOT_FOUND when staff missing", async () => {
+    mockPreviewStaffByStaffId.mockRejectedValue(new LoginPreviewError())
+
+    const res = await POSTStaffPreview(
+      new Request("http://localhost/api/auth/staff-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId: "999" }),
+      })
+    )
+
+    expect(res.status).toBe(404)
+    const body = await res.json()
+    expect(body.code).toBe("NOT_FOUND")
+  })
+})
+
+describe("POST /api/auth/branch-preview", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockPreviewBranchByCode.mockResolvedValue({
+      branchId: "branch-ho",
+      branchCode: "HO999",
+      branchName: "Head Office",
+    })
+  })
+
+  it("returns branch preview", async () => {
+    const res = await POSTBranchPreview(
+      new Request("http://localhost/api/auth/branch-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branchCode: "HO999" }),
+      })
+    )
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({
+      branchId: "branch-ho",
+      branchCode: "HO999",
+      branchName: "Head Office",
+    })
+    expect(body).not.toHaveProperty("role")
+  })
+
+  it("returns 404 NOT_FOUND when branch missing", async () => {
+    mockPreviewBranchByCode.mockRejectedValue(new LoginPreviewError())
+
+    const res = await POSTBranchPreview(
+      new Request("http://localhost/api/auth/branch-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branchCode: "NONE" }),
+      })
+    )
+
+    expect(res.status).toBe(404)
+    expect((await res.json()).code).toBe("NOT_FOUND")
   })
 })
 

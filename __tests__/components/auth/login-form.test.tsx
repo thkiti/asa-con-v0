@@ -8,7 +8,9 @@ import { LoginForm } from "@/components/auth/LoginForm"
 import { ThemeProvider } from "@/components/theme/ThemeProvider"
 import {
   LoginRequestError,
+  postBranchPreview,
   postCredentialLogin,
+  postStaffPreview,
 } from "@/lib/auth/login-client"
 import { mapLoginErrorCode } from "@/lib/auth/login-ui-messages"
 
@@ -25,6 +27,12 @@ function setInputValue(element: HTMLInputElement, value: string): void {
   element.dispatchEvent(new Event("change", { bubbles: true }))
 }
 
+function keyDown(element: HTMLElement, key: string): void {
+  element.dispatchEvent(
+    new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })
+  )
+}
+
 jest.mock("@/lib/auth/login-client", () => ({
   LoginRequestError: class LoginRequestError extends Error {
     readonly code: string | undefined
@@ -34,6 +42,8 @@ jest.mock("@/lib/auth/login-client", () => ({
       this.code = code
     }
   },
+  postStaffPreview: jest.fn(),
+  postBranchPreview: jest.fn(),
   postCredentialLogin: jest.fn(),
 }))
 
@@ -47,9 +57,29 @@ jest.mock("next/navigation", () => ({
   }),
 }))
 
+const mockPostStaffPreview = postStaffPreview as jest.MockedFunction<
+  typeof postStaffPreview
+>
+const mockPostBranchPreview = postBranchPreview as jest.MockedFunction<
+  typeof postBranchPreview
+>
 const mockPostCredentialLogin = postCredentialLogin as jest.MockedFunction<
   typeof postCredentialLogin
 >
+
+const staffPreview = {
+  staffId: "001",
+  staffName: "Admin User",
+  branchId: "branch-ho",
+  branchCode: "HO999",
+  branchName: "Head Office",
+}
+
+const branchPreview = {
+  branchId: "branch-ho",
+  branchCode: "HO999",
+  branchName: "Head Office",
+}
 
 function wrapLoginForm() {
   return (
@@ -74,85 +104,171 @@ describe("LoginForm", () => {
     jest.clearAllMocks()
     global.fetch = jest.fn().mockResolvedValue({ ok: true })
     window.localStorage.clear()
+    mockPostStaffPreview.mockResolvedValue(staffPreview)
+    mockPostBranchPreview.mockResolvedValue(branchPreview)
   })
 
-  it("renders theme selector dropdown", () => {
+  it("renders staff, branch, and password fields", () => {
     const html = renderToStaticMarkup(wrapLoginForm())
 
-    expect(html).toContain("Theme:")
-    expect(html).toContain('id="theme-mode-select"')
-    expect(html).toContain(">Dark<")
-    expect(html).toContain(">Light<")
-    expect(html).toContain(">System<")
-    expect(html).not.toContain('type="radio"')
-  })
-
-  it("renders username and password fields with Thai labels", () => {
-    const html = renderToStaticMarkup(wrapLoginForm())
-
-    expect(html).toContain("เข้าสู่ระบบด้วยรหัสพนักงานและรหัสผ่าน")
     expect(html).toContain(">รหัสพนักงาน<")
+    expect(html).toContain(">รหัสสาขา<")
     expect(html).toContain(">รหัสผ่าน<")
-    expect(html).toContain('name="username"')
+    expect(html).toContain('name="staffId"')
+    expect(html).toContain('name="branchCode"')
     expect(html).toContain('name="password"')
-    expect(html).toContain('type="password"')
-    expect(html).toContain('autoComplete="username"')
-    expect(html).toContain('autoComplete="current-password"')
   })
 
-  it("does not render bootstrap or staffId-only login copy", () => {
-    const html = renderToStaticMarkup(wrapLoginForm())
+  it("staffId Enter previews staff and focuses branch", async () => {
+    const { container } = renderLoginForm()
+    const staffInput = container.querySelector(
+      'input[name="staffId"]'
+    ) as HTMLInputElement
+    const branchInput = container.querySelector(
+      'input[name="branchCode"]'
+    ) as HTMLInputElement
 
-    expect(html).not.toContain("bootstrap")
-    expect(html).not.toContain("ไม่มีการตรวจรหัสผ่าน")
-    expect(html).not.toContain(">staffId<")
-    expect(html).not.toContain('name="staffId"')
+    const focusSpy = jest.spyOn(branchInput, "focus")
+
+    await act(async () => {
+      setInputValue(staffInput, "001")
+    })
+
+    await act(async () => {
+      keyDown(staffInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(mockPostStaffPreview).toHaveBeenCalledWith({ staffId: "001" })
+    expect(mockPostCredentialLogin).not.toHaveBeenCalled()
+    expect(
+      container.querySelector('[data-testid="staff-preview-line"]')?.textContent
+    ).toBe("001 • Admin User")
+    expect(focusSpy).toHaveBeenCalled()
   })
 
-  it("disables submit until username and password are provided", () => {
-    const html = renderToStaticMarkup(wrapLoginForm())
+  it("branch Enter previews branch and focuses password when matched", async () => {
+    const { container } = renderLoginForm()
+    const staffInput = container.querySelector(
+      'input[name="staffId"]'
+    ) as HTMLInputElement
+    const branchInput = container.querySelector(
+      'input[name="branchCode"]'
+    ) as HTMLInputElement
+    const passwordInput = container.querySelector(
+      'input[name="password"]'
+    ) as HTMLInputElement
 
-    expect(html).toContain('type="submit"')
-    expect(html).toContain("disabled=")
-    expect(html).not.toContain('name="staffId"')
+    const passwordFocusSpy = jest.spyOn(passwordInput, "focus")
+
+    await act(async () => {
+      setInputValue(staffInput, "001")
+      keyDown(staffInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      setInputValue(branchInput, "HO999")
+      keyDown(branchInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(mockPostBranchPreview).toHaveBeenCalledWith({ branchCode: "HO999" })
+    expect(
+      container.querySelector('[data-testid="branch-preview-line"]')?.textContent
+    ).toBe("HO999 • Head Office")
+    expect(passwordFocusSpy).toHaveBeenCalled()
+    expect(mockPostCredentialLogin).not.toHaveBeenCalled()
   })
 
-  it("does not render post-login staff session panel", () => {
-    const html = renderToStaticMarkup(wrapLoginForm())
+  it("shows mismatch error and does not focus password", async () => {
+    mockPostBranchPreview.mockResolvedValue({
+      branchId: "branch-other",
+      branchCode: "SH001",
+      branchName: "Shop 1",
+    })
 
-    expect(html).not.toContain(">Session<")
-    expect(html).not.toContain("branchCode —")
+    const { container } = renderLoginForm()
+    const staffInput = container.querySelector(
+      'input[name="staffId"]'
+    ) as HTMLInputElement
+    const branchInput = container.querySelector(
+      'input[name="branchCode"]'
+    ) as HTMLInputElement
+    const passwordInput = container.querySelector(
+      'input[name="password"]'
+    ) as HTMLInputElement
+
+    const passwordFocusSpy = jest.spyOn(passwordInput, "focus")
+
+    await act(async () => {
+      setInputValue(staffInput, "001")
+      keyDown(staffInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      setInputValue(branchInput, "SH001")
+      keyDown(branchInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(
+      "พนักงานไม่สังกัดสาขานี้"
+    )
+    expect(passwordFocusSpy).not.toHaveBeenCalled()
+    expect(passwordInput.disabled).toBe(true)
   })
 
-  it("submits username and password via credential login", async () => {
+  it("submits login with branchCode after previews", async () => {
     mockPostCredentialLogin.mockResolvedValue({
       redirectTo: "/main",
       user: {
         userId: "uid-1",
         staffId: "001",
-        name: "Admin",
+        name: "Admin User",
         role: "HO_ADMIN",
-        branchId: "branch-1",
+        branchId: "branch-ho",
         branchCode: "HO999",
         branchName: "Head Office",
       },
     })
 
     const { container } = renderLoginForm()
-    const usernameInput = container.querySelector(
-      'input[name="username"]'
+    const staffInput = container.querySelector(
+      'input[name="staffId"]'
+    ) as HTMLInputElement
+    const branchInput = container.querySelector(
+      'input[name="branchCode"]'
     ) as HTMLInputElement
     const passwordInput = container.querySelector(
       'input[name="password"]'
     ) as HTMLInputElement
     const form = container.querySelector("form") as HTMLFormElement
-
     const submit = container.querySelector(
       'button[type="submit"]'
     ) as HTMLButtonElement
 
     await act(async () => {
-      setInputValue(usernameInput, "001")
+      setInputValue(staffInput, "001")
+      keyDown(staffInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      setInputValue(branchInput, "HO999")
+      keyDown(branchInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    await act(async () => {
       setInputValue(passwordInput, "secret")
     })
 
@@ -167,26 +283,30 @@ describe("LoginForm", () => {
     expect(mockPostCredentialLogin).toHaveBeenCalledWith({
       username: "001",
       password: "secret",
+      branchCode: "HO999",
       returnTo: undefined,
     })
   })
 
-  it("cannot submit with staffId-only (no staffId field, password required)", async () => {
+  it("does not submit without branch match", async () => {
     const { container } = renderLoginForm()
-
-    expect(container.querySelector('input[name="staffId"]')).toBeNull()
-
-    const usernameInput = container.querySelector(
-      'input[name="username"]'
+    const staffInput = container.querySelector(
+      'input[name="staffId"]'
+    ) as HTMLInputElement
+    const passwordInput = container.querySelector(
+      'input[name="password"]'
     ) as HTMLInputElement
     const form = container.querySelector("form") as HTMLFormElement
-
     const submit = container.querySelector(
       'button[type="submit"]'
     ) as HTMLButtonElement
 
     await act(async () => {
-      setInputValue(usernameInput, "001")
+      setInputValue(staffInput, "001")
+      keyDown(staffInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+      setInputValue(passwordInput, "secret")
     })
 
     await act(async () => {
@@ -200,30 +320,36 @@ describe("LoginForm", () => {
 
   it.each([
     ["INVALID_CREDENTIALS", "รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง"],
-    ["USERNAME_REQUIRED", "กรุณากรอกรหัสพนักงาน"],
-    ["PASSWORD_REQUIRED", "กรุณากรอกรหัสผ่าน"],
-    ["BRANCH_INACTIVE", "สาขานี้ไม่สามารถใช้งานได้"],
-    ["DEV_STAFF_NOT_ALLOWED", "ไม่อนุญาตให้ใช้บัญชีนี้"],
+    ["BRANCH_MISMATCH", "พนักงานไม่สังกัดสาขานี้"],
   ] as const)("renders error message for %s", async (code, message) => {
     mockPostCredentialLogin.mockRejectedValue(
       new LoginRequestError(mapLoginErrorCode(code), code)
     )
 
     const { container } = renderLoginForm()
-    const usernameInput = container.querySelector(
-      'input[name="username"]'
+    const staffInput = container.querySelector(
+      'input[name="staffId"]'
+    ) as HTMLInputElement
+    const branchInput = container.querySelector(
+      'input[name="branchCode"]'
     ) as HTMLInputElement
     const passwordInput = container.querySelector(
       'input[name="password"]'
     ) as HTMLInputElement
     const form = container.querySelector("form") as HTMLFormElement
-
     const submit = container.querySelector(
       'button[type="submit"]'
     ) as HTMLButtonElement
 
     await act(async () => {
-      setInputValue(usernameInput, "001")
+      setInputValue(staffInput, "001")
+      keyDown(staffInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
+      setInputValue(branchInput, "HO999")
+      keyDown(branchInput, "Enter")
+      await Promise.resolve()
+      await Promise.resolve()
       setInputValue(passwordInput, "x")
     })
 
@@ -234,7 +360,6 @@ describe("LoginForm", () => {
       await Promise.resolve()
     })
 
-    const alert = container.querySelector('[role="alert"]')
-    expect(alert?.textContent).toBe(message)
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(message)
   })
 })

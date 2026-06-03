@@ -19,6 +19,8 @@ export const API_BYPASS_PATHS = [
   "/api/auth/session",
   "/api/auth/login",
   "/api/auth/logout",
+  "/api/auth/staff-preview",
+  "/api/auth/branch-preview",
   "/api/finance",
   "/api/pos",
   "/api/stock-document",

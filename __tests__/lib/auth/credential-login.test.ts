@@ -4,6 +4,7 @@ import {
   credentialLogin,
   CredentialLoginError,
   CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE,
+  CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE,
   CREDENTIAL_LOGIN_INVALID_MESSAGE,
 } from "@/lib/auth/credential-login"
 import { getDefaultStaffPasswordHash } from "@/lib/import/staff-password"
@@ -64,6 +65,7 @@ describe("credentialLogin", () => {
     const result = await credentialLogin({
       username: "001",
       password: "1234",
+      branchCode: "HO999",
     })
 
     expect(result.sessionUser).toEqual({
@@ -85,7 +87,7 @@ describe("credentialLogin", () => {
       .mockResolvedValue((await activeStaffRecord()) as never)
 
     await expect(
-      credentialLogin({ username: "001", password: "wrong" })
+      credentialLogin({ username: "001", password: "wrong", branchCode: "HO999" })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_INVALID_MESSAGE,
       code: "INVALID_CREDENTIALS",
@@ -97,7 +99,7 @@ describe("credentialLogin", () => {
     jest.mocked(prisma.staff.findUnique).mockResolvedValue(null)
 
     await expect(
-      credentialLogin({ username: "999", password: "1234" })
+      credentialLogin({ username: "999", password: "1234", branchCode: "HO999" })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_INVALID_MESSAGE,
       code: "INVALID_CREDENTIALS",
@@ -113,12 +115,40 @@ describe("credentialLogin", () => {
       )
 
     await expect(
-      credentialLogin({ username: "001", password: "1234" })
+      credentialLogin({ username: "001", password: "1234", branchCode: "HO999" })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_INVALID_MESSAGE,
       code: "INVALID_CREDENTIALS",
       httpStatus: 401,
     })
+  })
+
+  it("rejects branch code mismatch before password check", async () => {
+    jest
+      .mocked(prisma.staff.findUnique)
+      .mockResolvedValue((await activeStaffRecord()) as never)
+
+    await expect(
+      credentialLogin({
+        username: "001",
+        password: "1234",
+        branchCode: "SH001",
+      })
+    ).rejects.toMatchObject({
+      message: CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE,
+      code: "BRANCH_MISMATCH",
+      httpStatus: 403,
+    })
+  })
+
+  it("rejects missing branch code", async () => {
+    await expect(
+      credentialLogin({ username: "001", password: "1234", branchCode: "" })
+    ).rejects.toMatchObject({
+      code: "BRANCH_CODE_REQUIRED",
+      httpStatus: 400,
+    })
+    expect(prisma.staff.findUnique).not.toHaveBeenCalled()
   })
 
   it("rejects inactive branch", async () => {
@@ -135,7 +165,7 @@ describe("credentialLogin", () => {
     )
 
     await expect(
-      credentialLogin({ username: "001", password: "1234" })
+      credentialLogin({ username: "001", password: "1234", branchCode: "HO999" })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE,
       code: "BRANCH_INACTIVE",
@@ -157,7 +187,7 @@ describe("credentialLogin", () => {
     )
 
     await expect(
-      credentialLogin({ username: "001", password: "1234" })
+      credentialLogin({ username: "001", password: "1234", branchCode: "HO999" })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE,
       code: "BRANCH_INACTIVE",
@@ -167,7 +197,7 @@ describe("credentialLogin", () => {
 
   it("rejects empty password", async () => {
     await expect(
-      credentialLogin({ username: "001", password: "" })
+      credentialLogin({ username: "001", password: "", branchCode: "HO999" })
     ).rejects.toMatchObject({
       code: "PASSWORD_REQUIRED",
       httpStatus: 400,
@@ -177,7 +207,7 @@ describe("credentialLogin", () => {
 
   it("rejects empty username", async () => {
     await expect(
-      credentialLogin({ username: "  ", password: "1234" })
+      credentialLogin({ username: "  ", password: "1234", branchCode: "HO999" })
     ).rejects.toMatchObject({
       code: "USERNAME_REQUIRED",
       httpStatus: 400,
@@ -188,7 +218,7 @@ describe("credentialLogin", () => {
   it("throws CredentialLoginError type", async () => {
     jest.mocked(prisma.staff.findUnique).mockResolvedValue(null)
     await expect(
-      credentialLogin({ username: "001", password: "1234" })
+      credentialLogin({ username: "001", password: "1234", branchCode: "HO999" })
     ).rejects.toBeInstanceOf(CredentialLoginError)
   })
 
@@ -200,6 +230,7 @@ describe("credentialLogin", () => {
     const result = await credentialLogin({
       username: "001",
       password: "1234",
+      branchCode: "HO999",
       returnTo: "/shop/stock-documents",
     })
 
@@ -215,6 +246,7 @@ describe("credentialLogin", () => {
     const result = await credentialLogin({
       username: "001",
       password: "secret-pass",
+      branchCode: "HO999",
     })
 
     expect(result.sessionUser.staffId).toBe("001")

@@ -19,6 +19,9 @@ export const CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE = "สาขาของ�
 export const CREDENTIAL_LOGIN_DEV_STAFF_BLOCKED_MESSAGE =
   "รหัส DEV ใช้สำหรับ development เท่านั้น ไม่สามารถ Login ผ่านหน้านี้"
 
+export const CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE =
+  "พนักงานไม่สังกัดสาขานี้"
+
 export class CredentialLoginError extends Error {
   readonly code: string
   readonly httpStatus: number
@@ -34,6 +37,7 @@ export class CredentialLoginError extends Error {
 export type CredentialLoginInput = {
   username: string
   password: string
+  branchCode: string
   returnTo?: string
 }
 
@@ -55,6 +59,7 @@ export async function credentialLogin(
 ): Promise<CredentialLoginResult> {
   const username = input.username.trim()
   const password = input.password
+  const branchCode = input.branchCode.trim()
 
   if (!username) {
     throw new CredentialLoginError(
@@ -68,6 +73,14 @@ export async function credentialLogin(
     throw new CredentialLoginError(
       "Password is required",
       "PASSWORD_REQUIRED",
+      400
+    )
+  }
+
+  if (!branchCode) {
+    throw new CredentialLoginError(
+      "Branch code is required",
+      "BRANCH_CODE_REQUIRED",
       400
     )
   }
@@ -98,6 +111,14 @@ export async function credentialLogin(
       CREDENTIAL_LOGIN_BRANCH_INACTIVE_MESSAGE,
       "BRANCH_INACTIVE",
       409
+    )
+  }
+
+  if (staff.branch.code !== branchCode) {
+    throw new CredentialLoginError(
+      CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE,
+      "BRANCH_MISMATCH",
+      403
     )
   }
 

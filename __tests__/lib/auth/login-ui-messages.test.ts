@@ -23,6 +23,14 @@ describe("mapLoginErrorCode", () => {
     expect(mapLoginErrorCode("DEV_STAFF_NOT_ALLOWED")).toBe("ไม่อนุญาตให้ใช้บัญชีนี้")
   })
 
+  it("maps NOT_FOUND", () => {
+    expect(mapLoginErrorCode("NOT_FOUND")).toBe("ไม่พบข้อมูล")
+  })
+
+  it("maps BRANCH_MISMATCH", () => {
+    expect(mapLoginErrorCode("BRANCH_MISMATCH")).toBe("พนักงานไม่สังกัดสาขานี้")
+  })
+
   it("uses fallback message for unknown codes", () => {
     expect(mapLoginErrorCode("OTHER", "Server error")).toBe("Server error")
   })

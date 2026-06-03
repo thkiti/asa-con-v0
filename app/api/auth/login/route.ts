@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     const result = await credentialLogin({
       username: String(body.username ?? ""),
       password: String(body.password ?? ""),
+      branchCode: String(body.branchCode ?? ""),
       returnTo: body.returnTo,
     })
 
