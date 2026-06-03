@@ -18,7 +18,16 @@ Centralized role access, session stub, route/menu guards.
 | `HO_OPERATIONS` | yes | no | yes | yes | no | no | `/main` |
 | `SH_STAFF` | no | no | no | yes | no | no | `/main` |
 
-**Master Database** (`/master/*`): maintenance UI for product/reference, branch, and staff — **HO_ADMIN only** (same bar as System Import). Bulk load remains `/system/import`.
+**Master Database** (`/master/*`): HO_ADMIN-only maintenance for **Branch**, **Staff**, and **Product / ReferenceStock** (CRUD complete). Bulk product and reference **creation** remains **System Import** (`/system/import`). See [30_MASTER_DATABASE.md](./30_MASTER_DATABASE.md).
+
+| Page | Path | Notes |
+|------|------|-------|
+| Hub | `/master` | Links to maintenance areas |
+| Branch | `/master/branch` | Create / edit / soft-delete; `HO999` and `SH999` protected |
+| Staff | `/master/staff` | Create / edit / reset password / soft-delete; guards for `001`, `DEV`, last HO_ADMIN |
+| Product & reference | `/master/product-reference` | Product name/type; reference links; Save Product vs Save All; row trash cascades refs |
+
+**Product–reference rules (summary):** Product = sellable item; ReferenceStock = counting link. Row trash soft-deletes product and all its references; restore product only. Modal can trash a single reference while product stays active. No schema, import, stock-posting, or finance-posting changes.
 
 ## Route matrix (examples)
 
@@ -30,7 +39,9 @@ Centralized role access, session stub, route/menu guards.
 | `/shop` | allow | allow | allow | allow |
 | `/master` | deny | allow | deny | deny |
 | `/master/product-reference` | deny | allow | deny | deny |
-| `GET /api/master/*` | deny | allow | deny | deny |
+| `GET/POST/PATCH /api/master/*` | deny | allow | deny | deny |
+| `/master/branch` | deny | allow | deny | deny |
+| `/master/staff` | deny | allow | deny | deny |
 | `/login` | public | public | public | public |
 | `/unauthorized` | public | public | public | public |
 | `/api/health` | bypass RBAC | bypass | bypass | bypass |

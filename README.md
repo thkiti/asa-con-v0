@@ -3,9 +3,9 @@
 Clean-base modular monolith for ASA inventory and POS.
 
 - **Reference repo:** `asa-con` (read-only — do not copy legacy code)
-- **Status:** Phase 22B period audit export complete — see [docs/00_README.md](./docs/00_README.md)
+- **Status:** Master Database CRUD complete (HO_ADMIN) — see [docs/30_MASTER_DATABASE.md](./docs/30_MASTER_DATABASE.md) and [docs/00_README.md](./docs/00_README.md)
 
-Phase 22B adds a composed period audit export bundle with browser CSV pack and print on the timeline page. Phase 22A adds the read-only audit timeline. Phase 21B adds request → approve → execute for HARD reopen (`RRO-{periodKey}-{seq}` audit ids, explicit approval/rejection fields). Summaries: [docs/28_FINANCE_PERIOD_AUDIT_EXPORT.md](./docs/28_FINANCE_PERIOD_AUDIT_EXPORT.md), [docs/27_FINANCE_PERIOD_AUDIT_TIMELINE.md](./docs/27_FINANCE_PERIOD_AUDIT_TIMELINE.md).
+Master Database covers Branch, Staff, and Product / ReferenceStock maintenance at `/master/*` (no schema, import, stock, or finance posting changes). Finance phases 22B (audit export), 22A (timeline), and 21B (reopen approval) remain documented under `docs/27–28`.
 
 ## Docs
 
@@ -21,6 +21,7 @@ Start with [docs/00_README.md](./docs/00_README.md).
 - Close gate: [docs/22_FINANCE_CLOSE_GATE.md](./docs/22_FINANCE_CLOSE_GATE.md) — Phase 20C enforced HARD close, policy, rollback, no side effects
 - Close evidence: [docs/23_FINANCE_CLOSE_EVIDENCE.md](./docs/23_FINANCE_CLOSE_EVIDENCE.md) — Phase 20D immutable HARD-close audit record and review UI
 - Close evidence export/print: [docs/24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./docs/24_FINANCE_CLOSE_EVIDENCE_EXPORT.md) — Phase 20E browser CSV pack and audit print from stored evidence
+- Master Database: [docs/30_MASTER_DATABASE.md](./docs/30_MASTER_DATABASE.md) — HO_ADMIN Branch / Staff / Product–Reference CRUD
 
 ## Setup
 
@@ -81,3 +82,4 @@ generated/  Prisma client output (gitignored)
 | 21B | Reopen approval — HARD reopen request workflow, HO_ADMIN approve, separation of duties |
 | 22A | Period audit timeline — read-only merge of lifecycle, close/reopen evidence, reopen requests (`GET .../timeline`) |
 | 22B | Period audit export — composed bundle, CSV pack, print (`GET .../audit-export`) |
+| MD | Master Database — HO_ADMIN Branch / Staff / Product–Reference CRUD (`/master/*`) |
