@@ -5,6 +5,7 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 import { LoginForm } from "@/components/auth/LoginForm"
+import { ThemeProvider } from "@/components/theme/ThemeProvider"
 import {
   LoginRequestError,
   postCredentialLogin,
@@ -50,12 +51,20 @@ const mockPostCredentialLogin = postCredentialLogin as jest.MockedFunction<
   typeof postCredentialLogin
 >
 
+function wrapLoginForm() {
+  return (
+    <ThemeProvider>
+      <LoginForm />
+    </ThemeProvider>
+  )
+}
+
 function renderLoginForm(): { container: HTMLDivElement; root: Root } {
   const container = document.createElement("div")
   document.body.appendChild(container)
   const root = createRoot(container)
   act(() => {
-    root.render(<LoginForm />)
+    root.render(wrapLoginForm())
   })
   return { container, root }
 }
@@ -64,10 +73,22 @@ describe("LoginForm", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     global.fetch = jest.fn().mockResolvedValue({ ok: true })
+    window.localStorage.clear()
+  })
+
+  it("renders theme selector dropdown", () => {
+    const html = renderToStaticMarkup(wrapLoginForm())
+
+    expect(html).toContain("Theme:")
+    expect(html).toContain('id="theme-mode-select"')
+    expect(html).toContain(">Dark<")
+    expect(html).toContain(">Light<")
+    expect(html).toContain(">System<")
+    expect(html).not.toContain('type="radio"')
   })
 
   it("renders username and password fields with Thai labels", () => {
-    const html = renderToStaticMarkup(<LoginForm />)
+    const html = renderToStaticMarkup(wrapLoginForm())
 
     expect(html).toContain("เข้าสู่ระบบด้วยรหัสพนักงานและรหัสผ่าน")
     expect(html).toContain(">รหัสพนักงาน<")
@@ -80,7 +101,7 @@ describe("LoginForm", () => {
   })
 
   it("does not render bootstrap or staffId-only login copy", () => {
-    const html = renderToStaticMarkup(<LoginForm />)
+    const html = renderToStaticMarkup(wrapLoginForm())
 
     expect(html).not.toContain("bootstrap")
     expect(html).not.toContain("ไม่มีการตรวจรหัสผ่าน")
@@ -89,7 +110,7 @@ describe("LoginForm", () => {
   })
 
   it("disables submit until username and password are provided", () => {
-    const html = renderToStaticMarkup(<LoginForm />)
+    const html = renderToStaticMarkup(wrapLoginForm())
 
     expect(html).toContain('type="submit"')
     expect(html).toContain("disabled=")
@@ -97,7 +118,7 @@ describe("LoginForm", () => {
   })
 
   it("does not render post-login staff session panel", () => {
-    const html = renderToStaticMarkup(<LoginForm />)
+    const html = renderToStaticMarkup(wrapLoginForm())
 
     expect(html).not.toContain(">Session<")
     expect(html).not.toContain("branchCode —")

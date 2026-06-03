@@ -1,6 +1,14 @@
 "use client"
 
+import { ThemeSelector } from "@/components/theme/ThemeSelector"
 import { postCredentialLogin } from "@/lib/auth/login-client"
+import {
+  themeBtnPrimary,
+  themeCard,
+  themeInput,
+  themeLinkMuted,
+  themeMuted,
+} from "@/lib/theme/theme-classes"
 import { useRouter, useSearchParams } from "next/navigation"
 import { FormEvent, useState } from "react"
 
@@ -53,62 +61,68 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mx-auto mt-8 max-w-md rounded-lg border border-zinc-200 p-6">
-      <h1 className="text-xl font-semibold">เข้าสู่ระบบ</h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        เข้าสู่ระบบด้วยรหัสพนักงานและรหัสผ่าน
-      </p>
+    <div className="mx-auto mt-8 max-w-md">
+      <div className="mb-4 flex justify-end">
+        <ThemeSelector />
+      </div>
 
-      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-        <label className="block text-sm">
-          <span className="font-medium">รหัสพนักงาน</span>
-          <input
-            name="username"
-            className="mt-1 w-full rounded border border-zinc-300 px-3 py-2"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder="001"
-            autoComplete="username"
-            disabled={loading}
-          />
-        </label>
+      <div className={themeCard}>
+        <h1 className="text-xl font-semibold">เข้าสู่ระบบ</h1>
+        <p className={`mt-2 text-sm ${themeMuted}`}>
+          เข้าสู่ระบบด้วยรหัสพนักงานและรหัสผ่าน
+        </p>
 
-        <label className="block text-sm">
-          <span className="font-medium">รหัสผ่าน</span>
-          <input
-            name="password"
-            type="password"
-            className="mt-1 w-full rounded border border-zinc-300 px-3 py-2"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="current-password"
-            disabled={loading}
-          />
-        </label>
+        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+          <label className="block text-sm">
+            <span className="font-medium">รหัสพนักงาน</span>
+            <input
+              name="username"
+              className={themeInput}
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="001"
+              autoComplete="username"
+              disabled={loading}
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="font-medium">รหัสผ่าน</span>
+            <input
+              name="password"
+              type="password"
+              className={themeInput}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+              disabled={loading}
+            />
+          </label>
+
+          <button
+            type="submit"
+            disabled={loading || !canSubmit}
+            className={themeBtnPrimary}
+          >
+            {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+          </button>
+        </form>
+
+        {error ? (
+          <p className="mt-4 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <button
-          type="submit"
-          disabled={loading || !canSubmit}
-          className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+          type="button"
+          onClick={() => void onLogout()}
+          disabled={loading}
+          className={`mt-6 text-sm ${themeLinkMuted}`}
         >
-          {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
+          ออกจากระบบ
         </button>
-      </form>
-
-      {error ? (
-        <p className="mt-4 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={() => void onLogout()}
-        disabled={loading}
-        className="mt-6 text-sm text-zinc-600 underline disabled:opacity-50"
-      >
-        ออกจากระบบ
-      </button>
+      </div>
     </div>
   )
 }
