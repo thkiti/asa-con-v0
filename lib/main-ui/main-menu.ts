@@ -1,7 +1,7 @@
 import { canAccessMenu } from "@/lib/permissions/menu"
 import type { Role } from "@/lib/shared"
 
-export type MainMenuItemStatus = "available" | "coming-soon"
+export type MainMenuItemStatus = "available" | "planned"
 
 export type MainMenuItem = {
   key: string
@@ -11,54 +11,93 @@ export type MainMenuItem = {
   status: MainMenuItemStatus
 }
 
-const COMING_SOON_ITEMS: readonly MainMenuItem[] = [
-  { key: "product", label: "Product", status: "coming-soon" },
-  { key: "reference-stock", label: "Reference Stock", status: "coming-soon" },
-  { key: "branch", label: "Branch", status: "coming-soon" },
-  { key: "staff", label: "Staff", status: "coming-soon" },
-] as const
+export type MainMenuGroup = {
+  key: string
+  label: string
+  items: MainMenuItem[]
+}
 
-/** Main menu entries for `/main` — visibility uses existing menu/area guards. */
-export function getMainMenuItems(role: Role): MainMenuItem[] {
-  const items: MainMenuItem[] = []
+function available(
+  key: string,
+  label: string,
+  href: string,
+  hint?: string
+): MainMenuItem {
+  return { key, label, href, hint, status: "available" }
+}
 
-  if (canAccessMenu(role, "shop")) {
-    items.push({
-      key: "stock-documents",
-      label: "Stock Documents",
-      hint: "Transfers, performance, adjustments",
-      href: "/shop/stock-documents",
-      status: "available",
-    })
-    items.push({
-      key: "stock-new",
-      label: "New Stock Document",
-      hint: "Create or open counting / editor flow",
-      href: "/shop/stock-documents/new",
-      status: "available",
-    })
-  }
+function planned(key: string, label: string, hint?: string): MainMenuItem {
+  return { key, label, hint, status: "planned" }
+}
 
-  if (canAccessMenu(role, "system")) {
-    items.push({
-      key: "system-import",
-      label: "System Import",
-      hint: "Bootstrap / recovery imports",
-      href: "/system/import",
-      status: "available",
-    })
-  }
+/** Domain-grouped main menu for `/main` — visibility uses existing menu/area guards. */
+export function getMainMenuGroups(role: Role): MainMenuGroup[] {
+  const groups: MainMenuGroup[] = []
 
+  const financeItems: MainMenuItem[] = []
   if (canAccessMenu(role, "finance")) {
-    items.push({
-      key: "finance",
-      label: "Finance",
-      hint: "Periods, reconciliation, vouchers",
-      href: "/finance",
-      status: "available",
-    })
+    financeItems.push(
+      available(
+        "finance",
+        "Finance",
+        "/finance",
+        "Periods, reconciliation, vouchers"
+      )
+    )
+  }
+  if (financeItems.length > 0) {
+    groups.push({ key: "finance", label: "Finance", items: financeItems })
   }
 
-  items.push(...COMING_SOON_ITEMS)
-  return items
+  const stockItems: MainMenuItem[] = []
+  if (canAccessMenu(role, "shop")) {
+    stockItems.push(
+      available(
+        "stock-documents",
+        "Stock Documents",
+        "/shop/stock-documents",
+        "Transfers, performance, adjustments"
+      )
+    )
+  }
+  stockItems.push(
+    planned("stock-card", "Stock Card"),
+    planned("stock-movement", "Stock Movement"),
+    planned("stock-reports", "Stock Reports")
+  )
+  groups.push({ key: "stock", label: "Stock", items: stockItems })
+
+  groups.push({
+    key: "master-database",
+    label: "Master Database",
+    items: [
+      planned("product-reference-stock", "Product / Reference Stock"),
+      planned("branch", "Branch"),
+      planned("staff", "Staff"),
+    ],
+  })
+
+  const systemItems: MainMenuItem[] = []
+  if (canAccessMenu(role, "system")) {
+    systemItems.push(
+      available(
+        "system-import",
+        "System Import",
+        "/system/import",
+        "Import master database"
+      )
+    )
+  }
+  systemItems.push(
+    planned("import-accounting", "Import Accounting Data"),
+    planned("settings-maintenance", "Settings / Maintenance")
+  )
+  groups.push({ key: "system", label: "System", items: systemItems })
+
+  return groups
+}
+
+/** Flat list of all menu entries (available + planned) for tests and diagnostics. */
+export function getMainMenuItems(role: Role): MainMenuItem[] {
+  return getMainMenuGroups(role).flatMap((group) => group.items)
 }
