@@ -65,24 +65,29 @@ describe("Branch table actions column", () => {
 })
 
 describe("Staff table actions column", () => {
-  it("renders disabled edit/delete with staff labels", () => {
+  it("renders staff actions with reset password when configured", () => {
     const html = renderToStaticMarkup(
       <MasterTable columns={STAFF_COLUMNS}>
         <MasterTableRow
-          cells={["001"]}
+          cells={["002"]}
           actions={
             <MasterRowActions
-              editTitle="Edit planned"
-              deleteTitle="Delete planned"
-              editAriaLabel="Edit staff planned"
-              deleteAriaLabel="Delete staff planned"
+              editTitle="Edit staff"
+              deleteTitle="Delete staff"
+              editDisabled={false}
+              deleteDisabled={false}
+              resetPasswordDisabled={false}
+              onEdit={() => {}}
+              onDelete={() => {}}
+              onResetPassword={() => {}}
             />
           }
         />
       </MasterTable>
     )
-    expect(html).toContain("Edit staff planned")
-    expect(html).toContain("Delete staff planned")
+    expect(html).toContain("Edit staff")
+    expect(html).toContain("🔑")
+    expect(html).not.toContain('disabled=""')
   })
 })
 
@@ -105,6 +110,28 @@ describe("Product-Reference table actions column", () => {
     )
     expect(html).toContain("Edit reference link planned")
     expect(html).toContain("Delete reference link planned")
+  })
+
+  it("renders enabled product-reference actions when configured", () => {
+    const html = renderToStaticMarkup(
+      <MasterTable columns={PRODUCT_REF_COLUMNS}>
+        <MasterTableRow
+          cells={["5101001"]}
+          actions={
+            <MasterRowActions
+              editTitle="Edit"
+              deleteTitle="Delete reference link"
+              editDisabled={false}
+              deleteDisabled={false}
+              onEdit={() => {}}
+              onDelete={() => {}}
+            />
+          }
+        />
+      </MasterTable>
+    )
+    expect(html).toContain("Edit")
+    expect(html).not.toContain('disabled=""')
   })
 
   it("explains no reference on delete when hasReference is false", () => {

@@ -26,7 +26,43 @@ export type {
   UpdateBranchInput,
 } from "./parse-branch-mutation"
 export { listStaff } from "./staff-list"
+export { createStaff } from "./create-staff"
+export { updateStaff } from "./update-staff"
+export { deleteStaff } from "./delete-staff"
+export { restoreStaff } from "./restore-staff"
+export { resetStaffPassword } from "./reset-staff-password"
+export { patchStaff } from "./patch-staff"
+export {
+  parseCreateStaffBody,
+  parsePatchStaffBody,
+} from "./parse-staff-mutation"
+export type {
+  CreateStaffInput,
+  PatchStaffBody,
+  StaffMutationContext,
+  UpdateStaffInput,
+} from "./parse-staff-mutation"
 export { listProductReference } from "./product-reference-list"
+export { createReferenceStock } from "./create-reference-stock"
+export { updateReferenceStock } from "./update-reference-stock"
+export { deleteReferenceStock } from "./delete-reference-stock"
+export { restoreReferenceStock } from "./restore-reference-stock"
+export { patchReferenceStock } from "./patch-reference-stock"
+export { updateProduct } from "./update-product"
+export { deleteProduct } from "./delete-product"
+export { restoreProduct } from "./restore-product"
+export { patchProduct } from "./patch-product"
+export {
+  parseCreateReferenceStockBody,
+  parsePatchReferenceStockBody,
+} from "./parse-product-reference-mutation"
+export type {
+  CreateReferenceStockInput,
+  PatchReferenceStockBody,
+  UpdateReferenceStockInput,
+} from "./parse-product-reference-mutation"
+export { parsePatchProductBody } from "./parse-product-mutation"
+export type { PatchProductBody, UpdateProductInput } from "./parse-product-mutation"
 export {
   parseBranchListQuery,
   parseProductReferenceListQuery,

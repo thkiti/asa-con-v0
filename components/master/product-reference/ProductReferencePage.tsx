@@ -8,13 +8,23 @@ import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
 import { MASTER_ACTIONS_COLUMN } from "@/lib/master-ui/table-columns"
 import { MasterToolbar } from "@/components/master/shared/MasterToolbar"
-import { fetchMasterProductReference } from "@/lib/master-ui/fetchers"
+import {
+  createMasterProductReference,
+  fetchMasterProductReference,
+  patchMasterProduct,
+  patchMasterProductReference,
+} from "@/lib/master-ui/fetchers"
 import { masterPageLayout, masterToolbarLabel } from "@/lib/master-ui/table-classes"
 import type {
   ProductReferenceListItem,
   ReferenceStatusFilter,
 } from "@/lib/master/types"
-import { themeBtnPrimary, themeSelect } from "@/lib/theme/theme-classes"
+import { themeSelect } from "@/lib/theme/theme-classes"
+import { ProductReferenceConfirmDialog } from "./ProductReferenceConfirmDialog"
+import {
+  ProductReferenceFormModal,
+  type ProductReferenceFormMode,
+} from "./ProductReferenceFormModal"
 
 const COLUMNS = [
   { key: "code", label: "Product code", width: "110px" },
@@ -31,6 +41,10 @@ function formatHookLabel(row: ProductReferenceListItem): string {
   if (!row.hookGroup) return ""
   if (row.hookNo == null) return row.hookGroup
   return `${row.hookGroup}.${row.hookNo}`
+}
+
+function referenceIdFromRow(row: ProductReferenceListItem): string | null {
+  return row.hasReference ? row.rowId : null
 }
 
 export function ProductReferencePage() {
@@ -55,6 +69,19 @@ export function ProductReferencePage() {
   const [items, setItems] = useState<ProductReferenceListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [formOpen, setFormOpen] = useState(false)
+  const [formMode, setFormMode] = useState<ProductReferenceFormMode>("edit")
+  const [selectedRow, setSelectedRow] = useState<ProductReferenceListItem | null>(null)
+  const [formSubmitting, setFormSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<"deleteRef" | "deleteProduct" | "restore">(
+    "deleteRef"
+  )
+  const [confirmPending, setConfirmPending] = useState(false)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(
@@ -94,10 +121,111 @@ export function ProductReferencePage() {
     void load()
   }, [load])
 
+  const openEdit = (row: ProductReferenceListItem) => {
+    setSelectedRow(row)
+    setFormMode(row.hasReference ? "edit" : "create")
+    setFormError(null)
+    setFormOpen(true)
+  }
+
+  const openDeleteConfirm = (row: ProductReferenceListItem) => {
+    setSelectedRow(row)
+    if (row.hasReference) {
+      setConfirmAction("deleteRef")
+    } else {
+      setConfirmAction("deleteProduct")
+    }
+    setConfirmError(null)
+    setConfirmOpen(true)
+  }
+
+  const openRestoreConfirm = (row: ProductReferenceListItem) => {
+    setSelectedRow(row)
+    setConfirmAction("restore")
+    setConfirmError(null)
+    setConfirmOpen(true)
+  }
+
+  const handleFormSubmit = async (values: {
+    name: string
+    productType: ProductReferenceListItem["productType"]
+    hookGroup: string
+    hookNo: string
+    supplierCode: string
+    productCode: string
+    productGroup: string
+  }) => {
+    if (!selectedRow) return
+    setFormSubmitting(true)
+    setFormError(null)
+    try {
+      await patchMasterProduct(selectedRow.productId, {
+        name: values.name,
+        productType: values.productType,
+      })
+
+      const refId = referenceIdFromRow(selectedRow)
+      if (refId) {
+        await patchMasterProductReference(refId, {
+          hookGroup: values.hookGroup,
+          hookNo: Number(values.hookNo),
+          supplierCode: values.supplierCode,
+          productCode: values.productCode,
+          productGroup: values.productGroup || null,
+        })
+      } else {
+        await createMasterProductReference({
+          productId: selectedRow.productId,
+          hookGroup: values.hookGroup,
+          hookNo: Number(values.hookNo),
+          supplierCode: values.supplierCode,
+          productCode: values.productCode,
+          productGroup: values.productGroup || null,
+        })
+      }
+
+      setFormOpen(false)
+      await load()
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Save failed")
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
+  const handleConfirm = async () => {
+    if (!selectedRow) return
+    setConfirmPending(true)
+    setConfirmError(null)
+    try {
+      if (confirmAction === "deleteRef") {
+        const refId = referenceIdFromRow(selectedRow)
+        if (!refId) throw new Error("No reference to delete")
+        await patchMasterProductReference(refId, { deleted: true })
+      } else if (confirmAction === "deleteProduct") {
+        await patchMasterProduct(selectedRow.productId, { deleted: true })
+      } else if (confirmAction === "restore") {
+        await patchMasterProduct(selectedRow.productId, { deleted: false })
+        const refId = referenceIdFromRow(selectedRow)
+        if (refId) {
+          await patchMasterProductReference(refId, { deleted: false })
+        }
+      }
+      setConfirmOpen(false)
+      await load()
+    } catch (err: unknown) {
+      setConfirmError(err instanceof Error ? err.message : "Action failed")
+    } finally {
+      setConfirmPending(false)
+    }
+  }
+
+  const trashMode = mode === "trash"
+
   return (
     <MasterPageShell
       title="Product & Reference Stock"
-      description="Search products and hook reference links. Product code, supplier, and group use prefix match from the start; hook group/no are exact. Read-only."
+      description="Maintain product names, types, and hook reference links. Does not change stock balances or posting rules."
     >
       <div className={masterPageLayout}>
         <div className="mt-3 space-y-2">
@@ -148,11 +276,6 @@ export function ProductReferencePage() {
                 </label>
               </>
             }
-            actions={
-              <button type="button" className={themeBtnPrimary} disabled title="Coming in Step 3">
-                Add / Edit link
-              </button>
-            }
           />
 
           <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 sm:items-end">
@@ -196,10 +319,7 @@ export function ProductReferencePage() {
 
         <MasterListStatus loading={loading} error={error} count={items.length} />
 
-        <MasterTable
-          columns={COLUMNS}
-          isEmpty={!loading && !error && items.length === 0}
-        >
+        <MasterTable columns={COLUMNS} isEmpty={!loading && !error && items.length === 0}>
           {items.map((row) => (
             <MasterTableRow
               key={row.rowId}
@@ -216,28 +336,90 @@ export function ProductReferencePage() {
               ]}
               actions={
                 <MasterRowActions
-                  editTitle={
-                    row.hasReference ? "Edit planned" : "Add/Edit link planned"
-                  }
+                  trashMode={trashMode}
+                  editTitle={row.hasReference ? "Edit" : "Add / Edit link"}
                   deleteTitle={
-                    row.hasReference ? "Delete planned" : "No reference to delete"
+                    trashMode
+                      ? "Restore"
+                      : row.hasReference
+                        ? "Delete reference link"
+                        : "No reference to delete"
                   }
                   editAriaLabel={
                     row.hasReference
-                      ? "Edit reference link planned"
-                      : "Add or edit reference link planned"
+                      ? `Edit ${row.productCode}`
+                      : `Add reference link for ${row.productCode}`
                   }
                   deleteAriaLabel={
-                    row.hasReference
-                      ? "Delete reference link planned"
-                      : "No reference to delete"
+                    trashMode
+                      ? `Restore ${row.productCode}`
+                      : row.hasReference
+                        ? `Delete reference for ${row.productCode}`
+                        : "No reference to delete"
                   }
+                  restoreTitle="Restore product"
+                  restoreAriaLabel={`Restore ${row.productCode}`}
+                  editDisabled={trashMode}
+                  deleteDisabled={!trashMode && !row.hasReference}
+                  restoreDisabled={false}
+                  onEdit={trashMode ? undefined : () => openEdit(row)}
+                  onDelete={
+                    !trashMode && row.hasReference ? () => openDeleteConfirm(row) : undefined
+                  }
+                  onRestore={trashMode ? () => openRestoreConfirm(row) : undefined}
                 />
               }
             />
           ))}
         </MasterTable>
       </div>
+
+      <ProductReferenceFormModal
+        open={formOpen}
+        mode={formMode}
+        row={selectedRow}
+        submitting={formSubmitting}
+        error={formError}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleFormSubmit}
+      />
+
+      <ProductReferenceConfirmDialog
+        open={confirmOpen}
+        title={
+          confirmAction === "deleteRef"
+            ? "Delete reference link"
+            : confirmAction === "deleteProduct"
+              ? "Delete product"
+              : "Restore"
+        }
+        message={
+          confirmAction === "deleteRef"
+            ? selectedRow
+              ? `Move reference for ${selectedRow.productCode} to trash? Product stays active.`
+              : ""
+            : confirmAction === "deleteProduct"
+              ? selectedRow
+                ? `Move product ${selectedRow.productCode} to trash? Active reference links must be removed first.`
+                : ""
+              : selectedRow
+                ? `Restore ${selectedRow.productCode}?`
+                : ""
+        }
+        confirmLabel={
+          confirmAction === "restore"
+            ? "Restore"
+            : confirmAction === "deleteProduct"
+              ? "Delete product"
+              : "Delete"
+        }
+        pending={confirmPending}
+        error={confirmError}
+        onClose={() => {
+          if (!confirmPending) setConfirmOpen(false)
+        }}
+        onConfirm={() => void handleConfirm()}
+      />
     </MasterPageShell>
   )
 }

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import { DEV_PERIOD_ADMIN_STAFF_CODE } from "@/lib/auth/period-admin-staff"
 import type { StaffListItem, StaffListQuery } from "./types"
 
 type StaffDb = Pick<PrismaClient, "staff">
@@ -11,6 +12,7 @@ export async function listStaff(
 
   const rows = await db.staff.findMany({
     where: {
+      staffId: { not: DEV_PERIOD_ADMIN_STAFF_CODE },
       deleted: query.mode === "trash",
       ...(query.role ? { role: query.role } : {}),
       ...(query.branchCode

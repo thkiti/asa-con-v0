@@ -1,9 +1,11 @@
 import {
   createMasterBranch,
+  createMasterStaff,
   fetchMasterBranches,
   fetchMasterProductReference,
   fetchMasterStaff,
   patchMasterBranch,
+  patchMasterStaff,
 } from "@/lib/master-ui/fetchers"
 
 describe("master fetchers URL params", () => {
@@ -55,6 +57,34 @@ describe("master fetchers URL params", () => {
         type: "SH",
         isActive: true,
       }),
+    })
+  })
+
+  it("createMasterStaff POSTs JSON body", async () => {
+    await createMasterStaff({
+      staffId: "010",
+      name: "User",
+      role: "SH_STAFF",
+      branchId: "b1",
+    })
+    expect(global.fetch).toHaveBeenCalledWith("/api/master/staff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        staffId: "010",
+        name: "User",
+        role: "SH_STAFF",
+        branchId: "b1",
+      }),
+    })
+  })
+
+  it("patchMasterStaff PATCHes by id", async () => {
+    await patchMasterStaff("s1", { password: "5678" })
+    expect(global.fetch).toHaveBeenCalledWith("/api/master/staff/s1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: "5678" }),
     })
   })
 

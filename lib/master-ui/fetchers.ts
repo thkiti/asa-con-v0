@@ -87,6 +87,51 @@ export function fetchMasterBranches(
   })
 }
 
+export type CreateMasterStaffInput = {
+  staffId: string
+  name: string
+  role: StaffListItem["role"]
+  branchId: string
+  password?: string
+}
+
+export type UpdateMasterStaffInput = {
+  name: string
+  role: StaffListItem["role"]
+  branchId: string
+}
+
+export function createMasterStaff(
+  input: CreateMasterStaffInput
+): Promise<{ item: StaffListItem }> {
+  return fetch("/api/master/staff", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ item: StaffListItem }>
+  })
+}
+
+export function patchMasterStaff(
+  id: string,
+  body:
+    | UpdateMasterStaffInput
+    | { deleted: true }
+    | { deleted: false }
+    | { password: string }
+): Promise<{ item: StaffListItem }> {
+  return fetch(`/api/master/staff/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ item: StaffListItem }>
+  })
+}
+
 export function fetchMasterStaff(
   query: StaffListQuery
 ): Promise<MasterListResponse<StaffListItem>> {
@@ -99,6 +144,69 @@ export function fetchMasterStaff(
   return fetch(`/api/master/staff?${params}`).then(async (res) => {
     if (!res.ok) return throwMasterFetchError(res)
     return res.json() as Promise<MasterListResponse<StaffListItem>>
+  })
+}
+
+export type CreateMasterReferenceInput = {
+  productId: string
+  hookGroup: string
+  hookNo: number
+  supplierCode: string
+  productCode: string
+  productGroup?: string | null
+}
+
+export type UpdateMasterReferenceInput = {
+  hookGroup: string
+  hookNo: number
+  supplierCode: string
+  productCode: string
+  productGroup?: string | null
+}
+
+export type UpdateMasterProductInput = {
+  name: string
+  productType: ProductReferenceListItem["productType"]
+}
+
+export function createMasterProductReference(
+  input: CreateMasterReferenceInput
+): Promise<{ item: ProductReferenceListItem }> {
+  return fetch("/api/master/product-reference", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ item: ProductReferenceListItem }>
+  })
+}
+
+export function patchMasterProductReference(
+  id: string,
+  body: UpdateMasterReferenceInput | { deleted: true } | { deleted: false }
+): Promise<{ item: ProductReferenceListItem }> {
+  return fetch(`/api/master/product-reference/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ item: ProductReferenceListItem }>
+  })
+}
+
+export function patchMasterProduct(
+  productId: string,
+  body: UpdateMasterProductInput | { deleted: true } | { deleted: false }
+): Promise<{ item: ProductReferenceListItem }> {
+  return fetch(`/api/master/products/${encodeURIComponent(productId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<{ item: ProductReferenceListItem }>
   })
 }
 

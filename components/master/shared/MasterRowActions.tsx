@@ -11,15 +11,19 @@ export type MasterRowActionsProps = {
   deleteAriaLabel?: string
   restoreTitle?: string
   restoreAriaLabel?: string
+  resetPasswordTitle?: string
+  resetPasswordAriaLabel?: string
   /** When false, edit button stays visible but disabled (read-only phase). */
   editDisabled?: boolean
   deleteDisabled?: boolean
+  resetPasswordDisabled?: boolean
   /** Trash list: show restore instead of delete. */
   trashMode?: boolean
   restoreDisabled?: boolean
   onEdit?: () => void
   onDelete?: () => void
   onRestore?: () => void
+  onResetPassword?: () => void
 }
 
 export function MasterRowActions({
@@ -29,17 +33,22 @@ export function MasterRowActions({
   deleteAriaLabel,
   restoreTitle = "Restore branch",
   restoreAriaLabel,
+  resetPasswordTitle = "Reset password",
+  resetPasswordAriaLabel,
   editDisabled = true,
   deleteDisabled = true,
+  resetPasswordDisabled = true,
   trashMode = false,
   restoreDisabled = true,
   onEdit,
   onDelete,
   onRestore,
+  onResetPassword,
 }: MasterRowActionsProps) {
   const editEnabled = Boolean(onEdit) && !editDisabled
   const deleteEnabled = Boolean(onDelete) && !deleteDisabled
   const restoreEnabled = Boolean(onRestore) && !restoreDisabled
+  const resetEnabled = Boolean(onResetPassword) && !resetPasswordDisabled && !trashMode
 
   return (
     <td className={masterTableActionsCell}>
@@ -54,6 +63,18 @@ export function MasterRowActions({
         >
           ✎
         </button>
+        {!trashMode && onResetPassword ? (
+          <button
+            type="button"
+            className={masterRowActionBtn}
+            disabled={!resetEnabled}
+            title={resetPasswordTitle}
+            aria-label={resetPasswordAriaLabel ?? resetPasswordTitle}
+            onClick={onResetPassword}
+          >
+            🔑
+          </button>
+        ) : null}
         {trashMode ? (
           <button
             type="button"
