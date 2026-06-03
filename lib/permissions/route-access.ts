@@ -26,6 +26,10 @@ export const API_BYPASS_PATHS = [
 ] as const
 
 function pathnameArea(pathname: string): AppArea | null {
+  if (pathname === "/api/master" || pathname.startsWith("/api/master/")) {
+    return "master"
+  }
+
   for (const [area, prefix] of Object.entries(AREA_PREFIX) as [
     AppArea,
     string,

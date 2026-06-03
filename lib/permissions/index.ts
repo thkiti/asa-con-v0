@@ -17,4 +17,8 @@ export {
   MENU_ITEMS,
   type MenuItem,
 } from "./menu"
-export { canAccessMasterDatabase } from "./master"
+export {
+  canAccessMasterDatabase,
+  MasterDatabaseAuthError,
+  requireMasterDatabaseSession,
+} from "./master"

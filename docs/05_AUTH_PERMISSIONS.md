@@ -30,6 +30,7 @@ Centralized role access, session stub, route/menu guards.
 | `/shop` | allow | allow | allow | allow |
 | `/master` | deny | allow | deny | deny |
 | `/master/product-reference` | deny | allow | deny | deny |
+| `GET /api/master/*` | deny | allow | deny | deny |
 | `/login` | public | public | public | public |
 | `/unauthorized` | public | public | public | public |
 | `/api/health` | bypass RBAC | bypass | bypass | bypass |
