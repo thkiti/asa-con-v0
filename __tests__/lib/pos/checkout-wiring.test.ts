@@ -2,6 +2,11 @@ import { PaymentMethod, Prisma, ProductType } from "@/generated/prisma/client"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { checkout } from "@/lib/pos/checkout"
 import { createCheckoutMockTx, type CheckoutMockState } from "./mock-checkout-tx"
+import { mockResolvedRetailPrice } from "./helpers/mock-retail-price"
+
+jest.mock("@/lib/pricing/resolve-pos-retail-price", () => ({
+  resolvePosRetailPrice: jest.fn(),
+}))
 
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
@@ -21,7 +26,10 @@ jest.mock("@/lib/finance/posting", () => ({
 
 import { isFinancePostingEnabled } from "@/lib/finance/config"
 import { postSaleVoucher } from "@/lib/finance/posting"
+import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
 import { prisma } from "@/lib/shared/prisma"
+
+const resolveMock = resolvePosRetailPrice as jest.Mock
 
 const branchId = "branch-1"
 const productId = "p-tracked"
@@ -71,6 +79,7 @@ describe("checkout finance wiring", () => {
       voucherId: "v-1",
       alreadyPosted: false,
     })
+    resolveMock.mockResolvedValue(mockResolvedRetailPrice(50))
   })
 
   function setupTx(initial?: Parameters<typeof createCheckoutMockTx>[0]) {
@@ -111,7 +120,7 @@ describe("checkout finance wiring", () => {
       branchId,
       paymentMethod: PaymentMethod.CASH,
       paidAmount: 50,
-      lines: [{ productId, qty: 1, unitPrice: 50 }],
+      lines: [{ productId, qty: 1 }],
     })
 
     expect(state.sales.length).toBe(1)
@@ -127,7 +136,7 @@ describe("checkout finance wiring", () => {
       branchId,
       paymentMethod: PaymentMethod.CASH,
       paidAmount: 50,
-      lines: [{ productId, qty: 1, unitPrice: 50 }],
+      lines: [{ productId, qty: 1 }],
     })
 
     expect(postSaleVoucher).toHaveBeenCalledTimes(1)
@@ -152,7 +161,7 @@ describe("checkout finance wiring", () => {
         branchId,
         paymentMethod: PaymentMethod.CASH,
         paidAmount: 50,
-        lines: [{ productId, qty: 1, unitPrice: 50 }],
+        lines: [{ productId, qty: 1 }],
       })
     ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
 
@@ -173,7 +182,7 @@ describe("checkout finance wiring", () => {
       branchId,
       paymentMethod: PaymentMethod.CASH,
       paidAmount: qty * unitPrice,
-      lines: [{ productId, qty, unitPrice }],
+      lines: [{ productId, qty }],
     })
 
     const payload = (postSaleVoucher as jest.Mock).mock.calls[0][0]

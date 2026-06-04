@@ -11,6 +11,7 @@ import {
   removeCartLine,
   type PosCartLine,
 } from "@/lib/pos/cart"
+import { fetchPosCheckout } from "@/lib/pos-ui/pos-checkout-client"
 import {
   getPosActionKind,
   isPosPlaceholderId,
@@ -33,6 +34,13 @@ export function PosTerminalPage() {
   const [cartLookupError, setCartLookupError] = useState<string | null>(null)
   const [lookupPending, setLookupPending] = useState(false)
   const [placeholder, setPlaceholder] = useState<PosPlaceholderId | null>(null)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [checkoutPending, setCheckoutPending] = useState(false)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const [checkoutSuccess, setCheckoutSuccess] = useState<{
+    receiptNo: string
+    total: string
+  } | null>(null)
   const [logoutPending, setLogoutPending] = useState(false)
 
   useEffect(() => {
@@ -86,12 +94,58 @@ export function PosTerminalPage() {
     }
   }, [lookupPending])
 
+  const openCheckout = useCallback(() => {
+    if (cartLines.length === 0) {
+      setCartLookupError("Cart is empty")
+      return
+    }
+    setCartLookupError(null)
+    setCheckoutError(null)
+    setCheckoutSuccess(null)
+    setCheckoutOpen(true)
+  }, [cartLines.length])
+
+  const confirmCheckout = useCallback(async () => {
+    if (checkoutPending || cartLines.length === 0) return
+
+    setCheckoutPending(true)
+    setCheckoutError(null)
+    try {
+      const result = await fetchPosCheckout(
+        cartLines.map((line) => ({ productId: line.productId, qty: line.qty }))
+      )
+      if (!result.ok) {
+        setCheckoutError(result.error)
+        return
+      }
+      setCheckoutSuccess({
+        receiptNo: result.result.receipt.receiptNo,
+        total: result.result.sale.total.toString(),
+      })
+    } finally {
+      setCheckoutPending(false)
+    }
+  }, [cartLines, checkoutPending])
+
+  const finishCheckout = useCallback(() => {
+    setCartLines(clearCart())
+    setCheckoutOpen(false)
+    setCheckoutSuccess(null)
+    setCheckoutError(null)
+    setCartLookupError(null)
+  }, [])
+
   const onKeypadAction = useCallback(
     (id: PosKeypadActionId) => {
       const kind = getPosActionKind(id)
 
       if (kind === "wire-logout") {
         void onLogout()
+        return
+      }
+
+      if (kind === "wire-checkout") {
+        openCheckout()
         return
       }
 
@@ -129,7 +183,7 @@ export function PosTerminalPage() {
         }
       }
     },
-    [barcode, onLogout, router, submitBarcode]
+    [barcode, onLogout, openCheckout, router, submitBarcode]
   )
 
   if (loading || !session) {
@@ -164,9 +218,24 @@ export function PosTerminalPage() {
         setCartLines(clearCart())
         setCartLookupError(null)
       }}
+      checkoutOpen={checkoutOpen}
+      checkoutPending={checkoutPending}
+      checkoutError={checkoutError}
+      checkoutSuccess={checkoutSuccess}
+      onCheckoutClose={() => {
+        if (!checkoutPending) {
+          setCheckoutOpen(false)
+          setCheckoutError(null)
+          if (checkoutSuccess) finishCheckout()
+        }
+      }}
+      onCheckoutConfirm={() => {
+        void confirmCheckout()
+      }}
+      onCheckoutNewSale={finishCheckout}
       placeholderOverlay={placeholder}
       onClosePlaceholder={() => setPlaceholder(null)}
-      keypadDisabled={logoutPending || lookupPending}
+      keypadDisabled={logoutPending || lookupPending || checkoutPending}
     />
   )
 }

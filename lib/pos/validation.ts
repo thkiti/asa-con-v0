@@ -1,11 +1,12 @@
-import type { PrismaClient } from "@/generated/prisma/client"
+import { PaymentMethod, type PrismaClient } from "@/generated/prisma/client"
+import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
+import { isSellableProductType } from "@/lib/products/product-type-rules"
 import { toDec, ZERO } from "@/lib/stock/decimal"
-import {
-  isSellableProductType,
-} from "@/lib/products/product-type-rules"
 import { CheckoutError, assertCheckoutRequiredString } from "./checkout-errors"
 import type { CheckoutInput, PreparedCheckout, PreparedCheckoutLine } from "./checkout-types"
 import { computePaymentChange, parsePaidAmount } from "./payment"
+
+export type CheckoutValidationDb = Pick<PrismaClient, "branch" | "product" | "sellingPrice">
 
 function parsePositiveQty(raw: unknown, productId: string): number {
   const qty = Math.trunc(Number(raw))
@@ -20,7 +21,7 @@ function parsePositiveQty(raw: unknown, productId: string): number {
 }
 
 export async function validateAndPrepareCheckout(
-  db: PrismaClient,
+  db: CheckoutValidationDb,
   input: CheckoutInput
 ): Promise<PreparedCheckout> {
   const branchId = assertCheckoutRequiredString(input.branchId, "branchId")
@@ -64,15 +65,16 @@ export async function validateAndPrepareCheckout(
     }
 
     const qty = parsePositiveQty(line.qty, productId)
-    const unitPrice = toDec(line.unitPrice)
-    if (unitPrice.lt(ZERO)) {
+    const resolved = await resolvePosRetailPrice(db, { productId })
+    if (resolved == null) {
       throw new CheckoutError(
-        `Invalid unitPrice for product ${productId}`,
-        "INVALID_PRICE",
+        `No active selling price for product ${productId}`,
+        "NO_ACTIVE_PRICE",
         400
       )
     }
 
+    const unitPrice = resolved.price
     const lineTotal = unitPrice.mul(qty)
     total = total.plus(lineTotal)
 
@@ -85,7 +87,10 @@ export async function validateAndPrepareCheckout(
     })
   }
 
-  const paidAmount = parsePaidAmount(input.paidAmount)
+  let paidAmount = parsePaidAmount(input.paidAmount)
+  if (paidAmount.lte(ZERO) && input.paymentMethod === PaymentMethod.CASH) {
+    paidAmount = total
+  }
   const change = computePaymentChange(total, paidAmount, input.paymentMethod)
 
   return {

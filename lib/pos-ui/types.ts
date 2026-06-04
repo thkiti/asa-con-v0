@@ -8,10 +8,10 @@ export type PosPlaceholderId =
   | "read-z"
   | "repair-ticket"
   | "print-report"
-  | "checkout"
 
 export type PosKeypadActionId =
   | PosPlaceholderId
+  | "checkout"
   | "logout"
   | "order"
   | "stock-count"

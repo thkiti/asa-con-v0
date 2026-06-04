@@ -4,7 +4,6 @@ import type { StockLedgerResult } from "@/lib/stock/transaction-types"
 export type CheckoutCartLine = {
   productId: string
   qty: number
-  unitPrice: number | string
 }
 
 export type CheckoutInput = {

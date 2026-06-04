@@ -15,14 +15,10 @@ describe("pos-ui/pos-actions", () => {
     expect(getPosActionKind("logout")).toBe("wire-logout")
   })
 
-  it("classifies checkout and reports as placeholder", () => {
-    expect(getPosActionKind("checkout")).toBe("placeholder")
+  it("classifies checkout as wire-checkout and reports as placeholder", () => {
+    expect(getPosActionKind("checkout")).toBe("wire-checkout")
     expect(getPosActionKind("read-x")).toBe("placeholder")
-    expect(isPosPlaceholderId("checkout")).toBe(true)
-  })
-
-  it("does not wire checkout", () => {
-    expect(getPosActionKind("checkout")).not.toBe("wire-nav")
+    expect(isPosPlaceholderId("checkout")).toBe(false)
   })
 
   it("maps digit keys to characters", () => {
@@ -33,6 +29,5 @@ describe("pos-ui/pos-actions", () => {
 
   it("provides human titles for placeholders", () => {
     expect(getPosPlaceholderTitle("worktime")).toBe("Worktime In/Out")
-    expect(getPosPlaceholderTitle("checkout")).toBe("Checkout")
   })
 })

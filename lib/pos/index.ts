@@ -1,4 +1,5 @@
 export { checkout } from "./checkout"
+export { checkoutWithoutPosting } from "./checkout-sale-only"
 export type {
   CheckoutInput,
   CheckoutResult,

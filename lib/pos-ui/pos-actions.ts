@@ -1,6 +1,11 @@
 import type { PosKeypadActionId, PosPlaceholderId } from "./types"
 
-export type PosActionKind = "wire-nav" | "wire-logout" | "placeholder" | "keypad"
+export type PosActionKind =
+  | "wire-nav"
+  | "wire-logout"
+  | "wire-checkout"
+  | "placeholder"
+  | "keypad"
 
 const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = [
   "worktime",
@@ -10,7 +15,6 @@ const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = [
   "read-z",
   "repair-ticket",
   "print-report",
-  "checkout",
 ]
 
 const PLACEHOLDER_SET = new Set<string>(PLACEHOLDER_IDS)
@@ -36,6 +40,7 @@ const KEYPAD_BUFFER_IDS = new Set<string>([
 
 export function getPosActionKind(id: PosKeypadActionId): PosActionKind {
   if (id === "logout") return "wire-logout"
+  if (id === "checkout") return "wire-checkout"
   if (WIRE_NAV_IDS.has(id)) return "wire-nav"
   if (PLACEHOLDER_SET.has(id)) return "placeholder"
   if (KEYPAD_BUFFER_IDS.has(id)) return "keypad"
@@ -48,8 +53,6 @@ export function isPosPlaceholderId(id: string): id is PosPlaceholderId {
 
 export function getPosPlaceholderPhaseHint(id: PosPlaceholderId): string {
   switch (id) {
-    case "checkout":
-      return "Phase 3 — checkout, receipt, and stock posting"
     case "worktime":
     case "target-vs-sales":
     case "collector":
@@ -79,8 +82,6 @@ export function getPosPlaceholderTitle(id: PosPlaceholderId): string {
       return "Repair Ticket"
     case "print-report":
       return "Print Report"
-    case "checkout":
-      return "Checkout"
     default:
       return id
   }

@@ -1,35 +1,41 @@
 import { NextRequest, NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
+import { posApiErrorResponse } from "@/app/api/pos/shared/pos-api-errors"
 import { PaymentMethod } from "@/generated/prisma/client"
-import { FinancePostingError } from "@/lib/finance/posting-errors"
-import { checkout } from "@/lib/pos/checkout"
+import { getSession } from "@/lib/auth/session"
+import { checkoutWithoutPosting } from "@/lib/pos/checkout-sale-only"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import type { CheckoutCartLine } from "@/lib/pos/checkout-types"
+import { requireStockDocumentSession } from "@/lib/stock/document-read"
 
-function parsePaymentMethod(raw: unknown): PaymentMethod {
-  const value = String(raw ?? "").trim().toUpperCase()
-  if ((Object.values(PaymentMethod) as string[]).includes(value)) {
-    return value as PaymentMethod
-  }
-  throw new CheckoutError("Invalid payment method", "INVALID_PAYMENT_METHOD", 400)
+function parseCheckoutLines(raw: unknown): CheckoutCartLine[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((line) => ({
+      productId: String((line as { productId?: unknown }).productId ?? "").trim(),
+      qty: Math.trunc(Number((line as { qty?: unknown }).qty)),
+    }))
+    .filter((line) => line.productId.length > 0)
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const session = requireStockDocumentSession(await getSession())
     const body = (await req.json().catch(() => ({}))) as {
-      branchId?: string
-      staffId?: string
-      paymentMethod?: string
-      paidAmount?: number | string
-      lines?: CheckoutCartLine[]
+      lines?: unknown
     }
 
-    const result = await checkout({
-      branchId: String(body.branchId ?? ""),
-      staffId: body.staffId ?? null,
-      paymentMethod: parsePaymentMethod(body.paymentMethod),
-      paidAmount: body.paidAmount ?? 0,
-      lines: Array.isArray(body.lines) ? body.lines : [],
+    const branchId = session.branchId.trim()
+    if (!branchId) {
+      throw new CheckoutError("Shop session requires branchId", "INVALID_BRANCH", 400)
+    }
+
+    const result = await checkoutWithoutPosting({
+      branchId,
+      staffId: session.staffId,
+      paymentMethod: PaymentMethod.CASH,
+      paidAmount: 0,
+      lines: parseCheckoutLines(body.lines),
     })
 
     return NextResponse.json(result)
@@ -40,14 +46,6 @@ export async function POST(req: NextRequest) {
         { status: err.httpStatus }
       )
     }
-    if (err instanceof FinancePostingError) {
-      return NextResponse.json(
-        { error: err.message, code: err.code },
-        { status: 400 }
-      )
-    }
-    const message = err instanceof Error ? err.message : "Checkout failed"
-    console.error("POST pos/checkout error:", err)
-    return NextResponse.json({ error: message }, { status: 500 })
+    return posApiErrorResponse(err, "POST /api/pos/checkout")
   }
 }

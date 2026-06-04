@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { PosBarcodeCapture } from "./PosBarcodeCapture"
 import { PosKeypadGrid } from "./PosKeypadGrid"
+import { PosCheckoutOverlay } from "./PosCheckoutOverlay"
 import { PosPlaceholderOverlay } from "./PosPlaceholderOverlay"
 import { PosReceiptPanel } from "./PosReceiptPanel"
 import { PosSessionBanner } from "./PosSessionBanner"
@@ -21,6 +22,13 @@ type PosShellProps = {
   onDecrementQty: (productId: string) => void
   onRemoveCartLine: (productId: string) => void
   onClearCart: () => void
+  checkoutOpen: boolean
+  checkoutPending: boolean
+  checkoutError: string | null
+  checkoutSuccess: { receiptNo: string; total: string } | null
+  onCheckoutClose: () => void
+  onCheckoutConfirm: () => void
+  onCheckoutNewSale: () => void
   placeholderOverlay: PosPlaceholderId | null
   onClosePlaceholder: () => void
   keypadDisabled?: boolean
@@ -38,11 +46,18 @@ export function PosShell({
   onDecrementQty,
   onRemoveCartLine,
   onClearCart,
+  checkoutOpen,
+  checkoutPending,
+  checkoutError,
+  checkoutSuccess,
+  onCheckoutClose,
+  onCheckoutConfirm,
+  onCheckoutNewSale,
   placeholderOverlay,
   onClosePlaceholder,
   keypadDisabled = false,
 }: PosShellProps) {
-  const muted = keypadDisabled || !!placeholderOverlay
+  const muted = keypadDisabled || !!placeholderOverlay || checkoutOpen
 
   return (
     <div className="fixed inset-0 flex bg-white">
@@ -88,7 +103,17 @@ export function PosShell({
         onRemoveLine={onRemoveCartLine}
         onClearCart={onClearCart}
         overlay={
-          placeholderOverlay ? (
+          checkoutOpen ? (
+            <PosCheckoutOverlay
+              lines={cartLines}
+              pending={checkoutPending}
+              error={checkoutError}
+              success={checkoutSuccess}
+              onConfirmCash={onCheckoutConfirm}
+              onNewSale={onCheckoutNewSale}
+              onClose={onCheckoutClose}
+            />
+          ) : placeholderOverlay ? (
             <PosPlaceholderOverlay
               placeholderId={placeholderOverlay}
               onClose={onClosePlaceholder}

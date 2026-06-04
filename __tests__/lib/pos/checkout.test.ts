@@ -2,6 +2,11 @@ import { PaymentMethod, ProductType } from "@/generated/prisma/client"
 import { checkout } from "@/lib/pos/checkout"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import { createCheckoutMockTx } from "./mock-checkout-tx"
+import { mockResolvedRetailPrice } from "./helpers/mock-retail-price"
+
+jest.mock("@/lib/pricing/resolve-pos-retail-price", () => ({
+  resolvePosRetailPrice: jest.fn(),
+}))
 
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
@@ -11,8 +16,10 @@ jest.mock("@/lib/shared/prisma", () => ({
   },
 }))
 
+import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
 import { prisma } from "@/lib/shared/prisma"
 
+const resolveMock = resolvePosRetailPrice as jest.Mock
 const branchId = "branch-1"
 const trackedProduct = {
   id: "p-tracked",
@@ -33,6 +40,11 @@ describe("checkout", () => {
       deleted: false,
       isActive: true,
     })
+    resolveMock.mockImplementation(async (_db, input: { productId: string }) => {
+      if (input.productId === "p-tracked") return mockResolvedRetailPrice(50)
+      if (input.productId === "p-consumable") return mockResolvedRetailPrice(25)
+      return mockResolvedRetailPrice(10)
+    })
   })
 
   it("issues stock for TRACKED lines and sets POSTED sale atomically", async () => {
@@ -47,7 +59,7 @@ describe("checkout", () => {
       staffId: "staff-1",
       paymentMethod: PaymentMethod.CASH,
       paidAmount: 100,
-      lines: [{ productId: "p-tracked", qty: 2, unitPrice: 50 }],
+      lines: [{ productId: "p-tracked", qty: 2 }],
     })
 
     expect(result.ledger.applied).toBe(1)
@@ -71,7 +83,7 @@ describe("checkout", () => {
       branchId,
       paymentMethod: PaymentMethod.CARD,
       paidAmount: 25,
-      lines: [{ productId: "p-consumable", qty: 1, unitPrice: 25 }],
+      lines: [{ productId: "p-consumable", qty: 1 }],
     })
 
     expect(result.ledger.applied).toBe(0)
@@ -94,8 +106,8 @@ describe("checkout", () => {
       paymentMethod: PaymentMethod.CASH,
       paidAmount: 80,
       lines: [
-        { productId: "p-tracked", qty: 1, unitPrice: 50 },
-        { productId: "p-consumable", qty: 1, unitPrice: 30 },
+        { productId: "p-tracked", qty: 1 },
+        { productId: "p-consumable", qty: 1 },
       ],
     })
 
@@ -111,8 +123,8 @@ describe("checkout", () => {
     await checkout({
       branchId,
       paymentMethod: PaymentMethod.CASH,
-      paidAmount: 10,
-      lines: [{ productId: "p-tracked", qty: 1, unitPrice: 10 }],
+      paidAmount: 0,
+      lines: [{ productId: "p-tracked", qty: 1 }],
       tx,
     })
 
@@ -131,7 +143,7 @@ describe("checkout", () => {
         branchId,
         paymentMethod: PaymentMethod.CASH,
         paidAmount: 5,
-        lines: [{ productId: "p-tracked", qty: 1, unitPrice: 10 }],
+        lines: [{ productId: "p-tracked", qty: 1 }],
       })
     ).rejects.toMatchObject({ code: "INSUFFICIENT_PAYMENT" })
 

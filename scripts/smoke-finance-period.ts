@@ -128,7 +128,7 @@ async function tryCheckout(branchId: string, productId: string) {
       staffId: "smoke-staff-1",
       paymentMethod: "CASH",
       paidAmount: 100,
-      lines: [{ productId, qty: 1, unitPrice: 50 }],
+      lines: [{ productId, qty: 1 }],
     }),
   })
 }

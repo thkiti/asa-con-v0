@@ -64,6 +64,34 @@ describe("PosTerminalPage", () => {
           json: async () => ({ redirectTo: "/login" }),
         } as Response)
       }
+      if (url === "/api/pos/checkout" && init?.method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            sale: {
+              id: "sale-1",
+              branchId: "b1",
+              staffId: "S001",
+              total: "25.00",
+              createdAt: new Date().toISOString(),
+            },
+            items: [],
+            payment: {
+              id: "pay-1",
+              method: "CASH",
+              amount: "25.00",
+              change: "0.00",
+            },
+            receipt: {
+              id: "r1",
+              receiptNo: "R-test-20260101-0001",
+              issuedAt: new Date().toISOString(),
+            },
+            ledger: { applied: 0, skippedZeroQty: 0 },
+          }),
+        } as Response)
+      }
       if (url.startsWith("/api/pos/products/lookup")) {
         return Promise.resolve({
           ok: true,
@@ -174,9 +202,28 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("opens checkout placeholder without calling checkout API", async () => {
+  it("completes CASH checkout from keypad and clears cart on new sale", async () => {
     const fetchMock = global.fetch as jest.Mock
     const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const input = container.querySelector(
+      'input[aria-label="Barcode scan input"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(input, "1010015")
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      )
+    })
     await flushPromises()
     await flushPromises()
 
@@ -186,12 +233,38 @@ describe("PosTerminalPage", () => {
     act(() => {
       checkoutBtn!.click()
     })
+    await flushPromises()
 
-    expect(container.textContent).toContain("Phase 3")
-    const checkoutCalls = fetchMock.mock.calls.filter(
-      ([url]) => String(url) === "/api/pos/checkout"
+    expect(container.textContent).toContain("Pay CASH")
+    const payBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Pay CASH"
     )
-    expect(checkoutCalls).toHaveLength(0)
+    act(() => {
+      payBtn!.click()
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.textContent).toContain("Sale complete")
+    expect(container.textContent).toContain("R-test-20260101-0001")
+
+    const checkoutPosts = fetchMock.mock.calls.filter(
+      ([url, init]) => String(url) === "/api/pos/checkout" && init?.method === "POST"
+    )
+    expect(checkoutPosts).toHaveLength(1)
+    const body = JSON.parse(String(checkoutPosts[0][1]?.body))
+    expect(body.lines[0]).toEqual({ productId: "p1", qty: 1 })
+    expect(body.lines[0].unitPrice).toBeUndefined()
+
+    const newSaleBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "New sale"
+    )
+    act(() => {
+      newSaleBtn!.click()
+    })
+    await flushPromises()
+
+    expect(container.textContent).toContain("Scan a product to add to cart")
 
     act(() => root.unmount())
   })

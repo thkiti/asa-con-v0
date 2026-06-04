@@ -14,7 +14,12 @@ import {
   createCheckoutMockTx,
   type CheckoutMockState,
 } from "../pos/mock-checkout-tx"
+import { mockResolvedRetailPrice } from "../pos/helpers/mock-retail-price"
 import { createPostingMockTx } from "../stock/posting/mock-posting-tx"
+
+jest.mock("@/lib/pricing/resolve-pos-retail-price", () => ({
+  resolvePosRetailPrice: jest.fn(),
+}))
 
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
@@ -35,7 +40,10 @@ jest.mock("@/lib/finance/posting", () => ({
 
 import { isFinancePostingEnabled } from "@/lib/finance/config"
 import { postSaleVoucher, postStockDocumentVoucher } from "@/lib/finance/posting"
+import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
 import { prisma } from "@/lib/shared/prisma"
+
+const resolveMock = resolvePosRetailPrice as jest.Mock
 
 const ROOT = path.join(__dirname, "..", "..", "..")
 
@@ -163,6 +171,7 @@ describe("operational wiring — checkout", () => {
       voucherId: "v-1",
       alreadyPosted: false,
     })
+    resolveMock.mockResolvedValue(mockResolvedRetailPrice(50))
   })
 
   function setupCheckoutTx(initial?: Parameters<typeof createCheckoutMockTx>[0]) {
@@ -205,7 +214,7 @@ describe("operational wiring — checkout", () => {
       branchId,
       paymentMethod: PaymentMethod.CASH,
       paidAmount: 50,
-      lines: [{ productId, qty: 1, unitPrice: 50 }],
+      lines: [{ productId, qty: 1 }],
     })
 
     expect(state.sales.length).toBe(1)
@@ -221,7 +230,7 @@ describe("operational wiring — checkout", () => {
       branchId,
       paymentMethod: PaymentMethod.CASH,
       paidAmount: 50,
-      lines: [{ productId, qty: 1, unitPrice: 50 }],
+      lines: [{ productId, qty: 1 }],
     })
 
     expect(postSaleVoucher).toHaveBeenCalledTimes(1)
@@ -242,7 +251,7 @@ describe("operational wiring — checkout", () => {
         branchId,
         paymentMethod: PaymentMethod.CASH,
         paidAmount: 50,
-        lines: [{ productId, qty: 1, unitPrice: 50 }],
+        lines: [{ productId, qty: 1 }],
       })
     ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
 
