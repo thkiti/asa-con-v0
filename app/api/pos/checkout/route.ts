@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic"
 import { posApiErrorResponse } from "@/app/api/pos/shared/pos-api-errors"
 import { PaymentMethod } from "@/generated/prisma/client"
 import { getSession } from "@/lib/auth/session"
-import { checkoutWithoutPosting } from "@/lib/pos/checkout-sale-only"
+import { checkout } from "@/lib/pos/checkout"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import type { CheckoutCartLine } from "@/lib/pos/checkout-types"
 import { requireStockDocumentSession } from "@/lib/stock/document-read"
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       throw new CheckoutError("Shop session requires branchId", "INVALID_BRANCH", 400)
     }
 
-    const result = await checkoutWithoutPosting({
+    const result = await checkout({
       branchId,
       staffId: session.staffId,
       paymentMethod: PaymentMethod.CASH,

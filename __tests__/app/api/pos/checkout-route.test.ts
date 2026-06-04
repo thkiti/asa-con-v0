@@ -6,17 +6,15 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: jest.fn(),
 }))
 
-jest.mock("@/lib/pos/checkout-sale-only", () => ({
-  checkoutWithoutPosting: jest.fn(),
+jest.mock("@/lib/pos/checkout", () => ({
+  checkout: jest.fn(),
 }))
 
 import { getSession } from "@/lib/auth/session"
-import { checkoutWithoutPosting } from "@/lib/pos/checkout-sale-only"
+import { checkout } from "@/lib/pos/checkout"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
-const mockedCheckout = checkoutWithoutPosting as jest.MockedFunction<
-  typeof checkoutWithoutPosting
->
+const mockedCheckout = checkout as jest.MockedFunction<typeof checkout>
 
 const shopSession = {
   sessionId: "s1",
@@ -45,7 +43,7 @@ describe("POST /api/pos/checkout", () => {
     mockedCheckout.mockReset()
   })
 
-  it("calls checkoutWithoutPosting with session branch and CASH", async () => {
+  it("calls checkout with session branch and CASH", async () => {
     mockedGetSession.mockResolvedValue(shopSession)
     mockedCheckout.mockResolvedValue({
       sale: {
