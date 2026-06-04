@@ -22,14 +22,16 @@ type PosShellProps = {
   onDecrementQty: (productId: string) => void
   onRemoveCartLine: (productId: string) => void
   onClearCart: () => void
+  receiptNo: string | null
   checkoutOpen: boolean
   checkoutPending: boolean
   checkoutError: string | null
   checkoutSuccess: { saleId: string; receiptNo: string; total: string } | null
   onCheckoutClose: () => void
   onCheckoutConfirm: () => void
-  onCheckoutPrintReceipt: (saleId: string) => void
-  onCheckoutNewSale: () => void
+  onCheckoutPrintReceiptAndNewSale: (saleId: string) => void
+  onCheckoutNewSaleWithoutPrint: () => void
+  barcodeFocusRequest?: number
   placeholderOverlay: PosPlaceholderId | null
   onClosePlaceholder: () => void
   keypadDisabled?: boolean
@@ -47,14 +49,16 @@ export function PosShell({
   onDecrementQty,
   onRemoveCartLine,
   onClearCart,
+  receiptNo,
   checkoutOpen,
   checkoutPending,
   checkoutError,
   checkoutSuccess,
   onCheckoutClose,
   onCheckoutConfirm,
-  onCheckoutPrintReceipt,
-  onCheckoutNewSale,
+  onCheckoutPrintReceiptAndNewSale,
+  onCheckoutNewSaleWithoutPrint,
+  barcodeFocusRequest = 0,
   placeholderOverlay,
   onClosePlaceholder,
   keypadDisabled = false,
@@ -78,6 +82,7 @@ export function PosShell({
               onChange={onBarcodeChange}
               onSubmit={onBarcodeSubmit}
               disabled={muted}
+              focusRequestId={barcodeFocusRequest}
             />
           </div>
 
@@ -98,6 +103,7 @@ export function PosShell({
 
       <PosReceiptPanel
         session={session}
+        receiptNo={receiptNo}
         lines={cartLines}
         lookupError={cartLookupError}
         onIncrementQty={onIncrementQty}
@@ -112,8 +118,8 @@ export function PosShell({
               error={checkoutError}
               success={checkoutSuccess}
               onConfirmCash={onCheckoutConfirm}
-              onPrintReceipt={onCheckoutPrintReceipt}
-              onNewSale={onCheckoutNewSale}
+              onPrintReceiptAndNewSale={onCheckoutPrintReceiptAndNewSale}
+              onNewSaleWithoutPrint={onCheckoutNewSaleWithoutPrint}
               onClose={onCheckoutClose}
             />
           ) : placeholderOverlay ? (

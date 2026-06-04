@@ -52,6 +52,7 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain('href="/master/product-reference"')
     expect(html).toContain('href="/master/branch"')
     expect(html).toContain('href="/master/staff"')
+    expect(html).toContain('href="/admin/receipt-setup"')
   })
 
   it("renders planned items without href", () => {

@@ -1,6 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import {
+  branchTaxIdFieldLabel,
+  previewBranchCodeForTaxLabel,
+} from "@/lib/master/parse-branch-contact"
 import type { BranchListItem } from "@/lib/master/types"
 import { themeBtnPrimary, themeBtnSecondary, themeInput, themeMuted } from "@/lib/theme/theme-classes"
 
@@ -23,6 +27,9 @@ type BranchFormModalProps = {
     name: string
     type: BranchListItem["type"]
     isActive: boolean
+    address: string | null
+    phone: string | null
+    taxId: string | null
   }) => Promise<void>
 }
 
@@ -39,6 +46,9 @@ export function BranchFormModal({
   const [name, setName] = useState("")
   const [type, setType] = useState<BranchListItem["type"]>("SH")
   const [isActive, setIsActive] = useState(true)
+  const [address, setAddress] = useState("")
+  const [phone, setPhone] = useState("")
+  const [taxId, setTaxId] = useState("")
 
   useEffect(() => {
     if (!open) return
@@ -47,12 +57,18 @@ export function BranchFormModal({
       setName(branch.name)
       setType(branch.type)
       setIsActive(branch.isActive)
+      setAddress(branch.address ?? "")
+      setPhone(branch.phone ?? "")
+      setTaxId(branch.taxId ?? "")
       return
     }
     setCode("")
     setName("")
     setType("SH")
     setIsActive(true)
+    setAddress("")
+    setPhone("")
+    setTaxId("")
   }, [open, mode, branch])
 
   if (!open) return null
@@ -60,6 +76,10 @@ export function BranchFormModal({
   const isEdit = mode === "edit"
   const trimmedName = name.trim()
   const trimmedCode = code.trim()
+  const codeForTaxLabel = isEdit
+    ? trimmedCode
+    : previewBranchCodeForTaxLabel(trimmedCode, type)
+  const taxIdLabel = branchTaxIdFieldLabel(codeForTaxLabel)
   const canSubmit =
     trimmedName.length > 0 &&
     (isEdit || trimmedCode.length > 0) &&
@@ -87,7 +107,15 @@ export function BranchFormModal({
           onSubmit={(event) => {
             event.preventDefault()
             if (!canSubmit) return
-            void onSubmit({ code: trimmedCode, name: trimmedName, type, isActive })
+            void onSubmit({
+              code: trimmedCode,
+              name: trimmedName,
+              type,
+              isActive,
+              address: address.trim() || null,
+              phone: phone.trim() || null,
+              taxId: taxId.trim() || null,
+            })
           }}
         >
           <label className="block">
@@ -141,6 +169,40 @@ export function BranchFormModal({
               disabled={submitting}
               className={themeInput}
               required
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-muted-foreground">Address</span>
+            <textarea
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+              disabled={submitting}
+              rows={2}
+              className={themeInput}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-muted-foreground">Phone</span>
+            <input
+              type="text"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              disabled={submitting}
+              className={themeInput}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-muted-foreground">{taxIdLabel}</span>
+            <input
+              type="text"
+              value={taxId}
+              onChange={(event) => setTaxId(event.target.value)}
+              disabled={submitting}
+              className={themeInput}
+              autoComplete="off"
             />
           </label>
 

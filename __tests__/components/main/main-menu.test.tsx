@@ -54,9 +54,9 @@ describe("MainMenuView", () => {
     expect(html).toContain("Head Office control center")
   })
 
-  it("renders five section cards for HO_ADMIN linking to /main/{section}", () => {
+  it("renders HO_ADMIN section cards including administration hub at /master", () => {
     const html = renderToStaticMarkup(<MainMenuView user={hoAdmin} />)
-    expect(html).toContain('href="/main/administration"')
+    expect(html).toContain('href="/master"')
     expect(html).toContain('href="/main/finance"')
     expect(html).toContain('href="/main/operations"')
     expect(html).toContain('href="/main/shop"')

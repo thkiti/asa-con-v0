@@ -24,12 +24,18 @@ export async function updateBranch(
     data: {
       name: input.name.trim(),
       isActive: input.isActive,
+      address: input.address,
+      phone: input.phone,
+      taxId: input.taxId,
     },
     select: {
       id: true,
       code: true,
       name: true,
       type: true,
+      address: true,
+      phone: true,
+      taxId: true,
       isActive: true,
       deleted: true,
     },

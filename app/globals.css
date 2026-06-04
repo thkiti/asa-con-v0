@@ -64,7 +64,7 @@ body {
 @media print {
   @page {
     size: 80mm auto;
-    margin: 3mm;
+    margin: 5mm 5mm;
   }
 
   .no-print {
@@ -107,22 +107,104 @@ body {
     display: block !important;
   }
 
+  body:has(.pos-receipt-print) {
+    overflow: visible !important;
+  }
+
   .pos-receipt-print {
     background: #fff !important;
+    width: max-content !important;
+    max-width: none !important;
+    margin-left: 2mm !important;
+    margin-right: 2mm !important;
     padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .pos-receipt-print .pos-receipt-print-frame {
+    width: max-content !important;
+    margin: 0 !important;
+    max-width: none !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
   }
 
   .pos-receipt-print .pos-receipt-slip {
+    box-sizing: content-box !important;
     margin: 0 !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
-    font-size: 12px !important;
+    width: var(--receipt-slip-ch-width, 30ch) !important;
+    max-width: var(--receipt-slip-ch-width, 30ch) !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 14px !important;
     line-height: 1.25 !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
   }
 }
 
-/* Epson TM-U220 browser print — ~40–42 character slip */
+/* Epson TM-U220 80mm — 30ch slip + @page 5mm + 2mm side inset on .pos-receipt-print */
+.pos-receipt-print {
+  width: max-content;
+  max-width: none;
+  margin-left: 2mm;
+  margin-right: 2mm;
+  overflow: visible;
+}
+
+.pos-receipt-print-frame {
+  width: max-content;
+  max-width: none;
+  margin: 0;
+  overflow: visible;
+}
+
+.pos-receipt-slip,
+.receipt-setup-preview-slip {
+  box-sizing: content-box;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  overflow-x: visible;
+  word-break: normal;
+  white-space: pre;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 14px;
+  line-height: 1.25;
+  color: #111;
+}
+
 .pos-receipt-slip {
-  width: 80mm;
-  max-width: 80mm;
+  width: var(--receipt-slip-ch-width, 30ch);
+  max-width: var(--receipt-slip-ch-width, 30ch);
+}
+
+/* Receipt Setup admin preview — paper slip on dark UI (not print route) */
+.receipt-setup-preview {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0 4px;
+  overflow: visible;
+}
+
+.receipt-setup-preview-slip {
+  box-sizing: content-box;
+  flex: 0 0 auto;
+  width: var(--receipt-slip-ch-width, 30ch);
+  min-width: var(--receipt-slip-ch-width, 30ch);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff !important;
+  color: #111 !important;
+  overflow-x: visible;
+  overflow-wrap: normal;
 }

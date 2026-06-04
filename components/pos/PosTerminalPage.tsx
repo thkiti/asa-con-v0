@@ -21,7 +21,10 @@ import {
   POS_ORDER_HREF,
   POS_STOCK_COUNT_HREF,
 } from "@/lib/pos-ui/pos-navigation"
+import { openPosReceiptPrint } from "@/lib/pos-ui/pos-receipt-print"
+import { fetchPosReceiptNoPreview } from "@/lib/pos-ui/pos-receipt-preview-client"
 import { fetchPosProductLookup } from "@/lib/pos-ui/pos-product-lookup"
+import { resolvePosReceiptPanelNo } from "@/lib/pos-ui/pos-session-display"
 import { fetchSessionUser } from "@/lib/pos-ui/session-client"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 
@@ -42,7 +45,19 @@ export function PosTerminalPage() {
     receiptNo: string
     total: string
   } | null>(null)
+  const [lastReceiptNo, setLastReceiptNo] = useState<string | null>(null)
+  const [previewReceiptNo, setPreviewReceiptNo] = useState<string | null>(null)
   const [logoutPending, setLogoutPending] = useState(false)
+  const [barcodeFocusRequest, setBarcodeFocusRequest] = useState(0)
+
+  const refreshPreviewReceiptNo = useCallback(async () => {
+    const result = await fetchPosReceiptNoPreview()
+    if (result.ok) {
+      setPreviewReceiptNo(result.receiptNo)
+      return
+    }
+    setPreviewReceiptNo(null)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -54,12 +69,13 @@ export function PosTerminalPage() {
         return
       }
       setSession(result.user)
-      setLoading(false)
+      await refreshPreviewReceiptNo()
+      if (!cancelled) setLoading(false)
     })()
     return () => {
       cancelled = true
     }
-  }, [router])
+  }, [router, refreshPreviewReceiptNo])
 
   const onLogout = useCallback(async () => {
     setLogoutPending(true)
@@ -119,28 +135,41 @@ export function PosTerminalPage() {
         setCheckoutError(result.error)
         return
       }
+      const receiptNo = result.result.receipt.receiptNo
       setCheckoutSuccess({
         saleId: result.result.sale.id,
-        receiptNo: result.result.receipt.receiptNo,
+        receiptNo,
         total: result.result.sale.total.toString(),
       })
+      setLastReceiptNo(receiptNo)
     } finally {
       setCheckoutPending(false)
     }
   }, [cartLines, checkoutPending])
 
-  const printReceipt = useCallback((saleId: string) => {
-    const url = `/shop/receipt/${encodeURIComponent(saleId)}?autoprint=1`
-    window.open(url, "_blank", "noopener,noreferrer")
-  }, [])
-
-  const finishCheckout = useCallback(() => {
+  const resetPosForNextSale = useCallback(() => {
     setCartLines(clearCart())
     setCheckoutOpen(false)
     setCheckoutSuccess(null)
     setCheckoutError(null)
     setCartLookupError(null)
-  }, [])
+    setLastReceiptNo(null)
+    setBarcode("")
+    setBarcodeFocusRequest((n) => n + 1)
+    void refreshPreviewReceiptNo()
+  }, [session, refreshPreviewReceiptNo])
+
+  const printReceiptAndNewSale = useCallback(
+    (saleId: string) => {
+      openPosReceiptPrint(saleId)
+      resetPosForNextSale()
+    },
+    [resetPosForNextSale]
+  )
+
+  const newSaleWithoutPrint = useCallback(() => {
+    resetPosForNextSale()
+  }, [resetPosForNextSale])
 
   const onKeypadAction = useCallback(
     (id: PosKeypadActionId) => {
@@ -225,22 +254,27 @@ export function PosTerminalPage() {
         setCartLines(clearCart())
         setCartLookupError(null)
       }}
+      receiptNo={resolvePosReceiptPanelNo(lastReceiptNo, previewReceiptNo)}
       checkoutOpen={checkoutOpen}
       checkoutPending={checkoutPending}
       checkoutError={checkoutError}
       checkoutSuccess={checkoutSuccess}
+      barcodeFocusRequest={barcodeFocusRequest}
       onCheckoutClose={() => {
         if (!checkoutPending) {
-          setCheckoutOpen(false)
-          setCheckoutError(null)
-          if (checkoutSuccess) finishCheckout()
+          if (checkoutSuccess) {
+            resetPosForNextSale()
+          } else {
+            setCheckoutOpen(false)
+            setCheckoutError(null)
+          }
         }
       }}
       onCheckoutConfirm={() => {
         void confirmCheckout()
       }}
-      onCheckoutPrintReceipt={printReceipt}
-      onCheckoutNewSale={finishCheckout}
+      onCheckoutPrintReceiptAndNewSale={printReceiptAndNewSale}
+      onCheckoutNewSaleWithoutPrint={newSaleWithoutPrint}
       placeholderOverlay={placeholder}
       onClosePlaceholder={() => setPlaceholder(null)}
       keypadDisabled={logoutPending || lookupPending || checkoutPending}

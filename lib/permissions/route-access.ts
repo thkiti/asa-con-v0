@@ -32,6 +32,10 @@ function pathnameArea(pathname: string): AppArea | null {
     return "master"
   }
 
+  if (pathname === "/api/admin" || pathname.startsWith("/api/admin/")) {
+    return "admin"
+  }
+
   for (const [area, prefix] of Object.entries(AREA_PREFIX) as [
     AppArea,
     string,

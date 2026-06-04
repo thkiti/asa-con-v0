@@ -1,10 +1,18 @@
 import { MasterDomainError } from "@/lib/master/errors"
 import { PricingDomainError } from "@/lib/pricing/pricing-errors"
 import { MasterDatabaseAuthError } from "@/lib/permissions/master"
+import { ReceiptSettingsError } from "@/lib/receipt-settings/errors"
 import { NextResponse } from "next/server"
 
 export function masterErrorResponse(err: unknown, logLabel: string): NextResponse {
   console.error(logLabel, err)
+
+  if (err instanceof ReceiptSettingsError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: err.httpStatus }
+    )
+  }
 
   if (err instanceof PricingDomainError) {
     return NextResponse.json(

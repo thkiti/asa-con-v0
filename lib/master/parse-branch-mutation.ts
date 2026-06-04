@@ -1,5 +1,6 @@
-import { BranchType } from "@/lib/shared"
+import { BranchType } from "@/lib/shared/types"
 import { MasterDomainError } from "./errors"
+import { parseOptionalBranchContactField } from "./parse-branch-contact"
 
 const BRANCH_TYPES = new Set<string>([BranchType.HO, BranchType.SH])
 
@@ -44,15 +45,21 @@ export type CreateBranchInput = {
   name: string
   type: BranchType
   isActive: boolean
+  address: string | null
+  phone: string | null
+  taxId: string | null
 }
 
 export type UpdateBranchInput = {
   name: string
   isActive: boolean
+  address: string | null
+  phone: string | null
+  taxId: string | null
 }
 
 export type PatchBranchBody =
-  | { action: "update"; name: string; isActive: boolean }
+  | { action: "update"; name: string; isActive: boolean; address: string | null; phone: string | null; taxId: string | null }
   | { action: "delete" }
   | { action: "restore" }
 
@@ -74,7 +81,19 @@ export function parseCreateBranchBody(body: unknown): CreateBranchInput {
   const isActive =
     record.isActive === undefined ? true : parseBoolean(record.isActive, "isActive")
 
-  return { code, name, type, isActive }
+  return {
+    code,
+    name,
+    type,
+    isActive,
+    address: parseOptionalBranchContactField(
+      record.address,
+      "address",
+      200
+    ),
+    phone: parseOptionalBranchContactField(record.phone, "phone", 40),
+    taxId: parseOptionalBranchContactField(record.taxId, "taxId", 32),
+  }
 }
 
 export function parsePatchBranchBody(body: unknown): PatchBranchBody {
@@ -104,5 +123,12 @@ export function parsePatchBranchBody(body: unknown): PatchBranchBody {
     action: "update",
     name,
     isActive: parseBoolean(record.isActive, "isActive"),
+    address: parseOptionalBranchContactField(
+      record.address,
+      "address",
+      200
+    ),
+    phone: parseOptionalBranchContactField(record.phone, "phone", 40),
+    taxId: parseOptionalBranchContactField(record.taxId, "taxId", 32),
   }
 }

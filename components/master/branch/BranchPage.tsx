@@ -28,7 +28,6 @@ const COLUMNS = [
   { key: "name", label: "Name", width: "200px" },
   { key: "type", label: "Type", width: "56px" },
   { key: "active", label: "Active", width: "56px" },
-  { key: "status", label: "Status", width: "72px" },
   MASTER_ACTIONS_COLUMN,
 ] as const
 
@@ -116,6 +115,9 @@ export function BranchPage() {
     name: string
     type: BranchListItem["type"]
     isActive: boolean
+    address: string | null
+    phone: string | null
+    taxId: string | null
   }) => {
     setFormSubmitting(true)
     setFormError(null)
@@ -126,6 +128,9 @@ export function BranchPage() {
         await patchMasterBranch(selectedBranch.id, {
           name: values.name,
           isActive: values.isActive,
+          address: values.address,
+          phone: values.phone,
+          taxId: values.taxId,
         })
       }
       setFormOpen(false)
@@ -161,7 +166,7 @@ export function BranchPage() {
   return (
     <MasterPageShell
       title="Branch"
-      description="Branch codes, names, HO/SH type, and active or deleted status."
+      description="Branch codes, names, HO/SH type, and active status. Address, phone, and tax ID are edited in the branch form."
     >
       <div className={masterPageLayout}>
         <div className="mt-3">
@@ -206,7 +211,6 @@ export function BranchPage() {
                   </span>,
                   row.type,
                   row.isActive ? "Yes" : "No",
-                  row.deleted ? "Deleted" : "Active",
                 ]}
                 actions={
                   <MasterRowActions

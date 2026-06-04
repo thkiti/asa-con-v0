@@ -1,4 +1,4 @@
-import type { BranchType, ProductType, Role } from "@/lib/shared"
+import type { BranchType, ProductType, Role } from "@/lib/shared/types"
 
 export type ListMode = "active" | "trash"
 
@@ -9,6 +9,9 @@ export type BranchListItem = {
   code: string
   name: string
   type: BranchType
+  address: string | null
+  phone: string | null
+  taxId: string | null
   isActive: boolean
   deleted: boolean
 }

@@ -8,7 +8,7 @@ import {
   themePageTitle,
 } from "@/lib/theme/theme-classes"
 
-const MASTER_ENTRIES = [
+const ADMINISTRATION_ENTRIES = [
   {
     href: "/master/product-reference",
     title: "Product & Reference Stock",
@@ -29,18 +29,23 @@ const MASTER_ENTRIES = [
     title: "Pricing",
     hint: "HO transfer policy, global retail selling price, promotion (planned).",
   },
+  {
+    href: "/admin/receipt-setup",
+    title: "Receipt Setup",
+    hint: "Receipt company name, footer lines, and Thai tax invoice labels.",
+  },
 ] as const
 
 export function MasterHubView() {
   return (
     <main className={`mx-auto max-w-5xl p-6 ${themePage}`}>
       <header className="border-b border-border pb-4">
-        <Link href="/main/administration" className={`text-sm ${themeMuted} underline hover:text-foreground`}>
+        <Link href="/main" className={`text-sm ${themeMuted} underline hover:text-foreground`}>
           ← Main Menu
         </Link>
-        <h1 className={`mt-3 ${themePageTitle}`}>Master Database</h1>
+        <h1 className={`mt-3 ${themePageTitle}`}>ADMINISTRATION</h1>
         <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>
-          Maintenance screens for product master, reference stock links, branches, and staff.
+          Maintenance for product master, branches, staff, pricing, and POS receipt layout.
           Bulk load from legacy files remains under{" "}
           <Link href="/system/import" className="underline hover:text-foreground">
             System Import
@@ -49,8 +54,8 @@ export function MasterHubView() {
         </p>
       </header>
 
-      <nav className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Master Database maintenance">
-        {MASTER_ENTRIES.map((entry) => (
+      <nav className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Administration">
+        {ADMINISTRATION_ENTRIES.map((entry) => (
           <Link key={entry.href} href={entry.href} className={themeMenuCard}>
             <span className={themeMenuCardTitle}>{entry.title}</span>
             <span className={themeMenuCardHint}>{entry.hint}</span>

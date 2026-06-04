@@ -30,6 +30,10 @@ export default async function MainMenuSectionPage({
     notFound()
   }
 
+  if (sectionParam === "administration") {
+    redirect("/master")
+  }
+
   const section = getMainMenuSectionDetail(session.role, sectionParam)
   if (!section) {
     redirect("/unauthorized")

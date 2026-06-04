@@ -85,6 +85,10 @@ model Branch {
   code      String     @unique
   name      String
   type      BranchType @default(SH)
+  address   String?
+  phone     String?
+  /// HO999 = company tax ID; SH* = POS machine / approval ID (see receipt print rules).
+  taxId     String?
   isActive  Boolean    @default(true)
   deleted   Boolean    @default(false)
   createdAt DateTime   @default(now())
@@ -338,6 +342,20 @@ model Receipt {
   sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@unique([branchId, receiptNo])
+}
+
+/// Singleton receipt layout/footer (id = "default").
+model ReceiptPrintSettings {
+  id                      String   @id @default("default")
+  companyDisplayName      String?
+  footerLine1             String?
+  footerLine2             String?
+  footerLine3             String?
+  footerLine4             String?
+  footerLine5             String?
+  showAbbreviatedTaxTitle Boolean  @default(true)
+  showVatIncludedMessage  Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
 }
 enum GlAccountType {
   ASSET

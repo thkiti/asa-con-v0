@@ -83,4 +83,14 @@ describe("canAccessRoute", () => {
     expect(canAccessRoute("/api/master/branches", "HO_FINANCE")).toBe(false)
     expect(canAccessRoute("/api/master/staff", "SH_STAFF")).toBe(false)
   })
+
+  it("allows /api/admin routes for roles with admin area", () => {
+    expect(canAccessRoute("/api/admin/receipt-settings", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/admin/receipt-setup", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/api/admin/receipt-settings", "HO_FINANCE")).toBe(true)
+    expect(canAccessRoute("/api/admin/receipt-settings", "HO_OPERATIONS")).toBe(
+      false
+    )
+    expect(canAccessRoute("/api/admin/receipt-settings", "SH_STAFF")).toBe(false)
+  })
 })

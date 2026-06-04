@@ -56,7 +56,7 @@ describe("getMainMenuSections", () => {
   })
 
   it("section cards link to /main/{section}", () => {
-    expect(getMainMenuSections("HO_ADMIN")[0]?.href).toBe("/main/administration")
+    expect(getMainMenuSections("HO_ADMIN")[0]?.href).toBe("/master")
     expect(getMainMenuSections("HO_FINANCE")[0]?.href).toBe("/main/finance")
   })
 })
@@ -77,6 +77,8 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("HO_ADMIN", "branch")?.href).toBe("/master/branch")
     expect(findItem("HO_ADMIN", "staff")?.href).toBe("/master/staff")
     expect(findItem("HO_ADMIN", "pricing")?.href).toBe("/master/pricing")
+    expect(findItem("HO_ADMIN", "receipt-setup")?.href).toBe("/admin/receipt-setup")
+    expect(findItem("HO_FINANCE", "receipt-setup")).toBeUndefined()
   })
 
   it("includes Stock Documents under operations for HO_FINANCE", () => {

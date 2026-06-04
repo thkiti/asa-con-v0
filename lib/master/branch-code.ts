@@ -1,4 +1,4 @@
-import { BranchType } from "@/lib/shared"
+import { BranchType } from "@/lib/shared/types"
 import { formatShopBranchCode } from "@/lib/import/validation/branch-code"
 import { MasterDomainError } from "./errors"
 

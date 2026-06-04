@@ -50,7 +50,7 @@ const SECTION_META: Record<
 > = {
   administration: {
     label: "ADMINISTRATION",
-    description: "Product-Reference, Branch, Staff",
+    description: "Product, branch, staff, pricing, and receipt setup",
   },
   finance: {
     label: "FINANCE",
@@ -86,6 +86,9 @@ function planned(key: string, label: string, hint?: string): MainMenuItem {
 }
 
 function sectionHref(key: MainMenuSectionKey): string {
+  if (key === "administration") {
+    return "/master"
+  }
   return `/main/${key}`
 }
 
@@ -150,6 +153,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "Pricing",
           "/master/pricing",
           "Transfer policy, selling price, promotion (planned)"
+        ),
+        available(
+          "receipt-setup",
+          "Receipt Setup",
+          "/admin/receipt-setup",
+          "Receipt company name, footer lines, Thai tax labels"
         ),
       ]
 

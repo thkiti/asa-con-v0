@@ -116,6 +116,19 @@ describe("LoginForm", () => {
     mockPostBranchPreview.mockResolvedValue(branchPreview)
   })
 
+  it("focuses staff input on mount for barcode scan", async () => {
+    const { container } = renderLoginForm()
+    const staffInput = container.querySelector(
+      'input[name="staffId"]'
+    ) as HTMLInputElement
+
+    await act(async () => {
+      await flushAsyncUpdates()
+    })
+
+    expect(document.activeElement).toBe(staffInput)
+  })
+
   it("renders staff, branch, and password fields without preview paragraphs", () => {
     const html = renderToStaticMarkup(wrapLoginForm())
 

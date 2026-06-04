@@ -40,11 +40,17 @@ export type CreateMasterBranchInput = {
   name: string
   type: BranchListItem["type"]
   isActive: boolean
+  address?: string | null
+  phone?: string | null
+  taxId?: string | null
 }
 
 export type UpdateMasterBranchInput = {
   name: string
   isActive: boolean
+  address?: string | null
+  phone?: string | null
+  taxId?: string | null
 }
 
 export function createMasterBranch(

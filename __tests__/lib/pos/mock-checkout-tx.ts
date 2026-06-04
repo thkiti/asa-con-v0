@@ -64,6 +64,14 @@ export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
 
   const tx = {
     ...baseTx,
+    branch: {
+      findUnique: async ({ where }: { where: { id: string } }) => {
+        if (where.id) {
+          return { code: "SH001" }
+        }
+        return null
+      },
+    },
     sale: {
       create: async ({
         data,
@@ -127,13 +135,21 @@ export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
       count: async ({
         where,
       }: {
-        where: { branchId: string; issuedAt: { gte: Date } }
+        where: {
+          branchId: string
+          issuedAt: { gte: Date; lt?: Date }
+        }
       }) => {
-        return state.receipts.filter(
-          (r) =>
-            r.branchId === where.branchId &&
-            r.issuedAt.getTime() >= where.issuedAt.gte.getTime()
-        ).length
+        return state.receipts.filter((r) => {
+          if (r.branchId !== where.branchId) return false
+          if (where.issuedAt.gte && r.issuedAt.getTime() < where.issuedAt.gte.getTime()) {
+            return false
+          }
+          if (where.issuedAt.lt && r.issuedAt.getTime() >= where.issuedAt.lt.getTime()) {
+            return false
+          }
+          return true
+        }).length
       },
       create: async ({
         data,

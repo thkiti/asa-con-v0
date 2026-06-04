@@ -34,10 +34,10 @@ export function PricingHubView() {
     <main className={`mx-auto max-w-5xl p-6 ${themePage}`}>
       <header className="border-b border-border pb-4">
         <Link
-          href="/main/administration"
+          href="/master"
           className={`text-sm ${themeMuted} underline hover:text-foreground`}
         >
-          ← Main Menu
+          ← ADMINISTRATION
         </Link>
         <h1 className={`mt-3 ${themePageTitle}`}>Pricing</h1>
         <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>

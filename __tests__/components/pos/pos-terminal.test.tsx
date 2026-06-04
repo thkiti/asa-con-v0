@@ -11,12 +11,12 @@ import type { SessionUserApi } from "@/lib/auth/session-user-api"
 
 const sampleUser: SessionUserApi = {
   userId: "u1",
-  staffId: "S001",
-  name: "Branch Staff",
+  staffId: "103",
+  name: "Somsak Kamnuch",
   role: "SH_STAFF",
   branchId: "b1",
-  branchCode: "SH01",
-  branchName: "Shop One",
+  branchCode: "SH001",
+  branchName: "Chidlom",
 }
 
 const push = jest.fn()
@@ -51,6 +51,13 @@ describe("PosTerminalPage", () => {
     jest.clearAllMocks()
     global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
+      if (url === "/api/pos/receipt-no/preview") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ receiptNo: "REC-SH001-202606-0001", preview: true }),
+        } as Response)
+      }
       if (url === "/api/auth/session") {
         return Promise.resolve({
           ok: true,
@@ -111,16 +118,42 @@ describe("PosTerminalPage", () => {
     }) as typeof fetch
   })
 
-  it("renders session banner fields from session API", async () => {
+  it("renders session banner and receipt panel header from session API", async () => {
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
 
-    expect(container.textContent).toContain("SH01")
-    expect(container.textContent).toContain("Shop One")
-    expect(container.textContent).toContain("S001")
-    expect(container.textContent).toContain("Branch Staff")
+    expect(container.textContent).toContain("Branch:")
+    expect(container.textContent).toContain("SH001 • Chidlom")
+    expect(container.textContent).toContain("Staff:")
+    expect(container.textContent).toContain("103 • Somsak Kamnuch")
+    expect(container.textContent).toContain("Receipt:")
+    expect(container.textContent).toContain("REC-SH001-202606-0001")
     expect(container.textContent).toContain("ASA • POS TERMINAL")
+    expect(container.textContent).not.toContain("Staff ID")
+    expect(container.textContent).not.toContain("Branch code")
+
+    act(() => root.unmount())
+  })
+
+  it("shows latest receipt number on orange panel after checkout until new sale", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    await checkoutOneItem(container)
+
+    expect(container.textContent).toContain("R-test-20260101-0001")
+
+    const skipPrintBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("New Sale without print")
+    )
+    act(() => {
+      skipPrintBtn!.click()
+    })
+    await flushPromises()
+
+    expect(container.textContent).toContain("REC-SH001-202606-0001")
 
     act(() => root.unmount())
   })
@@ -202,13 +235,7 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("completes CASH checkout with print receipt and new sale actions", async () => {
-    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
-    const fetchMock = global.fetch as jest.Mock
-    const { container, root } = renderPosTerminal()
-    await flushPromises()
-    await flushPromises()
-
+  async function checkoutOneItem(container: HTMLElement): Promise<void> {
     const input = container.querySelector(
       'input[aria-label="Barcode scan input"]'
     ) as HTMLInputElement
@@ -236,7 +263,6 @@ describe("PosTerminalPage", () => {
     })
     await flushPromises()
 
-    expect(container.textContent).toContain("Pay CASH")
     const payBtn = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent?.trim() === "Pay CASH"
     )
@@ -245,40 +271,58 @@ describe("PosTerminalPage", () => {
     })
     await flushPromises()
     await flushPromises()
+  }
+
+  it("print receipt and new sale opens autoprint and resets POS immediately", async () => {
+    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    await checkoutOneItem(container)
 
     expect(container.textContent).toContain("Sale complete")
-    expect(container.textContent).toContain("R-test-20260101-0001")
-    expect(container.textContent).toContain("Print receipt")
+    expect(container.textContent).toContain("Print Receipt & New Sale")
 
     const printBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "Print receipt"
+      (b) => b.textContent?.includes("Print Receipt") && b.textContent?.includes("New Sale")
     )
     act(() => {
       printBtn!.click()
     })
+    await flushPromises()
+
     expect(openSpy).toHaveBeenCalledWith(
       "/shop/receipt/sale-checkout-1?autoprint=1",
-      "_blank",
-      "noopener,noreferrer"
+      "_blank"
     )
+    expect(container.textContent).not.toContain("Sale complete")
+    expect(container.textContent).toContain("Scan a product to add to cart")
+    expect(container.textContent).not.toContain("Test Product")
 
-    const checkoutPosts = fetchMock.mock.calls.filter(
-      ([url, init]) => String(url) === "/api/pos/checkout" && init?.method === "POST"
-    )
-    expect(checkoutPosts).toHaveLength(1)
-    const body = JSON.parse(String(checkoutPosts[0][1]?.body))
-    expect(body.lines[0]).toEqual({ productId: "p1", qty: 1 })
-    expect(body.lines[0].unitPrice).toBeUndefined()
+    openSpy.mockRestore()
+    act(() => root.unmount())
+  })
 
-    const newSaleBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "New sale"
+  it("new sale without print resets POS without opening receipt window", async () => {
+    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    await checkoutOneItem(container)
+
+    const skipPrintBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("New Sale without print")
     )
     act(() => {
-      newSaleBtn!.click()
+      skipPrintBtn!.click()
     })
     await flushPromises()
 
+    expect(openSpy).not.toHaveBeenCalled()
     expect(container.textContent).toContain("Scan a product to add to cart")
+    expect(container.textContent).not.toContain("Sale complete")
 
     openSpy.mockRestore()
     act(() => root.unmount())

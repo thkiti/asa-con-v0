@@ -40,6 +40,30 @@ describe("parseCreateBranchBody", () => {
       name: "Shop 10",
       type: BranchType.SH,
       isActive: true,
+      address: null,
+      phone: null,
+      taxId: null,
+    })
+  })
+
+  it("parses optional address, phone, and taxId on create", () => {
+    expect(
+      parseCreateBranchBody({
+        code: "HO999",
+        name: "Head Office",
+        type: "HO",
+        address: "  HQ Road  ",
+        phone: " 021234567 ",
+        taxId: " 0123456789012 ",
+      })
+    ).toEqual({
+      code: "HO999",
+      name: "Head Office",
+      type: BranchType.HO,
+      isActive: true,
+      address: "HQ Road",
+      phone: "021234567",
+      taxId: "0123456789012",
     })
   })
 
@@ -58,6 +82,28 @@ describe("parsePatchBranchBody", () => {
       action: "update",
       name: "Renamed",
       isActive: false,
+      address: null,
+      phone: null,
+      taxId: null,
+    })
+  })
+
+  it("parses optional address, phone, and taxId on update", () => {
+    expect(
+      parsePatchBranchBody({
+        name: "Shop",
+        isActive: true,
+        address: "Line 1",
+        phone: "0812345678",
+        taxId: "POS-99",
+      })
+    ).toEqual({
+      action: "update",
+      name: "Shop",
+      isActive: true,
+      address: "Line 1",
+      phone: "0812345678",
+      taxId: "POS-99",
     })
   })
 
@@ -132,7 +178,7 @@ describe("createBranch", () => {
 })
 
 describe("updateBranch", () => {
-  it("updates name and isActive only", async () => {
+  it("updates name, isActive, and contact fields", async () => {
     const db = {
       branch: {
         findUnique: jest.fn().mockResolvedValue({ id: "b1" }),
@@ -141,6 +187,9 @@ describe("updateBranch", () => {
           code: "SH003",
           name: "New name",
           type: BranchType.SH,
+          address: "Addr",
+          phone: "02-000",
+          taxId: "MID-1",
           isActive: false,
           deleted: false,
         }),
@@ -150,13 +199,22 @@ describe("updateBranch", () => {
     const item = await updateBranch(db, "b1", {
       name: "New name",
       isActive: false,
+      address: "Addr",
+      phone: "02-000",
+      taxId: "MID-1",
     })
 
     expect(item.name).toBe("New name")
     expect(item.isActive).toBe(false)
     expect(db.branch.update).toHaveBeenCalledWith({
       where: { id: "b1" },
-      data: { name: "New name", isActive: false },
+      data: {
+        name: "New name",
+        isActive: false,
+        address: "Addr",
+        phone: "02-000",
+        taxId: "MID-1",
+      },
       select: expect.any(Object),
     })
   })

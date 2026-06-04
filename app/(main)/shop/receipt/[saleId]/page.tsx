@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 import { PosSaleReceiptPage } from "@/components/pos/PosSaleReceiptPage"
 import { getSession } from "@/lib/auth/session"
-import { loadSaleReceiptForPrint } from "@/lib/pos/load-sale-receipt"
+import { loadReceiptPrintContext } from "@/lib/pos/receipt-print-context"
 import { PosLookupError } from "@/lib/pos/pos-errors"
 import { requireStockDocumentSession } from "@/lib/stock/document-read"
 import { prisma } from "@/lib/shared/prisma"
@@ -33,7 +33,7 @@ export default async function ShopSaleReceiptPage({ params, searchParams }: Page
 
   let receipt
   try {
-    receipt = await loadSaleReceiptForPrint(prisma, { saleId, branchId })
+    receipt = await loadReceiptPrintContext(prisma, { saleId, branchId })
   } catch (err) {
     if (err instanceof PosLookupError && err.code === "SALE_NOT_FOUND") {
       notFound()

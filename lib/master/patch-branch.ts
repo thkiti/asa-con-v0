@@ -18,5 +18,11 @@ export async function patchBranch(
   if (body.action === "restore") {
     return restoreBranch(db, id)
   }
-  return updateBranch(db, id, { name: body.name, isActive: body.isActive })
+  return updateBranch(db, id, {
+    name: body.name,
+    isActive: body.isActive,
+    address: body.address,
+    phone: body.phone,
+    taxId: body.taxId,
+  })
 }

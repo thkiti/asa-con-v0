@@ -7,6 +7,8 @@ type PosBarcodeCaptureProps = {
   onChange: (value: string) => void
   onSubmit?: (value: string) => void
   disabled?: boolean
+  /** Increment to request focus (e.g. after checkout completes). */
+  focusRequestId?: number
 }
 
 export function PosBarcodeCapture({
@@ -14,8 +16,14 @@ export function PosBarcodeCapture({
   onChange,
   onSubmit,
   disabled = false,
+  focusRequestId = 0,
 }: PosBarcodeCaptureProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (disabled || focusRequestId === 0) return
+    inputRef.current?.focus()
+  }, [disabled, focusRequestId])
 
   useEffect(() => {
     if (disabled) return

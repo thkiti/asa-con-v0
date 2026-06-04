@@ -49,6 +49,9 @@ describe("master fetchers URL params", () => {
       name: "Shop",
       type: "SH",
       isActive: true,
+      address: "Street 1",
+      phone: "02111",
+      taxId: "POS-2",
     })
     expect(global.fetch).toHaveBeenCalledWith("/api/master/branches", {
       method: "POST",
@@ -58,6 +61,9 @@ describe("master fetchers URL params", () => {
         name: "Shop",
         type: "SH",
         isActive: true,
+        address: "Street 1",
+        phone: "02111",
+        taxId: "POS-2",
       }),
     })
   })
@@ -91,11 +97,23 @@ describe("master fetchers URL params", () => {
   })
 
   it("patchMasterBranch PATCHes by id", async () => {
-    await patchMasterBranch("b2", { name: "Renamed", isActive: false })
+    await patchMasterBranch("b2", {
+      name: "Renamed",
+      isActive: false,
+      address: null,
+      phone: "08123",
+      taxId: "MID",
+    })
     expect(global.fetch).toHaveBeenCalledWith("/api/master/branches/b2", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Renamed", isActive: false }),
+      body: JSON.stringify({
+        name: "Renamed",
+        isActive: false,
+        address: null,
+        phone: "08123",
+        taxId: "MID",
+      }),
     })
   })
 

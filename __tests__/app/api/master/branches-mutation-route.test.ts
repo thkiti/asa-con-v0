@@ -116,6 +116,9 @@ describe("PATCH /api/master/branches/[id]", () => {
       action: "update",
       name: "Renamed",
       isActive: true,
+      address: null,
+      phone: null,
+      taxId: null,
     })
   })
 

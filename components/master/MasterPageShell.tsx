@@ -19,7 +19,7 @@ export function MasterPageShell({
   title,
   description,
   backHref = "/master",
-  backLabel = "← Master Database",
+  backLabel = "← ADMINISTRATION",
   children,
 }: MasterPageShellProps) {
   return (

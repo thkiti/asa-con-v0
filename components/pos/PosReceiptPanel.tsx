@@ -1,10 +1,15 @@
 import type { PosCartLine } from "@/lib/pos/cart"
 import { cartTotal, lineAmount } from "@/lib/pos/cart"
+import {
+  formatReceiptDisplay,
+  formatStaffDisplay,
+} from "@/lib/pos-ui/pos-session-display"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import type { ReactNode } from "react"
 
 type PosReceiptPanelProps = {
   session: PosTerminalSession
+  receiptNo: string | null
   lines: readonly PosCartLine[]
   lookupError?: string | null
   onIncrementQty: (productId: string) => void
@@ -24,6 +29,7 @@ function formatMoney(value: string | number): string {
 
 export function PosReceiptPanel({
   session,
+  receiptNo,
   lines,
   lookupError,
   onIncrementQty,
@@ -38,21 +44,20 @@ export function PosReceiptPanel({
     <div className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white">
       {overlay}
 
-      <div className="shrink-0 space-y-1 border-b border-white/30 p-3 text-center">
-        <div className="text-sm font-bold">
-          ASA SERVICES{" "}
-          <span className="text-xs font-normal">
-            ({session.branchCode} • {session.branchName})
-          </span>
-        </div>
-        <div className="border-t border-white/30 pt-2 text-[11px]">
-          <div className="flex justify-between gap-2">
-            <span>Staff ID</span>
-            <span className="font-mono tabular-nums">{session.staffId}</span>
+      <div className="shrink-0 space-y-2 border-b border-white/30 p-3 text-center">
+        <div className="text-sm font-bold">ASA SERVICES</div>
+        <div className="space-y-1.5 border-t border-white/30 pt-2 text-left text-sm leading-snug">
+          <div>
+            <span className="text-white/85">Receipt:</span>{" "}
+            <span className="font-mono font-semibold tabular-nums">
+              {formatReceiptDisplay(receiptNo)}
+            </span>
           </div>
-          <div className="flex justify-between gap-2">
-            <span>Staff name</span>
-            <span className="truncate text-right">{session.name}</span>
+          <div className="min-w-0">
+            <span className="text-white/85">Staff:</span>{" "}
+            <span className="font-medium">
+              {formatStaffDisplay(session.staffId, session.name)}
+            </span>
           </div>
         </div>
       </div>

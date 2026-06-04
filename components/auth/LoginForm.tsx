@@ -20,6 +20,7 @@ import {
   FormEvent,
   KeyboardEvent,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -55,7 +56,21 @@ export function LoginForm() {
     null
   )
 
+  const focusStaffInput = useCallback((selectAll = true) => {
+    const el = staffIdRef.current
+    if (!el || el.disabled) return
+    el.focus({ preventScroll: true })
+    if (selectAll && el.value.length > 0) {
+      el.select()
+    }
+  }, [])
+
+  useEffect(() => {
+    setPendingFocus("staff")
+  }, [])
+
   useLayoutEffect(() => {
+    if (previewLoading || loading) return
     if (!pendingFocus) return
 
     const targetRef =
@@ -68,6 +83,9 @@ export function LoginForm() {
     const el = targetRef.current
     if (el && !el.disabled) {
       el.focus({ preventScroll: true })
+      if (pendingFocus === "staff" && el.value.length > 0) {
+        el.select()
+      }
       setPendingFocus(null)
     }
   }, [
@@ -284,10 +302,19 @@ export function LoginForm() {
     setLoading(true)
     setLoginError(null)
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      const res = await fetch("/api/auth/logout", { method: "POST" })
+      let redirectTo = "/login"
+      if (res.ok) {
+        const body = (await res.json()) as { redirectTo?: string }
+        if (body.redirectTo) redirectTo = body.redirectTo
+      }
+      clearStaffFieldForRetry()
+      setPendingFocus("staff")
+      router.push(redirectTo)
       router.refresh()
     } catch (err) {
       setLoginError(err instanceof Error ? err.message : "Logout ไม่สำเร็จ")
+      setPendingFocus("staff")
     } finally {
       setLoading(false)
     }
@@ -318,6 +345,7 @@ export function LoginForm() {
             onFocus={() => {
               if (!staffFieldError) {
                 setStaffFocused(true)
+                focusStaffInput(true)
               }
             }}
             onBlur={() => {

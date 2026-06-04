@@ -65,7 +65,7 @@ describe("checkoutWithoutPosting", () => {
     expect(state.payments).toHaveLength(1)
     expect(state.payments[0].method).toBe(PaymentMethod.CASH)
     expect(state.receipts).toHaveLength(1)
-    expect(result.receipt.receiptNo).toMatch(/^R-/)
+    expect(result.receipt.receiptNo).toBe("REC-SH001-202601-0001")
   })
 
   it("rejects non-CASH payment", async () => {

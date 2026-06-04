@@ -4,18 +4,25 @@
 import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PosSaleReceiptSlip } from "@/components/pos/PosSaleReceiptSlip"
-import type { SaleReceiptView } from "@/lib/pos/load-sale-receipt"
+import type { ReceiptPrintContext } from "@/lib/pos/receipt-print-context"
+import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
+import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
 
-const sampleReceipt: SaleReceiptView = {
+const sampleReceipt: ReceiptPrintContext = {
   saleId: "sale-1",
-  receiptNo: "R-test-0001",
+  receiptNo: "REC-SH001-202606-0001",
   issuedAt: "2026-01-15T10:00:00.000Z",
-  branchCode: "SH01",
+  branchCode: "SH001",
   branchName: "Shop",
-  cashierStaffId: "S001",
+  branchAddress: null,
+  branchPhone: null,
+  companyDisplayName: "ASA SERVICES",
+  companyTaxId: "TAX-1",
+  machineTaxId: "M-1",
+  cashierDisplay: "103-Somsak Kamnuch",
   lines: [
     {
       code: "0101001",
@@ -29,6 +36,7 @@ const sampleReceipt: SaleReceiptView = {
   paymentMethod: "CASH",
   cashAmount: "25.00",
   change: "0.00",
+  settings: DEFAULT_RECEIPT_PRINT_SETTINGS,
 }
 
 describe("PosSaleReceiptSlip", () => {
@@ -39,9 +47,17 @@ describe("PosSaleReceiptSlip", () => {
     act(() => {
       root.render(<PosSaleReceiptSlip receipt={sampleReceipt} />)
     })
-    expect(container.textContent).toContain("R-test-0001")
-    expect(container.textContent).toContain("CASH")
-    expect(container.querySelector(".pos-receipt-slip")).toBeTruthy()
+    expect(container.textContent).toContain("REC-SH001-202606-0001")
+    expect(container.textContent).toContain("Machine ID")
+    expect(container.textContent).toContain("Receipt")
+    expect(container.textContent).toContain("0.00")
+    expect(container.textContent).toContain("VAT 7%")
+    expect(container.textContent).toContain("ใบกำกับภาษีอย่างย่อ")
+    expect(container.textContent).toContain("103-Somsak Kamnuch")
+    const slip = container.querySelector(".pos-receipt-slip") as HTMLPreElement
+    expect(slip).toBeTruthy()
+    expect(slip.style.width).toBe(`${RECEIPT_COLUMNS}ch`)
+    expect(slip.style.maxWidth).toBe(`${RECEIPT_COLUMNS}ch`)
     act(() => root.unmount())
   })
 })

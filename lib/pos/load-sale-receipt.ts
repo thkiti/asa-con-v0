@@ -1,5 +1,6 @@
 import { SaleStatus, type PrismaClient } from "@/generated/prisma/client"
 import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
+import { formatCashierDisplay } from "./format-cashier-display"
 import { PosLookupError } from "./pos-errors"
 
 export type SaleReceiptLine = {
@@ -16,7 +17,7 @@ export type SaleReceiptView = {
   issuedAt: string
   branchCode: string
   branchName: string
-  cashierStaffId: string | null
+  cashierDisplay: string | null
   lines: SaleReceiptLine[]
   total: string
   paymentMethod: string
@@ -24,7 +25,7 @@ export type SaleReceiptView = {
   change: string
 }
 
-export type SaleReceiptDb = Pick<PrismaClient, "sale">
+export type SaleReceiptDb = Pick<PrismaClient, "sale" | "staff">
 
 export async function loadSaleReceiptForPrint(
   db: SaleReceiptDb,
@@ -62,13 +63,22 @@ export async function loadSaleReceiptForPrint(
     throw new PosLookupError("Sale receipt not found", "SALE_NOT_FOUND", 404)
   }
 
+  let staffName: string | null = null
+  if (sale.staffId?.trim()) {
+    const staff = await db.staff.findUnique({
+      where: { staffId: sale.staffId.trim() },
+      select: { name: true },
+    })
+    staffName = staff?.name ?? null
+  }
+
   return {
     saleId: sale.id,
     receiptNo: sale.receipt.receiptNo,
     issuedAt: sale.receipt.issuedAt.toISOString(),
     branchCode: sale.branch.code,
     branchName: sale.branch.name,
-    cashierStaffId: sale.staffId,
+    cashierDisplay: formatCashierDisplay(sale.staffId, staffName),
     lines: sale.items.map((item) => ({
       code: item.product.code,
       name: cleanGroupDisplayName(item.product.name),

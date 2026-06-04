@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/generated/prisma/client"
+import type { PrismaClient, ProductType } from "@/generated/prisma/client"
 import { normalizeReferenceProductCode } from "@/lib/import/validation/product-code"
 import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
 import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
@@ -8,29 +8,70 @@ import { PosLookupError } from "./pos-errors"
 
 export type PosProductLookupDb = Pick<PrismaClient, "product" | "sellingPrice">
 
+const productSelect = {
+  id: true,
+  code: true,
+  name: true,
+  productType: true,
+  deleted: true,
+} as const
+
+function trimPosLookupInput(raw: string): string {
+  return String(raw ?? "").trim()
+}
+
+/** Reference-barcode normalization — fallback only, not primary POS lookup. */
+export function posLookupCodeCandidates(raw: string): string[] {
+  const exact = trimPosLookupInput(raw)
+  if (!exact) return []
+
+  const candidates = [exact]
+  const normalized = normalizeReferenceProductCode(raw)
+  if (normalized && normalized !== exact && !candidates.includes(normalized)) {
+    candidates.push(normalized)
+  }
+  return candidates
+}
+
+async function findProductByCode(
+  db: PosProductLookupDb,
+  code: string
+): Promise<{
+  id: string
+  code: string
+  name: string
+  productType: ProductType
+  deleted: boolean
+} | null> {
+  return db.product.findUnique({
+    where: { code },
+    select: productSelect,
+  })
+}
+
 export async function lookupPosProductByCode(
   db: PosProductLookupDb,
   rawCode: string
 ): Promise<PosCartProduct> {
-  const normalized = normalizeReferenceProductCode(rawCode)
-  if (!normalized) {
+  const input = trimPosLookupInput(rawCode)
+  if (!input) {
     throw new PosLookupError("Product code is required", "INVALID_CODE", 400)
   }
 
-  const product = await db.product.findUnique({
-    where: { code: normalized },
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      productType: true,
-      deleted: true,
-    },
-  })
+  const candidates = posLookupCodeCandidates(rawCode)
+  let product: Awaited<ReturnType<typeof findProductByCode>> = null
 
-  if (!product || product.deleted) {
+  for (const code of candidates) {
+    const row = await findProductByCode(db, code)
+    if (row && !row.deleted) {
+      product = row
+      break
+    }
+  }
+
+  if (!product) {
     throw new PosLookupError(
-      `Product not found: ${normalized}`,
+      `Product not found: ${input}`,
       "PRODUCT_NOT_FOUND",
       404
     )
