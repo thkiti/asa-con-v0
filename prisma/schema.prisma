@@ -48,6 +48,11 @@ enum SaleStatus {
   COMPLETED
 }
 
+enum RefundKind {
+  SALE_LINKED
+  GOODWILL
+}
+
 enum PaymentMethod {
   CASH
   CARD
@@ -100,6 +105,7 @@ model Branch {
   stockTransactions StockTransaction[]
   stockDocuments    StockDocument[]
   sales             Sale[]
+  refunds           Refund[]
   vouchers          Voucher[]
   accountingPeriods        AccountingPeriod[]
   reconciliationSnapshots  ReconciliationSnapshot[]
@@ -301,6 +307,7 @@ model Sale {
   items   SaleItem[]
   payment Payment?
   receipt Receipt?
+  refunds Refund[]
 }
 
 model SaleItem {
@@ -339,9 +346,30 @@ model Receipt {
   receiptNo String
   issuedAt  DateTime @default(now())
 
-  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale              Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  refundsAsOriginal Refund[] @relation("OriginalReceipt")
 
   @@unique([branchId, receiptNo])
+}
+
+model Refund {
+  id                 String     @id @default(uuid())
+  kind               RefundKind
+  saleId             String?
+  branchId           String
+  staffId            String?
+  originalReceiptId  String?
+  amount             Decimal    @db.Decimal(18, 2)
+  reason             String?    @db.Text
+  createdAt          DateTime   @default(now())
+
+  sale            Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  originalReceipt Receipt? @relation("OriginalReceipt", fields: [originalReceiptId], references: [id], onDelete: SetNull)
+
+  @@index([saleId])
+  @@index([branchId, createdAt])
+  @@index([kind])
 }
 
 /// Singleton receipt layout/footer (id = "default").

@@ -56,6 +56,10 @@ jest.mock("@/generated/prisma/client", () => {
     SaleStatus: {
       COMPLETED: "COMPLETED",
     },
+    RefundKind: {
+      SALE_LINKED: "SALE_LINKED",
+      GOODWILL: "GOODWILL",
+    },
     GlAccountType: {
       ASSET: "ASSET",
       LIABILITY: "LIABILITY",
