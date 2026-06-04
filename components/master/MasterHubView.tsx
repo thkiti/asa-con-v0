@@ -24,6 +24,11 @@ const MASTER_ENTRIES = [
     title: "Staff",
     hint: "List staff by ID or name; role, branch, active and deleted status.",
   },
+  {
+    href: "/master/pricing",
+    title: "Pricing",
+    hint: "HO transfer policy, global retail selling price, promotion (planned).",
+  },
 ] as const
 
 export function MasterHubView() {

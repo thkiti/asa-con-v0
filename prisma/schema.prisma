@@ -60,6 +60,26 @@ enum LedgerSkipReason {
   CONSUMABLE
 }
 
+enum MarketType {
+  SERVICES
+  OUTSIDERS
+}
+
+enum PricingClass {
+  MATERIAL
+  MACHINERY
+  CONSUMABLE
+}
+
+enum RoundingMode {
+  NONE
+  CENT_01
+  CENT_05
+  BAHT_1
+  BAHT_10
+  BAHT_100
+}
+
 model Branch {
   id        String     @id @default(uuid())
   code      String     @unique
@@ -114,8 +134,38 @@ model Product {
   stockTransactions  StockTransaction[]
   stockDocumentLines StockDocumentLine[]
   saleItems          SaleItem[]
+  sellingPrices      SellingPrice[]
 
   @@unique([groupCode, typeCode, runningCode])
+}
+
+model PricingPolicy {
+  id            String       @id @default(uuid())
+  marketType    MarketType
+  pricingClass  PricingClass
+  markupPercent Decimal      @db.Decimal(5, 4)
+  roundingMode  RoundingMode
+  threshold     Decimal?     @db.Decimal(18, 2)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([marketType, pricingClass, effectiveTo])
+  @@index([marketType, pricingClass, effectiveFrom])
+}
+
+model SellingPrice {
+  id            String    @id @default(uuid())
+  productId     String
+  price         Decimal   @db.Decimal(18, 2)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime  @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, effectiveTo])
+  @@index([productId, effectiveFrom])
 }
 
 model ReferenceStock {

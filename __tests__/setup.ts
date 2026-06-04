@@ -22,6 +22,23 @@ jest.mock("@/generated/prisma/client", () => {
       Decimal,
       PrismaClientKnownRequestError,
     },
+    MarketType: {
+      SERVICES: "SERVICES",
+      OUTSIDERS: "OUTSIDERS",
+    },
+    PricingClass: {
+      MATERIAL: "MATERIAL",
+      MACHINERY: "MACHINERY",
+      CONSUMABLE: "CONSUMABLE",
+    },
+    RoundingMode: {
+      NONE: "NONE",
+      CENT_01: "CENT_01",
+      CENT_05: "CENT_05",
+      BAHT_1: "BAHT_1",
+      BAHT_10: "BAHT_10",
+      BAHT_100: "BAHT_100",
+    },
     ProductType: {
       TRACKED: "TRACKED",
       CONSUMABLE: "CONSUMABLE",

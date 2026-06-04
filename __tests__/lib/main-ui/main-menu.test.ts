@@ -76,6 +76,7 @@ describe("getMainMenuSectionDetail", () => {
     )
     expect(findItem("HO_ADMIN", "branch")?.href).toBe("/master/branch")
     expect(findItem("HO_ADMIN", "staff")?.href).toBe("/master/staff")
+    expect(findItem("HO_ADMIN", "pricing")?.href).toBe("/master/pricing")
   })
 
   it("includes Stock Documents under operations for HO_FINANCE", () => {

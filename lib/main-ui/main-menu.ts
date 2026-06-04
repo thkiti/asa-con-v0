@@ -145,6 +145,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "/master/staff",
           "Staff accounts, roles, branch assignment"
         ),
+        available(
+          "pricing",
+          "Pricing",
+          "/master/pricing",
+          "Transfer policy, selling price, promotion (planned)"
+        ),
       ]
 
     case "finance":
