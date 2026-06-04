@@ -64,12 +64,20 @@ describe("PosTerminalPage", () => {
           json: async () => ({ redirectTo: "/login" }),
         } as Response)
       }
-      if (url === "/api/pos/checkout") {
+      if (url.startsWith("/api/pos/products/lookup")) {
         return Promise.resolve({
-          ok: false,
-          status: 500,
-          json: async () => ({}),
-        })
+          ok: true,
+          status: 200,
+          json: async () => ({
+            product: {
+              productId: "p1",
+              code: "0101001",
+              name: "Test Product",
+              unitPrice: "25.00",
+              priceSource: "SELLING",
+            },
+          }),
+        } as Response)
       }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as typeof fetch
@@ -123,6 +131,45 @@ describe("PosTerminalPage", () => {
     expect(push).toHaveBeenCalledWith(
       "/shop/stock-documents/new?type=ADJUSTMENT&from=shop"
     )
+
+    act(() => root.unmount())
+  })
+
+  it("adds product to cart on barcode Enter without checkout API", async () => {
+    const fetchMock = global.fetch as jest.Mock
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const input = container.querySelector(
+      'input[aria-label="Barcode scan input"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(input, "1010015")
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      )
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.textContent).toContain("Test Product")
+    expect(container.textContent).toContain("25.00")
+    const checkoutCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).includes("/api/pos/checkout")
+    )
+    expect(checkoutCalls).toHaveLength(0)
+    const lookupCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).startsWith("/api/pos/products/lookup")
+    )
+    expect(lookupCalls.length).toBeGreaterThan(0)
 
     act(() => root.unmount())
   })

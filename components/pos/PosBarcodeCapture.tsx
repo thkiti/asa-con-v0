@@ -5,12 +5,14 @@ import { useEffect, useRef } from "react"
 type PosBarcodeCaptureProps = {
   value: string
   onChange: (value: string) => void
+  onSubmit?: (value: string) => void
   disabled?: boolean
 }
 
 export function PosBarcodeCapture({
   value,
   onChange,
+  onSubmit,
   disabled = false,
 }: PosBarcodeCaptureProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -43,6 +45,7 @@ export function PosBarcodeCapture({
         onKeyDown={(e) => {
           if (e.key === "Enter" && value.trim()) {
             e.preventDefault()
+            onSubmit?.(value.trim())
           }
         }}
         placeholder=""

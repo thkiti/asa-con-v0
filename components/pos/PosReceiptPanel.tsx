@@ -1,19 +1,39 @@
+import type { PosCartLine } from "@/lib/pos/cart"
+import { cartTotal, lineAmount } from "@/lib/pos/cart"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import type { ReactNode } from "react"
 
 type PosReceiptPanelProps = {
   session: PosTerminalSession
+  lines: readonly PosCartLine[]
+  lookupError?: string | null
+  onIncrementQty: (productId: string) => void
+  onDecrementQty: (productId: string) => void
+  onRemoveLine: (productId: string) => void
+  onClearCart: () => void
   overlay?: ReactNode
 }
 
-function formatMoney(value: number): string {
-  return value.toLocaleString("en-US", {
+function formatMoney(value: string | number): string {
+  const n = typeof value === "string" ? Number(value) : value
+  return n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
 }
 
-export function PosReceiptPanel({ session, overlay }: PosReceiptPanelProps) {
+export function PosReceiptPanel({
+  session,
+  lines,
+  lookupError,
+  onIncrementQty,
+  onDecrementQty,
+  onRemoveLine,
+  onClearCart,
+  overlay,
+}: PosReceiptPanelProps) {
+  const total = cartTotal(lines)
+
   return (
     <div className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white">
       {overlay}
@@ -37,31 +57,88 @@ export function PosReceiptPanel({ session, overlay }: PosReceiptPanelProps) {
         </div>
       </div>
 
+      {lookupError ? (
+        <div
+          className="shrink-0 border-b border-white/30 bg-red-900/50 px-3 py-2 text-center text-xs font-medium"
+          role="alert"
+        >
+          {lookupError}
+        </div>
+      ) : null}
+
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-2">
-        <div className="mb-1 grid grid-cols-[1fr_72px_96px] border-b border-white/40 pb-1 text-xs font-semibold">
+        <div className="mb-1 grid grid-cols-[1fr_88px_80px] border-b border-white/40 pb-1 text-xs font-semibold">
           <div>Name</div>
           <div className="text-center">Qty</div>
           <div className="text-right">Amount</div>
         </div>
 
-        <div className="flex flex-1 items-center justify-center py-8 text-center text-sm text-white/80">
-          No items — scan products in Phase 2
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {lines.length === 0 ? (
+            <div className="flex h-full items-center justify-center py-8 text-center text-sm text-white/80">
+              Scan a product to add to cart
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {lines.map((line) => (
+                <li
+                  key={line.productId}
+                  className="grid grid-cols-[1fr_88px_80px] items-center gap-1 rounded bg-white/10 px-1 py-1.5 text-xs"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{line.name}</div>
+                    <div className="font-mono text-[10px] text-white/75">{line.code}</div>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveLine(line.productId)}
+                      className="mt-0.5 text-[10px] text-white/80 underline-offset-2 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Decrease qty for ${line.name}`}
+                      onClick={() => onDecrementQty(line.productId)}
+                      className="flex h-7 w-7 items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
+                    >
+                      −
+                    </button>
+                    <span className="w-6 text-center font-mono tabular-nums">{line.qty}</span>
+                    <button
+                      type="button"
+                      aria-label={`Increase qty for ${line.name}`}
+                      onClick={() => onIncrementQty(line.productId)}
+                      className="flex h-7 w-7 items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <div className="text-right font-mono tabular-nums">
+                    {formatMoney(lineAmount(line))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
       <div className="shrink-0 border-t border-white/30 bg-orange-700 p-3">
-        <div className="flex flex-col gap-1 text-sm font-bold">
-          <div className="flex justify-between">
-            <span>Subtotal</span>
-            <span className="tabular-nums">{formatMoney(0)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>VAT 7%</span>
-            <span className="tabular-nums">{formatMoney(0)}</span>
-          </div>
-          <div className="flex justify-between border-t border-white/35 pt-2 text-lg">
+        <div className="flex flex-col gap-2 text-sm font-bold">
+          {lines.length > 0 ? (
+            <button
+              type="button"
+              onClick={onClearCart}
+              className="self-start text-xs font-semibold text-white/90 underline-offset-2 hover:underline"
+            >
+              Clear cart
+            </button>
+          ) : null}
+          <div className="flex justify-between text-lg">
             <span>TOTAL</span>
-            <span className="tabular-nums">{formatMoney(0)}</span>
+            <span className="tabular-nums">{formatMoney(total)}</span>
           </div>
         </div>
       </div>
