@@ -25,9 +25,10 @@ type PosShellProps = {
   checkoutOpen: boolean
   checkoutPending: boolean
   checkoutError: string | null
-  checkoutSuccess: { receiptNo: string; total: string } | null
+  checkoutSuccess: { saleId: string; receiptNo: string; total: string } | null
   onCheckoutClose: () => void
   onCheckoutConfirm: () => void
+  onCheckoutPrintReceipt: (saleId: string) => void
   onCheckoutNewSale: () => void
   placeholderOverlay: PosPlaceholderId | null
   onClosePlaceholder: () => void
@@ -52,6 +53,7 @@ export function PosShell({
   checkoutSuccess,
   onCheckoutClose,
   onCheckoutConfirm,
+  onCheckoutPrintReceipt,
   onCheckoutNewSale,
   placeholderOverlay,
   onClosePlaceholder,
@@ -110,6 +112,7 @@ export function PosShell({
               error={checkoutError}
               success={checkoutSuccess}
               onConfirmCash={onCheckoutConfirm}
+              onPrintReceipt={onCheckoutPrintReceipt}
               onNewSale={onCheckoutNewSale}
               onClose={onCheckoutClose}
             />

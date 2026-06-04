@@ -70,7 +70,7 @@ describe("PosTerminalPage", () => {
           status: 200,
           json: async () => ({
             sale: {
-              id: "sale-1",
+              id: "sale-checkout-1",
               branchId: "b1",
               staffId: "S001",
               total: "25.00",
@@ -202,7 +202,8 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("completes CASH checkout from keypad and clears cart on new sale", async () => {
+  it("completes CASH checkout with print receipt and new sale actions", async () => {
+    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
     const fetchMock = global.fetch as jest.Mock
     const { container, root } = renderPosTerminal()
     await flushPromises()
@@ -247,6 +248,19 @@ describe("PosTerminalPage", () => {
 
     expect(container.textContent).toContain("Sale complete")
     expect(container.textContent).toContain("R-test-20260101-0001")
+    expect(container.textContent).toContain("Print receipt")
+
+    const printBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Print receipt"
+    )
+    act(() => {
+      printBtn!.click()
+    })
+    expect(openSpy).toHaveBeenCalledWith(
+      "/shop/receipt/sale-checkout-1?autoprint=1",
+      "_blank",
+      "noopener,noreferrer"
+    )
 
     const checkoutPosts = fetchMock.mock.calls.filter(
       ([url, init]) => String(url) === "/api/pos/checkout" && init?.method === "POST"
@@ -266,6 +280,7 @@ describe("PosTerminalPage", () => {
 
     expect(container.textContent).toContain("Scan a product to add to cart")
 
+    openSpy.mockRestore()
     act(() => root.unmount())
   })
 

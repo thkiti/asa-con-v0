@@ -1,5 +1,7 @@
 export { checkout } from "./checkout"
 export { checkoutWithoutPosting } from "./checkout-sale-only"
+export { loadSaleReceiptForPrint } from "./load-sale-receipt"
+export type { SaleReceiptView, SaleReceiptLine } from "./load-sale-receipt"
 export type {
   CheckoutInput,
   CheckoutResult,

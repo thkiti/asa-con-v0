@@ -38,6 +38,7 @@ export function PosTerminalPage() {
   const [checkoutPending, setCheckoutPending] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [checkoutSuccess, setCheckoutSuccess] = useState<{
+    saleId: string
     receiptNo: string
     total: string
   } | null>(null)
@@ -119,6 +120,7 @@ export function PosTerminalPage() {
         return
       }
       setCheckoutSuccess({
+        saleId: result.result.sale.id,
         receiptNo: result.result.receipt.receiptNo,
         total: result.result.sale.total.toString(),
       })
@@ -126,6 +128,11 @@ export function PosTerminalPage() {
       setCheckoutPending(false)
     }
   }, [cartLines, checkoutPending])
+
+  const printReceipt = useCallback((saleId: string) => {
+    const url = `/shop/receipt/${encodeURIComponent(saleId)}?autoprint=1`
+    window.open(url, "_blank", "noopener,noreferrer")
+  }, [])
 
   const finishCheckout = useCallback(() => {
     setCartLines(clearCart())
@@ -232,6 +239,7 @@ export function PosTerminalPage() {
       onCheckoutConfirm={() => {
         void confirmCheckout()
       }}
+      onCheckoutPrintReceipt={printReceipt}
       onCheckoutNewSale={finishCheckout}
       placeholderOverlay={placeholder}
       onClosePlaceholder={() => setPlaceholder(null)}

@@ -7,8 +7,9 @@ type PosCheckoutOverlayProps = {
   lines: readonly PosCartLine[]
   pending: boolean
   error: string | null
-  success: { receiptNo: string; total: string } | null
+  success: { saleId: string; receiptNo: string; total: string } | null
   onConfirmCash: () => void
+  onPrintReceipt: (saleId: string) => void
   onNewSale: () => void
   onClose: () => void
 }
@@ -27,6 +28,7 @@ export function PosCheckoutOverlay({
   error,
   success,
   onConfirmCash,
+  onPrintReceipt,
   onNewSale,
   onClose,
 }: PosCheckoutOverlayProps) {
@@ -59,13 +61,22 @@ export function PosCheckoutOverlay({
             <p className="text-sm text-white/90">Receipt (CASH)</p>
             <p className="font-mono text-lg font-bold tabular-nums">{success.receiptNo}</p>
             <p className="text-2xl font-bold tabular-nums">{formatMoney(success.total)}</p>
-            <button
-              type="button"
-              onClick={onNewSale}
-              className="mt-2 rounded-lg border-2 border-white bg-white px-6 py-2 text-sm font-bold text-orange-700 shadow hover:bg-orange-50"
-            >
-              New sale
-            </button>
+            <div className="mt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => onPrintReceipt(success.saleId)}
+                className="rounded-lg border-2 border-white bg-white px-6 py-2 text-sm font-bold text-orange-700 shadow hover:bg-orange-50"
+              >
+                Print receipt
+              </button>
+              <button
+                type="button"
+                onClick={onNewSale}
+                className="rounded-lg border-2 border-white/80 bg-transparent px-6 py-2 text-sm font-bold text-white shadow hover:bg-white/10"
+              >
+                New sale
+              </button>
+            </div>
           </>
         ) : (
           <>
