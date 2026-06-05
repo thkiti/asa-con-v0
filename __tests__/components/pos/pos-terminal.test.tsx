@@ -158,26 +158,28 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("navigates ORDER to transfer out with from=shop", async () => {
+  it("does not show bottom Stock documents link", async () => {
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
 
-    const orderBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "ORDER"
-    )
-    expect(orderBtn).toBeDefined()
-    act(() => {
-      orderBtn!.click()
-    })
-    expect(push).toHaveBeenCalledWith(
-      "/shop/stock-documents/new?type=TRANSFER_OUT&from=shop"
-    )
+    expect(container.textContent).not.toContain("Stock documents")
 
     act(() => root.unmount())
   })
 
-  it("navigates STOCK COUNT to adjustment with from=shop", async () => {
+  it("shows REFUND button instead of ORDER", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.textContent).toContain("REFUND")
+    expect(container.textContent).not.toContain("ORDER")
+
+    act(() => root.unmount())
+  })
+
+  it("navigates STOCK COUNT to stock documents list", async () => {
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
@@ -189,10 +191,150 @@ describe("PosTerminalPage", () => {
     act(() => {
       stockBtn!.click()
     })
-    expect(push).toHaveBeenCalledWith(
-      "/shop/stock-documents/new?type=ADJUSTMENT&from=shop"
-    )
+    expect(push).toHaveBeenCalledWith("/shop/stock-documents")
 
+    act(() => root.unmount())
+  })
+
+  it("opens refund overlay without GOODWILL option", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const refundBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "REFUND"
+    )
+    act(() => {
+      refundBtn!.click()
+    })
+    await flushPromises()
+
+    expect(container.textContent).toContain("Enter the original sale receipt number")
+    expect(container.textContent).not.toContain("GOODWILL")
+
+    act(() => root.unmount())
+  })
+
+  it("successful refund POST opens refund receipt print", async () => {
+    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
+    const fetchMock = global.fetch as jest.Mock
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/pos/receipt-no/preview") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ receiptNo: "REC-SH001-202606-0001", preview: true }),
+        } as Response)
+      }
+      if (url === "/api/auth/session") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ user: sampleUser }),
+        } as Response)
+      }
+      if (url.startsWith("/api/pos/refund/preview")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            saleId: "sale-refund-1",
+            saleTotal: "100.00",
+            refundedTotal: "0.00",
+            remainingRefundable: "100.00",
+            originalReceiptId: "rcpt-1",
+            originalReceiptNo: "REC-SH001-202606-0001",
+          }),
+        } as Response)
+      }
+      if (url === "/api/pos/refund" && init?.method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            refund: {
+              id: "refund-pos-1",
+              refundNo: "REF-SH001-202606-0001",
+              amount: "50.00",
+            },
+          }),
+        } as Response)
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`))
+    })
+
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const refundBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "REFUND"
+    )
+    act(() => {
+      refundBtn!.click()
+    })
+    await flushPromises()
+
+    const receiptInput = container.querySelector(
+      'input[aria-label="Original receipt number"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(receiptInput, "REC-SH001-202606-0001")
+      receiptInput.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+
+    const lookupBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Look up receipt")
+    )
+    act(() => {
+      lookupBtn!.click()
+    })
+    await flushPromises()
+    await flushPromises()
+
+    const amountInput = container.querySelector(
+      'input[aria-label="Refund amount"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(amountInput, "50.00")
+      amountInput.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+
+    const processBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Process refund")
+    )
+    act(() => {
+      processBtn!.click()
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(openSpy).toHaveBeenCalledWith(
+      "/shop/refund-receipt/refund-pos-1?autoprint=1",
+      "_blank"
+    )
+    expect(container.textContent).toContain("Refund complete")
+    expect(container.textContent).toContain("REF-SH001-202606-0001")
+
+    const refundPost = fetchMock.mock.calls.find(
+      ([url, init]) => String(url) === "/api/pos/refund" && init?.method === "POST"
+    )
+    expect(refundPost).toBeDefined()
+    expect(JSON.parse(String(refundPost?.[1]?.body))).toEqual({
+      saleId: "sale-refund-1",
+      amount: "50.00",
+    })
+
+    openSpy.mockRestore()
     act(() => root.unmount())
   })
 

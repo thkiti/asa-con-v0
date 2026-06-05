@@ -1,7 +1,7 @@
 // Next.js 16 deprecates middleware in favor of proxy; this file intentionally remains middleware (no rewrite).
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { readSessionCookies, hasSessionCookies } from "@/lib/auth/cookies"
+import { readSessionCookies, isSessionValid } from "@/lib/auth/cookies"
 import {
   canAccessRoute,
   isPublicPath,
@@ -34,7 +34,7 @@ export function middleware(request: NextRequest) {
 
   const payload = readSessionCookies(request.cookies)
   const role = parseRole(payload.role)
-  const authenticated = hasSessionCookies(payload) && role !== null
+  const authenticated = isSessionValid(payload) && role !== null
 
   if (isPublicPath(pathname)) {
     return NextResponse.next()

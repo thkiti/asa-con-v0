@@ -1,5 +1,6 @@
 import { POST as POSTBranchPreview } from "@/app/api/auth/branch-preview/route"
 import { POST as POSTLogin } from "@/app/api/auth/login/route"
+import { POST as POSTLogout } from "@/app/api/auth/logout/route"
 import { POST as POSTStaffPreview } from "@/app/api/auth/staff-preview/route"
 import { GET as GETSession } from "@/app/api/auth/session/route"
 import type { SessionUser } from "@/lib/auth/types"
@@ -8,6 +9,7 @@ const mockCredentialLogin = jest.fn()
 const mockPreviewStaffByStaffId = jest.fn()
 const mockPreviewBranchByCode = jest.fn()
 const mockSetSessionCookies = jest.fn()
+const mockClearSessionCookies = jest.fn()
 const mockGetSession = jest.fn()
 const mockCookies = jest.fn()
 
@@ -41,6 +43,7 @@ jest.mock("@/lib/auth/branch-preview", () => ({
 
 jest.mock("@/lib/auth/session-cookies", () => ({
   setSessionCookies: (...args: unknown[]) => mockSetSessionCookies(...args),
+  clearSessionCookies: (...args: unknown[]) => mockClearSessionCookies(...args),
 }))
 
 jest.mock("@/lib/auth", () => ({
@@ -308,6 +311,23 @@ describe("POST /api/auth/branch-preview", () => {
 
     expect(res.status).toBe(404)
     expect((await res.json()).code).toBe("NOT_FOUND")
+  })
+})
+
+describe("POST /api/auth/logout", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockCookies.mockResolvedValue({ set: jest.fn(), delete: jest.fn() })
+  })
+
+  it("clears session cookies and returns login redirect", async () => {
+    const cookieStore = { set: jest.fn(), delete: jest.fn() }
+    mockCookies.mockResolvedValue(cookieStore)
+
+    const res = await POSTLogout()
+    expect(res.status).toBe(200)
+    expect(mockClearSessionCookies).toHaveBeenCalledWith(cookieStore)
+    await expect(res.json()).resolves.toEqual({ redirectTo: "/login" })
   })
 })
 

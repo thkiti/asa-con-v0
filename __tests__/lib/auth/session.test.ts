@@ -11,6 +11,7 @@ import {
   BRANCH_NAME_COOKIE,
   ROLE_COOKIE,
   SESSION_COOKIE,
+  SESSION_EXPIRES_COOKIE,
   STAFF_ID_COOKIE,
   STAFF_NAME_COOKIE,
   USER_ID_COOKIE,
@@ -30,7 +31,7 @@ describe("getSession", () => {
     jest.clearAllMocks()
   })
 
-  it("returns full SessionUser from cookies", async () => {
+  it("returns full SessionUser from valid non-expired cookies", async () => {
     mockedCookies.mockResolvedValue(
       cookieStore({
         [SESSION_COOKIE]: "sess-1",
@@ -41,6 +42,7 @@ describe("getSession", () => {
         [BRANCH_ID_COOKIE]: "branch-1",
         [BRANCH_CODE_COOKIE]: "HO999",
         [BRANCH_NAME_COOKIE]: "Head Office",
+        [SESSION_EXPIRES_COOKIE]: String(Date.now() + 60_000),
       }) as never
     )
 
@@ -61,7 +63,18 @@ describe("getSession", () => {
     await expect(getSession()).resolves.toBeNull()
   })
 
-  it("supports legacy cookies with empty branch metadata", async () => {
+  it("returns null for expired session cookies", async () => {
+    mockedCookies.mockResolvedValue(
+      cookieStore({
+        [SESSION_COOKIE]: "sess-1",
+        [ROLE_COOKIE]: "SH_STAFF",
+        [SESSION_EXPIRES_COOKIE]: String(Date.now() - 1),
+      }) as never
+    )
+    await expect(getSession()).resolves.toBeNull()
+  })
+
+  it("returns null for legacy cookies without expiry timestamp", async () => {
     mockedCookies.mockResolvedValue(
       cookieStore({
         [SESSION_COOKIE]: "sess-legacy",
@@ -72,12 +85,6 @@ describe("getSession", () => {
       }) as never
     )
 
-    await expect(getSession()).resolves.toMatchObject({
-      sessionId: "sess-legacy",
-      userId: "",
-      branchCode: "",
-      branchName: "",
-      role: "SH_STAFF",
-    })
+    await expect(getSession()).resolves.toBeNull()
   })
 })

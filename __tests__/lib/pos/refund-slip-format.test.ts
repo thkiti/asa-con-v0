@@ -1,0 +1,119 @@
+import { RefundKind } from "@/generated/prisma/client"
+import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
+import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
+import { buildRefundSlipText } from "@/lib/pos/refund-slip-format"
+import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
+
+function expectSlipLinesWithinColumns(text: string): void {
+  for (const line of text.split("\n")) {
+    if (!line.length) continue
+    expect(line.length).toBeLessThanOrEqual(RECEIPT_COLUMNS)
+  }
+}
+
+function sampleContext(
+  overrides: Partial<RefundReceiptPrintContext> = {}
+): RefundReceiptPrintContext {
+  return {
+    refundId: "refund-1",
+    refundNo: "REF-SH001-202606-0001",
+    issuedAt: "2026-06-04T12:00:00.000Z",
+    kind: RefundKind.SALE_LINKED,
+    amount: "50.00",
+    reason: "Defective item",
+    branchId: "branch-1",
+    branchCode: "SH001",
+    branchName: "Shop One",
+    branchAddress: null,
+    branchPhone: null,
+    companyDisplayName: "ASA SERVICES",
+    companyTaxId: "0123456789012",
+    machineTaxId: "MACH-001",
+    cashierDisplay: "103-Somsak Kamnuch",
+    saleId: "sale-1",
+    originalReceiptId: "rcpt-1",
+    originalReceiptNo: "REC-SH001-202606-0001",
+    settings: { ...DEFAULT_RECEIPT_PRINT_SETTINGS },
+    ...overrides,
+  }
+}
+
+describe("buildRefundSlipText", () => {
+  it("includes REFUND RECEIPT title and refundNo", () => {
+    const text = buildRefundSlipText(sampleContext())
+    expect(text).toContain("REFUND RECEIPT")
+    expect(text).toContain("REF-SH001-202606-0001")
+  })
+
+  it("includes original receipt for SALE_LINKED", () => {
+    const text = buildRefundSlipText(sampleContext())
+    expect(text).toContain("Orig Receipt")
+    expect(text).toContain("REC-SH001-202606-0001")
+  })
+
+  it("includes reason and refund amount", () => {
+    const text = buildRefundSlipText(sampleContext())
+    expect(text).toContain("Reason")
+    expect(text).toContain("Defective item")
+    expect(text).toContain("REFUND")
+    expect(text).toContain("50.00")
+  })
+
+  it("includes staff and type for SALE_LINKED", () => {
+    const text = buildRefundSlipText(sampleContext())
+    expect(text).toContain("103-Somsak Kamnuch")
+    expect(text).toContain("SALE LINKED")
+  })
+
+  it("formats GOODWILL without original receipt line", () => {
+    const text = buildRefundSlipText(
+      sampleContext({
+        kind: RefundKind.GOODWILL,
+        saleId: null,
+        originalReceiptId: null,
+        originalReceiptNo: null,
+        reason: "Customer goodwill",
+      })
+    )
+    expect(text).toContain("GOODWILL")
+    expect(text).toContain("Customer goodwill")
+    expect(text).not.toContain("Orig Receipt")
+  })
+
+  it("does not include sale line items, CASH, or CHANGE", () => {
+    const text = buildRefundSlipText(sampleContext())
+    expect(text).not.toContain("CASH")
+    expect(text).not.toContain("CHANGE")
+    expect(text).not.toContain("TOTAL")
+    expect(text).not.toContain("VAT 7%")
+    expect(text).not.toContain("0101001")
+    expect(text).not.toContain("Widget")
+  })
+
+  it("does not include abbreviated tax sale title", () => {
+    const text = buildRefundSlipText(sampleContext())
+    expect(text).not.toContain("ใบกำกับภาษีอย่างย่อ")
+  })
+
+  it("keeps lines within receipt column width", () => {
+    const text = buildRefundSlipText(
+      sampleContext({
+        reason: "A very long reason that should truncate cleanly on the slip",
+        cashierDisplay: "999-Extra Long Staff Name Here",
+      })
+    )
+    expectSlipLinesWithinColumns(text)
+  })
+
+  it("reuses footer settings from receipt print settings", () => {
+    const text = buildRefundSlipText(
+      sampleContext({
+        settings: {
+          ...DEFAULT_RECEIPT_PRINT_SETTINGS,
+          footerLine1: "Thank you",
+        },
+      })
+    )
+    expect(text).toContain("Thank you")
+  })
+})

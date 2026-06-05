@@ -13,7 +13,7 @@ export type PosKeypadActionId =
   | PosPlaceholderId
   | "checkout"
   | "logout"
-  | "order"
+  | "refund"
   | "stock-count"
   | "digit-7"
   | "digit-8"
@@ -38,7 +38,7 @@ export type PosKeypadButtonVariant =
   | "digit"
   | "control"
   | "enter"
-  | "order"
+  | "refund"
   | "stock-count"
   | "repair"
   | "read-x"

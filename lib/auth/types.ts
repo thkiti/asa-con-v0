@@ -21,4 +21,5 @@ export type SessionCookiePayload = {
   branchId: string | undefined
   branchCode: string | undefined
   branchName: string | undefined
+  sessionExpiresAt: string | undefined
 }

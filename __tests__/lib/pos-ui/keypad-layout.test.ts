@@ -12,7 +12,7 @@ describe("pos-ui/keypad-layout", () => {
       "target-vs-sales",
       "collector",
       "logout",
-      "order",
+      "refund",
       "stock-count",
       "read-x",
       "read-z",

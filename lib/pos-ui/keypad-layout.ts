@@ -60,7 +60,7 @@ export const POS_KEYPAD_BUTTONS: readonly PosKeypadButtonDef[] = [
     rowSpan: 2,
     variant: "enter",
   },
-  { id: "order", label: "ORDER", col: 6, row: 1, variant: "order" },
+  { id: "refund", label: "REFUND", col: 6, row: 1, variant: "refund" },
   {
     id: "stock-count",
     label: "STOCK\nCOUNT",
@@ -102,7 +102,7 @@ const REQUIRED_BUTTON_IDS: readonly PosKeypadActionId[] = [
   "target-vs-sales",
   "collector",
   "logout",
-  "order",
+  "refund",
   "stock-count",
   "read-x",
   "read-z",

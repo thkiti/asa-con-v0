@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { middleware } from "@/middleware"
+import { SESSION_EXPIRES_COOKIE } from "@/lib/auth/cookies"
 
 function requestFor(pathname: string, cookies: Record<string, string> = {}) {
   const url = new URL(pathname, "http://localhost")
@@ -8,6 +9,15 @@ function requestFor(pathname: string, cookies: Record<string, string> = {}) {
     req.cookies.set(name, value)
   }
   return req
+}
+
+function validShopSessionCookies(): Record<string, string> {
+  return {
+    sessionId: "sess-1",
+    role: "SH_STAFF",
+    staffId: "002",
+    [SESSION_EXPIRES_COOKIE]: String(Date.now() + 60_000),
+  }
 }
 
 describe("middleware API bypass", () => {
@@ -42,6 +52,7 @@ describe("middleware page protection", () => {
       requestFor("/finance/periods", {
         sessionId: "sess-1",
         role: "SH_STAFF",
+        [SESSION_EXPIRES_COOKIE]: String(Date.now() + 60_000),
       })
     )
     expect(res.status).toBe(307)
@@ -53,19 +64,52 @@ describe("middleware page protection", () => {
       requestFor("/finance/periods", {
         sessionId: "sess-1",
         role: "HO_FINANCE",
+        [SESSION_EXPIRES_COOKIE]: String(Date.now() + 60_000),
       })
     )
     expect(res.status).toBe(200)
     expect(res.headers.get("location")).toBeNull()
   })
 
-  it("redirects SH_STAFF away from HO main menu to branch screen", () => {
+  it("redirects unauthenticated /shop to login", () => {
+    const res = middleware(requestFor("/shop"))
+    expect(res.status).toBe(307)
+    expect(res.headers.get("location")).toBe("http://localhost/login")
+  })
+
+  it("allows /shop for valid SH_STAFF session", () => {
+    const res = middleware(requestFor("/shop", validShopSessionCookies()))
+    expect(res.status).toBe(200)
+    expect(res.headers.get("location")).toBeNull()
+  })
+
+  it("redirects /shop to login when session is expired", () => {
     const res = middleware(
-      requestFor("/main", {
+      requestFor("/shop", {
         sessionId: "sess-1",
         role: "SH_STAFF",
-        staffId: "002",
+        [SESSION_EXPIRES_COOKIE]: String(Date.now() - 1),
       })
+    )
+    expect(res.status).toBe(307)
+    expect(res.headers.get("location")).toBe("http://localhost/login")
+  })
+
+  it("redirects authenticated SH_STAFF from / to /shop", () => {
+    const res = middleware(requestFor("/", validShopSessionCookies()))
+    expect(res.status).toBe(307)
+    expect(res.headers.get("location")).toBe("http://localhost/shop")
+  })
+
+  it("redirects unauthenticated / to login", () => {
+    const res = middleware(requestFor("/"))
+    expect(res.status).toBe(307)
+    expect(res.headers.get("location")).toBe("http://localhost/login")
+  })
+
+  it("redirects SH_STAFF away from HO main menu to branch screen", () => {
+    const res = middleware(
+      requestFor("/main", validShopSessionCookies())
     )
     expect(res.status).toBe(307)
     expect(res.headers.get("location")).toBe("http://localhost/shop")
@@ -73,11 +117,7 @@ describe("middleware page protection", () => {
 
   it("redirects SH_STAFF away from HO main menu section pages", () => {
     const res = middleware(
-      requestFor("/main/operations", {
-        sessionId: "sess-1",
-        role: "SH_STAFF",
-        staffId: "002",
-      })
+      requestFor("/main/operations", validShopSessionCookies())
     )
     expect(res.status).toBe(307)
     expect(res.headers.get("location")).toBe("http://localhost/shop")

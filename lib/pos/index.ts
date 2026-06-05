@@ -2,6 +2,10 @@ export { checkout } from "./checkout"
 export { checkoutWithoutPosting } from "./checkout-sale-only"
 export { loadSaleReceiptForPrint } from "./load-sale-receipt"
 export type { SaleReceiptView, SaleReceiptLine } from "./load-sale-receipt"
+export { loadRefundReceiptForPrint } from "./load-refund-receipt"
+export type { RefundReceiptView } from "./load-refund-receipt"
+export { loadRefundReceiptPrintContext } from "./refund-receipt-print-context"
+export type { RefundReceiptPrintContext } from "./refund-receipt-print-context"
 export type {
   CheckoutInput,
   CheckoutResult,

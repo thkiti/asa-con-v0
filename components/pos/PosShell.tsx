@@ -1,13 +1,14 @@
 "use client"
 
-import Link from "next/link"
 import { PosBarcodeCapture } from "./PosBarcodeCapture"
 import { PosKeypadGrid } from "./PosKeypadGrid"
 import { PosCheckoutOverlay } from "./PosCheckoutOverlay"
+import { PosRefundOverlay } from "./PosRefundOverlay"
 import { PosPlaceholderOverlay } from "./PosPlaceholderOverlay"
 import { PosReceiptPanel } from "./PosReceiptPanel"
 import { PosSessionBanner } from "./PosSessionBanner"
 import type { PosCartLine } from "@/lib/pos/cart"
+import type { RefundPreviewResult } from "@/lib/pos/refund"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 
 type PosShellProps = {
@@ -31,6 +32,21 @@ type PosShellProps = {
   onCheckoutConfirm: () => void
   onCheckoutPrintReceiptAndNewSale: (saleId: string) => void
   onCheckoutNewSaleWithoutPrint: () => void
+  refundOpen: boolean
+  refundReceiptNo: string
+  onRefundReceiptNoChange: (value: string) => void
+  refundAmount: string
+  onRefundAmountChange: (value: string) => void
+  refundReason: string
+  onRefundReasonChange: (value: string) => void
+  refundPreview: RefundPreviewResult | null
+  refundLookupPending: boolean
+  refundPending: boolean
+  refundError: string | null
+  refundSuccess: { refundNo: string; amount: string } | null
+  onRefundClose: () => void
+  onRefundLookup: () => void
+  onRefundConfirm: () => void
   barcodeFocusRequest?: number
   placeholderOverlay: PosPlaceholderId | null
   onClosePlaceholder: () => void
@@ -58,12 +74,27 @@ export function PosShell({
   onCheckoutConfirm,
   onCheckoutPrintReceiptAndNewSale,
   onCheckoutNewSaleWithoutPrint,
+  refundOpen,
+  refundReceiptNo,
+  onRefundReceiptNoChange,
+  refundAmount,
+  onRefundAmountChange,
+  refundReason,
+  onRefundReasonChange,
+  refundPreview,
+  refundLookupPending,
+  refundPending,
+  refundError,
+  refundSuccess,
+  onRefundClose,
+  onRefundLookup,
+  onRefundConfirm,
   barcodeFocusRequest = 0,
   placeholderOverlay,
   onClosePlaceholder,
   keypadDisabled = false,
 }: PosShellProps) {
-  const muted = keypadDisabled || !!placeholderOverlay || checkoutOpen
+  const muted = keypadDisabled || !!placeholderOverlay || checkoutOpen || refundOpen
 
   return (
     <div className="fixed inset-0 flex bg-white">
@@ -89,15 +120,6 @@ export function PosShell({
           <div className="min-h-0 flex-1 rounded-xl border border-zinc-500 bg-gradient-to-b from-slate-200 to-slate-300 p-3 shadow-inner">
             <PosKeypadGrid onAction={onKeypadAction} disabled={muted} />
           </div>
-
-          <footer className="shrink-0 text-center text-xs text-zinc-600">
-            <Link
-              href="/shop/stock-documents"
-              className="font-medium text-zinc-800 underline-offset-2 hover:underline"
-            >
-              Stock documents
-            </Link>
-          </footer>
         </div>
       </div>
 
@@ -121,6 +143,23 @@ export function PosShell({
               onPrintReceiptAndNewSale={onCheckoutPrintReceiptAndNewSale}
               onNewSaleWithoutPrint={onCheckoutNewSaleWithoutPrint}
               onClose={onCheckoutClose}
+            />
+          ) : refundOpen ? (
+            <PosRefundOverlay
+              receiptNo={refundReceiptNo}
+              onReceiptNoChange={onRefundReceiptNoChange}
+              amount={refundAmount}
+              onAmountChange={onRefundAmountChange}
+              reason={refundReason}
+              onReasonChange={onRefundReasonChange}
+              preview={refundPreview}
+              lookupPending={refundLookupPending}
+              pending={refundPending}
+              error={refundError}
+              success={refundSuccess}
+              onLookup={onRefundLookup}
+              onConfirm={onRefundConfirm}
+              onClose={onRefundClose}
             />
           ) : placeholderOverlay ? (
             <PosPlaceholderOverlay

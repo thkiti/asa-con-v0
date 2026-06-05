@@ -6,6 +6,7 @@ import {
   BRANCH_NAME_COOKIE,
   ROLE_COOKIE,
   SESSION_COOKIE,
+  SESSION_EXPIRES_COOKIE,
   STAFF_ID_COOKIE,
   STAFF_NAME_COOKIE,
   USER_ID_COOKIE,
@@ -26,7 +27,8 @@ type CookieStore = {
   delete: (options: { name: string; path?: string }) => void
 }
 
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
+/** Shop session TTL — validated server-side; cookie itself is session-scoped (no maxAge). */
+export const SESSION_TTL_SECONDS = 12 * 60 * 60
 
 export function setSessionCookies(
   cookies: CookieStore,
@@ -36,8 +38,9 @@ export function setSessionCookies(
     path: "/",
     sameSite: "lax" as const,
     httpOnly: true,
-    maxAge: SESSION_MAX_AGE_SECONDS,
   }
+
+  const expiresAtMs = Date.now() + SESSION_TTL_SECONDS * 1000
 
   cookies.set(SESSION_COOKIE, user.sessionId, base)
   cookies.set(USER_ID_COOKIE, user.userId, base)
@@ -47,6 +50,7 @@ export function setSessionCookies(
   cookies.set(BRANCH_ID_COOKIE, user.branchId, base)
   cookies.set(BRANCH_CODE_COOKIE, user.branchCode, base)
   cookies.set(BRANCH_NAME_COOKIE, user.branchName, base)
+  cookies.set(SESSION_EXPIRES_COOKIE, String(expiresAtMs), base)
 }
 
 export function clearSessionCookies(cookies: CookieStore): void {
@@ -59,6 +63,7 @@ export function clearSessionCookies(cookies: CookieStore): void {
   cookies.delete({ name: BRANCH_ID_COOKIE, ...base })
   cookies.delete({ name: BRANCH_CODE_COOKIE, ...base })
   cookies.delete({ name: BRANCH_NAME_COOKIE, ...base })
+  cookies.delete({ name: SESSION_EXPIRES_COOKIE, ...base })
 }
 
 export function createSessionUser(input: {

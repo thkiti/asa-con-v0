@@ -354,6 +354,7 @@ model Receipt {
 
 model Refund {
   id                 String     @id @default(uuid())
+  refundNo           String     @unique
   kind               RefundKind
   saleId             String?
   branchId           String

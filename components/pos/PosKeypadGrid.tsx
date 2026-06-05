@@ -24,7 +24,7 @@ function variantClassName(variant: PosKeypadButtonVariant): string {
       return "border border-zinc-800 bg-gradient-to-b from-zinc-700 to-zinc-900 text-zinc-100 text-2xl"
     case "enter":
       return "border border-zinc-900 bg-gradient-to-b from-zinc-800 to-black text-zinc-100 text-xl leading-tight"
-    case "order":
+    case "refund":
       return "bg-blue-600 text-white"
     case "stock-count":
       return "bg-green-600 text-white text-[10px] leading-tight sm:text-xs"

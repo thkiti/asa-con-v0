@@ -43,7 +43,9 @@ describe("createRefund", () => {
     expect(result.amount.toFixed(2)).toBe("150.00")
     expect(result.saleId).toBe(saleId)
     expect(result.originalReceiptId).toBe(receiptId)
+    expect(result.refundNo).toMatch(/^REF-SH001-\d{6}-\d{4}$/)
     expect(state.refunds).toHaveLength(1)
+    expect(state.refunds[0]?.refundNo).toBe(result.refundNo)
   })
 
   it("sale-linked explicit partial refund", async () => {
@@ -163,8 +165,24 @@ describe("createRefund", () => {
     expect(result.saleId).toBeNull()
     expect(result.originalReceiptId).toBeNull()
     expect(result.reason).toBe("Customer goodwill")
+    expect(result.refundNo).toMatch(/^REF-SH001-\d{6}-\d{4}$/)
     expect(state.refunds[0]?.saleId).toBeNull()
     expect(state.refunds[0]?.originalReceiptId).toBeNull()
+    expect(state.refunds[0]?.refundNo).toBe(result.refundNo)
+  })
+
+  it("assigns incrementing refundNo for multiple refunds in same branch", async () => {
+    const { state } = setup()
+    const { saleId } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "100.00",
+    })
+
+    const first = await createRefund({ saleId, branchId, amount: "40.00" })
+    const second = await createRefund({ branchId, amount: "10.00", reason: "Goodwill" })
+
+    expect(first.refundNo).not.toBe(second.refundNo)
+    expect(state.refunds).toHaveLength(2)
   })
 
   it("creates no StockTransaction and does not call ledger", async () => {

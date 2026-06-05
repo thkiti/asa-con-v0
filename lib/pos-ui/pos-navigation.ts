@@ -2,6 +2,8 @@ import type { DocType } from "@/lib/stock-ui/types"
 
 export const POS_RETURN_FROM = "shop"
 
+export const POS_STOCK_DOCUMENTS_HREF = "/shop/stock-documents"
+
 export function stockDocumentNewHref(
   docType: Extract<DocType, "TRANSFER_OUT" | "ADJUSTMENT">
 ): string {
@@ -12,5 +14,5 @@ export function stockDocumentNewHref(
   return `/shop/stock-documents/new?${params.toString()}`
 }
 
-export const POS_ORDER_HREF = stockDocumentNewHref("TRANSFER_OUT")
-export const POS_STOCK_COUNT_HREF = stockDocumentNewHref("ADJUSTMENT")
+/** STOCK COUNT navigates to the stock document list. */
+export const POS_STOCK_COUNT_HREF = POS_STOCK_DOCUMENTS_HREF

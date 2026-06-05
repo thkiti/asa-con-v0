@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import type { Role } from "@/lib/shared"
-import { readSessionCookies, hasSessionCookies } from "./cookies"
+import { readSessionCookies, isSessionValid } from "./cookies"
 import type { SessionUser } from "./types"
 
 const VALID_ROLES: ReadonlySet<string> = new Set([
@@ -20,7 +20,7 @@ export async function getSession(): Promise<SessionUser | null> {
   const store = await cookies()
   const payload = readSessionCookies(store)
 
-  if (!hasSessionCookies(payload)) return null
+  if (!isSessionValid(payload)) return null
 
   const role = parseRole(payload.role)
   if (!role) return null

@@ -49,6 +49,7 @@ describe("POST /api/pos/refund", () => {
     mockedGetSession.mockResolvedValue(shopSession)
     mockedCreateRefund.mockResolvedValue({
       id: "refund-1",
+      refundNo: "REF-SH001-202606-0001",
       kind: RefundKind.SALE_LINKED,
       saleId: "sale-1",
       branchId: "branch-shop",
@@ -70,7 +71,7 @@ describe("POST /api/pos/refund", () => {
       reason: null,
     })
     await expect(res.json()).resolves.toMatchObject({
-      refund: { id: "refund-1", amount: "50.00" },
+      refund: { id: "refund-1", refundNo: "REF-SH001-202606-0001", amount: "50.00" },
     })
   })
 
@@ -78,6 +79,7 @@ describe("POST /api/pos/refund", () => {
     mockedGetSession.mockResolvedValue(shopSession)
     mockedCreateRefund.mockResolvedValue({
       id: "refund-2",
+      refundNo: "REF-SH001-202606-0002",
       kind: RefundKind.SALE_LINKED,
       saleId: "sale-1",
       branchId: "branch-shop",
@@ -107,6 +109,7 @@ describe("POST /api/pos/refund", () => {
     mockedGetSession.mockResolvedValue(shopSession)
     mockedCreateRefund.mockResolvedValue({
       id: "refund-3",
+      refundNo: "REF-SH001-202606-0003",
       kind: RefundKind.GOODWILL,
       saleId: null,
       branchId: "branch-shop",

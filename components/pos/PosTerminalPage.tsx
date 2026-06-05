@@ -18,15 +18,20 @@ import {
   keypadDigitChar,
 } from "@/lib/pos-ui/pos-actions"
 import {
-  POS_ORDER_HREF,
   POS_STOCK_COUNT_HREF,
 } from "@/lib/pos-ui/pos-navigation"
 import { openPosReceiptPrint } from "@/lib/pos-ui/pos-receipt-print"
+import { openPosRefundReceiptPrint } from "@/lib/pos-ui/pos-refund-receipt-print"
 import { fetchPosReceiptNoPreview } from "@/lib/pos-ui/pos-receipt-preview-client"
+import {
+  fetchPosRefund,
+  fetchPosRefundPreviewByReceiptNo,
+} from "@/lib/pos-ui/pos-refund-client"
 import { fetchPosProductLookup } from "@/lib/pos-ui/pos-product-lookup"
 import { resolvePosReceiptPanelNo } from "@/lib/pos-ui/pos-session-display"
 import { fetchSessionUser } from "@/lib/pos-ui/session-client"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
+import type { RefundPreviewResult } from "@/lib/pos/refund"
 
 export function PosTerminalPage() {
   const router = useRouter()
@@ -49,6 +54,18 @@ export function PosTerminalPage() {
   const [previewReceiptNo, setPreviewReceiptNo] = useState<string | null>(null)
   const [logoutPending, setLogoutPending] = useState(false)
   const [barcodeFocusRequest, setBarcodeFocusRequest] = useState(0)
+  const [refundOpen, setRefundOpen] = useState(false)
+  const [refundReceiptNo, setRefundReceiptNo] = useState("")
+  const [refundAmount, setRefundAmount] = useState("")
+  const [refundReason, setRefundReason] = useState("")
+  const [refundPreview, setRefundPreview] = useState<RefundPreviewResult | null>(null)
+  const [refundLookupPending, setRefundLookupPending] = useState(false)
+  const [refundPending, setRefundPending] = useState(false)
+  const [refundError, setRefundError] = useState<string | null>(null)
+  const [refundSuccess, setRefundSuccess] = useState<{
+    refundNo: string
+    amount: string
+  } | null>(null)
 
   const refreshPreviewReceiptNo = useCallback(async () => {
     const result = await fetchPosReceiptNoPreview()
@@ -171,6 +188,72 @@ export function PosTerminalPage() {
     resetPosForNextSale()
   }, [resetPosForNextSale])
 
+  const resetRefundForm = useCallback(() => {
+    setRefundReceiptNo("")
+    setRefundAmount("")
+    setRefundReason("")
+    setRefundPreview(null)
+    setRefundError(null)
+    setRefundSuccess(null)
+  }, [])
+
+  const openRefund = useCallback(() => {
+    resetRefundForm()
+    setRefundOpen(true)
+  }, [resetRefundForm])
+
+  const closeRefund = useCallback(() => {
+    if (refundPending || refundLookupPending) return
+    setRefundOpen(false)
+    resetRefundForm()
+  }, [refundPending, refundLookupPending, resetRefundForm])
+
+  const lookupRefundReceipt = useCallback(async () => {
+    const receiptNo = refundReceiptNo.trim()
+    if (!receiptNo || refundLookupPending) return
+
+    setRefundLookupPending(true)
+    setRefundError(null)
+    setRefundPreview(null)
+    setRefundAmount("")
+    try {
+      const result = await fetchPosRefundPreviewByReceiptNo(receiptNo)
+      if (!result.ok) {
+        setRefundError(result.error)
+        return
+      }
+      setRefundPreview(result.preview)
+      setRefundAmount(result.preview.remainingRefundable)
+    } finally {
+      setRefundLookupPending(false)
+    }
+  }, [refundReceiptNo, refundLookupPending])
+
+  const confirmRefund = useCallback(async () => {
+    if (refundPending || !refundPreview) return
+
+    setRefundPending(true)
+    setRefundError(null)
+    try {
+      const result = await fetchPosRefund({
+        saleId: refundPreview.saleId,
+        amount: refundAmount.trim() || undefined,
+        reason: refundReason.trim() || null,
+      })
+      if (!result.ok) {
+        setRefundError(result.error)
+        return
+      }
+      openPosRefundReceiptPrint(result.refund.id)
+      setRefundSuccess({
+        refundNo: result.refund.refundNo,
+        amount: result.refund.amount,
+      })
+    } finally {
+      setRefundPending(false)
+    }
+  }, [refundAmount, refundPending, refundPreview, refundReason])
+
   const onKeypadAction = useCallback(
     (id: PosKeypadActionId) => {
       const kind = getPosActionKind(id)
@@ -185,10 +268,13 @@ export function PosTerminalPage() {
         return
       }
 
+      if (kind === "wire-refund") {
+        openRefund()
+        return
+      }
+
       if (kind === "wire-nav") {
-        if (id === "order") {
-          router.push(POS_ORDER_HREF)
-        } else if (id === "stock-count") {
+        if (id === "stock-count") {
           router.push(POS_STOCK_COUNT_HREF)
         }
         return
@@ -219,7 +305,7 @@ export function PosTerminalPage() {
         }
       }
     },
-    [barcode, onLogout, openCheckout, router, submitBarcode]
+    [barcode, onLogout, openCheckout, openRefund, router, submitBarcode]
   )
 
   if (loading || !session) {
@@ -275,9 +361,32 @@ export function PosTerminalPage() {
       }}
       onCheckoutPrintReceiptAndNewSale={printReceiptAndNewSale}
       onCheckoutNewSaleWithoutPrint={newSaleWithoutPrint}
+      refundOpen={refundOpen}
+      refundReceiptNo={refundReceiptNo}
+      onRefundReceiptNoChange={setRefundReceiptNo}
+      refundAmount={refundAmount}
+      onRefundAmountChange={setRefundAmount}
+      refundReason={refundReason}
+      onRefundReasonChange={setRefundReason}
+      refundPreview={refundPreview}
+      refundLookupPending={refundLookupPending}
+      refundPending={refundPending}
+      refundError={refundError}
+      refundSuccess={refundSuccess}
+      onRefundClose={() => {
+        closeRefund()
+      }}
+      onRefundLookup={() => {
+        void lookupRefundReceipt()
+      }}
+      onRefundConfirm={() => {
+        void confirmRefund()
+      }}
       placeholderOverlay={placeholder}
       onClosePlaceholder={() => setPlaceholder(null)}
-      keypadDisabled={logoutPending || lookupPending || checkoutPending}
+      keypadDisabled={
+        logoutPending || lookupPending || checkoutPending || refundPending || refundLookupPending
+      }
     />
   )
 }

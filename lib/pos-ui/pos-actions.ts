@@ -2,6 +2,7 @@ import type { PosKeypadActionId, PosPlaceholderId } from "./types"
 
 export type PosActionKind =
   | "wire-nav"
+  | "wire-refund"
   | "wire-logout"
   | "wire-checkout"
   | "placeholder"
@@ -19,7 +20,9 @@ const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = [
 
 const PLACEHOLDER_SET = new Set<string>(PLACEHOLDER_IDS)
 
-const WIRE_NAV_IDS = new Set<string>(["order", "stock-count"])
+const WIRE_NAV_IDS = new Set<string>(["stock-count"])
+
+const WIRE_REFUND_IDS = new Set<string>(["refund"])
 
 const KEYPAD_BUFFER_IDS = new Set<string>([
   "digit-7",
@@ -41,6 +44,7 @@ const KEYPAD_BUFFER_IDS = new Set<string>([
 export function getPosActionKind(id: PosKeypadActionId): PosActionKind {
   if (id === "logout") return "wire-logout"
   if (id === "checkout") return "wire-checkout"
+  if (WIRE_REFUND_IDS.has(id)) return "wire-refund"
   if (WIRE_NAV_IDS.has(id)) return "wire-nav"
   if (PLACEHOLDER_SET.has(id)) return "placeholder"
   if (KEYPAD_BUFFER_IDS.has(id)) return "keypad"

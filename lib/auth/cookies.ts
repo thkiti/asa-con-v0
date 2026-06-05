@@ -9,6 +9,7 @@ export const STAFF_NAME_COOKIE = "staffName"
 export const BRANCH_ID_COOKIE = "branchId"
 export const BRANCH_CODE_COOKIE = "branchCode"
 export const BRANCH_NAME_COOKIE = "branchName"
+export const SESSION_EXPIRES_COOKIE = "sessionExpiresAt"
 
 type CookieReader = {
   get(name: string): { value: string } | undefined
@@ -26,9 +27,23 @@ export function readSessionCookies(
     branchId: cookies.get(BRANCH_ID_COOKIE)?.value,
     branchCode: cookies.get(BRANCH_CODE_COOKIE)?.value,
     branchName: cookies.get(BRANCH_NAME_COOKIE)?.value,
+    sessionExpiresAt: cookies.get(SESSION_EXPIRES_COOKIE)?.value,
   }
 }
 
 export function hasSessionCookies(payload: SessionCookiePayload): boolean {
   return Boolean(payload.sessionId?.trim() && payload.role?.trim())
+}
+
+/** True when required session cookies exist and expiry (if set) is still in the future. */
+export function isSessionValid(payload: SessionCookiePayload): boolean {
+  if (!hasSessionCookies(payload)) return false
+
+  const expiresRaw = payload.sessionExpiresAt?.trim()
+  if (!expiresRaw) return false
+
+  const expiresMs = Number(expiresRaw)
+  if (!Number.isFinite(expiresMs) || expiresMs <= Date.now()) return false
+
+  return true
 }

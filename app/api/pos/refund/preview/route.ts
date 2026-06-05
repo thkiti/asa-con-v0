@@ -11,13 +11,26 @@ export async function GET(req: NextRequest) {
   try {
     const session = requireStockDocumentSession(await getSession())
     const saleId = req.nextUrl.searchParams.get("saleId")?.trim() ?? ""
+    const receiptNo = req.nextUrl.searchParams.get("receiptNo")?.trim() ?? ""
     const branchId = session.branchId.trim()
 
     if (!branchId) {
       throw new RefundError("Shop session requires branchId", "MISSING_BRANCH", 400)
     }
 
-    const preview = await getRefundPreview(prisma, { saleId, branchId })
+    let resolvedSaleId = saleId
+    if (!resolvedSaleId && receiptNo) {
+      const receipt = await prisma.receipt.findFirst({
+        where: { branchId, receiptNo },
+        select: { saleId: true },
+      })
+      if (!receipt) {
+        throw new RefundError("Sale not found", "SALE_NOT_FOUND", 404)
+      }
+      resolvedSaleId = receipt.saleId
+    }
+
+    const preview = await getRefundPreview(prisma, { saleId: resolvedSaleId, branchId })
     return NextResponse.json(preview)
   } catch (err: unknown) {
     if (err instanceof RefundError) {

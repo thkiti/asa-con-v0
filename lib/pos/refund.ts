@@ -5,6 +5,7 @@ import {
 } from "@/generated/prisma/client"
 import { prisma } from "@/lib/shared/prisma"
 import { toDec, ZERO } from "@/lib/stock/decimal"
+import { allocateRefundNo } from "./refund-receipt-no"
 import { RefundError } from "./refund-errors"
 
 export type CreateRefundInput = {
@@ -18,6 +19,7 @@ export type CreateRefundInput = {
 
 export type CreateRefundResult = {
   id: string
+  refundNo: string
   kind: RefundKind
   saleId: string | null
   branchId: string
@@ -41,6 +43,8 @@ type RefundDb = Pick<
   Prisma.TransactionClient,
   "sale" | "refund"
 >
+
+type RefundCreateInput = CreateRefundInput & { refundNo: string }
 
 function assertBranchId(branchId: unknown): string {
   const s = String(branchId ?? "").trim()
@@ -132,7 +136,7 @@ export async function getRefundPreview(
 
 async function createSaleLinkedRefund(
   db: RefundDb,
-  input: CreateRefundInput
+  input: RefundCreateInput
 ): Promise<CreateRefundResult> {
   const saleId = String(input.saleId ?? "").trim()
   const branchId = assertBranchId(input.branchId)
@@ -178,6 +182,7 @@ async function createSaleLinkedRefund(
 
   const row = await db.refund.create({
     data: {
+      refundNo: input.refundNo,
       kind: RefundKind.SALE_LINKED,
       saleId: sale.id,
       branchId,
@@ -190,6 +195,7 @@ async function createSaleLinkedRefund(
 
   return {
     id: row.id,
+    refundNo: row.refundNo,
     kind: row.kind,
     saleId: row.saleId,
     branchId: row.branchId,
@@ -203,7 +209,7 @@ async function createSaleLinkedRefund(
 
 async function createGoodwillRefund(
   db: RefundDb,
-  input: CreateRefundInput
+  input: RefundCreateInput
 ): Promise<CreateRefundResult> {
   const branchId = assertBranchId(input.branchId)
   const amount = parseRequiredAmount(input.amount)
@@ -211,6 +217,7 @@ async function createGoodwillRefund(
 
   const row = await db.refund.create({
     data: {
+      refundNo: input.refundNo,
       kind: RefundKind.GOODWILL,
       saleId: null,
       branchId,
@@ -223,6 +230,7 @@ async function createGoodwillRefund(
 
   return {
     id: row.id,
+    refundNo: row.refundNo,
     kind: row.kind,
     saleId: row.saleId,
     branchId: row.branchId,
@@ -241,10 +249,12 @@ export async function createRefund(
   const saleId = input.saleId != null ? String(input.saleId).trim() : ""
 
   const run = async (tx: Prisma.TransactionClient): Promise<CreateRefundResult> => {
+    const at = new Date()
+    const refundNo = await allocateRefundNo(tx, branchId, at)
     if (saleId) {
-      return createSaleLinkedRefund(tx, { ...input, branchId, saleId })
+      return createSaleLinkedRefund(tx, { ...input, branchId, saleId, refundNo })
     }
-    return createGoodwillRefund(tx, { ...input, branchId })
+    return createGoodwillRefund(tx, { ...input, branchId, refundNo })
   }
 
   if (input.tx) return run(input.tx)

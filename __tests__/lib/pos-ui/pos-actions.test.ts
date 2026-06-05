@@ -6,8 +6,8 @@ import {
 } from "@/lib/pos-ui/pos-actions"
 
 describe("pos-ui/pos-actions", () => {
-  it("classifies wired navigation actions", () => {
-    expect(getPosActionKind("order")).toBe("wire-nav")
+  it("classifies wired navigation and refund actions", () => {
+    expect(getPosActionKind("refund")).toBe("wire-refund")
     expect(getPosActionKind("stock-count")).toBe("wire-nav")
   })
 

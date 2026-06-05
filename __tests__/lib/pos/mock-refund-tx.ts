@@ -30,6 +30,7 @@ type ReceiptRow = {
 
 type RefundRow = {
   id: string
+  refundNo: string
   kind: RefundKind
   saleId: string | null
   branchId: string
@@ -51,6 +52,11 @@ export type RefundMockState = MockTxState & {
   payments: PaymentRow[]
   receipts: ReceiptRow[]
   refunds: RefundRow[]
+}
+
+const defaultBranchCodes: Record<string, string> = {
+  "branch-1": "SH001",
+  "branch-2": "SH002",
 }
 
 export function seedSaleWithReceipt(
@@ -105,6 +111,12 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
 
   const tx = {
     ...baseTx,
+    branch: {
+      findUnique: async ({ where }: { where: { id: string } }) => {
+        const code = defaultBranchCodes[where.id] ?? "SH001"
+        return { code }
+      },
+    },
     sale: {
       findFirst: async ({
         where,
@@ -128,6 +140,21 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
       },
     },
     refund: {
+      count: async ({
+        where,
+      }: {
+        where: {
+          branchId: string
+          createdAt: { gte: Date; lt: Date }
+        }
+      }) => {
+        return state.refunds.filter(
+          (row) =>
+            row.branchId === where.branchId &&
+            row.createdAt >= where.createdAt.gte &&
+            row.createdAt < where.createdAt.lt
+        ).length
+      },
       aggregate: async ({
         where,
         _sum,
@@ -148,6 +175,7 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
         data,
       }: {
         data: {
+          refundNo: string
           kind: RefundKind
           saleId: string | null
           branchId: string
@@ -159,7 +187,7 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
       }) => {
         const row: RefundRow = {
           id: nextId("refund"),
-          createdAt: new Date("2026-01-15T11:00:00.000Z"),
+          createdAt: new Date(),
           ...data,
         }
         state.refunds.push(row)
