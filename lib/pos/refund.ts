@@ -70,26 +70,12 @@ function parseOptionalAmount(
   return dec
 }
 
-function parseRequiredAmount(
-  raw: number | string | Prisma.Decimal | null | undefined
-): Prisma.Decimal {
-  const dec = parseOptionalAmount(raw)
-  if (dec === null) {
-    throw new RefundError("Refund amount is required", "INVALID_REFUND_AMOUNT", 400)
-  }
-  return dec
-}
-
-function assertNonEmptyReason(reason: unknown): string {
-  const s = String(reason ?? "").trim()
-  if (!s) {
-    throw new RefundError(
-      "Reason is required for goodwill refunds",
-      "GOODWILL_REASON_REQUIRED",
-      400
-    )
-  }
-  return s
+function assertReceiptRequiredForRefund(): never {
+  throw new RefundError(
+    "Original receipt is required for refund",
+    "RECEIPT_REQUIRED_FOR_REFUND",
+    400
+  )
 }
 
 async function sumRefundedForSale(
@@ -120,6 +106,9 @@ export async function getRefundPreview(
   if (!sale) {
     throw new RefundError("Sale not found", "SALE_NOT_FOUND", 404)
   }
+  if (!sale.receipt) {
+    assertReceiptRequiredForRefund()
+  }
 
   const refundedTotal = await sumRefundedForSale(db, saleId)
   const remaining = toDec(sale.total).minus(refundedTotal)
@@ -141,7 +130,7 @@ async function createSaleLinkedRefund(
   const saleId = String(input.saleId ?? "").trim()
   const branchId = assertBranchId(input.branchId)
   if (!saleId) {
-    throw new RefundError("saleId is required", "SALE_NOT_FOUND", 404)
+    assertReceiptRequiredForRefund()
   }
 
   const sale = await db.sale.findFirst({
@@ -150,6 +139,9 @@ async function createSaleLinkedRefund(
   })
   if (!sale) {
     throw new RefundError("Sale not found", "SALE_NOT_FOUND", 404)
+  }
+  if (!sale.receipt) {
+    assertReceiptRequiredForRefund()
   }
 
   const alreadyRefunded = await sumRefundedForSale(db, saleId)
@@ -207,54 +199,19 @@ async function createSaleLinkedRefund(
   }
 }
 
-async function createGoodwillRefund(
-  db: RefundDb,
-  input: RefundCreateInput
-): Promise<CreateRefundResult> {
-  const branchId = assertBranchId(input.branchId)
-  const amount = parseRequiredAmount(input.amount)
-  const reason = assertNonEmptyReason(input.reason)
-
-  const row = await db.refund.create({
-    data: {
-      refundNo: input.refundNo,
-      kind: RefundKind.GOODWILL,
-      saleId: null,
-      branchId,
-      staffId: input.staffId?.trim() || null,
-      originalReceiptId: null,
-      amount,
-      reason,
-    },
-  })
-
-  return {
-    id: row.id,
-    refundNo: row.refundNo,
-    kind: row.kind,
-    saleId: row.saleId,
-    branchId: row.branchId,
-    staffId: row.staffId,
-    originalReceiptId: row.originalReceiptId,
-    amount: row.amount,
-    reason: row.reason,
-    createdAt: row.createdAt,
-  }
-}
-
 export async function createRefund(
   input: CreateRefundInput
 ): Promise<CreateRefundResult> {
   const branchId = assertBranchId(input.branchId)
   const saleId = input.saleId != null ? String(input.saleId).trim() : ""
+  if (!saleId) {
+    assertReceiptRequiredForRefund()
+  }
 
   const run = async (tx: Prisma.TransactionClient): Promise<CreateRefundResult> => {
     const at = new Date()
     const refundNo = await allocateRefundNo(tx, branchId, at)
-    if (saleId) {
-      return createSaleLinkedRefund(tx, { ...input, branchId, saleId, refundNo })
-    }
-    return createGoodwillRefund(tx, { ...input, branchId, refundNo })
+    return createSaleLinkedRefund(tx, { ...input, branchId, saleId, refundNo })
   }
 
   if (input.tx) return run(input.tx)

@@ -30,6 +30,14 @@ export async function GET(req: NextRequest) {
       resolvedSaleId = receipt.saleId
     }
 
+    if (!resolvedSaleId) {
+      throw new RefundError(
+        "Original receipt is required for refund",
+        "RECEIPT_REQUIRED_FOR_REFUND",
+        400
+      )
+    }
+
     const preview = await getRefundPreview(prisma, { saleId: resolvedSaleId, branchId })
     return NextResponse.json(preview)
   } catch (err: unknown) {

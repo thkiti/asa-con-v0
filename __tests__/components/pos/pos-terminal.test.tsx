@@ -212,6 +212,11 @@ describe("PosTerminalPage", () => {
     expect(container.textContent).toContain("Enter the original sale receipt number")
     expect(container.textContent).not.toContain("GOODWILL")
 
+    const processBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Process refund")
+    )
+    expect(processBtn?.disabled).toBe(true)
+
     act(() => root.unmount())
   })
 

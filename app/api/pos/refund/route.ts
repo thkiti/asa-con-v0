@@ -31,6 +31,14 @@ export async function POST(req: NextRequest) {
         ? String(body.saleId).trim()
         : undefined
 
+    if (!saleId) {
+      throw new RefundError(
+        "Original receipt is required for refund",
+        "RECEIPT_REQUIRED_FOR_REFUND",
+        400
+      )
+    }
+
     const refund = await createRefund({
       saleId,
       branchId,

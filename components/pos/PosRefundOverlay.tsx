@@ -63,7 +63,7 @@ export function PosRefundOverlay({
         aria-label="Close refund"
         onClick={onClose}
         disabled={pending || lookupPending}
-        className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 bg-white/20 text-lg font-bold leading-none shadow hover:bg-white/30 disabled:opacity-50"
+        className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 bg-white/20 text-lg font-bold leading-none shadow hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
       >
         ×
       </button>
@@ -84,7 +84,7 @@ export function PosRefundOverlay({
             <button
               type="button"
               onClick={onClose}
-              className="mt-2 rounded-lg border-2 border-white bg-white px-8 py-3 text-sm font-bold text-orange-700 shadow hover:bg-orange-50"
+              className="rounded-lg border-2 border-white bg-white px-8 py-3 text-sm font-bold text-orange-700 shadow hover:bg-orange-50 cursor-pointer"
             >
               Close
             </button>
@@ -112,7 +112,7 @@ export function PosRefundOverlay({
               type="button"
               onClick={onLookup}
               disabled={!canLookup}
-              className="rounded-lg border-2 border-white/80 bg-white/15 px-6 py-2 text-sm font-bold shadow hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border-2 border-white/80 bg-white/15 px-6 py-2 text-sm font-bold shadow hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               {lookupPending ? "Looking up…" : "Look up receipt"}
             </button>
@@ -167,7 +167,7 @@ export function PosRefundOverlay({
               type="button"
               onClick={onConfirm}
               disabled={!canConfirm}
-              className="mt-1 rounded-lg border-2 border-white bg-white px-8 py-3 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-1 rounded-lg border-2 border-white bg-white px-8 py-3 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               {pending ? "Processing…" : "Process refund"}
             </button>

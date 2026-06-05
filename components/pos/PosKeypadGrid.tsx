@@ -69,7 +69,7 @@ export function PosKeypadGrid({ onAction, disabled = false }: PosKeypadGridProps
               gridColumn: `${btn.col} / span ${colSpan}`,
               gridRow: `${btn.row} / span ${rowSpan}`,
             }}
-            className={`h-full w-full rounded-lg font-extrabold shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${variantClassName(btn.variant)} ${isDigit ? "" : "text-xs"}`}
+            className={`h-full w-full rounded-lg font-extrabold shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${disabled ? "" : "cursor-pointer"} ${variantClassName(btn.variant)} ${isDigit ? "" : "text-xs"}`}
           >
             {lines.length > 1 ? (
               lines.map((line, i) => (

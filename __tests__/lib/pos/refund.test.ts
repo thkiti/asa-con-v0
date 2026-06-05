@@ -1,4 +1,4 @@
-import { Prisma, RefundKind } from "@/generated/prisma/client"
+import { Prisma, RefundKind, SaleStatus } from "@/generated/prisma/client"
 import { createRefund } from "@/lib/pos/refund"
 import { RefundError } from "@/lib/pos/refund-errors"
 import { createRefundMockTx, seedSaleWithReceipt } from "./mock-refund-tx"
@@ -133,42 +133,39 @@ describe("createRefund", () => {
     ).rejects.toMatchObject({ code: "OVER_REFUND" })
   })
 
-  it("goodwill refund requires amount", async () => {
+  it("rejects refund without saleId as receipt required", async () => {
     const { state } = setup()
 
     await expect(
       createRefund({ branchId, reason: "Goodwill note" })
-    ).rejects.toMatchObject({ code: "INVALID_REFUND_AMOUNT" })
+    ).rejects.toMatchObject({ code: "RECEIPT_REQUIRED_FOR_REFUND" })
     expect(state.refunds).toHaveLength(0)
   })
 
-  it("goodwill refund requires reason", async () => {
+  it("rejects goodwill-style refund without saleId", async () => {
     const { state } = setup()
 
     await expect(
-      createRefund({ branchId, amount: "25.00", reason: "  " })
-    ).rejects.toMatchObject({ code: "GOODWILL_REASON_REQUIRED" })
+      createRefund({ branchId, amount: "25.00", reason: "Customer goodwill" })
+    ).rejects.toMatchObject({ code: "RECEIPT_REQUIRED_FOR_REFUND" })
     expect(state.refunds).toHaveLength(0)
   })
 
-  it("goodwill refund creates saleId null and originalReceiptId null", async () => {
+  it("rejects sale-linked refund when sale has no receipt", async () => {
     const { state } = setup()
-
-    const result = await createRefund({
+    state.sales.push({
+      id: "sale-no-rcpt",
       branchId,
-      amount: "25.00",
-      reason: "Customer goodwill",
-      staffId: "staff-2",
+      staffId: "staff-1",
+      total: new Prisma.Decimal("50.00"),
+      status: SaleStatus.COMPLETED,
+      createdAt: new Date(),
     })
 
-    expect(result.kind).toBe(RefundKind.GOODWILL)
-    expect(result.saleId).toBeNull()
-    expect(result.originalReceiptId).toBeNull()
-    expect(result.reason).toBe("Customer goodwill")
-    expect(result.refundNo).toMatch(/^REF-SH001-\d{6}-\d{4}$/)
-    expect(state.refunds[0]?.saleId).toBeNull()
-    expect(state.refunds[0]?.originalReceiptId).toBeNull()
-    expect(state.refunds[0]?.refundNo).toBe(result.refundNo)
+    await expect(
+      createRefund({ saleId: "sale-no-rcpt", branchId })
+    ).rejects.toMatchObject({ code: "RECEIPT_REQUIRED_FOR_REFUND" })
+    expect(state.refunds).toHaveLength(0)
   })
 
   it("assigns incrementing refundNo for multiple refunds in same branch", async () => {
@@ -177,9 +174,13 @@ describe("createRefund", () => {
       branchId,
       total: "100.00",
     })
+    const { saleId: saleId2 } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "20.00",
+    })
 
     const first = await createRefund({ saleId, branchId, amount: "40.00" })
-    const second = await createRefund({ branchId, amount: "10.00", reason: "Goodwill" })
+    const second = await createRefund({ saleId: saleId2, branchId, amount: "10.00" })
 
     expect(first.refundNo).not.toBe(second.refundNo)
     expect(state.refunds).toHaveLength(2)

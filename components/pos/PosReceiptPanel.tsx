@@ -96,7 +96,7 @@ export function PosReceiptPanel({
                     <button
                       type="button"
                       onClick={() => onRemoveLine(line.productId)}
-                      className="mt-0.5 text-[10px] text-white/80 underline-offset-2 hover:underline"
+                      className="mt-0.5 cursor-pointer text-[10px] text-white/80 underline-offset-2 hover:underline"
                     >
                       Remove
                     </button>
@@ -106,7 +106,7 @@ export function PosReceiptPanel({
                       type="button"
                       aria-label={`Decrease qty for ${line.name}`}
                       onClick={() => onDecrementQty(line.productId)}
-                      className="flex h-7 w-7 items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
                     >
                       −
                     </button>
@@ -115,7 +115,7 @@ export function PosReceiptPanel({
                       type="button"
                       aria-label={`Increase qty for ${line.name}`}
                       onClick={() => onIncrementQty(line.productId)}
-                      className="flex h-7 w-7 items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
                     >
                       +
                     </button>
@@ -136,7 +136,7 @@ export function PosReceiptPanel({
             <button
               type="button"
               onClick={onClearCart}
-              className="self-start text-xs font-semibold text-white/90 underline-offset-2 hover:underline"
+              className="cursor-pointer self-start text-xs font-semibold text-white/90 underline-offset-2 hover:underline"
             >
               Clear cart
             </button>

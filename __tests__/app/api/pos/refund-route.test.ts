@@ -105,30 +105,17 @@ describe("POST /api/pos/refund", () => {
     })
   })
 
-  it("goodwill body without saleId", async () => {
+  it("rejects body without saleId", async () => {
     mockedGetSession.mockResolvedValue(shopSession)
-    mockedCreateRefund.mockResolvedValue({
-      id: "refund-3",
-      refundNo: "REF-SH001-202606-0003",
-      kind: RefundKind.GOODWILL,
-      saleId: null,
-      branchId: "branch-shop",
-      staffId: "staff-1",
-      originalReceiptId: null,
-      amount: new Prisma.Decimal("10.00"),
-      reason: "Goodwill",
-      createdAt: new Date(),
-    })
 
-    await post({ amount: "10.00", reason: "Goodwill" })
+    const res = await post({ amount: "10.00", reason: "Goodwill" })
 
-    expect(mockedCreateRefund).toHaveBeenCalledWith({
-      saleId: undefined,
-      branchId: "branch-shop",
-      staffId: "staff-1",
-      amount: "10.00",
-      reason: "Goodwill",
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "Original receipt is required for refund",
+      code: "RECEIPT_REQUIRED_FOR_REFUND",
     })
+    expect(mockedCreateRefund).not.toHaveBeenCalled()
   })
 
   it("returns 401 when unauthenticated", async () => {
