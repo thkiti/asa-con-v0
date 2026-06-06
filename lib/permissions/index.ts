@@ -29,3 +29,8 @@ export {
   requireSalesTargetEditSession,
   requireSalesTargetViewSession,
 } from "./sales-targets"
+export {
+  canViewSalesDashboard,
+  SalesDashboardAuthError,
+  requireSalesDashboardSession,
+} from "./sales-dashboard"

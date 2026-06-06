@@ -1,3 +1,4 @@
+export { formatWorkedDuration } from "./format-worked-duration"
 export { checkout } from "./checkout"
 export { checkoutWithoutPosting } from "./checkout-sale-only"
 export { loadSaleReceiptForPrint } from "./load-sale-receipt"
@@ -18,6 +19,26 @@ export type { CreateRefundInput, CreateRefundResult, RefundPreviewResult } from 
 export { RefundError } from "./refund-errors"
 export { getSalesSummary } from "./sales-summary"
 export { getSalesDashboardMetrics } from "./sales-dashboard-metrics"
+export { buildPosTargetVsSalesSummary } from "./target-vs-sales"
+export {
+  buildPosWorktimeView,
+  computePosWorktimeMonthMetrics,
+  recordPosWorktimeClockIn,
+  recordPosWorktimeClockOut,
+} from "./worktime"
+export { requirePosWorktimeContext } from "./pos-worktime-context"
+export { WorktimeError } from "./worktime-errors"
+export type {
+  PosWorktimeDayCell,
+  PosWorktimeMonthSummary,
+  PosWorktimeView,
+} from "./worktime-types"
+export type {
+  PosTargetVsSalesDayCell,
+  PosTargetVsSalesMonthSummary,
+  PosTargetVsSalesSummary,
+  PosTargetVsSalesTodaySummary,
+} from "./target-vs-sales-types"
 export type {
   MonthlySalesDashboardSummary,
   SalesDashboardDaySales,

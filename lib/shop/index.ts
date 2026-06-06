@@ -14,3 +14,18 @@ export type {
   SalesTargetBranchOption,
 } from "./sales-target-types"
 export { SalesTargetError } from "./sales-target-errors"
+export {
+  buildSalesDashboardView,
+  getSalesDashboardDayDetail,
+} from "./sales-dashboard"
+export type {
+  SalesDashboardBranchDayRow,
+  SalesDashboardDayCell,
+  SalesDashboardDayDetail,
+  SalesDashboardMonthSummary,
+  SalesDashboardReceiptPreview,
+  SalesDashboardReceiptRow,
+  SalesDashboardScope,
+  SalesDashboardView,
+} from "./sales-dashboard-types"
+export { SalesDashboardError } from "./sales-dashboard-errors"

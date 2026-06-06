@@ -44,6 +44,8 @@ export function PosTerminalPage() {
   const [cartLookupError, setCartLookupError] = useState<string | null>(null)
   const [lookupPending, setLookupPending] = useState(false)
   const [placeholder, setPlaceholder] = useState<PosPlaceholderId | null>(null)
+  const [targetVsSalesOpen, setTargetVsSalesOpen] = useState(false)
+  const [worktimeOpen, setWorktimeOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [checkoutPending, setCheckoutPending] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
@@ -309,6 +311,16 @@ export function PosTerminalPage() {
         return
       }
 
+      if (kind === "wire-target-vs-sales") {
+        setTargetVsSalesOpen(true)
+        return
+      }
+
+      if (kind === "wire-worktime") {
+        setWorktimeOpen(true)
+        return
+      }
+
       if (kind === "placeholder" && isPosPlaceholderId(id)) {
         setPlaceholder(id)
         return
@@ -411,6 +423,10 @@ export function PosTerminalPage() {
       }}
       placeholderOverlay={placeholder}
       onClosePlaceholder={() => setPlaceholder(null)}
+      targetVsSalesOpen={targetVsSalesOpen}
+      onCloseTargetVsSales={() => setTargetVsSalesOpen(false)}
+      worktimeOpen={worktimeOpen}
+      onCloseWorktime={() => setWorktimeOpen(false)}
       keypadDisabled={
         logoutPending || lookupPending || checkoutPending || refundPending || refundLookupPending
       }

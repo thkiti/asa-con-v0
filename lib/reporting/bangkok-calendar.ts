@@ -89,3 +89,39 @@ export function bangkokWeekdayLabel(y: number, month: number, day: number): stri
   const idx = bangkokWeekdayMon0(y, month, day)
   return WEEKDAY_SHORT[idx] ?? "Mon"
 }
+
+/** Bangkok calendar day range for a YYYY-MM-DD key. */
+export function bangkokDayRange(dateKey: string): { start: Date; end: Date } {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey.trim())
+  if (!m) {
+    throw new Error("Invalid dateKey")
+  }
+  const y = Number(m[1])
+  const month = Number(m[2])
+  const day = Number(m[3])
+  return {
+    start: new Date(`${y}-${pad2(month)}-${pad2(day)}T00:00:00+07:00`),
+    end: new Date(`${y}-${pad2(month)}-${pad2(day)}T23:59:59.999+07:00`),
+  }
+}
+
+/** HH:mm in Asia/Bangkok. */
+export function bangkokTimeLabel(d: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BANGKOK_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d)
+}
+
+/** HH:mm:ss in Asia/Bangkok. */
+export function bangkokTimeLabelSeconds(d: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: BANGKOK_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(d)
+}

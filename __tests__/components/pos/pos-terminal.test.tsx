@@ -66,6 +66,51 @@ function mockRefundableReceiptsResponse() {
   } as Response
 }
 
+function mockTargetVsSalesResponse() {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => "application/json" },
+    json: async () => ({
+      branchCode: "SH001",
+      monthLabel: "June 2026",
+      today: { target: "9000.00", actual: "8500.00" },
+      month: { target: "270000.00", actual: "245000.00", achievementPercent: "90.7" },
+      days: [
+        {
+          dateKey: "2026-06-06",
+          day: 6,
+          target: "9000.00",
+          actual: "8500.00",
+          isToday: true,
+        },
+      ],
+    }),
+  } as Response
+}
+
+function mockWorktimeResponse() {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => "application/json" },
+    json: async () => ({
+      branchCode: "SH001",
+      monthLabel: "June 2026",
+      summary: { workDays: 1, totalHours: "08:00:00", incompleteDays: 0 },
+      days: [
+        {
+          dateKey: "2026-06-06",
+          day: 6,
+          clockIn: "09:15:00",
+          clockOut: null,
+          isToday: true,
+        },
+      ],
+    }),
+  } as Response
+}
+
 describe("PosTerminalPage", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -137,8 +182,82 @@ describe("PosTerminalPage", () => {
           }),
         } as Response)
       }
+      if (url === "/api/pos/target-vs-sales") {
+        return Promise.resolve(mockTargetVsSalesResponse())
+      }
+      if (url === "/api/pos/worktime") {
+        return Promise.resolve(mockWorktimeResponse())
+      }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as typeof fetch
+  })
+
+  it("opens WorkTime overlay from keypad", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const worktimeBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("WORKTIME") || b.textContent?.includes("WORK TIME")
+    )
+    expect(worktimeBtn).toBeDefined()
+    act(() => {
+      worktimeBtn!.click()
+    })
+    await flushPromises()
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-worktime-overlay"]')).not.toBeNull()
+    expect(container.textContent).toContain("SH001 • Chidlom")
+    expect(container.textContent).toContain("จำนวนวันทำงาน")
+    expect(container.textContent).not.toContain("Coming in a later POS phase")
+
+    const exitBtn = container.querySelector('[data-testid="pos-worktime-exit"]')
+    act(() => {
+      ;(exitBtn as HTMLButtonElement).click()
+    })
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-worktime-overlay"]')).toBeNull()
+
+    act(() => root.unmount())
+  })
+
+  it("opens Target vs Sales overlay with branch summary only", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const targetBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("TARGET") && b.textContent?.includes("SALES")
+    )
+    expect(targetBtn).toBeDefined()
+    act(() => {
+      targetBtn!.click()
+    })
+    await flushPromises()
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-target-vs-sales-overlay"]')).not.toBeNull()
+    expect(container.textContent).toContain("SH001 • Chidlom")
+    expect(container.textContent).toContain("Today Target")
+    expect(container.textContent).toContain("Achievement %")
+    expect(container.textContent).not.toContain("Coming in a later POS phase")
+    expect(container.textContent).not.toContain("/shop/target-sales")
+    expect(container.textContent).not.toContain("Recent Sales")
+    expect(container.querySelector('[data-testid="pos-target-vs-sales-calendar"]')).not.toBeNull()
+
+    const exitBtn = container.querySelector('[data-testid="pos-target-vs-sales-exit"]')
+    act(() => {
+      ;(exitBtn as HTMLButtonElement).click()
+    })
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-target-vs-sales-overlay"]')).toBeNull()
+
+    act(() => root.unmount())
   })
 
   it("renders session banner and receipt panel header from session API", async () => {

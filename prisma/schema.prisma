@@ -110,6 +110,7 @@ model Branch {
   accountingPeriods        AccountingPeriod[]
   reconciliationSnapshots  ReconciliationSnapshot[]
   salesTargets             BranchSalesTarget[]
+  workTimeEntries          WorkTimeEntry[]
 }
 
 /// HO monthly sales target per shop branch — daily split uses weekPattern Mon..Sun weights.
@@ -127,6 +128,25 @@ model BranchSalesTarget {
 
   @@unique([branchId, year, month])
   @@index([branchId, year, month])
+}
+
+/// POS staff daily clock-in/out — one row per branch + staff + Bangkok calendar date.
+model WorkTimeEntry {
+  id          String    @id @default(uuid())
+  branchId    String
+  /// Staff login code (Staff.staffId), same as Sale.staffId.
+  staffId     String
+  /// Bangkok calendar date YYYY-MM-DD.
+  workDate    String
+  clockInAt   DateTime?
+  clockOutAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, staffId, workDate])
+  @@index([branchId, staffId, workDate])
 }
 
 model Staff {

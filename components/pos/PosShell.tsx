@@ -5,6 +5,8 @@ import { PosKeypadGrid } from "./PosKeypadGrid"
 import { PosCheckoutOverlay } from "./PosCheckoutOverlay"
 import { PosRefundOverlay } from "./PosRefundOverlay"
 import { PosPlaceholderOverlay } from "./PosPlaceholderOverlay"
+import { PosTargetVsSalesOverlay } from "./PosTargetVsSalesOverlay"
+import { PosWorktimeOverlay } from "./PosWorktimeOverlay"
 import { PosReceiptPanel } from "./PosReceiptPanel"
 import { PosSessionBanner } from "./PosSessionBanner"
 import type { PosCartLine } from "@/lib/pos/cart"
@@ -51,6 +53,10 @@ type PosShellProps = {
   barcodeFocusRequest?: number
   placeholderOverlay: PosPlaceholderId | null
   onClosePlaceholder: () => void
+  targetVsSalesOpen: boolean
+  onCloseTargetVsSales: () => void
+  worktimeOpen: boolean
+  onCloseWorktime: () => void
   keypadDisabled?: boolean
 }
 
@@ -93,12 +99,36 @@ export function PosShell({
   barcodeFocusRequest = 0,
   placeholderOverlay,
   onClosePlaceholder,
+  targetVsSalesOpen,
+  onCloseTargetVsSales,
+  worktimeOpen,
+  onCloseWorktime,
   keypadDisabled = false,
 }: PosShellProps) {
-  const muted = keypadDisabled || !!placeholderOverlay || checkoutOpen || refundOpen
+  const muted =
+    keypadDisabled ||
+    !!placeholderOverlay ||
+    targetVsSalesOpen ||
+    worktimeOpen ||
+    checkoutOpen ||
+    refundOpen
 
   return (
     <div className="fixed inset-0 flex bg-white">
+      {worktimeOpen ? (
+        <PosWorktimeOverlay
+          onClose={onCloseWorktime}
+          branchCode={session.branchCode}
+          branchName={session.branchName}
+        />
+      ) : null}
+      {targetVsSalesOpen ? (
+        <PosTargetVsSalesOverlay
+          onClose={onCloseTargetVsSales}
+          branchCode={session.branchCode}
+          branchName={session.branchName}
+        />
+      ) : null}
       <div className="flex min-h-0 flex-1 flex-col p-4">
         <div className="mx-auto flex h-full w-full min-h-0 max-w-[1200px] flex-col gap-3">
           <PosSessionBanner session={session} />

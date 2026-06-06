@@ -5,12 +5,12 @@ export type PosActionKind =
   | "wire-refund"
   | "wire-logout"
   | "wire-checkout"
+  | "wire-target-vs-sales"
+  | "wire-worktime"
   | "placeholder"
   | "keypad"
 
 const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = [
-  "worktime",
-  "target-vs-sales",
   "collector",
   "read-x",
   "read-z",
@@ -21,6 +21,10 @@ const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = [
 const PLACEHOLDER_SET = new Set<string>(PLACEHOLDER_IDS)
 
 const WIRE_NAV_IDS = new Set<string>(["stock-count"])
+
+const WIRE_TARGET_VS_SALES_IDS = new Set<string>(["target-vs-sales"])
+
+const WIRE_WORKTIME_IDS = new Set<string>(["worktime"])
 
 const WIRE_REFUND_IDS = new Set<string>(["refund"])
 
@@ -44,6 +48,8 @@ const KEYPAD_BUFFER_IDS = new Set<string>([
 export function getPosActionKind(id: PosKeypadActionId): PosActionKind {
   if (id === "logout") return "wire-logout"
   if (id === "checkout") return "wire-checkout"
+  if (WIRE_TARGET_VS_SALES_IDS.has(id)) return "wire-target-vs-sales"
+  if (WIRE_WORKTIME_IDS.has(id)) return "wire-worktime"
   if (WIRE_REFUND_IDS.has(id)) return "wire-refund"
   if (WIRE_NAV_IDS.has(id)) return "wire-nav"
   if (PLACEHOLDER_SET.has(id)) return "placeholder"
@@ -57,8 +63,6 @@ export function isPosPlaceholderId(id: string): id is PosPlaceholderId {
 
 export function getPosPlaceholderPhaseHint(id: PosPlaceholderId): string {
   switch (id) {
-    case "worktime":
-    case "target-vs-sales":
     case "collector":
     case "read-x":
     case "read-z":

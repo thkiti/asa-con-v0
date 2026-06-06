@@ -201,7 +201,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "/shop/sales-targets",
           "Set monthly sales targets per branch (Mon–Sun pattern)"
         ),
-        planned("target-sales", "Target / Sales"),
+        available(
+          "target-sales",
+          "Target / Sales",
+          "/shop/target-sales",
+          "Monthly target vs gross sales by day (All Company or branch)"
+        ),
         planned("shop-stock", "Shop stock"),
         planned("daily-closing", "Daily closing"),
         planned("monthly-closing", "Monthly closing"),
