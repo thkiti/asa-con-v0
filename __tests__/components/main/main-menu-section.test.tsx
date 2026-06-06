@@ -64,4 +64,17 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain('aria-disabled="true"')
     expect(html).toContain('href="/shop/stock-documents"')
   })
+
+  it("renders shop section as clickable app cards", () => {
+    const section = getMainMenuSectionDetail("HO_ADMIN", "shop")
+    expect(section).not.toBeNull()
+    const html = renderToStaticMarkup(
+      <MainMenuSectionView user={hoAdmin} section={section!} />
+    )
+    expect(html).toContain('href="/shop/sales-targets"')
+    expect(html).toContain("Sales Target Setup")
+    expect(html).toContain("Target / Sales")
+    expect(html).toContain("Planned")
+    expect(html).toContain("min-h-[5.5rem]")
+  })
 })

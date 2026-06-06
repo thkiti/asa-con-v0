@@ -195,7 +195,13 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
     case "shop":
       if (!canAccessMenu(role, "shop") || !isHoMainMenuRole(role)) return []
       return [
-        planned("sales", "Sales"),
+        available(
+          "sales-target-setup",
+          "Sales Target Setup",
+          "/shop/sales-targets",
+          "Set monthly sales targets per branch (Mon–Sun pattern)"
+        ),
+        planned("target-sales", "Target / Sales"),
         planned("shop-stock", "Shop stock"),
         planned("daily-closing", "Daily closing"),
         planned("monthly-closing", "Monthly closing"),

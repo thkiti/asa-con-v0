@@ -1,23 +1,28 @@
 "use client"
 
 import type { RefundPreviewResult } from "@/lib/pos/refund"
+import { REFUND_REASONS } from "@/lib/pos/refund-reasons"
+import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
+import { formatRecentSaleReceiptOption } from "@/lib/pos-ui/pos-refund-client"
 
 type PosRefundOverlayProps = {
   receiptNo: string
-  onReceiptNoChange: (value: string) => void
+  receipts: RefundableReceiptSummary[]
+  receiptsLoading: boolean
+  onReceiptSelect: (receiptNo: string) => void
   amount: string
   onAmountChange: (value: string) => void
-  reason: string
-  onReasonChange: (value: string) => void
+  reasonCode: string
+  onReasonCodeChange: (value: string) => void
   preview: RefundPreviewResult | null
   lookupPending: boolean
   pending: boolean
   error: string | null
-  success: { refundNo: string; amount: string } | null
-  onLookup: () => void
   onConfirm: () => void
   onClose: () => void
 }
+
+const PREVIEW_PANEL_HEIGHT = "h-44"
 
 function formatMoney(value: string): string {
   const n = Number(value)
@@ -27,28 +32,84 @@ function formatMoney(value: string): string {
   })
 }
 
+function ReceiptPreviewPlaceholder({
+  receiptsLoading,
+  noEligibleReceipts,
+  lookupPending,
+  receiptSelected,
+}: {
+  receiptsLoading: boolean
+  noEligibleReceipts: boolean
+  lookupPending: boolean
+  receiptSelected: boolean
+}) {
+  if (lookupPending) {
+    return (
+      <p className="flex h-full items-center justify-center text-sm text-white/80">
+        Loading sale details…
+      </p>
+    )
+  }
+
+  if (receiptsLoading) {
+    return (
+      <p className="flex h-full items-center justify-center text-sm text-white/70">
+        Loading sales…
+      </p>
+    )
+  }
+
+  if (noEligibleReceipts) {
+    return (
+      <p className="flex h-full items-center justify-center px-2 text-center text-sm text-white/90">
+        ไม่พบใบเสร็จในช่วง 2 เดือนล่าสุด
+        <br />
+        ไม่สามารถดำเนินการคืนเงินได้
+      </p>
+    )
+  }
+
+  if (receiptSelected) {
+    return (
+      <p className="flex h-full items-center justify-center text-sm text-white/70">
+        Loading sale details…
+      </p>
+    )
+  }
+
+  return (
+    <p className="flex h-full items-center justify-center text-sm text-white/60">
+      Select a receipt to preview sale items
+    </p>
+  )
+}
+
 export function PosRefundOverlay({
   receiptNo,
-  onReceiptNoChange,
+  receipts,
+  receiptsLoading,
+  onReceiptSelect,
   amount,
   onAmountChange,
-  reason,
-  onReasonChange,
+  reasonCode,
+  onReasonCodeChange,
   preview,
   lookupPending,
   pending,
   error,
-  success,
-  onLookup,
   onConfirm,
   onClose,
 }: PosRefundOverlayProps) {
-  const canLookup = receiptNo.trim().length > 0 && !lookupPending && !pending && !success
+  const noEligibleReceipts =
+    !receiptsLoading && receipts.length === 0 && !lookupPending
+  const receiptSelected = receiptNo.trim().length > 0
+  const showPreviewContent = preview != null && !lookupPending
+
   const canConfirm =
     preview != null &&
+    reasonCode.trim().length > 0 &&
     !pending &&
     !lookupPending &&
-    !success &&
     Number(preview.remainingRefundable) > 0
 
   return (
@@ -68,71 +129,93 @@ export function PosRefundOverlay({
         ×
       </button>
 
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-y-auto px-6 py-12 text-center">
-        <h2 id="pos-refund-title" className="text-xl font-bold tracking-wide">
-          {success ? "Refund complete" : "Refund"}
+      <div className="flex min-h-0 flex-1 flex-col px-6 pb-6 pt-12">
+        <h2
+          id="pos-refund-title"
+          className="mb-4 shrink-0 text-center text-xl font-bold tracking-wide"
+        >
+          Refund
         </h2>
 
-        {success ? (
-          <>
-            <p className="text-sm text-white/90">Refund receipt</p>
-            <p className="font-mono text-lg font-bold tabular-nums">{success.refundNo}</p>
-            <p className="text-2xl font-bold tabular-nums">{formatMoney(success.amount)}</p>
-            <p className="max-w-xs text-sm text-white/90">
-              Refund receipt opened for printing.
-            </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border-2 border-white bg-white px-8 py-3 text-sm font-bold text-orange-700 shadow hover:bg-orange-50 cursor-pointer"
-            >
-              Close
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="max-w-xs text-sm text-white/90">
-              Enter the original sale receipt number to refund.
-            </p>
-
-            <label className="flex w-full max-w-sm flex-col gap-1 text-left text-xs font-semibold uppercase tracking-wide text-white/90">
-              Original receipt
-              <input
-                type="text"
+        <div className="mx-auto flex w-full max-w-sm min-h-0 flex-1 flex-col gap-3">
+            <label className="flex shrink-0 flex-col gap-1 text-left text-xs font-semibold uppercase tracking-wide text-white/90">
+              Recent Sales
+              <select
                 value={receiptNo}
-                onChange={(e) => onReceiptNoChange(e.target.value)}
-                disabled={pending || lookupPending}
-                placeholder="REC-SH001-202606-0001"
-                className="rounded border border-white/40 bg-white/95 px-3 py-2 font-mono text-sm normal-case text-zinc-900"
-                aria-label="Original receipt number"
-              />
+                onChange={(e) => onReceiptSelect(e.target.value)}
+                disabled={pending || lookupPending || receiptsLoading}
+                className="rounded border border-white/40 bg-white/95 px-3 py-2 font-mono text-sm normal-case text-zinc-900 cursor-pointer"
+                aria-label="Recent sales"
+              >
+                <option value="">
+                  {receiptsLoading ? "Loading sales…" : "Select receipt…"}
+                </option>
+                {receipts.map((row) => (
+                  <option key={row.saleId} value={row.receiptNo}>
+                    {formatRecentSaleReceiptOption(row)}
+                  </option>
+                ))}
+              </select>
             </label>
 
-            <button
-              type="button"
-              onClick={onLookup}
-              disabled={!canLookup}
-              className="rounded-lg border-2 border-white/80 bg-white/15 px-6 py-2 text-sm font-bold shadow hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-            >
-              {lookupPending ? "Looking up…" : "Look up receipt"}
-            </button>
+            <section className="flex shrink-0 flex-col gap-1" aria-label="Receipt preview">
+              <div className="border-t border-white/40" />
+              <p className="text-left text-xs font-semibold uppercase tracking-wide text-white/90">
+                Receipt Preview
+              </p>
+              <div className="border-t border-white/40" />
 
-            {preview ? (
-              <div className="w-full max-w-sm rounded-lg border border-white/30 bg-white/10 px-4 py-3 text-left text-sm">
-                <p className="font-mono text-xs text-white/80">{preview.originalReceiptNo}</p>
-                <p className="mt-2 tabular-nums">
-                  Sale total: {formatMoney(preview.saleTotal)}
-                </p>
-                <p className="tabular-nums">
-                  Already refunded: {formatMoney(preview.refundedTotal)}
-                </p>
-                <p className="font-bold tabular-nums">
-                  Remaining: {formatMoney(preview.remainingRefundable)}
-                </p>
+              <div
+                className={`${PREVIEW_PANEL_HEIGHT} shrink-0 overflow-hidden rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-left text-sm`}
+              >
+                {showPreviewContent ? (
+                  <div className="flex h-full min-h-0 flex-col">
+                    <div
+                      className="min-h-0 flex-1 overflow-y-auto pr-3"
+                      aria-label="Sale items"
+                    >
+                      <div className="mb-1 grid grid-cols-[1.5rem_1fr_2.5rem_4.5rem] gap-1 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+                        <div>#</div>
+                        <div>Name</div>
+                        <div className="text-center">Qty</div>
+                        <div className="text-right">Amount</div>
+                      </div>
+                      {preview.items.map((item, index) => (
+                        <div
+                          key={`${item.name}-${index}`}
+                          className="grid grid-cols-[1.5rem_1fr_2.5rem_4.5rem] gap-1 py-0.5 text-xs leading-snug"
+                        >
+                          <div className="tabular-nums text-white/80">{index + 1}</div>
+                          <div className="min-w-0 truncate font-medium">{item.name}</div>
+                          <div className="text-center tabular-nums">{item.qty}</div>
+                          <div className="text-right font-mono tabular-nums">
+                            {formatMoney(item.lineTotal)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-1 shrink-0 space-y-0.5 border-t border-white/20 pt-1 text-xs tabular-nums">
+                      <p>Sale total: {formatMoney(preview.saleTotal)}</p>
+                      <p>Already refunded: {formatMoney(preview.refundedTotal)}</p>
+                      <p className="font-bold">
+                        Remaining: {formatMoney(preview.remainingRefundable)}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <ReceiptPreviewPlaceholder
+                    receiptsLoading={receiptsLoading}
+                    noEligibleReceipts={noEligibleReceipts}
+                    lookupPending={lookupPending}
+                    receiptSelected={receiptSelected}
+                  />
+                )}
               </div>
-            ) : null}
 
-            <label className="flex w-full max-w-sm flex-col gap-1 text-left text-xs font-semibold uppercase tracking-wide text-white/90">
+              <div className="border-t border-white/40" />
+            </section>
+
+            <label className="flex shrink-0 flex-col gap-1 text-left text-xs font-semibold uppercase tracking-wide text-white/90">
               Refund amount
               <input
                 type="text"
@@ -145,34 +228,41 @@ export function PosRefundOverlay({
               />
             </label>
 
-            <label className="flex w-full max-w-sm flex-col gap-1 text-left text-xs font-semibold uppercase tracking-wide text-white/90">
-              Reason (optional)
-              <input
-                type="text"
-                value={reason}
-                onChange={(e) => onReasonChange(e.target.value)}
+            <label className="flex shrink-0 flex-col gap-1 text-left text-xs font-semibold uppercase tracking-wide text-white/90">
+              Refund reason
+              <select
+                value={reasonCode}
+                onChange={(e) => onReasonCodeChange(e.target.value)}
                 disabled={!preview || pending || lookupPending}
-                className="rounded border border-white/40 bg-white/95 px-3 py-2 text-sm normal-case text-zinc-900"
+                className="rounded border border-white/40 bg-white/95 px-3 py-2 text-sm normal-case text-zinc-900 cursor-pointer"
                 aria-label="Refund reason"
-              />
+              >
+                <option value="">Select reason…</option>
+                {REFUND_REASONS.map((row) => (
+                  <option key={row.code} value={row.code}>
+                    {row.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
-            {error ? (
-              <p className="max-w-xs text-sm font-medium text-red-100" role="alert">
-                {error}
-              </p>
-            ) : null}
+            <p
+              className="min-h-5 shrink-0 text-center text-sm font-medium text-red-100"
+              role="alert"
+              aria-live="polite"
+            >
+              {error ?? "\u00a0"}
+            </p>
 
             <button
               type="button"
               onClick={onConfirm}
               disabled={!canConfirm}
-              className="mt-1 rounded-lg border-2 border-white bg-white px-8 py-3 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              className="shrink-0 rounded-lg border-2 border-white bg-white px-8 py-3 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
               {pending ? "Processing…" : "Process refund"}
             </button>
-          </>
-        )}
+        </div>
       </div>
     </div>
   )

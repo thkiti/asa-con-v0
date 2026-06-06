@@ -56,11 +56,12 @@ describe("POST /api/pos/refund", () => {
       staffId: "staff-1",
       originalReceiptId: "rcpt-1",
       amount: new Prisma.Decimal("50.00"),
+      reasonCode: null,
       reason: null,
       createdAt: new Date(),
     })
 
-    const res = await post({ saleId: "sale-1" })
+    const res = await post({ saleId: "sale-1", reasonCode: "KEY_BLANK_MISTAKE" })
 
     expect(res.status).toBe(200)
     expect(mockedCreateRefund).toHaveBeenCalledWith({
@@ -68,14 +69,14 @@ describe("POST /api/pos/refund", () => {
       branchId: "branch-shop",
       staffId: "staff-1",
       amount: undefined,
-      reason: null,
+      reasonCode: "KEY_BLANK_MISTAKE",
     })
     await expect(res.json()).resolves.toMatchObject({
       refund: { id: "refund-1", refundNo: "REF-SH001-202606-0001", amount: "50.00" },
     })
   })
 
-  it("passes explicit partial amount and reason", async () => {
+  it("passes explicit partial amount and reasonCode", async () => {
     mockedGetSession.mockResolvedValue(shopSession)
     mockedCreateRefund.mockResolvedValue({
       id: "refund-2",
@@ -86,14 +87,15 @@ describe("POST /api/pos/refund", () => {
       staffId: "staff-1",
       originalReceiptId: null,
       amount: new Prisma.Decimal("25.50"),
-      reason: "Key defective",
+      reasonCode: "KEY_BLANK_MISTAKE",
+      reason: "ผิดแบบ (Key Blank mistake) ใส่ไม่เข้า",
       createdAt: new Date(),
     })
 
     await post({
       saleId: "sale-1",
       amount: "25.50",
-      reason: "Key defective",
+      reasonCode: "KEY_BLANK_MISTAKE",
     })
 
     expect(mockedCreateRefund).toHaveBeenCalledWith({
@@ -101,7 +103,7 @@ describe("POST /api/pos/refund", () => {
       branchId: "branch-shop",
       staffId: "staff-1",
       amount: "25.50",
-      reason: "Key defective",
+      reasonCode: "KEY_BLANK_MISTAKE",
     })
   })
 

@@ -109,6 +109,24 @@ model Branch {
   vouchers          Voucher[]
   accountingPeriods        AccountingPeriod[]
   reconciliationSnapshots  ReconciliationSnapshot[]
+  salesTargets             BranchSalesTarget[]
+}
+
+/// HO monthly sales target per shop branch — daily split uses weekPattern Mon..Sun weights.
+model BranchSalesTarget {
+  id           String   @id @default(uuid())
+  branchId     String
+  year         Int
+  month        Int
+  monthlyTotal Decimal  @db.Decimal(18, 2)
+  weekPattern  Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, year, month])
+  @@index([branchId, year, month])
 }
 
 model Staff {
@@ -361,6 +379,7 @@ model Refund {
   staffId            String?
   originalReceiptId  String?
   amount             Decimal    @db.Decimal(18, 2)
+  reasonCode         String?
   reason             String?    @db.Text
   createdAt          DateTime   @default(now())
 

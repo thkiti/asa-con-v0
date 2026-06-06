@@ -324,13 +324,18 @@ All sales reporting reads **`Sale` / `SaleItem` / `Payment` / `Receipt`** with s
 | Count | Distinct `Receipt.id` or `Sale` with receipt policy |
 | Identity | `receiptNo` is display-only — not a join key to inventory ([09 §6.3](./09_REFERENCE_DATA_AND_PRODUCT_TYPES.md)) |
 
-### 6.7 Void / refund (future notes)
+### 6.7 Void / refund reporting rules
 
-| Topic | Direction |
-|-------|-----------|
+| Topic | Rule |
+|-------|------|
+| **Day sales history / calendar day cell** | Show **gross** sales by `Sale.createdAt` (Bangkok calendar date). **Do not** subtract refunds from the day amount — shows what was sold that day. |
+| **Month gross sales** | Sum `Sale.total` for `SaleStatus.COMPLETED` sales where `Sale.createdAt` falls in the selected month. |
+| **Month refunds** | Sum `Refund.amount` where `Refund.createdAt` falls in the selected month (cash-out month), **not** the original sale month. |
+| **Month net sales** | `Month Gross Sales − Month Refunds`. Shown in the month summary panel only — not baked into daily gross cells. |
 | **Void** | Filter by `SaleStatus`; voided sales excluded from revenue totals — no ledger mutation from reporting |
-| **Refund** | Future `lib/pos/refund.ts` writes `receiveStock` + refund sale rows; sales summary reads refund records separately |
-| **Partial refund** | Separate line-level status or adjustment document — kernel aggregates from committed refund tables only |
+| **Partial refund** | Aggregate from committed `Refund` rows only; sale day gross unchanged |
+
+Kernel: `lib/pos/sales-dashboard-metrics.ts` — `getSalesDashboardMetrics()`.
 
 ---
 

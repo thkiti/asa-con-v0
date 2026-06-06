@@ -93,4 +93,19 @@ describe("canAccessRoute", () => {
     )
     expect(canAccessRoute("/api/admin/receipt-settings", "SH_STAFF")).toBe(false)
   })
+
+  it("allows /api/shop routes for roles with shop area", () => {
+    expect(canAccessRoute("/api/shop/sales-targets/branches", "HO_ADMIN")).toBe(
+      true
+    )
+    expect(canAccessRoute("/api/shop/sales-targets/branches", "HO_FINANCE")).toBe(
+      true
+    )
+    expect(canAccessRoute("/api/shop/sales-targets/branches", "HO_OPERATIONS")).toBe(
+      true
+    )
+    expect(canAccessRoute("/api/shop/sales-targets/branches", "SH_STAFF")).toBe(
+      true
+    )
+  })
 })

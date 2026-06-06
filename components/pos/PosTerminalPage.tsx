@@ -26,7 +26,9 @@ import { fetchPosReceiptNoPreview } from "@/lib/pos-ui/pos-receipt-preview-clien
 import {
   fetchPosRefund,
   fetchPosRefundPreviewByReceiptNo,
+  fetchPosRefundableReceipts,
 } from "@/lib/pos-ui/pos-refund-client"
+import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
 import { fetchPosProductLookup } from "@/lib/pos-ui/pos-product-lookup"
 import { resolvePosReceiptPanelNo } from "@/lib/pos-ui/pos-session-display"
 import { fetchSessionUser } from "@/lib/pos-ui/session-client"
@@ -56,16 +58,14 @@ export function PosTerminalPage() {
   const [barcodeFocusRequest, setBarcodeFocusRequest] = useState(0)
   const [refundOpen, setRefundOpen] = useState(false)
   const [refundReceiptNo, setRefundReceiptNo] = useState("")
+  const [refundReceipts, setRefundReceipts] = useState<RefundableReceiptSummary[]>([])
+  const [refundReceiptsLoading, setRefundReceiptsLoading] = useState(false)
   const [refundAmount, setRefundAmount] = useState("")
-  const [refundReason, setRefundReason] = useState("")
+  const [refundReasonCode, setRefundReasonCode] = useState("")
   const [refundPreview, setRefundPreview] = useState<RefundPreviewResult | null>(null)
   const [refundLookupPending, setRefundLookupPending] = useState(false)
   const [refundPending, setRefundPending] = useState(false)
   const [refundError, setRefundError] = useState<string | null>(null)
-  const [refundSuccess, setRefundSuccess] = useState<{
-    refundNo: string
-    amount: string
-  } | null>(null)
 
   const refreshPreviewReceiptNo = useCallback(async () => {
     const result = await fetchPosReceiptNoPreview()
@@ -190,16 +190,54 @@ export function PosTerminalPage() {
 
   const resetRefundForm = useCallback(() => {
     setRefundReceiptNo("")
+    setRefundReceipts([])
+    setRefundReceiptsLoading(false)
     setRefundAmount("")
-    setRefundReason("")
+    setRefundReasonCode("")
     setRefundPreview(null)
     setRefundError(null)
-    setRefundSuccess(null)
   }, [])
+
+  const previewRefundByReceiptNo = useCallback(
+    async (receiptNo: string) => {
+      const trimmed = receiptNo.trim()
+      if (!trimmed || refundLookupPending) return
+
+      setRefundLookupPending(true)
+      setRefundError(null)
+      setRefundPreview(null)
+      setRefundAmount("")
+      setRefundReasonCode("")
+      try {
+        const result = await fetchPosRefundPreviewByReceiptNo(trimmed)
+        if (!result.ok) {
+          setRefundError(result.error)
+          return
+        }
+        setRefundPreview(result.preview)
+        setRefundAmount(result.preview.remainingRefundable)
+      } finally {
+        setRefundLookupPending(false)
+      }
+    },
+    [refundLookupPending]
+  )
 
   const openRefund = useCallback(() => {
     resetRefundForm()
     setRefundOpen(true)
+    setRefundReceiptsLoading(true)
+    void fetchPosRefundableReceipts()
+      .then((result) => {
+        if (result.ok) {
+          setRefundReceipts(result.receipts)
+        } else {
+          setRefundReceipts([])
+        }
+      })
+      .finally(() => {
+        setRefundReceiptsLoading(false)
+      })
   }, [resetRefundForm])
 
   const closeRefund = useCallback(() => {
@@ -208,26 +246,18 @@ export function PosTerminalPage() {
     resetRefundForm()
   }, [refundPending, refundLookupPending, resetRefundForm])
 
-  const lookupRefundReceipt = useCallback(async () => {
-    const receiptNo = refundReceiptNo.trim()
-    if (!receiptNo || refundLookupPending) return
-
-    setRefundLookupPending(true)
-    setRefundError(null)
-    setRefundPreview(null)
-    setRefundAmount("")
-    try {
-      const result = await fetchPosRefundPreviewByReceiptNo(receiptNo)
-      if (!result.ok) {
-        setRefundError(result.error)
-        return
-      }
-      setRefundPreview(result.preview)
-      setRefundAmount(result.preview.remainingRefundable)
-    } finally {
-      setRefundLookupPending(false)
-    }
-  }, [refundReceiptNo, refundLookupPending])
+  const selectRefundReceipt = useCallback(
+    (receiptNo: string) => {
+      setRefundReceiptNo(receiptNo)
+      setRefundPreview(null)
+      setRefundAmount("")
+      setRefundReasonCode("")
+      setRefundError(null)
+      if (!receiptNo.trim()) return
+      void previewRefundByReceiptNo(receiptNo)
+    },
+    [previewRefundByReceiptNo]
+  )
 
   const confirmRefund = useCallback(async () => {
     if (refundPending || !refundPreview) return
@@ -238,21 +268,20 @@ export function PosTerminalPage() {
       const result = await fetchPosRefund({
         saleId: refundPreview.saleId,
         amount: refundAmount.trim() || undefined,
-        reason: refundReason.trim() || null,
+        reasonCode: refundReasonCode,
       })
       if (!result.ok) {
         setRefundError(result.error)
         return
       }
       openPosRefundReceiptPrint(result.refund.id)
-      setRefundSuccess({
-        refundNo: result.refund.refundNo,
-        amount: result.refund.amount,
-      })
+      resetRefundForm()
+      setRefundOpen(false)
+      setBarcodeFocusRequest((n) => n + 1)
     } finally {
       setRefundPending(false)
     }
-  }, [refundAmount, refundPending, refundPreview, refundReason])
+  }, [refundAmount, refundPending, refundPreview, refundReasonCode, resetRefundForm])
 
   const onKeypadAction = useCallback(
     (id: PosKeypadActionId) => {
@@ -363,21 +392,19 @@ export function PosTerminalPage() {
       onCheckoutNewSaleWithoutPrint={newSaleWithoutPrint}
       refundOpen={refundOpen}
       refundReceiptNo={refundReceiptNo}
-      onRefundReceiptNoChange={setRefundReceiptNo}
+      refundReceipts={refundReceipts}
+      refundReceiptsLoading={refundReceiptsLoading}
+      onRefundReceiptSelect={selectRefundReceipt}
       refundAmount={refundAmount}
       onRefundAmountChange={setRefundAmount}
-      refundReason={refundReason}
-      onRefundReasonChange={setRefundReason}
+      refundReasonCode={refundReasonCode}
+      onRefundReasonCodeChange={setRefundReasonCode}
       refundPreview={refundPreview}
       refundLookupPending={refundLookupPending}
       refundPending={refundPending}
       refundError={refundError}
-      refundSuccess={refundSuccess}
       onRefundClose={() => {
         closeRefund()
-      }}
-      onRefundLookup={() => {
-        void lookupRefundReceipt()
       }}
       onRefundConfirm={() => {
         void confirmRefund()

@@ -13,6 +13,8 @@ import { prisma } from "@/lib/shared/prisma"
 
 const branchId = "branch-1"
 
+const defaultReasonCode = "KEY_BLANK_MISTAKE"
+
 describe("createRefund", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -37,6 +39,7 @@ describe("createRefund", () => {
       saleId,
       branchId,
       staffId: "staff-9",
+      reasonCode: defaultReasonCode,
     })
 
     expect(result.kind).toBe(RefundKind.SALE_LINKED)
@@ -59,6 +62,7 @@ describe("createRefund", () => {
       saleId,
       branchId,
       amount: "40.00",
+      reasonCode: defaultReasonCode,
     })
 
     expect(result.amount.toFixed(2)).toBe("40.00")
@@ -72,8 +76,8 @@ describe("createRefund", () => {
       total: "100.00",
     })
 
-    await createRefund({ saleId, branchId, amount: "60.00" })
-    const second = await createRefund({ saleId, branchId, amount: "40.00" })
+    await createRefund({ saleId, branchId, amount: "60.00", reasonCode: defaultReasonCode })
+    const second = await createRefund({ saleId, branchId, amount: "40.00", reasonCode: defaultReasonCode })
 
     expect(second.amount.toFixed(2)).toBe("40.00")
     expect(state.refunds).toHaveLength(2)
@@ -92,7 +96,7 @@ describe("createRefund", () => {
     })
 
     await expect(
-      createRefund({ saleId, branchId, amount: "100.01" })
+      createRefund({ saleId, branchId, amount: "100.01", reasonCode: defaultReasonCode })
     ).rejects.toMatchObject({ code: "OVER_REFUND" })
     expect(state.refunds).toHaveLength(0)
   })
@@ -104,8 +108,10 @@ describe("createRefund", () => {
       total: "50.00",
     })
 
-    await createRefund({ saleId, branchId })
-    await expect(createRefund({ saleId, branchId })).rejects.toMatchObject({
+    await createRefund({ saleId, branchId, reasonCode: defaultReasonCode })
+    await expect(
+      createRefund({ saleId, branchId, reasonCode: defaultReasonCode })
+    ).rejects.toMatchObject({
       code: "ALREADY_FULLY_REFUNDED",
     })
   })
@@ -119,7 +125,7 @@ describe("createRefund", () => {
       change: "50.00",
     })
 
-    const result = await createRefund({ saleId, branchId })
+    const result = await createRefund({ saleId, branchId, reasonCode: defaultReasonCode })
     expect(result.amount.toFixed(2)).toBe("150.00")
 
     const { saleId: sale2 } = seedSaleWithReceipt(state, {
@@ -129,7 +135,7 @@ describe("createRefund", () => {
       change: "50.00",
     })
     await expect(
-      createRefund({ saleId: sale2, branchId, amount: "151.00" })
+      createRefund({ saleId: sale2, branchId, amount: "151.00", reasonCode: defaultReasonCode })
     ).rejects.toMatchObject({ code: "OVER_REFUND" })
   })
 
@@ -163,7 +169,7 @@ describe("createRefund", () => {
     })
 
     await expect(
-      createRefund({ saleId: "sale-no-rcpt", branchId })
+      createRefund({ saleId: "sale-no-rcpt", branchId, reasonCode: defaultReasonCode })
     ).rejects.toMatchObject({ code: "RECEIPT_REQUIRED_FOR_REFUND" })
     expect(state.refunds).toHaveLength(0)
   })
@@ -179,8 +185,8 @@ describe("createRefund", () => {
       total: "20.00",
     })
 
-    const first = await createRefund({ saleId, branchId, amount: "40.00" })
-    const second = await createRefund({ saleId: saleId2, branchId, amount: "10.00" })
+    const first = await createRefund({ saleId, branchId, amount: "40.00", reasonCode: defaultReasonCode })
+    const second = await createRefund({ saleId: saleId2, branchId, amount: "10.00", reasonCode: defaultReasonCode })
 
     expect(first.refundNo).not.toBe(second.refundNo)
     expect(state.refunds).toHaveLength(2)
@@ -193,7 +199,7 @@ describe("createRefund", () => {
       total: "80.00",
     })
 
-    await createRefund({ saleId, branchId })
+    await createRefund({ saleId, branchId, reasonCode: defaultReasonCode })
 
     expect(state.transactions).toHaveLength(0)
     expect(state.stocks.size).toBe(0)
@@ -206,7 +212,7 @@ describe("createRefund", () => {
       total: "30.00",
     })
 
-    await createRefund({ saleId, branchId, tx })
+    await createRefund({ saleId, branchId, tx, reasonCode: defaultReasonCode })
 
     expect(prisma.$transaction).not.toHaveBeenCalled()
     expect(state.refunds).toHaveLength(1)
@@ -215,7 +221,52 @@ describe("createRefund", () => {
   it("rejects sale not found", async () => {
     setup()
     await expect(
-      createRefund({ saleId: "missing", branchId })
+      createRefund({ saleId: "missing", branchId, reasonCode: defaultReasonCode })
     ).rejects.toBeInstanceOf(RefundError)
+  })
+
+  it("stores reasonCode and Thai reason label", async () => {
+    const { state } = setup()
+    const { saleId } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "80.00",
+    })
+
+    const result = await createRefund({
+      saleId,
+      branchId,
+      reasonCode: "KEY_BLANK_MISTAKE",
+    })
+
+    expect(result.reasonCode).toBe("KEY_BLANK_MISTAKE")
+    expect(result.reason).toBe("ผิดแบบ (Key Blank mistake) ใส่ไม่เข้า")
+    expect(state.refunds[0]?.reasonCode).toBe("KEY_BLANK_MISTAKE")
+    expect(state.refunds[0]?.reason).toBe("ผิดแบบ (Key Blank mistake) ใส่ไม่เข้า")
+  })
+
+  it("rejects invalid reasonCode", async () => {
+    const { state } = setup()
+    const { saleId } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "80.00",
+    })
+
+    await expect(
+      createRefund({ saleId, branchId, reasonCode: "GOODWILL" })
+    ).rejects.toMatchObject({ code: "INVALID_REFUND_REASON" })
+    expect(state.refunds).toHaveLength(0)
+  })
+
+  it("rejects missing reasonCode", async () => {
+    const { state } = setup()
+    const { saleId } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "80.00",
+    })
+
+    await expect(createRefund({ saleId, branchId })).rejects.toMatchObject({
+      code: "INVALID_REFUND_REASON",
+    })
+    expect(state.refunds).toHaveLength(0)
   })
 })

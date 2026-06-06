@@ -130,4 +130,24 @@ describe("middleware unrelated API behavior", () => {
     expect(res.status).toBe(307)
     expect(res.headers.get("location")).toBe("http://localhost/login")
   })
+
+  it("allows HO roles through /api/shop/sales-targets/branches", () => {
+    const res = middleware(
+      requestFor("/api/shop/sales-targets/branches", {
+        sessionId: "sess-1",
+        role: "HO_ADMIN",
+        [SESSION_EXPIRES_COOKIE]: String(Date.now() + 60_000),
+      })
+    )
+    expect(res.status).toBe(200)
+    expect(res.headers.get("location")).toBeNull()
+  })
+
+  it("allows SH_STAFF through middleware for shop API (handler enforces HO guard)", () => {
+    const res = middleware(
+      requestFor("/api/shop/sales-targets/branches", validShopSessionCookies())
+    )
+    expect(res.status).toBe(200)
+    expect(res.headers.get("location")).toBeNull()
+  })
 })

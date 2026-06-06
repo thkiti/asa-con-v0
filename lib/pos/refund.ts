@@ -3,9 +3,11 @@ import {
   SaleStatus,
   type Prisma,
 } from "@/generated/prisma/client"
+import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
 import { prisma } from "@/lib/shared/prisma"
 import { toDec, ZERO } from "@/lib/stock/decimal"
 import { allocateRefundNo } from "./refund-receipt-no"
+import { resolveRefundReason } from "./refund-reasons"
 import { RefundError } from "./refund-errors"
 
 export type CreateRefundInput = {
@@ -13,6 +15,7 @@ export type CreateRefundInput = {
   branchId: string
   staffId?: string | null
   amount?: number | string | Prisma.Decimal | null
+  reasonCode?: string | null
   reason?: string | null
   tx?: Prisma.TransactionClient
 }
@@ -26,8 +29,15 @@ export type CreateRefundResult = {
   staffId: string | null
   originalReceiptId: string | null
   amount: Prisma.Decimal
+  reasonCode: string | null
   reason: string | null
   createdAt: Date
+}
+
+export type RefundPreviewLineItem = {
+  name: string
+  qty: number
+  lineTotal: string
 }
 
 export type RefundPreviewResult = {
@@ -37,6 +47,7 @@ export type RefundPreviewResult = {
   remainingRefundable: string
   originalReceiptId: string | null
   originalReceiptNo: string | null
+  items: RefundPreviewLineItem[]
 }
 
 type RefundDb = Pick<
@@ -78,6 +89,16 @@ function assertReceiptRequiredForRefund(): never {
   )
 }
 
+function assertRefundReason(
+  reasonCode: unknown
+): { reasonCode: string; reason: string } {
+  const resolved = resolveRefundReason(reasonCode)
+  if (!resolved) {
+    throw new RefundError("Invalid refund reason", "INVALID_REFUND_REASON", 400)
+  }
+  return resolved
+}
+
 async function sumRefundedForSale(
   db: RefundDb,
   saleId: string
@@ -101,7 +122,13 @@ export async function getRefundPreview(
 
   const sale = await db.sale.findFirst({
     where: { id: saleId, branchId, status: SaleStatus.COMPLETED },
-    include: { receipt: true },
+    include: {
+      receipt: true,
+      items: {
+        include: { product: { select: { name: true } } },
+        orderBy: { createdAt: "asc" },
+      },
+    },
   })
   if (!sale) {
     throw new RefundError("Sale not found", "SALE_NOT_FOUND", 404)
@@ -120,6 +147,11 @@ export async function getRefundPreview(
     remainingRefundable: remaining.gt(ZERO) ? remaining.toFixed(2) : ZERO.toFixed(2),
     originalReceiptId: sale.receipt?.id ?? null,
     originalReceiptNo: sale.receipt?.receiptNo ?? null,
+    items: sale.items.map((item) => ({
+      name: cleanGroupDisplayName(item.product.name),
+      qty: item.qty,
+      lineTotal: toDec(item.lineTotal).toFixed(2),
+    })),
   }
 }
 
@@ -167,10 +199,7 @@ async function createSaleLinkedRefund(
     )
   }
 
-  const reason =
-    input.reason != null && String(input.reason).trim() !== ""
-      ? String(input.reason).trim()
-      : null
+  const { reasonCode, reason } = assertRefundReason(input.reasonCode)
 
   const row = await db.refund.create({
     data: {
@@ -181,6 +210,7 @@ async function createSaleLinkedRefund(
       staffId: input.staffId?.trim() || null,
       originalReceiptId: sale.receipt?.id ?? null,
       amount,
+      reasonCode,
       reason,
     },
   })
@@ -194,6 +224,7 @@ async function createSaleLinkedRefund(
     staffId: row.staffId,
     originalReceiptId: row.originalReceiptId,
     amount: row.amount,
+    reasonCode: row.reasonCode,
     reason: row.reason,
     createdAt: row.createdAt,
   }

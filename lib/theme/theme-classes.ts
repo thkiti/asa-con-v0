@@ -46,6 +46,16 @@ export const themeMenuRowLink =
 export const themeMenuRowPlanned =
   "flex items-center justify-between rounded px-2 py-1.5 text-sm text-muted-foreground"
 
+/** SHOP section app tiles — fixed height, full-card click target. */
+export const themeMenuAppCard =
+  "flex min-h-[5.5rem] flex-col rounded-lg border border-[var(--btn-secondary-border)] bg-card p-4 transition-colors hover:bg-[var(--btn-secondary-hover)]"
+
+export const themeMenuAppCardPlanned =
+  "flex min-h-[5.5rem] flex-col justify-between rounded-lg border border-border bg-[var(--btn-disabled-bg)] p-4"
+
+export const themeMenuAppCardBadge =
+  "self-start rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+
 export const themePageTitle = "text-2xl font-bold tracking-tight text-foreground"
 
 export const themeSelect =

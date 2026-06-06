@@ -47,14 +47,18 @@ describe("buildRefundSlipText", () => {
 
   it("includes original receipt for SALE_LINKED", () => {
     const text = buildRefundSlipText(sampleContext())
-    expect(text).toContain("Orig Receipt")
+    expect(text).toContain("ORIGINAL RECEIPT NO")
     expect(text).toContain("REC-SH001-202606-0001")
   })
 
   it("includes reason and refund amount", () => {
-    const text = buildRefundSlipText(sampleContext())
+    const text = buildRefundSlipText(
+      sampleContext({
+        reason: "ผิดแบบ (Key Blank mistake) ใส่ไม่เข้า",
+      })
+    )
     expect(text).toContain("Reason")
-    expect(text).toContain("Defective item")
+    expect(text).toContain("ผิดแบบ (Key Blank mistake)")
     expect(text).toContain("REFUND")
     expect(text).toContain("50.00")
   })
@@ -77,7 +81,7 @@ describe("buildRefundSlipText", () => {
     )
     expect(text).toContain("GOODWILL")
     expect(text).toContain("Customer goodwill")
-    expect(text).not.toContain("Orig Receipt")
+    expect(text).not.toContain("ORIGINAL RECEIPT NO")
   })
 
   it("does not include sale line items, CASH, or CHANGE", () => {
@@ -115,5 +119,17 @@ describe("buildRefundSlipText", () => {
       })
     )
     expect(text).toContain("Thank you")
+  })
+
+  it("includes customer acknowledgement section after footer", () => {
+    const text = buildRefundSlipText(sampleContext())
+    const phoneIdx = text.indexOf("Phone No")
+    const signIdx = text.indexOf("Sign")
+    const refundIdx = text.indexOf("REFUND")
+
+    expect(phoneIdx).toBeGreaterThan(-1)
+    expect(signIdx).toBeGreaterThan(phoneIdx)
+    expect(phoneIdx).toBeGreaterThan(refundIdx)
+    expect(text).toContain("..............................")
   })
 })

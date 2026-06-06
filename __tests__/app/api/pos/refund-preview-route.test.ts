@@ -64,6 +64,7 @@ describe("GET /api/pos/refund/preview", () => {
       remainingRefundable: "100.00",
       originalReceiptId: "rcpt-1",
       originalReceiptNo: "REC-SH001-202606-0001",
+      items: [{ name: "KEY BLANK A", qty: 1, lineTotal: "100.00" }],
     })
 
     const res = await GET(

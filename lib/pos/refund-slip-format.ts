@@ -50,6 +50,18 @@ function formatRefundKindLabel(kind: RefundReceiptPrintContext["kind"]): string 
   return kind === "SALE_LINKED" ? "SALE LINKED" : "GOODWILL"
 }
 
+function appendCustomerAcknowledgement(lines: string[], width: number): void {
+  lines.push(repeatReceiptChar("-", width))
+  lines.push("")
+  lines.push("Phone No")
+  lines.push("")
+  lines.push(repeatReceiptChar(".", width))
+  lines.push("")
+  lines.push("Sign")
+  lines.push("")
+  lines.push(repeatReceiptChar(".", width))
+}
+
 export function buildRefundSlipText(context: RefundReceiptPrintContext): string {
   const out: string[] = []
   const w = RECEIPT_COLUMNS
@@ -75,7 +87,7 @@ export function buildRefundSlipText(context: RefundReceiptPrintContext): string 
   appendLabelValue(out, "Refund No", context.refundNo, w)
 
   if (context.kind === "SALE_LINKED" && context.originalReceiptNo) {
-    appendLabelValue(out, "Orig Receipt", context.originalReceiptNo, w)
+    appendLabelValue(out, "ORIGINAL RECEIPT NO", context.originalReceiptNo, w)
   }
 
   out.push(padReceiptLine("Date", formatReceiptDateTime(context.issuedAt), w))
@@ -120,6 +132,8 @@ export function buildRefundSlipText(context: RefundReceiptPrintContext): string 
   for (const footer of footers) {
     appendCenteredIfPresent(out, footer, w)
   }
+
+  appendCustomerAcknowledgement(out, w)
 
   out.push("")
   return out.join("\n")

@@ -119,6 +119,16 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("HO_ADMIN", "stock-card")?.status).toBe("planned")
     expect(findItem("HO_ADMIN", "stock-card")?.href).toBeUndefined()
   })
+
+  it("includes Sales Target Setup for HO shop section", () => {
+    const item = findItem("HO_ADMIN", "sales-target-setup")
+    expect(item?.status).toBe("available")
+    expect(item?.href).toBe("/shop/sales-targets")
+    expect(findItem("HO_OPERATIONS", "sales-target-setup")?.href).toBe(
+      "/shop/sales-targets"
+    )
+    expect(findItem("SH_STAFF", "sales-target-setup")).toBeUndefined()
+  })
 })
 
 describe("canAccessMainMenuSection", () => {

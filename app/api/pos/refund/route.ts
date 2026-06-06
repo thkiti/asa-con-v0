@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as {
       saleId?: unknown
       amount?: unknown
+      reasonCode?: unknown
       reason?: unknown
     }
 
@@ -44,9 +45,9 @@ export async function POST(req: NextRequest) {
       branchId,
       staffId: session.staffId,
       amount: parseOptionalBodyAmount(body.amount),
-      reason:
-        body.reason != null && String(body.reason).trim() !== ""
-          ? String(body.reason).trim()
+      reasonCode:
+        body.reasonCode != null && String(body.reasonCode).trim() !== ""
+          ? String(body.reasonCode).trim()
           : null,
     })
 

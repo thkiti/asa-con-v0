@@ -37,6 +37,7 @@ type RefundRow = {
   staffId: string | null
   originalReceiptId: string | null
   amount: Prisma.Decimal
+  reasonCode: string | null
   reason: string | null
   createdAt: Date
 }
@@ -182,6 +183,7 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
           staffId: string | null
           originalReceiptId: string | null
           amount: Prisma.Decimal
+          reasonCode: string | null
           reason: string | null
         }
       }) => {

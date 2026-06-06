@@ -17,4 +17,10 @@ export { createRefund, getRefundPreview } from "./refund"
 export type { CreateRefundInput, CreateRefundResult, RefundPreviewResult } from "./refund"
 export { RefundError } from "./refund-errors"
 export { getSalesSummary } from "./sales-summary"
+export { getSalesDashboardMetrics } from "./sales-dashboard-metrics"
+export type {
+  MonthlySalesDashboardSummary,
+  SalesDashboardDaySales,
+  SalesDashboardMetricsResult,
+} from "./sales-dashboard-metrics"
 export type { SalesSummaryPrisma } from "./sales-summary"

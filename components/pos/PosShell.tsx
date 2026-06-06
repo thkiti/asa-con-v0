@@ -9,6 +9,7 @@ import { PosReceiptPanel } from "./PosReceiptPanel"
 import { PosSessionBanner } from "./PosSessionBanner"
 import type { PosCartLine } from "@/lib/pos/cart"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
+import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 
 type PosShellProps = {
@@ -34,18 +35,18 @@ type PosShellProps = {
   onCheckoutNewSaleWithoutPrint: () => void
   refundOpen: boolean
   refundReceiptNo: string
-  onRefundReceiptNoChange: (value: string) => void
+  refundReceipts: RefundableReceiptSummary[]
+  refundReceiptsLoading: boolean
+  onRefundReceiptSelect: (receiptNo: string) => void
   refundAmount: string
   onRefundAmountChange: (value: string) => void
-  refundReason: string
-  onRefundReasonChange: (value: string) => void
+  refundReasonCode: string
+  onRefundReasonCodeChange: (value: string) => void
   refundPreview: RefundPreviewResult | null
   refundLookupPending: boolean
   refundPending: boolean
   refundError: string | null
-  refundSuccess: { refundNo: string; amount: string } | null
   onRefundClose: () => void
-  onRefundLookup: () => void
   onRefundConfirm: () => void
   barcodeFocusRequest?: number
   placeholderOverlay: PosPlaceholderId | null
@@ -76,18 +77,18 @@ export function PosShell({
   onCheckoutNewSaleWithoutPrint,
   refundOpen,
   refundReceiptNo,
-  onRefundReceiptNoChange,
+  refundReceipts,
+  refundReceiptsLoading,
+  onRefundReceiptSelect,
   refundAmount,
   onRefundAmountChange,
-  refundReason,
-  onRefundReasonChange,
+  refundReasonCode,
+  onRefundReasonCodeChange,
   refundPreview,
   refundLookupPending,
   refundPending,
   refundError,
-  refundSuccess,
   onRefundClose,
-  onRefundLookup,
   onRefundConfirm,
   barcodeFocusRequest = 0,
   placeholderOverlay,
@@ -147,17 +148,17 @@ export function PosShell({
           ) : refundOpen ? (
             <PosRefundOverlay
               receiptNo={refundReceiptNo}
-              onReceiptNoChange={onRefundReceiptNoChange}
+              receipts={refundReceipts}
+              receiptsLoading={refundReceiptsLoading}
+              onReceiptSelect={onRefundReceiptSelect}
               amount={refundAmount}
               onAmountChange={onRefundAmountChange}
-              reason={refundReason}
-              onReasonChange={onRefundReasonChange}
+              reasonCode={refundReasonCode}
+              onReasonCodeChange={onRefundReasonCodeChange}
               preview={refundPreview}
               lookupPending={refundLookupPending}
               pending={refundPending}
               error={refundError}
-              success={refundSuccess}
-              onLookup={onRefundLookup}
               onConfirm={onRefundConfirm}
               onClose={onRefundClose}
             />

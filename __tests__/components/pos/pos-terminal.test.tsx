@@ -46,6 +46,26 @@ async function flushPromises(): Promise<void> {
   })
 }
 
+function mockRefundableReceiptsResponse() {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      receipts: [
+        {
+          receiptNo: "REC-SH001-202606-0001",
+          saleId: "sale-refund-1",
+          issuedAt: "2026-06-06T14:32:00.000Z",
+          total: "100.00",
+          alreadyRefunded: "0.00",
+          remaining: "100.00",
+          cashierDisplay: "103-Somsak Kamnuch",
+        },
+      ],
+    }),
+  } as Response
+}
+
 describe("PosTerminalPage", () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -98,6 +118,9 @@ describe("PosTerminalPage", () => {
             ledger: { applied: 0, skippedZeroQty: 0 },
           }),
         } as Response)
+      }
+      if (url === "/api/pos/refund/receipts") {
+        return Promise.resolve(mockRefundableReceiptsResponse())
       }
       if (url.startsWith("/api/pos/products/lookup")) {
         return Promise.resolve({
@@ -209,8 +232,10 @@ describe("PosTerminalPage", () => {
     })
     await flushPromises()
 
-    expect(container.textContent).toContain("Enter the original sale receipt number")
+    expect(container.textContent).toContain("Recent Sales")
     expect(container.textContent).not.toContain("GOODWILL")
+    expect(container.textContent?.toLowerCase()).not.toContain("look up receipt")
+    expect(container.querySelector('input[aria-label="Manual receipt number"]')).toBeNull()
 
     const processBtn = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent?.includes("Process refund")
@@ -220,7 +245,7 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("successful refund POST opens refund receipt print", async () => {
+  it("successful refund opens print, closes overlay, and resets form", async () => {
     const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
     const fetchMock = global.fetch as jest.Mock
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
@@ -250,8 +275,12 @@ describe("PosTerminalPage", () => {
             remainingRefundable: "100.00",
             originalReceiptId: "rcpt-1",
             originalReceiptNo: "REC-SH001-202606-0001",
+            items: [{ name: "KEY BLANK A", qty: 1, lineTotal: "100.00" }],
           }),
         } as Response)
+      }
+      if (url === "/api/pos/refund/receipts") {
+        return Promise.resolve(mockRefundableReceiptsResponse())
       }
       if (url === "/api/pos/refund" && init?.method === "POST") {
         return Promise.resolve({
@@ -281,26 +310,23 @@ describe("PosTerminalPage", () => {
     })
     await flushPromises()
 
-    const receiptInput = container.querySelector(
-      'input[aria-label="Original receipt number"]'
-    ) as HTMLInputElement
+    const receiptSelect = container.querySelector(
+      'select[aria-label="Recent sales"]'
+    ) as HTMLSelectElement
     act(() => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value"
-      )?.set
-      nativeSetter?.call(receiptInput, "REC-SH001-202606-0001")
-      receiptInput.dispatchEvent(new Event("input", { bubbles: true }))
+      receiptSelect.value = "REC-SH001-202606-0001"
+      receiptSelect.dispatchEvent(new Event("change", { bubbles: true }))
     })
+    await flushPromises()
+    await flushPromises()
 
-    const lookupBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Look up receipt")
-    )
+    const reasonSelect = container.querySelector(
+      'select[aria-label="Refund reason"]'
+    ) as HTMLSelectElement
     act(() => {
-      lookupBtn!.click()
+      reasonSelect.value = "KEY_BLANK_MISTAKE"
+      reasonSelect.dispatchEvent(new Event("change", { bubbles: true }))
     })
-    await flushPromises()
-    await flushPromises()
 
     const amountInput = container.querySelector(
       'input[aria-label="Refund amount"]'
@@ -327,8 +353,9 @@ describe("PosTerminalPage", () => {
       "/shop/refund-receipt/refund-pos-1?autoprint=1",
       "_blank"
     )
-    expect(container.textContent).toContain("Refund complete")
-    expect(container.textContent).toContain("REF-SH001-202606-0001")
+    expect(container.textContent).not.toContain("Refund complete")
+    expect(container.querySelector('[aria-label="Recent sales"]')).toBeNull()
+    expect(container.textContent).toContain("Scan a product to add to cart")
 
     const refundPost = fetchMock.mock.calls.find(
       ([url, init]) => String(url) === "/api/pos/refund" && init?.method === "POST"
@@ -337,9 +364,137 @@ describe("PosTerminalPage", () => {
     expect(JSON.parse(String(refundPost?.[1]?.body))).toEqual({
       saleId: "sale-refund-1",
       amount: "50.00",
+      reasonCode: "KEY_BLANK_MISTAKE",
     })
 
+    act(() => {
+      refundBtn!.click()
+    })
+    await flushPromises()
+
+    const reopenedSelect = container.querySelector(
+      'select[aria-label="Recent sales"]'
+    ) as HTMLSelectElement
+    expect(reopenedSelect?.value).toBe("")
+    const reopenedAmount = container.querySelector(
+      'input[aria-label="Refund amount"]'
+    ) as HTMLInputElement
+    expect(reopenedAmount?.value).toBe("")
+    const reopenedReason = container.querySelector(
+      'select[aria-label="Refund reason"]'
+    ) as HTMLSelectElement
+    expect(reopenedReason?.value).toBe("")
+
     openSpy.mockRestore()
+    act(() => root.unmount())
+  })
+
+  it("failed refund keeps overlay open and preserves entered values", async () => {
+    const fetchMock = global.fetch as jest.Mock
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/pos/receipt-no/preview") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ receiptNo: "REC-SH001-202606-0001", preview: true }),
+        } as Response)
+      }
+      if (url === "/api/auth/session") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ user: sampleUser }),
+        } as Response)
+      }
+      if (url.startsWith("/api/pos/refund/preview")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            saleId: "sale-refund-1",
+            saleTotal: "100.00",
+            refundedTotal: "0.00",
+            remainingRefundable: "100.00",
+            originalReceiptId: "rcpt-1",
+            originalReceiptNo: "REC-SH001-202606-0001",
+            items: [{ name: "KEY BLANK A", qty: 1, lineTotal: "100.00" }],
+          }),
+        } as Response)
+      }
+      if (url === "/api/pos/refund/receipts") {
+        return Promise.resolve(mockRefundableReceiptsResponse())
+      }
+      if (url === "/api/pos/refund" && init?.method === "POST") {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({
+            error: "Refund amount exceeds remaining refundable balance",
+            code: "OVER_REFUND",
+          }),
+        } as Response)
+      }
+      return Promise.reject(new Error(`Unexpected fetch: ${url}`))
+    })
+
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const refundBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "REFUND"
+    )
+    act(() => {
+      refundBtn!.click()
+    })
+    await flushPromises()
+
+    const receiptSelect = container.querySelector(
+      'select[aria-label="Recent sales"]'
+    ) as HTMLSelectElement
+    act(() => {
+      receiptSelect.value = "REC-SH001-202606-0001"
+      receiptSelect.dispatchEvent(new Event("change", { bubbles: true }))
+    })
+    await flushPromises()
+    await flushPromises()
+
+    const reasonSelect = container.querySelector(
+      'select[aria-label="Refund reason"]'
+    ) as HTMLSelectElement
+    act(() => {
+      reasonSelect.value = "KEY_BLANK_MISTAKE"
+      reasonSelect.dispatchEvent(new Event("change", { bubbles: true }))
+    })
+
+    const amountInput = container.querySelector(
+      'input[aria-label="Refund amount"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(amountInput, "50.00")
+      amountInput.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+
+    const processBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Process refund")
+    )
+    act(() => {
+      processBtn!.click()
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.querySelector('[aria-label="Recent sales"]')).not.toBeNull()
+    expect(receiptSelect.value).toBe("REC-SH001-202606-0001")
+    expect(amountInput.value).toBe("50.00")
+    expect(reasonSelect.value).toBe("KEY_BLANK_MISTAKE")
+    expect(container.textContent).toContain("Refund amount exceeds remaining refundable balance")
+
     act(() => root.unmount())
   })
 

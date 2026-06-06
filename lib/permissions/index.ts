@@ -22,3 +22,10 @@ export {
   MasterDatabaseAuthError,
   requireMasterDatabaseSession,
 } from "./master"
+export {
+  canEditSalesTargets,
+  canViewSalesTargets,
+  SalesTargetAuthError,
+  requireSalesTargetEditSession,
+  requireSalesTargetViewSession,
+} from "./sales-targets"

@@ -1,4 +1,7 @@
 import type { RefundPreviewResult } from "@/lib/pos/refund"
+import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
+
+export type { RefundableReceiptSummary }
 
 export type PosRefundPreviewResult =
   | { ok: true; preview: RefundPreviewResult }
@@ -14,6 +17,58 @@ export type PosRefundSubmitResult =
       }
     }
   | { ok: false; status: number; error: string; code?: string }
+
+export type PosRefundableReceiptsResult =
+  | { ok: true; receipts: RefundableReceiptSummary[] }
+  | { ok: false; status: number; error: string; code?: string }
+
+export function formatRecentSaleReceiptDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ""
+  const day = String(d.getDate()).padStart(2, "0")
+  const month = String(d.getMonth() + 1).padStart(2, "0")
+  const year = d.getFullYear()
+  return `${day}.${month}.${year}`
+}
+
+export function formatRecentSaleReceiptOption(row: RefundableReceiptSummary): string {
+  const date = formatRecentSaleReceiptDate(row.issuedAt)
+  return date ? `${row.receiptNo} / ${date}` : row.receiptNo
+}
+
+export async function fetchPosRefundableReceipts(
+  query?: string,
+  fetchFn: typeof fetch = fetch
+): Promise<PosRefundableReceiptsResult> {
+  const params = new URLSearchParams()
+  const trimmed = query?.trim()
+  if (trimmed) params.set("query", trimmed)
+
+  const qs = params.toString()
+  const url = qs ? `/api/pos/refund/receipts?${qs}` : "/api/pos/refund/receipts"
+  const res = await fetchFn(url, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  })
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    receipts?: RefundableReceiptSummary[]
+    error?: string
+    code?: string
+  }
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      error: payload.error ?? "Receipt search failed",
+      code: payload.code,
+    }
+  }
+
+  return { ok: true, receipts: payload.receipts ?? [] }
+}
 
 export async function fetchPosRefundPreviewByReceiptNo(
   receiptNo: string,
@@ -56,7 +111,7 @@ export async function fetchPosRefund(
   input: {
     saleId: string
     amount?: string
-    reason?: string | null
+    reasonCode: string
   },
   fetchFn: typeof fetch = fetch
 ): Promise<PosRefundSubmitResult> {
@@ -65,11 +120,14 @@ export async function fetchPosRefund(
     return { ok: false, status: 400, error: "Sale is required", code: "MISSING_SALE" }
   }
 
-  const body: Record<string, string> = { saleId }
+  const reasonCode = input.reasonCode.trim()
+  if (!reasonCode) {
+    return { ok: false, status: 400, error: "Refund reason is required", code: "MISSING_REASON" }
+  }
+
+  const body: Record<string, string> = { saleId, reasonCode }
   const amount = input.amount?.trim()
   if (amount) body.amount = amount
-  const reason = input.reason?.trim()
-  if (reason) body.reason = reason
 
   const res = await fetchFn("/api/pos/refund", {
     method: "POST",
