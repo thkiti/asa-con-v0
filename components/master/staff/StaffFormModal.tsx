@@ -28,6 +28,8 @@ type StaffFormModalProps = {
     role: StaffListItem["role"]
     branchId: string
     password?: string
+    posCanCollect: boolean
+    allowAnyBranchLogin: boolean
   }) => Promise<void>
 }
 
@@ -47,6 +49,8 @@ export function StaffFormModal({
   const [role, setRole] = useState<StaffListItem["role"]>("SH_STAFF")
   const [branchId, setBranchId] = useState("")
   const [password, setPassword] = useState("")
+  const [posCanCollect, setPosCanCollect] = useState(false)
+  const [allowAnyBranchLogin, setAllowAnyBranchLogin] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -55,6 +59,8 @@ export function StaffFormModal({
       setName(staff.name)
       setRole(staff.role)
       setBranchId(staff.branchId)
+      setPosCanCollect(staff.posCanCollect)
+      setAllowAnyBranchLogin(staff.allowAnyBranchLogin)
       setPassword("")
       return
     }
@@ -62,6 +68,8 @@ export function StaffFormModal({
     setName("")
     setRole("SH_STAFF")
     setBranchId(defaultBranchId ?? branches[0]?.id ?? "")
+    setPosCanCollect(false)
+    setAllowAnyBranchLogin(false)
     setPassword("")
   }, [open, mode, staff, branches, defaultBranchId])
 
@@ -104,6 +112,9 @@ export function StaffFormModal({
               role,
               branchId,
               password: isEdit ? undefined : password.trim() || undefined,
+              posCanCollect,
+              allowAnyBranchLogin:
+                role === "SH_STAFF" ? allowAnyBranchLogin : false,
             })
           }}
         >
@@ -141,9 +152,13 @@ export function StaffFormModal({
             <span className="text-sm text-muted-foreground">Role</span>
             <select
               value={role}
-              onChange={(event) =>
-                setRole(event.target.value as StaffListItem["role"])
-              }
+              onChange={(event) => {
+                const nextRole = event.target.value as StaffListItem["role"]
+                setRole(nextRole)
+                if (nextRole !== "SH_STAFF") {
+                  setAllowAnyBranchLogin(false)
+                }
+              }}
               disabled={submitting}
               className={themeInput}
             >
@@ -173,6 +188,34 @@ export function StaffFormModal({
               ))}
             </select>
           </label>
+
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={posCanCollect}
+              onChange={(event) => setPosCanCollect(event.target.checked)}
+              disabled={submitting}
+            />
+            <span className="text-sm text-muted-foreground">
+              Collector (POS cash collection report)
+            </span>
+          </label>
+
+          {role === "SH_STAFF" ? (
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={allowAnyBranchLogin}
+                onChange={(event) =>
+                  setAllowAnyBranchLogin(event.target.checked)
+                }
+                disabled={submitting}
+              />
+              <span className="text-sm text-muted-foreground">
+                Replacer / พนักงานแทน
+              </span>
+            </label>
+          ) : null}
 
           {!isEdit ? (
             <label className="block">

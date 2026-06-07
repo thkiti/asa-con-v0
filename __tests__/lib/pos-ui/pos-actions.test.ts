@@ -2,7 +2,9 @@ import {
   getPosActionKind,
   getPosPlaceholderTitle,
   isPosPlaceholderId,
+  isPrintReportHighlighted,
   keypadDigitChar,
+  shouldGhostPrintReportButton,
 } from "@/lib/pos-ui/pos-actions"
 
 describe("pos-ui/pos-actions", () => {
@@ -17,12 +19,14 @@ describe("pos-ui/pos-actions", () => {
     expect(getPosActionKind("logout")).toBe("wire-logout")
   })
 
-  it("classifies checkout as wire-checkout and reports as placeholder", () => {
+  it("classifies checkout and POS report actions", () => {
     expect(getPosActionKind("checkout")).toBe("wire-checkout")
-    expect(getPosActionKind("read-x")).toBe("placeholder")
-    expect(isPosPlaceholderId("checkout")).toBe(false)
-    expect(isPosPlaceholderId("target-vs-sales")).toBe(false)
-    expect(isPosPlaceholderId("worktime")).toBe(false)
+    expect(getPosActionKind("collector")).toBe("wire-collector")
+    expect(getPosActionKind("repair-ticket")).toBe("wire-repair-ticket")
+    expect(getPosActionKind("read-x")).toBe("wire-read-x")
+    expect(getPosActionKind("read-z")).toBe("wire-read-z")
+    expect(getPosActionKind("print-report")).toBe("wire-print-report")
+    expect(isPosPlaceholderId("read-x")).toBe(false)
   })
 
   it("maps digit keys to characters", () => {
@@ -31,7 +35,26 @@ describe("pos-ui/pos-actions", () => {
     expect(keypadDigitChar("logout")).toBeNull()
   })
 
-  it("provides human titles for placeholders", () => {
+  it("provides human titles for placeholder ids", () => {
     expect(getPosPlaceholderTitle("worktime")).toBe("Worktime In/Out")
+  })
+
+  it("highlights print only for Z and COLLECT reports", () => {
+    expect(isPrintReportHighlighted("Z")).toBe(true)
+    expect(isPrintReportHighlighted("COLLECT")).toBe(true)
+    expect(isPrintReportHighlighted("X")).toBe(false)
+    expect(isPrintReportHighlighted(null)).toBe(false)
+  })
+
+  it("ghosts print when side muted or READ X is open", () => {
+    expect(
+      shouldGhostPrintReportButton({ sideMuted: true, readReportMode: "Z" })
+    ).toBe(true)
+    expect(
+      shouldGhostPrintReportButton({ sideMuted: false, readReportMode: "X" })
+    ).toBe(true)
+    expect(
+      shouldGhostPrintReportButton({ sideMuted: false, readReportMode: "Z" })
+    ).toBe(false)
   })
 })

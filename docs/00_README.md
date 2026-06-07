@@ -35,6 +35,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 29. [29_STOCK_DOCUMENT_WORKFLOW.md](./29_STOCK_DOCUMENT_WORKFLOW.md) — Phase 23B-0 stock document status writer and transition policy
 30. [30_MASTER_DATABASE.md](./30_MASTER_DATABASE.md) — Master Database HO_ADMIN CRUD (branch, staff, product / reference)
 31. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
+32. [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) — **POS Complete gate (P1–P4)** + thermal 80mm scope (memory doc)
+33. [RECEIPT_SETUP.md](./RECEIPT_SETUP.md) — current receipt layout / tax ID rules (pre-unify)
 
 ## Phase status
 
@@ -66,3 +68,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 22B | Period audit export (composed bundle, CSV pack, print on timeline page) | Done |
 | 23B-0 | Stock document workflow foundation (CANCELLED, status writer, policy, guards) | Done |
 | MD | Master Database — Branch / Staff / Product–Reference CRUD (`/master/*`, HO_ADMIN only) | Done |
+| POS | **POS Complete roadmap (P1–P4)** — posting validation, thermal print, READ_Z, repair review | **In progress** — see [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) |

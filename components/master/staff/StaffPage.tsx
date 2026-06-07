@@ -149,6 +149,8 @@ export function StaffPage() {
     role: StaffListItem["role"]
     branchId: string
     password?: string
+    posCanCollect: boolean
+    allowAnyBranchLogin: boolean
   }) => {
     setFormSubmitting(true)
     setFormError(null)
@@ -160,6 +162,8 @@ export function StaffPage() {
           name: values.name,
           role: values.role,
           branchId: values.branchId,
+          posCanCollect: values.posCanCollect,
+          allowAnyBranchLogin: values.allowAnyBranchLogin,
         })
       }
       setFormOpen(false)

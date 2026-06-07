@@ -34,6 +34,14 @@ describe("pos cart", () => {
     expect(lines[0]).toMatchObject({ productId: "p1", qty: 1, unitPrice: "99.50" })
   })
 
+  it("stores catalog image URL on new cart lines", () => {
+    const lines = addProductToCart([], {
+      ...productA,
+      catalogImageUrl: "https://blob.example/products/0101001.png",
+    })
+    expect(lines[0]?.catalogImageUrl).toBe("https://blob.example/products/0101001.png")
+  })
+
   it("merges duplicate productId by incrementing qty", () => {
     let lines = addProductToCart([], productA)
     lines = addProductToCart(lines, productA)

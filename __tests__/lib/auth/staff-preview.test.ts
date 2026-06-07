@@ -25,6 +25,7 @@ describe("previewStaffByStaffId", () => {
       staffId: "001",
       name: "Admin User",
       deleted: false,
+      allowAnyBranchLogin: true,
       branch: {
         id: "branch-ho",
         code: "HO999",
@@ -42,6 +43,7 @@ describe("previewStaffByStaffId", () => {
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
+      allowAnyBranchLogin: true,
     })
     expect(result).not.toHaveProperty("role")
     expect(result).not.toHaveProperty("password")
@@ -97,6 +99,7 @@ describe("previewStaffByStaffId", () => {
       staffId: "001",
       name: "Admin",
       deleted: false,
+      allowAnyBranchLogin: true,
       branch: {
         id: "b1",
         code: "HO999",

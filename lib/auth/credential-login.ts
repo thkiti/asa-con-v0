@@ -2,6 +2,7 @@ import { randomUUID } from "crypto"
 
 import type { Role } from "@/generated/prisma/client"
 import { prisma } from "@/lib/shared/prisma"
+import { canStaffUseBranch } from "@/lib/staff/canStaffUseBranch"
 
 import { DEV_PERIOD_ADMIN_STAFF_CODE } from "./period-admin-staff"
 import {
@@ -114,7 +115,29 @@ export async function credentialLogin(
     )
   }
 
-  if (staff.branch.code !== branchCode) {
+  const loginBranch = await prisma.branch.findUnique({
+    where: { code: branchCode },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      type: true,
+      isActive: true,
+      deleted: true,
+    },
+  })
+
+  if (
+    !loginBranch ||
+    !canStaffUseBranch(
+      {
+        branchId: staff.branchId,
+        role: staff.role,
+        allowAnyBranchLogin: staff.allowAnyBranchLogin,
+      },
+      loginBranch
+    )
+  ) {
     throw new CredentialLoginError(
       CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE,
       "BRANCH_MISMATCH",
@@ -133,9 +156,9 @@ export async function credentialLogin(
     role: staff.role as Role,
     staffId: staff.staffId,
     name: staff.name,
-    branchId: staff.branch.id,
-    branchCode: staff.branch.code,
-    branchName: staff.branch.name,
+    branchId: loginBranch.id,
+    branchCode: loginBranch.code,
+    branchName: loginBranch.name,
   }
 
   const safeReturnTo = resolveSafeReturnTo(input.returnTo, staff.role as Role)

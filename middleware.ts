@@ -41,7 +41,14 @@ export function middleware(request: NextRequest) {
   }
 
   if (!authenticated) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    const loginUrl = new URL("/login", request.url)
+    return NextResponse.redirect(
+      loginUrl,
+      request.method === "GET" ? 307 : 303
+    )
   }
 
   if (pathname === "/" || pathname === "") {
@@ -58,7 +65,14 @@ export function middleware(request: NextRequest) {
   }
 
   if (!canAccessRoute(pathname, role)) {
-    return NextResponse.redirect(new URL("/unauthorized", request.url))
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+    const unauthorizedUrl = new URL("/unauthorized", request.url)
+    return NextResponse.redirect(
+      unauthorizedUrl,
+      request.method === "GET" ? 307 : 303
+    )
   }
 
   return NextResponse.next()

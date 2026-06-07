@@ -32,6 +32,9 @@ export async function createStaff(
         role: input.role,
         branchId: branch.id,
         password: passwordHash,
+        posCanCollect: input.posCanCollect,
+        allowAnyBranchLogin:
+          input.role === "SH_STAFF" ? input.allowAnyBranchLogin : false,
         deleted: false,
       },
       select: staffSelectWithBranch,

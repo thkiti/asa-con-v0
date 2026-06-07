@@ -27,5 +27,7 @@ export async function patchStaff(
     name: body.name,
     role: body.role,
     branchId: body.branchId,
+    posCanCollect: body.posCanCollect,
+    allowAnyBranchLogin: body.allowAnyBranchLogin,
   }, context)
 }

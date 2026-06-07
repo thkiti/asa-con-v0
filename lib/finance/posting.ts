@@ -2,6 +2,7 @@
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import {
   buildJournalLineDraftsFromCodes,
+  resolveAccountsForPosRefund,
   resolveAccountsForPosSale,
   resolveAccountsForStockDocument,
 } from "./account-map"
@@ -13,6 +14,7 @@ import {
   type JournalLineCodeDraft,
   type JournalLineDraft,
   type OperationalVoucherInput,
+  type PostRefundVoucherInput,
   type PostSaleVoucherInput,
   type PostedVoucherResult,
   type PostStockDocumentVoucherInput,
@@ -146,6 +148,35 @@ export async function postSaleVoucher(
     refType: FINANCE_REF_TYPES.POS_SALE,
     refId: input.sale.id,
     description: "POS sale",
+    lines,
+  })
+}
+
+export async function postRefundVoucher(
+  input: PostRefundVoucherInput
+): Promise<PostedVoucherResult> {
+  if (!input.tx) {
+    throw new FinancePostingError(
+      "postRefundVoucher requires caller transaction (tx)",
+      "MISSING_TX"
+    )
+  }
+
+  const codeLines = resolveAccountsForPosRefund({
+    paymentMethod: input.paymentMethod,
+    amount: input.refund.amount,
+  })
+
+  const lines = await resolveAccountIds(input.tx, codeLines)
+
+  return postOperationalVoucher({
+    tx: input.tx,
+    branchId: input.refund.branchId,
+    date: input.refund.createdAt,
+    refType: FINANCE_REF_TYPES.POS_REFUND,
+    refId: input.refund.id,
+    refNo: input.refund.refundNo,
+    description: "POS refund",
     lines,
   })
 }

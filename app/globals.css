@@ -139,13 +139,63 @@ body {
     min-width: 0 !important;
     padding: 0 !important;
     font-family: "Courier New", Courier, monospace !important;
-    font-size: 14px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
     line-height: 1.25 !important;
     overflow: visible !important;
     overflow-x: visible !important;
   }
+
+  body.printing-repair-ticket {
+    background: white !important;
+  }
+
+  body.printing-repair-ticket * {
+    display: none !important;
+  }
+
+  body.printing-repair-ticket .repair-ticket-print-area,
+  body.printing-repair-ticket .repair-ticket-print-area * {
+    display: block !important;
+    visibility: visible !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    line-height: 1.25 !important;
+  }
+
+  body.printing-repair-ticket .repair-ticket-print-area li {
+    display: list-item !important;
+  }
+
+  body.printing-repair-ticket .repair-ticket-print-area {
+    box-sizing: content-box !important;
+    position: fixed !important;
+    left: 2mm !important;
+    top: 0 !important;
+    width: var(--receipt-slip-ch-width, 30ch) !important;
+    max-width: var(--receipt-slip-ch-width, 30ch) !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: #111 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    line-height: 1.25 !important;
+    z-index: 2147483647 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-repair-ticket .no-print {
+    display: none !important;
+  }
 }
 
+/* Thermal print experiment Option B: 30ch @ 12px bold (revert to 14px normal if alignment degrades) */
 /* Epson TM-U220 80mm — 30ch slip + @page 5mm + 2mm side inset on .pos-receipt-print */
 .pos-receipt-print {
   width: max-content;
@@ -172,12 +222,29 @@ body {
   word-break: normal;
   white-space: pre;
   font-family: "Courier New", Courier, monospace;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: bold;
   line-height: 1.25;
   color: #111;
 }
 
 .pos-receipt-slip {
+  width: var(--receipt-slip-ch-width, 30ch);
+  max-width: var(--receipt-slip-ch-width, 30ch);
+}
+
+.repair-ticket-print-area {
+  box-sizing: content-box;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  overflow-x: visible;
+  word-break: break-all;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1.25;
+  color: #111;
   width: var(--receipt-slip-ch-width, 30ch);
   max-width: var(--receipt-slip-ch-width, 30ch);
 }

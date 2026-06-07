@@ -34,7 +34,6 @@ describe("LoginPreviewInput", () => {
           onBlur={() => {}}
           onChange={() => {}}
           onKeyDown={() => {}}
-          placeholder="001"
           successLabel="Admin User"
         />
       )
@@ -65,7 +64,6 @@ describe("LoginPreviewInput", () => {
           onBlur={() => {}}
           onChange={() => {}}
           onKeyDown={() => {}}
-          placeholder="001"
           successLabel="Admin User"
         />
       )
@@ -93,7 +91,6 @@ describe("LoginPreviewInput", () => {
           onBlur={() => {}}
           onChange={() => {}}
           onKeyDown={() => {}}
-          placeholder="HO999"
           errorLabel="พนักงานไม่สังกัดสาขานี้"
         />
       )

@@ -9,6 +9,22 @@ jest.mock("@/lib/shared/prisma", () => ({
   },
 }))
 
+jest.mock("@/lib/finance/config", () => ({
+  isFinancePostingEnabled: jest.fn().mockReturnValue(false),
+}))
+
+jest.mock("@/lib/finance/posting", () => ({
+  postRefundVoucher: jest.fn(),
+}))
+
+jest.mock("@/lib/stock/ledger", () => ({
+  issueStock: jest.fn(),
+  receiveStock: jest.fn(),
+}))
+
+import { isFinancePostingEnabled } from "@/lib/finance/config"
+import { postRefundVoucher } from "@/lib/finance/posting"
+import { receiveStock } from "@/lib/stock/ledger"
 import { prisma } from "@/lib/shared/prisma"
 
 const branchId = "branch-1"
@@ -18,6 +34,11 @@ const defaultReasonCode = "KEY_BLANK_MISTAKE"
 describe("createRefund", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(false)
+    ;(postRefundVoucher as jest.Mock).mockResolvedValue({
+      voucherId: "v-refund-1",
+      alreadyPosted: false,
+    })
   })
 
   function setup() {
@@ -203,6 +224,23 @@ describe("createRefund", () => {
 
     expect(state.transactions).toHaveLength(0)
     expect(state.stocks.size).toBe(0)
+    expect(receiveStock).not.toHaveBeenCalled()
+  })
+
+  it("creates no StockTransaction even when finance posting is enabled", async () => {
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
+    const { state } = setup()
+    const { saleId } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "80.00",
+    })
+
+    await createRefund({ saleId, branchId, reasonCode: defaultReasonCode })
+
+    expect(postRefundVoucher).toHaveBeenCalledTimes(1)
+    expect(state.transactions).toHaveLength(0)
+    expect(state.stocks.size).toBe(0)
+    expect(receiveStock).not.toHaveBeenCalled()
   })
 
   it("joins caller tx without opening prisma.$transaction", async () => {

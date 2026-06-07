@@ -16,12 +16,14 @@ export type StaffPreview = {
   branchId: string
   branchCode: string
   branchName: string
+  allowAnyBranchLogin: boolean
 }
 
 export type BranchPreview = {
   branchId: string
   branchCode: string
   branchName: string
+  branchType: "HO" | "SH"
 }
 
 function rejectNotFound(): never {

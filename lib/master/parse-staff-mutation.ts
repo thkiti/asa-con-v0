@@ -30,22 +30,38 @@ function parseBranchId(value: unknown): string {
   return branchId
 }
 
+function resolveAllowAnyBranchLogin(role: Role, value: unknown): boolean {
+  if (role !== "SH_STAFF") return false
+  return Boolean(value)
+}
+
 export type CreateStaffInput = {
   staffId: string
   name: string
   role: Role
   branchId: string
   password: string
+  posCanCollect: boolean
+  allowAnyBranchLogin: boolean
 }
 
 export type UpdateStaffInput = {
   name: string
   role: Role
   branchId: string
+  posCanCollect: boolean
+  allowAnyBranchLogin: boolean
 }
 
 export type PatchStaffBody =
-  | { action: "update"; name: string; role: Role; branchId: string }
+  | {
+      action: "update"
+      name: string
+      role: Role
+      branchId: string
+      posCanCollect: boolean
+      allowAnyBranchLogin: boolean
+    }
   | { action: "delete" }
   | { action: "restore" }
   | { action: "resetPassword"; password: string }
@@ -70,12 +86,19 @@ export function parseCreateStaffBody(body: unknown): CreateStaffInput {
 
   const password = resolveStaffPasswordForCreate(record.password)
 
+  const role = parseRole(record.role)
+
   return {
     staffId,
     name,
-    role: parseRole(record.role),
+    role,
     branchId: parseBranchId(record.branchId),
     password,
+    posCanCollect: Boolean(record.posCanCollect),
+    allowAnyBranchLogin: resolveAllowAnyBranchLogin(
+      role,
+      record.allowAnyBranchLogin
+    ),
   }
 }
 
@@ -117,10 +140,17 @@ export function parsePatchStaffBody(body: unknown): PatchStaffBody {
     throw new MasterDomainError("Name is required", "VALIDATION_ERROR", 400)
   }
 
+  const role = parseRole(record.role)
+
   return {
     action: "update",
     name,
-    role: parseRole(record.role),
+    role,
     branchId: parseBranchId(record.branchId),
+    posCanCollect: Boolean(record.posCanCollect),
+    allowAnyBranchLogin: resolveAllowAnyBranchLogin(
+      role,
+      record.allowAnyBranchLogin
+    ),
   }
 }

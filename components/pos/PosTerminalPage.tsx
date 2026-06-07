@@ -17,6 +17,8 @@ import {
   isPosPlaceholderId,
   keypadDigitChar,
 } from "@/lib/pos-ui/pos-actions"
+import { printPosReadReport } from "@/lib/pos-ui/print-read-report"
+import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import {
   POS_STOCK_COUNT_HREF,
 } from "@/lib/pos-ui/pos-navigation"
@@ -44,6 +46,10 @@ export function PosTerminalPage() {
   const [cartLookupError, setCartLookupError] = useState<string | null>(null)
   const [lookupPending, setLookupPending] = useState(false)
   const [placeholder, setPlaceholder] = useState<PosPlaceholderId | null>(null)
+  const [readReport, setReadReport] = useState<ReadReportPayload | null>(null)
+  const [readStaffGate, setReadStaffGate] = useState<null | "X" | "Z">(null)
+  const [collectorOpen, setCollectorOpen] = useState(false)
+  const [repairTicketOpen, setRepairTicketOpen] = useState(false)
   const [targetVsSalesOpen, setTargetVsSalesOpen] = useState(false)
   const [worktimeOpen, setWorktimeOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
@@ -321,6 +327,34 @@ export function PosTerminalPage() {
         return
       }
 
+      if (kind === "wire-collector") {
+        setReadReport(null)
+        setCollectorOpen(true)
+        return
+      }
+
+      if (kind === "wire-repair-ticket") {
+        setRepairTicketOpen(true)
+        return
+      }
+
+      if (kind === "wire-read-x") {
+        setReadReport(null)
+        setReadStaffGate("X")
+        return
+      }
+
+      if (kind === "wire-read-z") {
+        setReadReport(null)
+        setReadStaffGate("Z")
+        return
+      }
+
+      if (kind === "wire-print-report") {
+        printPosReadReport(readReport)
+        return
+      }
+
       if (kind === "placeholder" && isPosPlaceholderId(id)) {
         setPlaceholder(id)
         return
@@ -346,7 +380,7 @@ export function PosTerminalPage() {
         }
       }
     },
-    [barcode, onLogout, openCheckout, openRefund, router, submitBarcode]
+    [barcode, onLogout, openCheckout, openRefund, readReport, router, submitBarcode]
   )
 
   if (loading || !session) {
@@ -427,6 +461,22 @@ export function PosTerminalPage() {
       onCloseTargetVsSales={() => setTargetVsSalesOpen(false)}
       worktimeOpen={worktimeOpen}
       onCloseWorktime={() => setWorktimeOpen(false)}
+      collectorOpen={collectorOpen}
+      onCloseCollector={() => setCollectorOpen(false)}
+      onCollectorReport={(report) => {
+        setCollectorOpen(false)
+        setReadReport(report)
+      }}
+      readStaffGate={readStaffGate}
+      onCloseReadStaffGate={() => setReadStaffGate(null)}
+      onReadReport={(report) => {
+        setReadStaffGate(null)
+        setReadReport(report)
+      }}
+      readReport={readReport}
+      onCloseReadReport={() => setReadReport(null)}
+      repairTicketOpen={repairTicketOpen}
+      onCloseRepairTicket={() => setRepairTicketOpen(false)}
       keypadDisabled={
         logoutPending || lookupPending || checkoutPending || refundPending || refundLookupPending
       }

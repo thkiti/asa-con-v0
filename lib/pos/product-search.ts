@@ -3,6 +3,7 @@ import { normalizeReferenceProductCode } from "@/lib/import/validation/product-c
 import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
 import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
 import { isSellableProductType } from "@/lib/products/product-type-rules"
+import { resolveCatalogProductImageUrl } from "@/lib/catalog-image/resolve-product-image-url"
 import type { PosCartProduct } from "./cart"
 import { PosLookupError } from "./pos-errors"
 
@@ -94,11 +95,14 @@ export async function lookupPosProductByCode(
     )
   }
 
+  const catalogImageUrl = await resolveCatalogProductImageUrl(product.code)
+
   return {
     productId: product.id,
     code: product.code,
     name: cleanGroupDisplayName(product.name),
     unitPrice: resolved.price.toFixed(2),
     priceSource: resolved.source,
+    catalogImageUrl,
   }
 }

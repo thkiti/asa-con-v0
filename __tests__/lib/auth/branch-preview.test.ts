@@ -24,6 +24,7 @@ describe("previewBranchByCode", () => {
       id: "branch-ho",
       code: "HO999",
       name: "Head Office",
+      type: "HO",
       isActive: true,
       deleted: false,
     } as never)
@@ -34,6 +35,7 @@ describe("previewBranchByCode", () => {
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
+      branchType: "HO",
     })
     expect(result).not.toHaveProperty("role")
   })

@@ -227,6 +227,7 @@ describe("POST /api/auth/staff-preview", () => {
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
+      allowAnyBranchLogin: false,
     })
   })
 
@@ -247,6 +248,7 @@ describe("POST /api/auth/staff-preview", () => {
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
+      allowAnyBranchLogin: false,
     })
     expect(body).not.toHaveProperty("role")
     expect(body).not.toHaveProperty("password")
@@ -276,6 +278,7 @@ describe("POST /api/auth/branch-preview", () => {
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
+      branchType: "HO",
     })
   })
 
@@ -294,6 +297,7 @@ describe("POST /api/auth/branch-preview", () => {
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
+      branchType: "HO",
     })
     expect(body).not.toHaveProperty("role")
   })

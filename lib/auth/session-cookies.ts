@@ -1,4 +1,5 @@
 import type { Role } from "@/generated/prisma/client"
+import { canAccessRoute, roleLandingPath } from "@/lib/permissions"
 
 import {
   BRANCH_CODE_COOKIE,
@@ -98,18 +99,13 @@ export function resolveSafeReturnTo(returnTo: unknown, role: Role): string | nul
     return raw
   }
 
-  if (
-    raw.startsWith("/main") ||
-    raw.startsWith("/shop") ||
-    raw.startsWith("/finance") ||
-    raw.startsWith("/system")
-  ) {
+  if (canAccessRoute(raw, role)) {
     return raw
   }
 
   return null
 }
 
-export function defaultRedirectForRole(_role: Role): string {
-  return "/main"
+export function defaultRedirectForRole(role: Role): string {
+  return roleLandingPath(role)
 }

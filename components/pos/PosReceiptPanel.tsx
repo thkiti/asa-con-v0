@@ -1,3 +1,5 @@
+"use client"
+
 import type { PosCartLine } from "@/lib/pos/cart"
 import { cartTotal, lineAmount } from "@/lib/pos/cart"
 import {
@@ -5,7 +7,7 @@ import {
   formatStaffDisplay,
 } from "@/lib/pos-ui/pos-session-display"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
-import type { ReactNode } from "react"
+import { useRef, useState, type ReactNode } from "react"
 
 type PosReceiptPanelProps = {
   session: PosTerminalSession
@@ -17,6 +19,11 @@ type PosReceiptPanelProps = {
   onRemoveLine: (productId: string) => void
   onClearCart: () => void
   overlay?: ReactNode
+}
+
+type CatalogPreviewState = {
+  url: string
+  top: number
 }
 
 function formatMoney(value: string | number): string {
@@ -38,10 +45,50 @@ export function PosReceiptPanel({
   onClearCart,
   overlay,
 }: PosReceiptPanelProps) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewState | null>(
+    null
+  )
   const total = cartTotal(lines)
 
+  function showCatalogPreview(
+    line: PosCartLine,
+    target: HTMLElement
+  ): void {
+    const imageUrl = line.catalogImageUrl
+    if (!imageUrl) return
+    const panel = panelRef.current
+    if (!panel) return
+    const panelRect = panel.getBoundingClientRect()
+    const rowRect = target.getBoundingClientRect()
+    setCatalogPreview({
+      url: imageUrl,
+      top: rowRect.top - panelRect.top,
+    })
+  }
+
   return (
-    <div className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white">
+    <div
+      ref={panelRef}
+      className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white"
+    >
+      {catalogPreview ? (
+        <div
+          data-testid="pos-cart-catalog-preview"
+          className="pos-cart-catalog-preview pointer-events-none absolute z-[60] box-border h-40 w-40 border border-zinc-300 bg-white p-1"
+          style={{
+            right: "calc(100% + 8px)",
+            top: catalogPreview.top,
+          }}
+        >
+          <img
+            src={catalogPreview.url}
+            alt=""
+            className="h-full w-full object-contain"
+          />
+        </div>
+      ) : null}
+
       {overlay}
 
       <div className="shrink-0 space-y-2 border-b border-white/30 p-3 text-center">
@@ -92,7 +139,16 @@ export function PosReceiptPanel({
                 >
                   <div className="min-w-0">
                     <div className="truncate font-medium">{line.name}</div>
-                    <div className="font-mono text-[10px] text-white/75">{line.code}</div>
+                    <div
+                      data-testid="pos-cart-product-code"
+                      className="font-mono text-[10px] text-white/75"
+                      onMouseOver={(event) =>
+                        showCatalogPreview(line, event.currentTarget)
+                      }
+                      onMouseOut={() => setCatalogPreview(null)}
+                    >
+                      {line.code}
+                    </div>
                     <button
                       type="button"
                       onClick={() => onRemoveLine(line.productId)}
@@ -110,7 +166,9 @@ export function PosReceiptPanel({
                     >
                       −
                     </button>
-                    <span className="w-6 text-center font-mono tabular-nums">{line.qty}</span>
+                    <span className="w-6 text-center font-mono tabular-nums">
+                      {line.qty}
+                    </span>
                     <button
                       type="button"
                       aria-label={`Increase qty for ${line.name}`}

@@ -20,6 +20,7 @@ export async function previewStaffByStaffId(
       staffId: true,
       name: true,
       deleted: true,
+      allowAnyBranchLogin: true,
       branch: {
         select: {
           id: true,
@@ -47,5 +48,6 @@ export async function previewStaffByStaffId(
     branchId: staff.branch.id,
     branchCode: staff.branch.code,
     branchName: staff.branch.name,
+    allowAnyBranchLogin: staff.allowAnyBranchLogin,
   }
 }

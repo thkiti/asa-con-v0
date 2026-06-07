@@ -20,7 +20,7 @@ type LoginPreviewInputProps = {
   onBlur: () => void
   onChange: (value: string) => void
   onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
-  placeholder: string
+  placeholder?: string
   disabled?: boolean
   autoComplete?: string
   successLabel?: string
@@ -38,7 +38,7 @@ export function LoginPreviewInput({
   onBlur,
   onChange,
   onKeyDown,
-  placeholder,
+  placeholder = "",
   disabled = false,
   autoComplete,
   successLabel,

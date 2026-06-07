@@ -2,6 +2,7 @@ export { isFinancePostingEnabled } from "./config"
 export {
   DEFAULT_ACCOUNT_CODES,
   buildJournalLineDraftsFromCodes,
+  resolveAccountsForPosRefund,
   resolveAccountsForPosSale,
   resolveAccountsForStockDocument,
 } from "./account-map"
@@ -19,6 +20,7 @@ export {
   type JournalLineCodeDraft,
   type JournalLineDraft,
   type OperationalVoucherInput,
+  type PostRefundVoucherInput,
   type PostSaleVoucherInput,
   type PostStockDocumentVoucherInput,
   type PostedVoucherResult,
@@ -28,6 +30,7 @@ export { closeAccountingPeriod, reopenAccountingPeriod } from "./period-close"
 export {
   ensureOpenPeriod,
   postOperationalVoucher,
+  postRefundVoucher,
   postSaleVoucher,
   postStockDocumentVoucher,
   resolveAccountIds,

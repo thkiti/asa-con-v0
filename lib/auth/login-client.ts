@@ -1,3 +1,4 @@
+import type { LoginBranchOption } from "./login-branch-options"
 import type { SessionUserApi } from "./session-user-api"
 import type { BranchPreview, StaffPreview } from "./login-preview"
 
@@ -47,6 +48,15 @@ function throwMappedError(
     mapLoginErrorCode(payload.code, payload.error),
     payload.code
   )
+}
+
+export async function fetchLoginBranches(): Promise<LoginBranchOption[]> {
+  const response = await fetch("/api/auth/login-branches")
+  const payload = await parseAuthJson(response)
+  if (!response.ok) {
+    throwMappedError(payload, response)
+  }
+  return (payload as { branches: LoginBranchOption[] }).branches ?? []
 }
 
 export async function postStaffPreview(input: {

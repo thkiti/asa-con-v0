@@ -21,16 +21,17 @@ import {
 } from "@/lib/auth/cookies"
 
 describe("session cookie helpers", () => {
-  it("defaults redirect to main menu", () => {
-    expect(defaultRedirectForRole("SH_STAFF")).toBe("/main")
+  it("defaults redirect by role landing path", () => {
+    expect(defaultRedirectForRole("SH_STAFF")).toBe("/shop")
     expect(defaultRedirectForRole("HO_ADMIN")).toBe("/main")
   })
 
-  it("allows returnTo /main and /shop paths", () => {
+  it("allows returnTo paths the role can access", () => {
     expect(resolveSafeReturnTo("/main", "SH_STAFF")).toBe("/main")
     expect(resolveSafeReturnTo("/shop/stock-documents", "SH_STAFF")).toBe(
       "/shop/stock-documents"
     )
+    expect(resolveSafeReturnTo("/finance/periods", "SH_STAFF")).toBeNull()
   })
 
   it("allows HO_ADMIN returnTo under /system/import", () => {

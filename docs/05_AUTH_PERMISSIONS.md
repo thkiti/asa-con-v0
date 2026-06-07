@@ -18,6 +18,20 @@ Centralized role access, session stub, route/menu guards.
 | `HO_OPERATIONS` | yes | no | yes | yes | no | no | `/main` |
 | `SH_STAFF` | no | no | no | yes | no | no | `/main` |
 
+### SH_STAFF Replacer (`allowAnyBranchLogin`)
+
+Some shop staff are configured in **Master → Staff** as **Replacer / พนักงานแทน** (`Staff.allowAnyBranchLogin`). This is **not** HO access, finance access, or cross-branch stock access inside the app.
+
+| Concept | Meaning |
+|---------|---------|
+| Home branch | `Staff.branchId` — permanent assignment in master data |
+| Session branch | Branch code entered at login — stored in session cookies |
+| Replacer login | `SH_STAFF` with `allowAnyBranchLogin` may log in to any **active shop (`SH`) branch** as replacement staff |
+| After login | Behaves like normal `SH_STAFF` of the **selected session branch** only (POS, stock documents, print — all scoped to session `branchId`) |
+| Not allowed | HO branches, inactive/deleted branches, arbitrary branch switching after login, finance/admin/master routes |
+
+Collector (`posCanCollect`) is independent — unchanged by replacer.
+
 **Master Database** (`/master/*`): HO_ADMIN-only maintenance for **Branch**, **Staff**, and **Product / ReferenceStock** (CRUD complete). Bulk product and reference **creation** remains **System Import** (`/system/import`). See [30_MASTER_DATABASE.md](./30_MASTER_DATABASE.md).
 
 | Page | Path | Notes |

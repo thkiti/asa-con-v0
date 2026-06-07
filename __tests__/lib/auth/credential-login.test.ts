@@ -14,6 +14,9 @@ jest.mock("@/lib/shared/prisma", () => ({
     staff: {
       findUnique: jest.fn(),
     },
+    branch: {
+      findUnique: jest.fn(),
+    },
   },
 }))
 
@@ -21,9 +24,24 @@ import { prisma } from "@/lib/shared/prisma"
 
 const validPasswordHashPromise = getDefaultStaffPasswordHash()
 
+function loginBranch(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "branch-ho",
+    code: "HO999",
+    name: "Head Office",
+    type: "HO",
+    isActive: true,
+    deleted: false,
+    ...overrides,
+  }
+}
+
 async function activeStaffRecord(overrides: {
   password?: string
   deleted?: boolean
+  role?: string
+  branchId?: string
+  allowAnyBranchLogin?: boolean
   branch?: {
     id: string
     code: string
@@ -36,10 +54,12 @@ async function activeStaffRecord(overrides: {
     id: "staff-internal-1",
     staffId: "001",
     name: "Admin User",
-    role: "HO_ADMIN",
-    branchId: "branch-ho",
+    role: overrides.role ?? "HO_ADMIN",
+    branchId: overrides.branchId ?? "branch-ho",
     password: overrides.password ?? (await validPasswordHashPromise),
     deleted: overrides.deleted ?? false,
+    allowAnyBranchLogin: overrides.allowAnyBranchLogin ?? false,
+    posCanCollect: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     branch: overrides.branch ?? {
@@ -55,9 +75,10 @@ async function activeStaffRecord(overrides: {
 describe("credentialLogin", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.mocked(prisma.branch.findUnique).mockResolvedValue(loginBranch() as never)
   })
 
-  it("returns SessionUser with branch fields on valid password", async () => {
+  it("returns SessionUser with selected login branch fields on valid password", async () => {
     jest
       .mocked(prisma.staff.findUnique)
       .mockResolvedValue((await activeStaffRecord()) as never)
@@ -127,6 +148,14 @@ describe("credentialLogin", () => {
     jest
       .mocked(prisma.staff.findUnique)
       .mockResolvedValue((await activeStaffRecord()) as never)
+    jest.mocked(prisma.branch.findUnique).mockResolvedValue(
+      loginBranch({
+        id: "branch-sh-1",
+        code: "SH001",
+        name: "Shop 1",
+        type: "SH",
+      }) as never
+    )
 
     await expect(
       credentialLogin({
@@ -136,6 +165,107 @@ describe("credentialLogin", () => {
       })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE,
+      code: "BRANCH_MISMATCH",
+      httpStatus: 403,
+    })
+  })
+
+  it("allows replacer SH_STAFF to login to another active shop branch", async () => {
+    jest.mocked(prisma.staff.findUnique).mockResolvedValue(
+      (await activeStaffRecord({
+        role: "SH_STAFF",
+        staffId: "002",
+        branchId: "branch-sh-home",
+        allowAnyBranchLogin: true,
+        branch: {
+          id: "branch-sh-home",
+          code: "SH999",
+          name: "Buffer",
+          isActive: true,
+          deleted: false,
+        },
+      })) as never
+    )
+    jest.mocked(prisma.branch.findUnique).mockResolvedValue(
+      loginBranch({
+        id: "branch-sh-1",
+        code: "SH001",
+        name: "Shop 1",
+        type: "SH",
+      }) as never
+    )
+
+    const result = await credentialLogin({
+      username: "002",
+      password: "1234",
+      branchCode: "SH001",
+    })
+
+    expect(result.sessionUser.branchId).toBe("branch-sh-1")
+    expect(result.sessionUser.branchCode).toBe("SH001")
+    expect(result.sessionUser.branchName).toBe("Shop 1")
+  })
+
+  it("rejects replacer on inactive shop branch", async () => {
+    jest.mocked(prisma.staff.findUnique).mockResolvedValue(
+      (await activeStaffRecord({
+        role: "SH_STAFF",
+        branchId: "branch-sh-home",
+        allowAnyBranchLogin: true,
+        branch: {
+          id: "branch-sh-home",
+          code: "SH999",
+          name: "Buffer",
+          isActive: true,
+          deleted: false,
+        },
+      })) as never
+    )
+    jest.mocked(prisma.branch.findUnique).mockResolvedValue(
+      loginBranch({
+        id: "branch-sh-1",
+        code: "SH001",
+        name: "Shop 1",
+        type: "SH",
+        isActive: false,
+      }) as never
+    )
+
+    await expect(
+      credentialLogin({
+        username: "001",
+        password: "1234",
+        branchCode: "SH001",
+      })
+    ).rejects.toMatchObject({
+      code: "BRANCH_MISMATCH",
+      httpStatus: 403,
+    })
+  })
+
+  it("rejects replacer on HO branch", async () => {
+    jest.mocked(prisma.staff.findUnique).mockResolvedValue(
+      (await activeStaffRecord({
+        role: "SH_STAFF",
+        branchId: "branch-sh-home",
+        allowAnyBranchLogin: true,
+        branch: {
+          id: "branch-sh-home",
+          code: "SH999",
+          name: "Buffer",
+          isActive: true,
+          deleted: false,
+        },
+      })) as never
+    )
+
+    await expect(
+      credentialLogin({
+        username: "001",
+        password: "1234",
+        branchCode: "HO999",
+      })
+    ).rejects.toMatchObject({
       code: "BRANCH_MISMATCH",
       httpStatus: 403,
     })
@@ -151,7 +281,7 @@ describe("credentialLogin", () => {
     expect(prisma.staff.findUnique).not.toHaveBeenCalled()
   })
 
-  it("rejects inactive branch", async () => {
+  it("rejects inactive home branch", async () => {
     jest.mocked(prisma.staff.findUnique).mockResolvedValue(
       (await activeStaffRecord({
         branch: {
@@ -173,7 +303,7 @@ describe("credentialLogin", () => {
     })
   })
 
-  it("rejects deleted branch", async () => {
+  it("rejects deleted home branch", async () => {
     jest.mocked(prisma.staff.findUnique).mockResolvedValue(
       (await activeStaffRecord({
         branch: {

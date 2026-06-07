@@ -18,6 +18,11 @@ export type ResolveAccountsForPosSaleInput = {
   cogsAmount?: Parameters<typeof toMoney>[0]
 }
 
+export type ResolveAccountsForPosRefundInput = {
+  paymentMethod: PaymentMethod
+  amount: Parameters<typeof toMoney>[0]
+}
+
 export type ResolveAccountsForStockDocumentInput = {
   docType: DocType
   inboundValue: Parameters<typeof toMoney>[0]
@@ -73,6 +78,34 @@ export function resolveAccountsForPosSale(
   }
 
   return lines
+}
+
+/** Money-only refund: reverse revenue and tender only — no COGS or inventory lines. */
+export function resolveAccountsForPosRefund(
+  input: ResolveAccountsForPosRefundInput
+): JournalLineCodeDraft[] {
+  const amount = toMoney(input.amount)
+  if (amount.lte(ZERO)) {
+    throw new FinancePostingError(
+      "POS refund amount must be positive",
+      "INVALID_AMOUNT"
+    )
+  }
+
+  return [
+    {
+      accountCode: DEFAULT_ACCOUNT_CODES.REVENUE,
+      debit: amount,
+      credit: ZERO,
+      memo: "POS refund revenue reversal",
+    },
+    {
+      accountCode: tenderAccountCode(input.paymentMethod),
+      debit: ZERO,
+      credit: amount,
+      memo: "POS refund cash out",
+    },
+  ]
 }
 
 export function resolveAccountsForStockDocument(

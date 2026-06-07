@@ -4,6 +4,7 @@ import { AccountingPeriodStatus, PaymentMethod, Prisma } from "@/generated/prism
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
   postOperationalVoucher,
+  postRefundVoucher,
   postSaleVoucher,
 } from "@/lib/finance/posting"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
@@ -108,6 +109,51 @@ describe("finance posting", () => {
         lines: [],
       })
     ).rejects.toThrow(FinancePostingError)
+  })
+
+  it("posts refund voucher using refund.id ref", async () => {
+    const { tx, state } = createFinanceMockTx()
+    const createdAt = new Date("2026-05-20T14:00:00.000Z")
+    await seedOpenPeriod(tx, "branch-1", createdAt)
+    const result = await postRefundVoucher({
+      tx,
+      refund: {
+        id: "refund-uuid-1",
+        branchId: "branch-1",
+        refundNo: "REF-SH001-202605-0001",
+        amount: "50",
+        createdAt,
+      },
+      paymentMethod: PaymentMethod.CASH,
+    })
+
+    expect(result.voucherId).toBeTruthy()
+    const voucher = state.vouchers[0]
+    expect(voucher?.refId).toBe("refund-uuid-1")
+    expect(voucher?.refType).toBe(FINANCE_REF_TYPES.POS_REFUND)
+    expect(voucher?.refNo).toBe("REF-SH001-202605-0001")
+  })
+
+  it("is idempotent for postRefundVoucher on refType + refId", async () => {
+    const { tx, state } = createFinanceMockTx()
+    const createdAt = new Date("2026-05-20T14:00:00.000Z")
+    await seedOpenPeriod(tx, "branch-1", createdAt)
+    const input = {
+      tx,
+      refund: {
+        id: "refund-uuid-2",
+        branchId: "branch-1",
+        refundNo: "REF-SH001-202605-0002",
+        amount: "30",
+        createdAt,
+      },
+      paymentMethod: PaymentMethod.CASH,
+    }
+    const first = await postRefundVoucher(input)
+    const second = await postRefundVoucher(input)
+    expect(second.alreadyPosted).toBe(true)
+    expect(second.voucherId).toBe(first.voucherId)
+    expect(state.vouchers).toHaveLength(1)
   })
 
   it("posts sale voucher using sale.id ref", async () => {

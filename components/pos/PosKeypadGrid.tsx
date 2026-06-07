@@ -3,9 +3,14 @@
 import { POS_KEYPAD_BUTTONS } from "@/lib/pos-ui/keypad-layout"
 import type { PosKeypadActionId, PosKeypadButtonVariant } from "@/lib/pos-ui/types"
 
+const POS_KEYPAD_GHOST_SURFACE =
+  "border-2 border-zinc-500/50 bg-zinc-400/30 shadow-inner cursor-not-allowed"
+
 type PosKeypadGridProps = {
   onAction: (id: PosKeypadActionId) => void
   disabled?: boolean
+  printReportHighlighted?: boolean
+  ghostButtonIds?: ReadonlySet<PosKeypadActionId>
 }
 
 function variantClassName(variant: PosKeypadButtonVariant): string {
@@ -50,7 +55,12 @@ function labelLines(label: string, multiline?: boolean): string[] {
   return [label]
 }
 
-export function PosKeypadGrid({ onAction, disabled = false }: PosKeypadGridProps) {
+export function PosKeypadGrid({
+  onAction,
+  disabled = false,
+  printReportHighlighted = false,
+  ghostButtonIds,
+}: PosKeypadGridProps) {
   return (
     <div className="grid h-full max-w-full grid-cols-7 grid-rows-4 gap-2">
       {POS_KEYPAD_BUTTONS.map((btn) => {
@@ -58,18 +68,40 @@ export function PosKeypadGrid({ onAction, disabled = false }: PosKeypadGridProps
         const rowSpan = btn.rowSpan ?? 1
         const lines = labelLines(btn.label, btn.multiline)
         const isDigit = btn.variant === "digit" || btn.variant === "control"
+        const isGhost = ghostButtonIds?.has(btn.id) ?? false
+        const isPrint = btn.id === "print-report"
+        const printClass = isPrint && printReportHighlighted
+          ? "border-4 border-red-950 bg-gradient-to-b from-red-600 to-red-900 text-white shadow-[0_0_0_2px_rgba(254,202,202,0.95),0_4px_0_#450a0a] hover:brightness-110 active:translate-y-[1px]"
+          : variantClassName(btn.variant)
+
+        if (isGhost) {
+          return (
+            <button
+              key={btn.id}
+              type="button"
+              disabled
+              tabIndex={-1}
+              aria-hidden
+              style={{
+                gridColumn: `${btn.col} / span ${colSpan}`,
+                gridRow: `${btn.row} / span ${rowSpan}`,
+              }}
+              className={`h-full w-full rounded-lg ${POS_KEYPAD_GHOST_SURFACE}`}
+            />
+          )
+        }
 
         return (
           <button
             key={btn.id}
             type="button"
-            disabled={disabled}
+            disabled={disabled && !isPrint}
             onClick={() => onAction(btn.id)}
             style={{
               gridColumn: `${btn.col} / span ${colSpan}`,
               gridRow: `${btn.row} / span ${rowSpan}`,
             }}
-            className={`h-full w-full rounded-lg font-extrabold shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${disabled ? "" : "cursor-pointer"} ${variantClassName(btn.variant)} ${isDigit ? "" : "text-xs"}`}
+            className={`h-full w-full rounded-lg font-extrabold shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${disabled && !isPrint ? "" : "cursor-pointer"} ${printClass} ${isDigit ? "" : "text-xs"}`}
           >
             {lines.length > 1 ? (
               lines.map((line, i) => (

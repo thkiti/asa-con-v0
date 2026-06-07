@@ -12,6 +12,7 @@ export type PosCartProduct = {
   name: string
   unitPrice: string
   priceSource: RetailPriceSource
+  catalogImageUrl?: string | null
 }
 
 export type PosCartLine = {
@@ -21,6 +22,7 @@ export type PosCartLine = {
   qty: number
   unitPrice: string
   priceSource: RetailPriceSource
+  catalogImageUrl?: string | null
 }
 
 export function lineAmount(line: Pick<PosCartLine, "qty" | "unitPrice">): string {
@@ -51,6 +53,7 @@ export function addProductToCart(
         qty: 1,
         unitPrice: product.unitPrice,
         priceSource: product.priceSource,
+        catalogImageUrl: product.catalogImageUrl ?? null,
       },
     ]
   }

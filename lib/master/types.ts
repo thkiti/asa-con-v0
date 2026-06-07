@@ -25,6 +25,8 @@ export type StaffListItem = {
   branchId: string
   branchCode: string
   branchName: string
+  posCanCollect: boolean
+  allowAnyBranchLogin: boolean
 }
 
 export type ProductReferenceListItem = {

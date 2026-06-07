@@ -51,6 +51,9 @@ export async function updateStaff(
       name: input.name.trim(),
       role: input.role,
       branchId: branch.id,
+      posCanCollect: input.posCanCollect,
+      allowAnyBranchLogin:
+        input.role === "SH_STAFF" ? input.allowAnyBranchLogin : false,
     },
     select: staffSelectWithBranch,
   })

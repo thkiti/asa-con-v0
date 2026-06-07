@@ -1,8 +1,16 @@
 "use client"
 
+import { LoginBranchSelect } from "@/components/auth/LoginBranchSelect"
 import { LoginPreviewInput } from "@/components/auth/LoginPreviewInput"
 import { ThemeSelector } from "@/components/theme/ThemeSelector"
+import { isLoginBranchAllowed } from "@/lib/auth/login-branch-match"
 import {
+  type LoginBranchOption,
+  resolveLoginBranchOptions,
+  shouldLoadShopBranches,
+} from "@/lib/auth/login-branch-options"
+import {
+  fetchLoginBranches,
   postBranchPreview,
   postCredentialLogin,
   postStaffPreview,
@@ -22,6 +30,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react"
@@ -34,19 +43,18 @@ export function LoginForm() {
   const returnTo = searchParams.get("returnTo") ?? ""
 
   const staffIdRef = useRef<HTMLInputElement>(null)
-  const branchCodeRef = useRef<HTMLInputElement>(null)
+  const branchCodeRef = useRef<HTMLSelectElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
   const staffEnterCommitRef = useRef(false)
-  const branchEnterCommitRef = useRef(false)
 
   const [staffId, setStaffId] = useState("")
   const [branchCode, setBranchCode] = useState("")
   const [password, setPassword] = useState("")
+  const [shopBranches, setShopBranches] = useState<LoginBranchOption[]>([])
   const [staffPreview, setStaffPreview] = useState<StaffPreview | null>(null)
   const [branchPreview, setBranchPreview] = useState<BranchPreview | null>(null)
   const [branchMatched, setBranchMatched] = useState(false)
   const [staffFocused, setStaffFocused] = useState(false)
-  const [branchFocused, setBranchFocused] = useState(false)
   const [staffFieldError, setStaffFieldError] = useState<string | null>(null)
   const [branchFieldError, setBranchFieldError] = useState<string | null>(null)
   const [loginError, setLoginError] = useState<string | null>(null)
@@ -54,6 +62,11 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [pendingFocus, setPendingFocus] = useState<LoginFocusTarget | null>(
     null
+  )
+
+  const branchOptions = useMemo(
+    () => resolveLoginBranchOptions(staffPreview, shopBranches),
+    [staffPreview, shopBranches]
   )
 
   const focusStaffInput = useCallback((selectAll = true) => {
@@ -83,7 +96,11 @@ export function LoginForm() {
     const el = targetRef.current
     if (el && !el.disabled) {
       el.focus({ preventScroll: true })
-      if (pendingFocus === "staff" && el.value.length > 0) {
+      if (
+        pendingFocus === "staff" &&
+        el instanceof HTMLInputElement &&
+        el.value.length > 0
+      ) {
         el.select()
       }
       setPendingFocus(null)
@@ -109,6 +126,7 @@ export function LoginForm() {
     setBranchMatched(false)
     setBranchCode("")
     setPassword("")
+    setShopBranches([])
     setStaffFieldError(null)
     setBranchFieldError(null)
   }, [])
@@ -121,6 +139,7 @@ export function LoginForm() {
     setBranchMatched(false)
     setBranchCode("")
     setPassword("")
+    setShopBranches([])
     setBranchFieldError(null)
   }, [])
 
@@ -160,13 +179,26 @@ export function LoginForm() {
       setBranchCode("")
       setPassword("")
       setBranchFieldError(null)
-      if (options?.focusNext) {
-        setPendingFocus("branch")
+
+      if (shouldLoadShopBranches(preview)) {
+        const branches = await fetchLoginBranches()
+        setShopBranches(branches)
+        if (options?.focusNext) {
+          setPendingFocus("branch")
+        }
+      } else {
+        setShopBranches([])
+        await runBranchPreview({
+          branchCode: preview.branchCode,
+          focusNext: options?.focusNext,
+          staffPreview: preview,
+        })
       }
     } catch (err) {
       setStaffPreview(null)
       setBranchPreview(null)
       setBranchMatched(false)
+      setShopBranches([])
       setStaffFieldError(
         err instanceof Error ? err.message : "ไม่พบข้อมูล"
       )
@@ -176,16 +208,21 @@ export function LoginForm() {
     }
   }
 
-  async function runBranchPreview(options?: { focusNext?: boolean }) {
-    if (!staffPreview) {
+  async function runBranchPreview(options?: {
+    focusNext?: boolean
+    branchCode?: string
+    staffPreview?: StaffPreview
+  }) {
+    const activeStaff = options?.staffPreview ?? staffPreview
+    if (!activeStaff) {
       setStaffFieldError("กรุณาตรวจสอบรหัสพนักงานก่อน")
       setPendingFocus("staff")
       return
     }
 
-    const raw = branchCode.trim()
+    const raw = (options?.branchCode ?? branchCode).trim()
     if (!raw) {
-      setBranchFieldError("กรุณากรอกรหัสสาขา")
+      setBranchFieldError("กรุณาเลือกสาขา")
       setBranchPreview(null)
       setBranchMatched(false)
       if (options?.focusNext) {
@@ -202,7 +239,7 @@ export function LoginForm() {
       setBranchPreview(preview)
       setBranchCode(preview.branchCode)
 
-      if (preview.branchId !== staffPreview.branchId) {
+      if (!isLoginBranchAllowed(activeStaff, preview)) {
         setBranchMatched(false)
         setPassword("")
         setBranchFieldError("พนักงานไม่สังกัดสาขานี้")
@@ -242,11 +279,9 @@ export function LoginForm() {
     void runStaffPreview({ focusNext: true })
   }
 
-  function onBranchCodeKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+  function onBranchCodeKeyDown(event: KeyboardEvent<HTMLSelectElement>) {
     if (event.key !== "Enter") return
     event.preventDefault()
-    branchEnterCommitRef.current = true
-    setBranchFocused(false)
 
     if (branchFieldError) {
       clearBranchFieldForRetry()
@@ -365,7 +400,6 @@ export function LoginForm() {
               resetAfterStaffChange()
             }}
             onKeyDown={onStaffIdKeyDown}
-            placeholder="001"
             autoComplete="username"
             disabled={loading}
             successLabel={
@@ -374,39 +408,28 @@ export function LoginForm() {
             errorLabel={staffFieldError ?? undefined}
           />
 
-          <LoginPreviewInput
+          <LoginBranchSelect
             id="login-branch-code"
             name="branchCode"
             label="รหัสสาขา"
-            inputRef={branchCodeRef}
-            rawValue={branchCode}
-            focused={branchFocused}
-            onFocus={() => {
-              if (!branchFieldError) {
-                setBranchFocused(true)
-              }
-            }}
-            onBlur={() => {
-              setBranchFocused(false)
-              if (branchEnterCommitRef.current) {
-                branchEnterCommitRef.current = false
-                return
-              }
-              void runBranchPreview()
-            }}
-            onChange={(value) => {
-              setBranchCode(value)
+            selectRef={branchCodeRef}
+            value={branchCode}
+            ready={staffPreview !== null}
+            options={branchOptions}
+            disabled={loading}
+            onChange={(code) => {
+              setBranchCode(code)
               setBranchPreview(null)
               setBranchMatched(false)
               setPassword("")
               if (branchFieldError) {
                 setBranchFieldError(null)
-                setBranchFocused(true)
+              }
+              if (code) {
+                void runBranchPreview({ branchCode: code })
               }
             }}
             onKeyDown={onBranchCodeKeyDown}
-            placeholder="HO999"
-            disabled={loading || !staffPreview}
             successLabel={
               branchPreview && branchMatched && !branchFieldError
                 ? branchPreview.branchName

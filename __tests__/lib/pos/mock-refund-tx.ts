@@ -124,7 +124,7 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
         include,
       }: {
         where: { id: string; branchId: string; status?: SaleStatus }
-        include?: { receipt?: boolean }
+        include?: { receipt?: boolean; payment?: boolean }
       }) => {
         const sale = state.sales.find(
           (s) =>
@@ -137,7 +137,11 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
           include?.receipt === true
             ? state.receipts.find((r) => r.saleId === sale.id) ?? null
             : undefined
-        return { ...sale, receipt }
+        const payment =
+          include?.payment === true
+            ? state.payments.find((p) => p.saleId === sale.id) ?? null
+            : undefined
+        return { ...sale, receipt, payment }
       },
     },
     refund: {

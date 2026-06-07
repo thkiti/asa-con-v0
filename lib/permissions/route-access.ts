@@ -21,11 +21,13 @@ export const API_BYPASS_PATHS = [
   "/api/auth/logout",
   "/api/auth/staff-preview",
   "/api/auth/branch-preview",
+  "/api/auth/login-branches",
   "/api/finance",
   "/api/pos",
   "/api/stock-document",
   "/api/system",
   "/api/operation",
+  "/api/repair-photo",
 ] as const
 
 function pathnameArea(pathname: string): AppArea | null {

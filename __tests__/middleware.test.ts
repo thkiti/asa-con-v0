@@ -2,9 +2,13 @@ import { NextRequest } from "next/server"
 import { middleware } from "@/middleware"
 import { SESSION_EXPIRES_COOKIE } from "@/lib/auth/cookies"
 
-function requestFor(pathname: string, cookies: Record<string, string> = {}) {
+function requestFor(
+  pathname: string,
+  cookies: Record<string, string> = {},
+  init?: RequestInit
+) {
   const url = new URL(pathname, "http://localhost")
-  const req = new NextRequest(url)
+  const req = new NextRequest(url, init)
   for (const [name, value] of Object.entries(cookies)) {
     req.cookies.set(name, value)
   }
@@ -125,10 +129,29 @@ describe("middleware page protection", () => {
 })
 
 describe("middleware unrelated API behavior", () => {
-  it("redirects unauthenticated non-bypass API paths to login", () => {
+  it("returns 401 JSON for unauthenticated non-bypass API paths", () => {
     const res = middleware(requestFor("/api/stock/summary"))
-    expect(res.status).toBe(307)
-    expect(res.headers.get("location")).toBe("http://localhost/login")
+    expect(res.status).toBe(401)
+    expect(res.headers.get("location")).toBeNull()
+  })
+
+  it("returns 403 JSON for forbidden non-bypass API paths", async () => {
+    const res = middleware(
+      requestFor("/api/stock/summary", validShopSessionCookies(), {
+        method: "POST",
+      })
+    )
+    expect(res.status).toBe(403)
+    expect(res.headers.get("location")).toBeNull()
+    expect(await res.json()).toEqual({ error: "Forbidden" })
+  })
+
+  it("passes /api/repair-photo through without redirect", () => {
+    const res = middleware(
+      requestFor("/api/repair-photo", validShopSessionCookies())
+    )
+    expect(res.status).toBe(200)
+    expect(res.headers.get("location")).toBeNull()
   })
 
   it("allows HO roles through /api/shop/sales-targets/branches", () => {

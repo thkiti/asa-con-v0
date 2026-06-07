@@ -7,6 +7,8 @@ export function toStaffListItem(row: {
   role: StaffListItem["role"]
   deleted: boolean
   branchId: string
+  posCanCollect: boolean
+  allowAnyBranchLogin: boolean
   branch: { code: string; name: string }
 }): StaffListItem {
   return {
@@ -18,6 +20,8 @@ export function toStaffListItem(row: {
     branchId: row.branchId,
     branchCode: row.branch.code,
     branchName: row.branch.name,
+    posCanCollect: row.posCanCollect,
+    allowAnyBranchLogin: row.allowAnyBranchLogin,
   }
 }
 
@@ -28,6 +32,8 @@ export const staffSelectWithBranch = {
   role: true,
   deleted: true,
   branchId: true,
+  posCanCollect: true,
+  allowAnyBranchLogin: true,
   branch: {
     select: { code: true, name: true },
   },

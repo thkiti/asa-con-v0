@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client"
 import { DEV_PERIOD_ADMIN_STAFF_CODE } from "@/lib/auth/period-admin-staff"
+import { toStaffListItem } from "./staff-mapper"
 import type { StaffListItem, StaffListQuery } from "./types"
 
 type StaffDb = Pick<PrismaClient, "staff">
@@ -35,14 +36,5 @@ export async function listStaff(
     orderBy: { staffId: "asc" },
   })
 
-  return rows.map((row) => ({
-    id: row.id,
-    staffId: row.staffId,
-    name: row.name,
-    role: row.role,
-    deleted: row.deleted,
-    branchId: row.branchId,
-    branchCode: row.branch.code,
-    branchName: row.branch.name,
-  }))
+  return rows.map((row) => toStaffListItem(row))
 }

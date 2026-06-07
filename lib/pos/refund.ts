@@ -3,8 +3,11 @@ import {
   SaleStatus,
   type Prisma,
 } from "@/generated/prisma/client"
+import { isFinancePostingEnabled } from "@/lib/finance/config"
+import { postRefundVoucher } from "@/lib/finance/posting"
 import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
 import { prisma } from "@/lib/shared/prisma"
+import { buildPostRefundVoucherInput } from "./refund-finance"
 import { toDec, ZERO } from "@/lib/stock/decimal"
 import { allocateRefundNo } from "./refund-receipt-no"
 import { resolveRefundReason } from "./refund-reasons"
@@ -157,7 +160,8 @@ export async function getRefundPreview(
 
 async function createSaleLinkedRefund(
   db: RefundDb,
-  input: RefundCreateInput
+  input: RefundCreateInput,
+  tx: Prisma.TransactionClient
 ): Promise<CreateRefundResult> {
   const saleId = String(input.saleId ?? "").trim()
   const branchId = assertBranchId(input.branchId)
@@ -167,7 +171,7 @@ async function createSaleLinkedRefund(
 
   const sale = await db.sale.findFirst({
     where: { id: saleId, branchId, status: SaleStatus.COMPLETED },
-    include: { receipt: true },
+    include: { receipt: true, payment: true },
   })
   if (!sale) {
     throw new RefundError("Sale not found", "SALE_NOT_FOUND", 404)
@@ -215,7 +219,7 @@ async function createSaleLinkedRefund(
     },
   })
 
-  return {
+  const result: CreateRefundResult = {
     id: row.id,
     refundNo: row.refundNo,
     kind: row.kind,
@@ -228,6 +232,25 @@ async function createSaleLinkedRefund(
     reason: row.reason,
     createdAt: row.createdAt,
   }
+
+  if (isFinancePostingEnabled()) {
+    if (!sale.payment) {
+      throw new RefundError(
+        "Sale payment is required for finance posting",
+        "MISSING_PAYMENT",
+        500
+      )
+    }
+    await postRefundVoucher(
+      buildPostRefundVoucherInput({
+        tx,
+        refund: result,
+        paymentMethod: sale.payment.method,
+      })
+    )
+  }
+
+  return result
 }
 
 export async function createRefund(
@@ -242,7 +265,11 @@ export async function createRefund(
   const run = async (tx: Prisma.TransactionClient): Promise<CreateRefundResult> => {
     const at = new Date()
     const refundNo = await allocateRefundNo(tx, branchId, at)
-    return createSaleLinkedRefund(tx, { ...input, branchId, saleId, refundNo })
+    return createSaleLinkedRefund(
+      tx,
+      { ...input, branchId, saleId, refundNo },
+      tx
+    )
   }
 
   if (input.tx) return run(input.tx)

@@ -7,16 +7,15 @@ export type PosActionKind =
   | "wire-checkout"
   | "wire-target-vs-sales"
   | "wire-worktime"
+  | "wire-collector"
+  | "wire-repair-ticket"
+  | "wire-read-x"
+  | "wire-read-z"
+  | "wire-print-report"
   | "placeholder"
   | "keypad"
 
-const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = [
-  "collector",
-  "read-x",
-  "read-z",
-  "repair-ticket",
-  "print-report",
-]
+const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = []
 
 const PLACEHOLDER_SET = new Set<string>(PLACEHOLDER_IDS)
 
@@ -48,6 +47,11 @@ const KEYPAD_BUFFER_IDS = new Set<string>([
 export function getPosActionKind(id: PosKeypadActionId): PosActionKind {
   if (id === "logout") return "wire-logout"
   if (id === "checkout") return "wire-checkout"
+  if (id === "collector") return "wire-collector"
+  if (id === "repair-ticket") return "wire-repair-ticket"
+  if (id === "read-x") return "wire-read-x"
+  if (id === "read-z") return "wire-read-z"
+  if (id === "print-report") return "wire-print-report"
   if (WIRE_TARGET_VS_SALES_IDS.has(id)) return "wire-target-vs-sales"
   if (WIRE_WORKTIME_IDS.has(id)) return "wire-worktime"
   if (WIRE_REFUND_IDS.has(id)) return "wire-refund"
@@ -62,16 +66,7 @@ export function isPosPlaceholderId(id: string): id is PosPlaceholderId {
 }
 
 export function getPosPlaceholderPhaseHint(id: PosPlaceholderId): string {
-  switch (id) {
-    case "collector":
-    case "read-x":
-    case "read-z":
-    case "print-report":
-    case "repair-ticket":
-      return "Coming in a later POS phase — APIs not yet available in v0"
-    default:
-      return "Not available yet"
-  }
+  return "Not available yet"
 }
 
 export function getPosPlaceholderTitle(id: PosPlaceholderId): string {
@@ -101,4 +96,20 @@ export function keypadDigitChar(id: PosKeypadActionId): string | null {
   if (id === "digit-0") return "0"
   const match = /^digit-([1-9])$/.exec(id)
   return match ? match[1] : null
+}
+
+/** PRINT cell ghost when overlay blocks keypad or READ X report is open. */
+export function shouldGhostPrintReportButton(opts: {
+  sideMuted: boolean
+  readReportMode: "X" | "Z" | "COLLECT" | null
+}): boolean {
+  if (opts.sideMuted) return true
+  if (!opts.readReportMode) return false
+  return opts.readReportMode !== "Z" && opts.readReportMode !== "COLLECT"
+}
+
+export function isPrintReportHighlighted(
+  readReportMode: "X" | "Z" | "COLLECT" | null
+): boolean {
+  return readReportMode === "Z" || readReportMode === "COLLECT"
 }

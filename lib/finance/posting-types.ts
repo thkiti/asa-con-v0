@@ -3,6 +3,7 @@ import type { DocType, PaymentMethod } from "@/generated/prisma/client"
 
 export const FINANCE_REF_TYPES = {
   POS_SALE: "POS_SALE",
+  POS_REFUND: "POS_REFUND",
   STOCK_DOC_POST: "STOCK_DOC_POST",
 } as const
 
@@ -66,4 +67,16 @@ export type PostStockDocumentVoucherInput = {
     inboundValue: Prisma.Decimal | number | string
     outboundValue?: Prisma.Decimal | number | string
   }
+}
+
+export type PostRefundVoucherInput = {
+  tx: Prisma.TransactionClient
+  refund: {
+    id: string
+    branchId: string
+    refundNo: string
+    amount: Prisma.Decimal | number | string
+    createdAt: Date
+  }
+  paymentMethod: PaymentMethod
 }

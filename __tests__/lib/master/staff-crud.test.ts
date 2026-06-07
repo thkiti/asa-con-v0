@@ -35,6 +35,8 @@ function staffRow(overrides: Record<string, unknown> = {}) {
     role: Role.SH_STAFF,
     deleted: false,
     branchId: shBranch.id,
+    posCanCollect: false,
+    allowAnyBranchLogin: false,
     branch: { code: "SH999", name: "Buffer" },
     ...overrides,
   }
@@ -52,6 +54,36 @@ describe("parseStaffMutation", () => {
     ).toMatchObject({
       staffId: "010",
       password: "1234",
+      posCanCollect: false,
+      allowAnyBranchLogin: false,
+    })
+  })
+
+  it("parses allowAnyBranchLogin for SH_STAFF", () => {
+    expect(
+      parseCreateStaffBody({
+        staffId: "010",
+        name: "Replacer",
+        role: "SH_STAFF",
+        branchId: shBranch.id,
+        allowAnyBranchLogin: true,
+      })
+    ).toMatchObject({
+      allowAnyBranchLogin: true,
+    })
+  })
+
+  it("forces allowAnyBranchLogin false for non SH_STAFF roles", () => {
+    expect(
+      parseCreateStaffBody({
+        staffId: "010",
+        name: "Admin",
+        role: "HO_ADMIN",
+        branchId: hoBranch.id,
+        allowAnyBranchLogin: true,
+      })
+    ).toMatchObject({
+      allowAnyBranchLogin: false,
     })
   })
 
@@ -99,9 +131,12 @@ describe("createStaff", () => {
       role: Role.SH_STAFF,
       branchId: shBranch.id,
       password: "5678",
+      posCanCollect: false,
+      allowAnyBranchLogin: true,
     })
 
     const data = create.mock.calls[0][0].data
+    expect(data.allowAnyBranchLogin).toBe(true)
     expect(data.password).not.toBe("5678")
     await expect(verifyStaffPassword("5678", data.password)).resolves.toBe(true)
   })
@@ -118,6 +153,8 @@ describe("createStaff", () => {
         role: Role.HO_ADMIN,
         branchId: hoBranch.id,
         password: "1234",
+        posCanCollect: false,
+        allowAnyBranchLogin: false,
       })
     ).rejects.toMatchObject({ code: "RESERVED_STAFF_ID" })
   })
@@ -137,6 +174,8 @@ describe("createStaff", () => {
       role: Role.HO_ADMIN,
       branchId: hoBranch.id,
       password: "1234",
+      posCanCollect: false,
+      allowAnyBranchLogin: false,
     })
     expect(create).toHaveBeenCalled()
   })
@@ -158,6 +197,8 @@ describe("createStaff", () => {
         role: Role.SH_STAFF,
         branchId: shBranch.id,
         password: "1234",
+        posCanCollect: false,
+        allowAnyBranchLogin: false,
       })
     ).rejects.toMatchObject({ code: "STAFF_ID_EXISTS" })
   })
@@ -175,6 +216,8 @@ describe("createStaff", () => {
         role: Role.HO_ADMIN,
         branchId: shBranch.id,
         password: "1234",
+        posCanCollect: false,
+        allowAnyBranchLogin: false,
       })
     ).rejects.toMatchObject({ code: "ROLE_BRANCH_MISMATCH" })
   })
@@ -201,8 +244,37 @@ describe("updateStaff", () => {
         name: "Admin",
         role: Role.SH_STAFF,
         branchId: shBranch.id,
+        posCanCollect: false,
+        allowAnyBranchLogin: false,
       })
     ).rejects.toMatchObject({ code: "LAST_HO_ADMIN" })
+  })
+
+  it("forces allowAnyBranchLogin false when demoting replacer to HO role", async () => {
+    const update = jest.fn().mockResolvedValue(staffRow({ role: Role.HO_OPERATIONS }))
+    const db = {
+      branch: { findUnique: jest.fn().mockResolvedValue(hoBranch) },
+      staff: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "staff-1",
+          staffId: "010",
+          role: Role.SH_STAFF,
+          branch: shBranch,
+        }),
+        count: jest.fn(),
+        update,
+      },
+    }
+
+    await updateStaff(db, "staff-1", {
+      name: "Ops",
+      role: Role.HO_OPERATIONS,
+      branchId: hoBranch.id,
+      posCanCollect: true,
+      allowAnyBranchLogin: true,
+    })
+
+    expect(update.mock.calls[0][0].data.allowAnyBranchLogin).toBe(false)
   })
 
   it("blocks last HO_ADMIN change to HO_FINANCE", async () => {
@@ -225,6 +297,8 @@ describe("updateStaff", () => {
         name: "Admin",
         role: Role.HO_FINANCE,
         branchId: hoBranch.id,
+        posCanCollect: false,
+        allowAnyBranchLogin: false,
       })
     ).rejects.toMatchObject({ code: "LAST_HO_ADMIN" })
   })
@@ -249,6 +323,8 @@ describe("updateStaff", () => {
         name: "Dev",
         role: Role.HO_ADMIN,
         branchId: hoBranch.id,
+        posCanCollect: false,
+        allowAnyBranchLogin: false,
       })
     ).rejects.toMatchObject({ code: "RESERVED_STAFF_ID" })
   })

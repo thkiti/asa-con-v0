@@ -4,14 +4,26 @@ import { PosBarcodeCapture } from "./PosBarcodeCapture"
 import { PosKeypadGrid } from "./PosKeypadGrid"
 import { PosCheckoutOverlay } from "./PosCheckoutOverlay"
 import { PosRefundOverlay } from "./PosRefundOverlay"
+import { PosCollectorOverlay } from "./PosCollectorOverlay"
 import { PosPlaceholderOverlay } from "./PosPlaceholderOverlay"
+import { PosReadReportCredentialGate } from "./PosReadReportCredentialGate"
+import { PosReadReportPanel } from "./PosReadReportPanel"
+import { PosRepairTicketOverlay } from "./PosRepairTicketOverlay"
 import { PosTargetVsSalesOverlay } from "./PosTargetVsSalesOverlay"
 import { PosWorktimeOverlay } from "./PosWorktimeOverlay"
 import { PosReceiptPanel } from "./PosReceiptPanel"
 import { PosSessionBanner } from "./PosSessionBanner"
+import {
+  isPrintReportHighlighted,
+  shouldGhostPrintReportButton,
+} from "@/lib/pos-ui/pos-actions"
+import { COLLECTOR_TICKET_PRINT_STYLES } from "@/lib/pos-ui/print-collector-ticket"
+import { POS_READ_REPORT_PRINT_STYLES } from "@/lib/pos-ui/print-read-report"
+import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import type { PosCartLine } from "@/lib/pos/cart"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
 import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
+import { POS_KEYPAD_BUTTONS } from "@/lib/pos-ui/keypad-layout"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 
 type PosShellProps = {
@@ -57,6 +69,16 @@ type PosShellProps = {
   onCloseTargetVsSales: () => void
   worktimeOpen: boolean
   onCloseWorktime: () => void
+  collectorOpen: boolean
+  onCloseCollector: () => void
+  onCollectorReport: (report: ReadReportPayload) => void
+  readStaffGate: "X" | "Z" | null
+  onCloseReadStaffGate: () => void
+  onReadReport: (report: ReadReportPayload) => void
+  readReport: ReadReportPayload | null
+  onCloseReadReport: () => void
+  repairTicketOpen: boolean
+  onCloseRepairTicket: () => void
   keypadDisabled?: boolean
 }
 
@@ -103,18 +125,53 @@ export function PosShell({
   onCloseTargetVsSales,
   worktimeOpen,
   onCloseWorktime,
+  collectorOpen,
+  onCloseCollector,
+  onCollectorReport,
+  readStaffGate,
+  onCloseReadStaffGate,
+  onReadReport,
+  readReport,
+  onCloseReadReport,
+  repairTicketOpen,
+  onCloseRepairTicket,
   keypadDisabled = false,
 }: PosShellProps) {
+  const keypadSideMuted =
+    collectorOpen || readStaffGate !== null || repairTicketOpen
+  const readReportMode = readReport?.mode ?? null
   const muted =
     keypadDisabled ||
     !!placeholderOverlay ||
     targetVsSalesOpen ||
     worktimeOpen ||
     checkoutOpen ||
-    refundOpen
+    refundOpen ||
+    keypadSideMuted ||
+    !!readReport
+
+  const ghostPrint = shouldGhostPrintReportButton({
+    sideMuted: keypadSideMuted,
+    readReportMode,
+  })
+
+  const ghostButtonIds = new Set<PosKeypadActionId>()
+  if (ghostPrint) ghostButtonIds.add("print-report")
+  if (readReport) {
+    for (const btn of POS_KEYPAD_BUTTONS) {
+      if (btn.id !== "print-report" || ghostPrint) {
+        ghostButtonIds.add(btn.id)
+      }
+    }
+  }
 
   return (
-    <div className="fixed inset-0 flex bg-white">
+    <div className="pos-terminal-root fixed inset-0 flex bg-white">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `${POS_READ_REPORT_PRINT_STYLES}\n${COLLECTOR_TICKET_PRINT_STYLES}`,
+        }}
+      />
       {worktimeOpen ? (
         <PosWorktimeOverlay
           onClose={onCloseWorktime}
@@ -149,7 +206,12 @@ export function PosShell({
           </div>
 
           <div className="min-h-0 flex-1 rounded-xl border border-zinc-500 bg-gradient-to-b from-slate-200 to-slate-300 p-3 shadow-inner">
-            <PosKeypadGrid onAction={onKeypadAction} disabled={muted} />
+            <PosKeypadGrid
+              onAction={onKeypadAction}
+              disabled={muted && !readReport}
+              printReportHighlighted={isPrintReportHighlighted(readReportMode)}
+              ghostButtonIds={ghostButtonIds.size > 0 ? ghostButtonIds : undefined}
+            />
           </div>
         </div>
       </div>
@@ -192,6 +254,10 @@ export function PosShell({
               onConfirm={onRefundConfirm}
               onClose={onRefundClose}
             />
+          ) : readReport ? (
+            <PosReadReportPanel report={readReport} onClose={onCloseReadReport} />
+          ) : repairTicketOpen ? (
+            <PosRepairTicketOverlay session={session} onClose={onCloseRepairTicket} />
           ) : placeholderOverlay ? (
             <PosPlaceholderOverlay
               placeholderId={placeholderOverlay}
@@ -200,6 +266,25 @@ export function PosShell({
           ) : null
         }
       />
+
+      {collectorOpen ? (
+        <PosCollectorOverlay
+          onClose={onCloseCollector}
+          onReport={(report) => {
+            onCollectorReport(report)
+          }}
+        />
+      ) : null}
+
+      {readStaffGate ? (
+        <PosReadReportCredentialGate
+          mode={readStaffGate}
+          onClose={onCloseReadStaffGate}
+          onReport={(report) => {
+            onReadReport(report)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

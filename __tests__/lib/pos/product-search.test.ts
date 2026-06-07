@@ -10,9 +10,15 @@ jest.mock("@/lib/pricing/resolve-pos-retail-price", () => ({
   resolvePosRetailPrice: jest.fn(),
 }))
 
+jest.mock("@/lib/catalog-image/resolve-product-image-url", () => ({
+  resolveCatalogProductImageUrl: jest.fn(),
+}))
+
+import { resolveCatalogProductImageUrl } from "@/lib/catalog-image/resolve-product-image-url"
 import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
 
 const resolveMock = resolvePosRetailPrice as jest.Mock
+const imageUrlMock = resolveCatalogProductImageUrl as jest.Mock
 
 const trackedProduct = {
   id: "p1",
@@ -43,10 +49,12 @@ describe("posLookupCodeCandidates", () => {
 describe("lookupPosProductByCode", () => {
   beforeEach(() => {
     resolveMock.mockReset()
+    imageUrlMock.mockReset()
     resolveMock.mockResolvedValue({
       price: new Prisma.Decimal("125.00"),
       source: "SELLING",
     })
+    imageUrlMock.mockResolvedValue(null)
   })
 
   it("searches exact trimmed code 0101001 before normalized fallback", async () => {
@@ -64,6 +72,21 @@ describe("lookupPosProductByCode", () => {
     })
     expect(findUnique).toHaveBeenCalledTimes(1)
     expect(result.code).toBe("0101001")
+    expect(result.catalogImageUrl).toBeNull()
+  })
+
+  it("includes catalog image URL when cloud image exists", async () => {
+    imageUrlMock.mockResolvedValue("https://blob.example/products/0101001.png")
+    const findUnique = jest.fn(({ where }: { where: { code: string } }) => {
+      if (where.code === "0101001") return Promise.resolve(trackedProduct)
+      return Promise.resolve(null)
+    })
+    const db = makeDb(findUnique)
+
+    const result = await lookupPosProductByCode(db, "0101001")
+
+    expect(imageUrlMock).toHaveBeenCalledWith("0101001")
+    expect(result.catalogImageUrl).toBe("https://blob.example/products/0101001.png")
   })
 
   it("uses normalized fallback when exact code is missing", async () => {

@@ -150,15 +150,18 @@ model WorkTimeEntry {
 }
 
 model Staff {
-  id        String   @id @default(cuid())
-  staffId   String   @unique
-  password  String
-  name      String
-  role      Role
-  branchId  String
-  deleted   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  staffId       String   @unique
+  password      String
+  name          String
+  role          Role
+  branchId              String
+  posCanCollect         Boolean  @default(false)
+  /// ล็อกอิน POS ที่สาขาร้านอื่นได้ (พนักงานแทน)
+  allowAnyBranchLogin   Boolean  @default(false)
+  deleted               Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   branch                         Branch                   @relation(fields: [branchId], references: [id])
   reconciliationSnapshotsCreated ReconciliationSnapshot[]

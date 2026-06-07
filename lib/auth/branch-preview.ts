@@ -19,6 +19,7 @@ export async function previewBranchByCode(
       id: true,
       code: true,
       name: true,
+      type: true,
       isActive: true,
       deleted: true,
     },
@@ -32,5 +33,6 @@ export async function previewBranchByCode(
     branchId: branch.id,
     branchCode: branch.code,
     branchName: branch.name,
+    branchType: branch.type,
   }
 }

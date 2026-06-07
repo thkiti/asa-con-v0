@@ -38,6 +38,7 @@ describe("StaffFormModal", () => {
     expect(html).toContain("Add staff")
     expect(html).toContain("Password")
     expect(html).toContain("1234")
+    expect(html).toContain("Replacer / พนักงานแทน")
   })
 
   it("renders edit with read-only staff ID", () => {
@@ -55,6 +56,8 @@ describe("StaffFormModal", () => {
           branchId: "b-sh",
           branchCode: "SH999",
           branchName: "Buffer",
+          posCanCollect: false,
+          allowAnyBranchLogin: true,
         }}
         onClose={() => {}}
         onSubmit={async () => {}}
@@ -63,5 +66,7 @@ describe("StaffFormModal", () => {
     expect(html).toContain("Edit staff")
     expect(html).toContain("Staff ID cannot be changed")
     expect(html).not.toContain('type="password"')
+    expect(html).toContain("Replacer / พนักงานแทน")
   })
+
 })

@@ -99,12 +99,16 @@ export type CreateMasterStaffInput = {
   role: StaffListItem["role"]
   branchId: string
   password?: string
+  posCanCollect?: boolean
+  allowAnyBranchLogin?: boolean
 }
 
 export type UpdateMasterStaffInput = {
   name: string
   role: StaffListItem["role"]
   branchId: string
+  posCanCollect?: boolean
+  allowAnyBranchLogin?: boolean
 }
 
 export function createMasterStaff(
