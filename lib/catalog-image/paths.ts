@@ -5,8 +5,10 @@ import {
   getCatalogImageFinalDir,
   getCatalogImageInputDir,
   getCatalogImageWorkDir,
+  getCatalogProductImageDir,
 } from "./config"
 import { CatalogImageError } from "./errors"
+import { ensureCatalogProductImageDir } from "./product-image-files"
 
 export type PdfFileEntry = {
   fileName: string
@@ -94,7 +96,7 @@ export function resolveFinalWorkFilePath(localFilePath: string): string {
   const resolved = path.resolve(localFilePath)
   if (!isInsideDir(resolved, finalDir)) {
     throw new CatalogImageError(
-      "File path must be inside final work folder",
+      "File path must be inside catalog product images folder",
       "PATH_TRAVERSAL",
       400
     )
@@ -157,7 +159,7 @@ export async function ensureCatalogImageDirs(): Promise<void> {
 
 export async function ensureCatalogImageFinalDir(): Promise<void> {
   await ensureCatalogImageDirs()
-  await fs.mkdir(getCatalogImageFinalDir(), { recursive: true })
+  await ensureCatalogProductImageDir()
 }
 
 export async function listInputPdfFiles(): Promise<PdfFileEntry[]> {
@@ -203,8 +205,17 @@ export function resolveWorkBatchDir(batchId: string): string {
   return resolved
 }
 
+/** Deletes crop temp batch only — never the catalog product images folder. */
 export async function deleteCatalogImageBatch(batchId: string): Promise<void> {
   const batchDir = resolveWorkBatchDir(batchId)
+  const imageDir = path.resolve(getCatalogProductImageDir())
+  if (path.resolve(batchDir) === imageDir) {
+    throw new CatalogImageError(
+      "Cannot delete catalog product images folder",
+      "FORBIDDEN_DELETE",
+      403
+    )
+  }
   await fs.rm(batchDir, { recursive: true, force: true })
 }
 

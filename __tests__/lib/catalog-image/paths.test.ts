@@ -1,8 +1,21 @@
 import path from "path"
 import { CatalogImageError } from "@/lib/catalog-image/errors"
+
+const mockRm = jest.fn()
+
+jest.mock("fs/promises", () => ({
+  rm: (...args: unknown[]) => mockRm(...args),
+  mkdir: jest.fn().mockResolvedValue(undefined),
+  readdir: jest.fn().mockResolvedValue([]),
+  stat: jest.fn(),
+  access: jest.fn(),
+  unlink: jest.fn(),
+}))
+
 import {
   assertBasenameOnly,
   createUniqueInputPdfFileName,
+  deleteCatalogImageBatch,
   resolveFinalProductImagePath,
   resolveFinalWorkFilePath,
   resolveInputPdfPath,
@@ -13,15 +26,20 @@ import {
 describe("catalog-image paths", () => {
   const originalInput = process.env.CATALOG_IMAGE_INPUT_DIR
   const originalWork = process.env.CATALOG_IMAGE_WORK_DIR
+  const originalImageDir = process.env.CATALOG_PRODUCT_IMAGE_DIR
 
   beforeEach(() => {
+    jest.clearAllMocks()
     process.env.CATALOG_IMAGE_INPUT_DIR = path.resolve("/tmp/catalog-input")
     process.env.CATALOG_IMAGE_WORK_DIR = path.resolve("/tmp/catalog-work")
+    process.env.CATALOG_PRODUCT_IMAGE_DIR = path.resolve("/tmp/catalog-images")
+    mockRm.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
     process.env.CATALOG_IMAGE_INPUT_DIR = originalInput
     process.env.CATALOG_IMAGE_WORK_DIR = originalWork
+    process.env.CATALOG_PRODUCT_IMAGE_DIR = originalImageDir
   })
 
   it("rejects path traversal in file names", () => {
@@ -71,14 +89,14 @@ describe("catalog-image paths", () => {
     )
   })
 
-  it("builds final product image path", () => {
+  it("builds final product image path in catalog product images dir", () => {
     const resolved = resolveFinalProductImagePath("0101015")
     expect(resolved).toBe(
-      path.resolve("/tmp/catalog-work", "final", "0101015.png")
+      path.resolve("/tmp/catalog-images", "0101015.png")
     )
   })
 
-  it("rejects final work file outside final dir", () => {
+  it("rejects final work file outside catalog product images dir", () => {
     expect(() =>
       resolveFinalWorkFilePath(
         path.join("/tmp/catalog-work", "batch-1", "page-1", "slot-1.png")
@@ -86,10 +104,27 @@ describe("catalog-image paths", () => {
     ).toThrow(CatalogImageError)
   })
 
-  it("accepts final work file inside final dir", () => {
+  it("accepts final work file inside catalog product images dir", () => {
     const resolved = resolveFinalWorkFilePath(
-      path.join("/tmp/catalog-work", "final", "0101015.png")
+      path.join("/tmp/catalog-images", "0101015.png")
     )
-    expect(resolved).toContain(path.join("catalog-work", "final"))
+    expect(resolved).toContain(path.join("catalog-images", "0101015.png"))
+  })
+
+  it("deletes only work batch folders", async () => {
+    await deleteCatalogImageBatch("batch-abc")
+    expect(mockRm).toHaveBeenCalledWith(
+      path.resolve("/tmp/catalog-work", "batch-abc"),
+      { recursive: true, force: true }
+    )
+  })
+
+  it("refuses to delete catalog product images folder", async () => {
+    process.env.CATALOG_IMAGE_WORK_DIR = path.resolve("/tmp")
+    process.env.CATALOG_PRODUCT_IMAGE_DIR = path.resolve("/tmp/catalog-images")
+    await expect(deleteCatalogImageBatch("catalog-images")).rejects.toThrow(
+      CatalogImageError
+    )
+    expect(mockRm).not.toHaveBeenCalled()
   })
 })

@@ -19,6 +19,16 @@ jest.mock("@/lib/catalog-image/save-matched", () => ({
   saveMatchedCatalogImages: jest.fn(),
 }))
 
+jest.mock("@/lib/catalog-image/config", () => {
+  const actual = jest.requireActual<typeof import("@/lib/catalog-image/config")>(
+    "@/lib/catalog-image/config"
+  )
+  return {
+    ...actual,
+    getCatalogImageFinalDir: jest.fn(() => "/tmp/catalog-images"),
+  }
+})
+
 jest.mock("@/lib/catalog-image/paths", () => {
   const actual = jest.requireActual("@/lib/catalog-image/paths")
   return {
@@ -117,6 +127,7 @@ describe("confirmedSaveCatalogImages", () => {
       }),
     ])
     expect(mockedDelete).toHaveBeenCalledWith("batch-test-1")
+    expect(result.finalDir).toBe("/tmp/catalog-images")
     expect(result.savedCount).toBe(1)
     expect(result.items).toEqual(
       expect.arrayContaining([

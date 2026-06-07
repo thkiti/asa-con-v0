@@ -324,7 +324,7 @@ export function CatalogImageController() {
 
       if (failed.length === 0 && result.savedCount > 0) {
         setLastSaveMessage(
-          `Last save: ${result.savedCount} file${result.savedCount === 1 ? "" : "s"} saved to final folder`
+          `Saved ${result.savedCount} file${result.savedCount === 1 ? "" : "s"} to ${result.finalDir}`
         )
         resetPageAfterSuccessfulSave()
       }

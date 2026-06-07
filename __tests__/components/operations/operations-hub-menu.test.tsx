@@ -16,6 +16,7 @@ describe("OperationsHubMenu", () => {
 
     expect(html).toContain('href="/shop/stock-documents"')
     expect(html).toContain('href="/operations/catalog-image"')
+    expect(html).toContain('href="/operations/catalog-upload"')
     expect(html).toContain("Stock Card")
     expect(html).toContain("Stock Movement")
     expect(html).toContain("Supplier Order")

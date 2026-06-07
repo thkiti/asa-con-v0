@@ -12,13 +12,6 @@ type OperationsHubMenuProps = {
   section: MainMenuSectionDetail
 }
 
-const EXPORT_IMAGE_TO_CLOUD: MainMenuItem = {
-  key: "export-image-to-cloud",
-  label: "Export Image To Cloud",
-  hint: "Upload catalog images to cloud storage",
-  status: "planned",
-}
-
 function findItem(items: MainMenuItem[], key: string): MainMenuItem | undefined {
   return items.find((item) => item.key === key)
 }
@@ -62,6 +55,7 @@ export function OperationsHubMenu({ section }: OperationsHubMenuProps) {
   const items = section.items
   const stockDocuments = findItem(items, "stock-documents")
   const catalogImage = findItem(items, "catalog-image")
+  const catalogUpload = findItem(items, "catalog-upload")
   const stockCard = findItem(items, "stock-card")
   const stockMovement = findItem(items, "stock-movement")
   const supplierOrder = findItem(items, "supplier-order")
@@ -83,7 +77,7 @@ export function OperationsHubMenu({ section }: OperationsHubMenuProps) {
 
       <div className="grid gap-3 sm:grid-cols-2">
         {renderCard(catalogImage)}
-        <PlannedCard item={EXPORT_IMAGE_TO_CLOUD} />
+        {renderCard(catalogUpload)}
       </div>
     </nav>
   )

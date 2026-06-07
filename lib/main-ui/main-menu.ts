@@ -193,6 +193,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "/operations/catalog-image",
           "Crop catalog PDFs, match products, upload images"
         ),
+        available(
+          "catalog-upload",
+          "Export Image To Cloud",
+          "/operations/catalog-upload",
+          "Scan catalog images folder and prepare cloud upload"
+        ),
         planned("stock-card", "Stock Card"),
         planned("stock-movement", "Stock Movement"),
         planned("supplier-order", "Supplier Order"),

@@ -1,14 +1,17 @@
 import path from "path"
-import { CatalogImageError } from "@/lib/catalog-image/errors"
 
 const mockAccess = jest.fn()
 const mockCopyFile = jest.fn()
 const mockMkdir = jest.fn()
+const mockUnlink = jest.fn()
+const mockRm = jest.fn()
 
 jest.mock("fs/promises", () => ({
   access: (...args: unknown[]) => mockAccess(...args),
   copyFile: (...args: unknown[]) => mockCopyFile(...args),
   mkdir: (...args: unknown[]) => mockMkdir(...args),
+  unlink: (...args: unknown[]) => mockUnlink(...args),
+  rm: (...args: unknown[]) => mockRm(...args),
   readdir: jest.fn().mockResolvedValue([]),
   stat: jest.fn(),
 }))
@@ -17,6 +20,14 @@ import { saveMatchedCatalogImages } from "@/lib/catalog-image/save-matched"
 
 describe("saveMatchedCatalogImages", () => {
   const originalWork = process.env.CATALOG_IMAGE_WORK_DIR
+  const originalImageDir = process.env.CATALOG_PRODUCT_IMAGE_DIR
+
+  const imageDir = path.resolve("/tmp/catalog-images")
+  const sourcePath = path.resolve(
+    "/tmp/catalog-work/batch-1/page-1/slot-1.png"
+  )
+  const finalPath = path.join(imageDir, "0101015.png")
+  const existingJpgPath = path.join(imageDir, "0101015.jpg")
 
   const createDb = (productId: string | null = "prod-1") => ({
     product: {
@@ -24,37 +35,37 @@ describe("saveMatchedCatalogImages", () => {
     },
   })
 
-  const sourcePath = path.resolve(
-    "/tmp/catalog-work/batch-1/page-1/slot-1.png"
-  )
-  const finalPath = path.resolve("/tmp/catalog-work/final/0101015.png")
-
   beforeEach(() => {
     jest.clearAllMocks()
     process.env.CATALOG_IMAGE_WORK_DIR = path.resolve("/tmp/catalog-work")
+    process.env.CATALOG_PRODUCT_IMAGE_DIR = imageDir
     mockMkdir.mockResolvedValue(undefined)
     mockCopyFile.mockResolvedValue(undefined)
+    mockUnlink.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
     process.env.CATALOG_IMAGE_WORK_DIR = originalWork
+    process.env.CATALOG_PRODUCT_IMAGE_DIR = originalImageDir
   })
 
-  function mockSourceExists() {
+  function mockConflictWithJpg() {
     mockAccess.mockImplementation(async (target: string) => {
-      if (target === sourcePath || target === finalPath) {
-        return
-      }
+      if (target === sourcePath || target === existingJpgPath) return
       throw new Error("ENOENT")
     })
   }
 
-  it("copies file to final/{productCode}.png", async () => {
-    const db = createDb()
+  function mockSourceOnly() {
     mockAccess.mockImplementation(async (target: string) => {
       if (target === sourcePath) return
       throw new Error("ENOENT")
     })
+  }
+
+  it("copies file to catalog product images folder", async () => {
+    const db = createDb()
+    mockSourceOnly()
 
     const results = await saveMatchedCatalogImages(db, [
       {
@@ -72,10 +83,52 @@ describe("saveMatchedCatalogImages", () => {
       },
     ])
     expect(mockCopyFile).toHaveBeenCalledWith(sourcePath, finalPath)
-    expect(db.product.findUnique).toHaveBeenCalledWith({
-      where: { code: "0101015" },
-      select: { id: true },
+    expect(mockMkdir).toHaveBeenCalledWith(imageDir, { recursive: true })
+    expect(mockRm).not.toHaveBeenCalled()
+  })
+
+  it("returns DUPLICATE when any allowed extension exists", async () => {
+    const db = createDb()
+    mockConflictWithJpg()
+
+    const results = await saveMatchedCatalogImages(db, [
+      {
+        productCode: "0101015",
+        localFilePath: sourcePath,
+        replace: false,
+      },
+    ])
+
+    expect(results[0]).toMatchObject({
+      productCode: "0101015",
+      finalFilePath: finalPath,
+      finalFileName: "0101015.png",
+      status: "DUPLICATE",
     })
+    expect(mockCopyFile).not.toHaveBeenCalled()
+    expect(mockUnlink).not.toHaveBeenCalled()
+    expect(mockRm).not.toHaveBeenCalled()
+  })
+
+  it("unlinks conflicting files and copies when replace=true", async () => {
+    const db = createDb()
+    mockConflictWithJpg()
+
+    const results = await saveMatchedCatalogImages(db, [
+      {
+        productCode: "0101015",
+        localFilePath: sourcePath,
+        replace: true,
+      },
+    ])
+
+    expect(results[0]).toMatchObject({
+      productCode: "0101015",
+      status: "SAVED",
+    })
+    expect(mockUnlink).toHaveBeenCalledWith(existingJpgPath)
+    expect(mockCopyFile).toHaveBeenCalledWith(sourcePath, finalPath)
+    expect(mockRm).not.toHaveBeenCalled()
   })
 
   it("returns ERROR when productCode is not found", async () => {
@@ -115,52 +168,9 @@ describe("saveMatchedCatalogImages", () => {
     expect(mockCopyFile).not.toHaveBeenCalled()
   })
 
-  it("returns DUPLICATE without overwrite when destination exists", async () => {
-    const db = createDb()
-    mockSourceExists()
-
-    const results = await saveMatchedCatalogImages(db, [
-      {
-        productCode: "0101015",
-        localFilePath: sourcePath,
-        replace: false,
-      },
-    ])
-
-    expect(results[0]).toMatchObject({
-      productCode: "0101015",
-      finalFilePath: finalPath,
-      finalFileName: "0101015.png",
-      status: "DUPLICATE",
-    })
-    expect(mockCopyFile).not.toHaveBeenCalled()
-  })
-
-  it("overwrites destination when replace=true", async () => {
-    const db = createDb()
-    mockSourceExists()
-
-    const results = await saveMatchedCatalogImages(db, [
-      {
-        productCode: "0101015",
-        localFilePath: sourcePath,
-        replace: true,
-      },
-    ])
-
-    expect(results[0]).toMatchObject({
-      productCode: "0101015",
-      status: "SAVED",
-    })
-    expect(mockCopyFile).toHaveBeenCalledWith(sourcePath, finalPath)
-  })
-
   it("returns ERROR when source file is missing", async () => {
     const db = createDb()
-    mockAccess.mockImplementation(async (target: string) => {
-      if (target === finalPath) return
-      throw new Error("ENOENT")
-    })
+    mockAccess.mockRejectedValue(new Error("ENOENT"))
 
     const results = await saveMatchedCatalogImages(db, [
       {

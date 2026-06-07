@@ -1,8 +1,12 @@
 import fs from "fs/promises"
 import { CatalogImageError } from "./errors"
 import {
+  ensureCatalogProductImageDir,
+  hasProductImageConflict,
+  removeProductImageFilesForCode,
+} from "./product-image-files"
+import {
   assertSafeProductCode,
-  ensureCatalogImageFinalDir,
   resolveFinalProductImagePath,
   resolveWorkFilePath,
 } from "./paths"
@@ -59,7 +63,7 @@ export async function saveMatchedCatalogImages(
   db: ProductLookupDb,
   items: SaveMatchedItemInput[]
 ): Promise<SaveMatchedItemResult[]> {
-  await ensureCatalogImageFinalDir()
+  const imageDir = await ensureCatalogProductImageDir()
   const results: SaveMatchedItemResult[] = []
 
   for (const item of items) {
@@ -131,15 +135,9 @@ export async function saveMatchedCatalogImages(
       }
 
       const replace = item.replace === true
-      let destinationExists = false
-      try {
-        await fs.access(finalFilePath)
-        destinationExists = true
-      } catch {
-        destinationExists = false
-      }
+      const hasConflict = await hasProductImageConflict(imageDir, safeCode)
 
-      if (destinationExists && !replace) {
+      if (hasConflict && !replace) {
         results.push({
           productCode: safeCode,
           finalFilePath,
@@ -147,6 +145,10 @@ export async function saveMatchedCatalogImages(
           status: "DUPLICATE",
         })
         continue
+      }
+
+      if (replace && hasConflict) {
+        await removeProductImageFilesForCode(imageDir, safeCode)
       }
 
       await fs.copyFile(sourcePath, finalFilePath)
