@@ -74,6 +74,8 @@ export function formatFinanceRefType(refType: string): string {
       return "POS sale"
     case FINANCE_REF_TYPES.STOCK_DOC_POST:
       return "Stock document post"
+    case FINANCE_REF_TYPES.POS_REFUND:
+      return "POS refund"
     default:
       return refType.replace(/_/g, " ").toLowerCase()
   }
@@ -114,7 +116,9 @@ export function buildOperationalTrace(row: TraceableIssueRow): TraceStep {
   const operationalLabel =
     row.sourceType === "SALE"
       ? `POS sale · ${row.documentRef}`
-      : `Stock document · ${row.documentRef}`
+      : row.sourceType === "REFUND"
+        ? `POS refund · ${row.documentRef}`
+        : `Stock document · ${row.documentRef}`
 
   return {
     kind: "operational",

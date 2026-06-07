@@ -16,15 +16,21 @@ export function buildSnapshotDetailPath(snapshotId: string): string {
 export function formatOperationalSourceLabel(
   row: Pick<ReconciliationIssueRow, "sourceType" | "documentRef">
 ): string {
-  return row.sourceType === "SALE"
-    ? `POS sale · ${row.documentRef}`
-    : `Stock document · ${row.documentRef}`
+  if (row.sourceType === "SALE") {
+    return `POS sale · ${row.documentRef}`
+  }
+  if (row.sourceType === "REFUND") {
+    return `POS refund · ${row.documentRef}`
+  }
+  return `Stock document · ${row.documentRef}`
 }
 
 export function formatOperationalSourceKind(
   sourceType: ReconciliationIssueRow["sourceType"]
 ): string {
-  return sourceType === "SALE" ? "POS sale" : "Stock document"
+  if (sourceType === "SALE") return "POS sale"
+  if (sourceType === "REFUND") return "POS refund"
+  return "Stock document"
 }
 
 export function formatVoucherLinkLabel(

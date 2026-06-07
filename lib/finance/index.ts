@@ -177,10 +177,14 @@ export { ReconciliationError } from "./reconciliation-errors"
 export {
   buildIssueId,
   computeVariance,
+  auditRefund,
   reconcileInventory,
+  reconcileRefunds,
   reconcileSalesAndTender,
   round2Amount,
   runFinanceReconciliation,
+  sumPosRefundGlTotals,
+  type PosRefundGlTotals,
   type ReconciliationPrisma,
 } from "./reconciliation"
 export { buildReconciliationIssuesResult } from "./reconciliation-issue-rows"
@@ -263,6 +267,8 @@ export type {
   ReconciliationIssueType,
   ReconciliationSummary,
   ReconciliationVariance,
+  RefundReconciliationFilter,
+  RefundReconciliationResult,
   SalesReconciliationFilter,
   SalesReconciliationResult,
 } from "./reconciliation-types"

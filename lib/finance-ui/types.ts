@@ -29,6 +29,14 @@ export type SalesReconciliationResult = {
   variances: ReconciliationVariance[]
 }
 
+export type RefundReconciliationResult = {
+  filter: FinanceFilterValues
+  operationalRefundTotal: string
+  glRefundRevenueTotal: string
+  paymentBreakdown: ReconciliationVariance[]
+  variances: ReconciliationVariance[]
+}
+
 export type AccountingPeriodStatus = "OPEN" | "SOFT_CLOSED" | "HARD_CLOSED"
 
 export type AccountingPeriodRow = {

@@ -71,6 +71,7 @@ export async function captureReconciliationSnapshotPayload(
     },
     checkedSales: issuesResult.checkedSales,
     checkedStockDocuments: issuesResult.checkedStockDocuments,
+    checkedRefunds: issuesResult.checkedRefunds,
     issueCount: issuesResult.issues.length,
     issues: toSnapshotIssueRows(issuesResult.issues),
   }

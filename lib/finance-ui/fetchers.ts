@@ -12,6 +12,7 @@ import type {
   ReconciliationIssuesResult,
   ReconciliationSnapshotDetail,
   ReconciliationSnapshotHeader,
+  RefundReconciliationResult,
   SalesReconciliationResult,
   VoucherDetailResult,
 } from "./types"
@@ -70,9 +71,19 @@ export function fetchSalesReconciliation(
   )
 }
 
+export function fetchRefundReconciliation(
+  filter: FinanceFilterValues
+): Promise<RefundReconciliationResult> {
+  return fetchReconciliation<RefundReconciliationResult>(
+    "/api/finance/reconciliation/refunds",
+    filter
+  )
+}
+
 export type ReconciliationDashboardResult = {
   inventory: InventoryReconciliationResult
   sales: SalesReconciliationResult
+  refunds: RefundReconciliationResult
 }
 
 export function fetchReconciliationDashboard(
@@ -82,7 +93,8 @@ export function fetchReconciliationDashboard(
   return Promise.all([
     fetchInventoryReconciliation(apiFilter),
     fetchSalesReconciliation(apiFilter),
-  ]).then(([inventory, sales]) => ({ inventory, sales }))
+    fetchRefundReconciliation(apiFilter),
+  ]).then(([inventory, sales, refunds]) => ({ inventory, sales, refunds }))
 }
 
 export function fetchReconciliationIssues(

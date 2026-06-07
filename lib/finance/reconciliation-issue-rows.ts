@@ -1,4 +1,9 @@
-import { runFinanceReconciliation, type ReconciliationPrisma } from "./reconciliation"
+import {
+  runFinanceReconciliation,
+  voucherGroupKey,
+  type ReconciliationPrisma,
+} from "./reconciliation"
+import { FINANCE_REF_TYPES } from "./posting-types"
 import type { ReconciliationIssue } from "./reconciliation-types"
 import { deriveIssueStatus, filterIssueRows } from "./reconciliation-issue-row-filters"
 import type {
@@ -52,8 +57,11 @@ export async function buildReconciliationIssuesResult(
   const documentIds = summary.issues
     .filter((issue) => issue.sourceType === "STOCK_DOCUMENT")
     .map((issue) => issue.sourceId)
+  const refundIds = summary.issues
+    .filter((issue) => issue.sourceType === "REFUND")
+    .map((issue) => issue.sourceId)
 
-  const [vouchers, sales, stockDocuments] = await Promise.all([
+  const [vouchers, sales, stockDocuments, refunds] = await Promise.all([
     sourceIds.length > 0
       ? prisma.voucher.findMany({
           where: { refId: { in: sourceIds } },
@@ -86,20 +94,46 @@ export async function buildReconciliationIssuesResult(
       : Promise.resolve(
           [] as Array<{ id: string; refNo: string; postedAt: Date | null }>
         ),
+    refundIds.length > 0
+      ? prisma.refund.findMany({
+          where: { id: { in: refundIds } },
+          select: { id: true, refundNo: true, createdAt: true },
+        })
+      : Promise.resolve(
+          [] as Array<{ id: string; refundNo: string; createdAt: Date }>
+        ),
   ])
 
   const vouchersByRef = new Map<string, VoucherRow[]>()
   for (const voucher of vouchers) {
-    const existing = vouchersByRef.get(voucher.refId) ?? []
+    const key = voucherGroupKey(voucher.refType, voucher.refId)
+    const existing = vouchersByRef.get(key) ?? []
     existing.push(voucher)
-    vouchersByRef.set(voucher.refId, existing)
+    vouchersByRef.set(key, existing)
+  }
+
+  function vouchersForIssue(issue: ReconciliationIssue): VoucherRow[] {
+    const refType =
+      issue.sourceType === "SALE"
+        ? FINANCE_REF_TYPES.POS_SALE
+        : issue.sourceType === "REFUND"
+          ? FINANCE_REF_TYPES.POS_REFUND
+          : FINANCE_REF_TYPES.STOCK_DOC_POST
+    return vouchersByRef.get(voucherGroupKey(refType, issue.sourceId)) ?? []
   }
 
   const saleById = new Map(sales.map((sale) => [sale.id, sale]))
   const docById = new Map(stockDocuments.map((doc) => [doc.id, doc]))
+  const refundById = new Map(refunds.map((refund) => [refund.id, refund]))
 
   const rows = summary.issues.map((issue) =>
-    toIssueRow(issue, vouchersByRef.get(issue.sourceId) ?? [], saleById, docById)
+    toIssueRow(
+      issue,
+      vouchersForIssue(issue),
+      saleById,
+      docById,
+      refundById
+    )
   )
 
   const filtered = filterIssueRows(rows, filter)
@@ -108,6 +142,7 @@ export async function buildReconciliationIssuesResult(
     filter,
     checkedSales: summary.checkedSales,
     checkedStockDocuments: summary.checkedStockDocuments,
+    checkedRefunds: summary.checkedRefunds,
     issueCount: filtered.length,
     issues: filtered,
   }
@@ -117,7 +152,8 @@ function toIssueRow(
   issue: ReconciliationIssue,
   vouchers: VoucherRow[],
   saleById: Map<string, { id: string; createdAt: Date }>,
-  docById: Map<string, { id: string; refNo: string; postedAt: Date | null }>
+  docById: Map<string, { id: string; refNo: string; postedAt: Date | null }>,
+  refundById: Map<string, { id: string; refundNo: string; createdAt: Date }>
 ): ReconciliationIssueRow {
   const voucherRefs: ReconciliationIssueVoucherRef[] = vouchers.map((voucher) => ({
     id: voucher.id,
@@ -145,6 +181,8 @@ function toIssueRow(
     issue.sourceType === "STOCK_DOCUMENT"
       ? docById.get(issue.sourceId)
       : undefined
+  const refund =
+    issue.sourceType === "REFUND" ? refundById.get(issue.sourceId) : undefined
 
   return {
     id: issue.id,
@@ -153,7 +191,9 @@ function toIssueRow(
     documentRef:
       issue.sourceType === "STOCK_DOCUMENT"
         ? (doc?.refNo ?? issue.sourceId)
-        : issue.sourceId,
+        : issue.sourceType === "REFUND"
+          ? (refund?.refundNo ?? issue.sourceId)
+          : issue.sourceId,
     issueType: issue.issueType,
     severity: issue.severity,
     status: deriveIssueStatus(issue),
@@ -163,7 +203,10 @@ function toIssueRow(
     difference: issue.difference ?? null,
     vouchers: voucherRefs,
     journalEntries,
-    sourceCreatedAt: sale?.createdAt.toISOString() ?? null,
+    sourceCreatedAt:
+      sale?.createdAt.toISOString() ??
+      refund?.createdAt.toISOString() ??
+      null,
     sourcePostedAt: doc?.postedAt?.toISOString() ?? null,
   }
 }

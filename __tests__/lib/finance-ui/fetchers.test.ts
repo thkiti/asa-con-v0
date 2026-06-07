@@ -97,7 +97,7 @@ describe("fetchReconciliationDashboard", () => {
     global.fetch = jest.fn()
   })
 
-  it("fetches inventory and sales APIs in parallel", async () => {
+  it("fetches inventory, sales, and refunds APIs in parallel", async () => {
     ;(global.fetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
@@ -118,6 +118,16 @@ describe("fetchReconciliationDashboard", () => {
           variances: [],
         }),
       })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          filter: {},
+          operationalRefundTotal: "30",
+          glRefundRevenueTotal: "30",
+          paymentBreakdown: [],
+          variances: [],
+        }),
+      })
 
     const result = await fetchReconciliationDashboard({
       branchId: "branch-1",
@@ -126,7 +136,8 @@ describe("fetchReconciliationDashboard", () => {
 
     expect(result.inventory.operationalTotalValue).toBe("100")
     expect(result.sales.operationalRevenue).toBe("200")
-    expect(global.fetch).toHaveBeenCalledTimes(2)
+    expect(result.refunds.operationalRefundTotal).toBe("30")
+    expect(global.fetch).toHaveBeenCalledTimes(3)
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/finance/reconciliation/inventory?branchId=branch-1&from=2026-05-01&to=2026-05-31"
     )

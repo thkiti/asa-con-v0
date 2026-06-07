@@ -49,6 +49,13 @@ describe("ReconciliationPage", () => {
         paymentBreakdown: [],
         variances: [],
       },
+      refunds: {
+        filter: {},
+        operationalRefundTotal: "25",
+        glRefundRevenueTotal: "25",
+        paymentBreakdown: [],
+        variances: [],
+      },
     })
 
     const html = renderToStaticMarkup(<ReconciliationPage />)

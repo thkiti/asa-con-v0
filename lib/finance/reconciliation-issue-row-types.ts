@@ -8,7 +8,7 @@ export type ReconciliationIssueRowStatus =
   | "MISSING_GL"
 
 export type IssueAuditInput = {
-  sourceType: "SALE" | "STOCK_DOCUMENT"
+  sourceType: "SALE" | "STOCK_DOCUMENT" | "REFUND"
   sourceId: string
   issueType: ReconciliationIssueType
   severity: "ERROR" | "WARNING"
@@ -22,7 +22,7 @@ export type ReconciliationIssuesFilter = {
   branchId?: string
   from?: string
   to?: string
-  sourceType?: "SALE" | "STOCK_DOCUMENT"
+  sourceType?: "SALE" | "STOCK_DOCUMENT" | "REFUND"
   status?: ReconciliationIssueRowStatus
   domain?: string
   issueType?: ReconciliationIssueType
@@ -44,7 +44,7 @@ export type ReconciliationIssueJournalRef = {
 
 export type ReconciliationIssueRow = {
   id: string
-  sourceType: "SALE" | "STOCK_DOCUMENT"
+  sourceType: "SALE" | "STOCK_DOCUMENT" | "REFUND"
   sourceId: string
   documentRef: string
   issueType: ReconciliationIssueType
@@ -64,11 +64,12 @@ export type ReconciliationIssuesResult = {
   filter: ReconciliationIssuesFilter
   checkedSales: number
   checkedStockDocuments: number
+  checkedRefunds: number
   issueCount: number
   issues: ReconciliationIssueRow[]
 }
 
 export type ReconciliationIssueRowsPrisma = Pick<
   PrismaClient,
-  "sale" | "stockDocument" | "voucher"
+  "sale" | "stockDocument" | "voucher" | "refund"
 >

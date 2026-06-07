@@ -49,7 +49,7 @@ export type SnapshotIssueJournalRef = {
 
 export type SnapshotIssueRow = {
   id: string
-  sourceType: "SALE" | "STOCK_DOCUMENT"
+  sourceType: "SALE" | "STOCK_DOCUMENT" | "REFUND"
   sourceId: string
   documentRef: string
   issueType: ReconciliationIssueType
@@ -73,6 +73,7 @@ export type SnapshotIssuesPayload = {
   }
   checkedSales: number
   checkedStockDocuments: number
+  checkedRefunds: number
   issueCount: number
   issues: SnapshotIssueRow[]
 }

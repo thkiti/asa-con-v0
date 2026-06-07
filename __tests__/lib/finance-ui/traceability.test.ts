@@ -42,6 +42,9 @@ describe("traceability helpers", () => {
     expect(formatFinanceRefType(FINANCE_REF_TYPES.STOCK_DOC_POST)).toBe(
       "Stock document post"
     )
+    expect(formatFinanceRefType(FINANCE_REF_TYPES.POS_REFUND)).toBe(
+      "POS refund"
+    )
   })
 
   it("formats trace labels for voucher and journal steps", () => {
@@ -119,6 +122,47 @@ describe("traceability helpers", () => {
         })
       ).label
     ).toBe("Stock document · DOC-001")
+  })
+
+  it("builds refund trace lineage through POS_REFUND voucher and journal", () => {
+    const row = baseIssue({
+      id: "REFUND:refund-1:MISSING_VOUCHER",
+      sourceType: "REFUND",
+      sourceId: "refund-1",
+      documentRef: "REF-SH001-202605-0001",
+      vouchers: [
+        {
+          id: "voucher-refund-1",
+          voucherNo: "V-R-001",
+          refType: FINANCE_REF_TYPES.POS_REFUND,
+          refId: "refund-1",
+          postedAt: "2026-05-02T10:00:00.000Z",
+        },
+      ],
+      journalEntries: [
+        {
+          id: "journal-refund-1",
+          voucherId: "voucher-refund-1",
+          postedAt: "2026-05-02T10:00:00.000Z",
+        },
+      ],
+    })
+
+    const trace = buildFinanceTrace(row, { mode: "live" })
+
+    expect(buildOperationalTrace(row).label).toBe(
+      "POS refund · REF-SH001-202605-0001"
+    )
+    expect(trace.steps.map((step) => step.kind)).toEqual([
+      "operational",
+      "voucher",
+      "journal",
+      "issue",
+      "evidence",
+    ])
+    expect(trace.steps.find((step) => step.kind === "voucher")?.refType).toBe(
+      FINANCE_REF_TYPES.POS_REFUND
+    )
   })
 
   it("builds finance traces without mutating input rows", () => {

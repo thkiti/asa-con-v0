@@ -41,6 +41,7 @@ const DOMAIN_OPTIONS = [
   { value: "inventory", label: "Inventory" },
   { value: "revenue", label: "Revenue" },
   { value: "tender", label: "Tender" },
+  { value: "refund", label: "Refunds" },
 ]
 
 type ReconciliationPageProps = {

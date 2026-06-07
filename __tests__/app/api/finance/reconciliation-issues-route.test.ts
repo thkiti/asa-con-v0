@@ -24,6 +24,7 @@ describe("GET finance/reconciliation/issues", () => {
       filter: { branchId: "branch-1", from: "2026-05-01", to: "2026-05-31" },
       checkedSales: 2,
       checkedStockDocuments: 1,
+      checkedRefunds: 0,
       issueCount: 1,
       issues: [
         {
@@ -71,6 +72,7 @@ describe("GET finance/reconciliation/issues", () => {
       filter: {},
       checkedSales: 0,
       checkedStockDocuments: 0,
+      checkedRefunds: 0,
       issueCount: 0,
       issues: [],
     })

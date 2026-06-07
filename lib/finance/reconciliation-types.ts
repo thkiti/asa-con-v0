@@ -10,6 +10,16 @@ export type InventoryReconciliationFilter = ReconciliationDateFilter
 
 export type SalesReconciliationFilter = ReconciliationDateFilter
 
+export type RefundReconciliationFilter = ReconciliationDateFilter
+
+export type RefundReconciliationResult = {
+  filter: RefundReconciliationFilter
+  operationalRefundTotal: string
+  glRefundRevenueTotal: string
+  paymentBreakdown: ReconciliationVariance[]
+  variances: ReconciliationVariance[]
+}
+
 export type ReconciliationVariance = {
   domain: string
   label: string
@@ -81,10 +91,11 @@ export type ReconciliationIssueType =
   | "TOTAL_MISMATCH"
   | "MISSING_COGS_LINES"
   | "INVENTORY_VALUE_MISMATCH"
+  | "MISSING_REFUND"
 
 export type ReconciliationIssue = {
   id: string
-  sourceType: "SALE" | "STOCK_DOCUMENT"
+  sourceType: "SALE" | "STOCK_DOCUMENT" | "REFUND"
   sourceId: string
   issueType: ReconciliationIssueType
   severity: "ERROR" | "WARNING"
@@ -97,6 +108,7 @@ export type ReconciliationIssue = {
 export type ReconciliationSummary = {
   checkedSales: number
   checkedStockDocuments: number
+  checkedRefunds: number
   issueCount: number
   issues: ReconciliationIssue[]
 }

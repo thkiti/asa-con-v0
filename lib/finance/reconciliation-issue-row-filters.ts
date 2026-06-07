@@ -72,6 +72,10 @@ export function issueMatchesDomain(
     return issue.sourceType === "SALE"
   }
 
+  if (normalized === "refund" || normalized === "refunds") {
+    return issue.sourceType === "REFUND"
+  }
+
   return true
 }
 

@@ -2,11 +2,14 @@ import * as glBalance from "@/lib/finance/gl-balance"
 import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
+  auditRefund,
   computeVariance,
   reconcileInventory,
+  reconcileRefunds,
   reconcileSalesAndTender,
   runFinanceReconciliation,
 } from "@/lib/finance/reconciliation"
+import * as refundSummary from "@/lib/pos/refund-summary"
 import { Prisma } from "@/generated/prisma/client"
 import * as salesSummary from "@/lib/pos/sales-summary"
 import * as stockSummary from "@/lib/stock/stock-summary"
@@ -38,6 +41,11 @@ type AuditMockOverrides = {
     unitCost: Prisma.Decimal | number | string
   }>
   vouchers?: Array<Record<string, unknown>>
+  refunds?: Array<{
+    id: string
+    amount: Prisma.Decimal | number | string
+    refundNo?: string
+  }>
 }
 
 function makeModel(extra: Record<string, jest.Mock> = {}) {
@@ -68,7 +76,33 @@ function createAuditMockPrisma(overrides: AuditMockOverrides = {}) {
       }),
     }),
     voucher: makeModel({
-      findMany: jest.fn(async () => overrides.vouchers ?? []),
+      findMany: jest.fn(async (args: { where?: Record<string, unknown> }) => {
+        const all = (overrides.vouchers ?? []) as Array<{
+          refType: string
+          refId: string
+        }>
+        const where = args?.where ?? {}
+        const refTypeFilter = where.refType as
+          | string
+          | { in?: string[] }
+          | undefined
+        const refIdFilter = where.refId as { in?: string[] } | undefined
+
+        return all.filter((voucher) => {
+          if (typeof refTypeFilter === "string") {
+            if (voucher.refType !== refTypeFilter) return false
+          } else if (refTypeFilter?.in) {
+            if (!refTypeFilter.in.includes(voucher.refType)) return false
+          }
+          if (refIdFilter?.in) {
+            if (!refIdFilter.in.includes(voucher.refId)) return false
+          }
+          return true
+        })
+      }),
+    }),
+    refund: makeModel({
+      findMany: jest.fn(async () => overrides.refunds ?? []),
     }),
     stock: makeModel(),
     glAccount: makeModel(),
@@ -125,6 +159,18 @@ function matchingSaleVoucher(refId: string, total: number, cogs: number) {
       { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: 0, credit: total },
       { code: DEFAULT_ACCOUNT_CODES.COGS, debit: cogs, credit: 0 },
       { code: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: 0, credit: cogs },
+    ],
+  })
+}
+
+function matchingRefundVoucher(refId: string, amount: number) {
+  return voucherWithJournal({
+    id: `voucher-refund-${refId}`,
+    refType: FINANCE_REF_TYPES.POS_REFUND,
+    refId,
+    lines: [
+      { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: amount, credit: 0 },
+      { code: DEFAULT_ACCOUNT_CODES.CASH, debit: 0, credit: amount },
     ],
   })
 }
@@ -249,6 +295,91 @@ describe("reconcileSalesAndTender", () => {
       label: "Card tender vs card clearing GL",
       variance: "0",
     })
+  })
+})
+
+describe("reconcileRefunds", () => {
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it("returns zero variance when operational refunds match POS_REFUND GL totals", async () => {
+    jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
+      refundCount: 1,
+      refundTotal: "50.00",
+      paymentBreakdown: [
+        { method: "CASH" as never, amount: "50.00", saleCount: 1 },
+      ],
+      missingPaymentCount: 0,
+    })
+
+    const prisma = createAuditMockPrisma({
+      vouchers: [matchingRefundVoucher("refund-1", 50)],
+    })
+
+    const result = await reconcileRefunds(prisma as never, {})
+
+    expect(result.operationalRefundTotal).toBe("50.00")
+    expect(result.glRefundRevenueTotal).toBe("50")
+    expect(result.variances[0]).toMatchObject({
+      domain: "refund",
+      variance: "0",
+    })
+  })
+
+  it("reports variance when operational refunds differ from GL reversal", async () => {
+    jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
+      refundCount: 1,
+      refundTotal: "75.00",
+      paymentBreakdown: [
+        { method: "CASH" as never, amount: "75.00", saleCount: 1 },
+      ],
+      missingPaymentCount: 0,
+    })
+
+    const prisma = createAuditMockPrisma({
+      vouchers: [matchingRefundVoucher("refund-1", 50)],
+    })
+
+    const result = await reconcileRefunds(prisma as never, {})
+
+    expect(result.variances[0]).toMatchObject({
+      domain: "refund",
+      operationalAmount: "75.00",
+      glAmount: "50",
+      variance: "25",
+    })
+  })
+})
+
+describe("auditRefund", () => {
+  it("flags MISSING_VOUCHER when refund has no voucher", () => {
+    const issues = auditRefund(
+      { id: "refund-1", amount: new Prisma.Decimal("40") },
+      []
+    )
+    expect(issues).toEqual([
+      expect.objectContaining({
+        sourceType: "REFUND",
+        issueType: "MISSING_VOUCHER",
+      }),
+    ])
+  })
+
+  it("flags TOTAL_MISMATCH when revenue debit differs from refund amount", () => {
+    const issues = auditRefund(
+      { id: "refund-1", amount: new Prisma.Decimal("40") },
+      [
+        matchingRefundVoucher("refund-1", 30) as never,
+      ]
+    )
+    expect(issues).toEqual([
+      expect.objectContaining({
+        issueType: "TOTAL_MISMATCH",
+        expectedAmount: 40,
+        actualAmount: 30,
+      }),
+    ])
   })
 })
 
@@ -458,6 +589,44 @@ describe("runFinanceReconciliation", () => {
     expect(issue?.actualAmount).toBe(retailLikeValue)
   })
 
+  it("J. flags refund audit issues and orphan POS_REFUND vouchers", async () => {
+    const prisma = createAuditMockPrisma({
+      refunds: [{ id: "refund-1", amount: new Prisma.Decimal("25.00") }],
+      vouchers: [
+        matchingRefundVoucher("orphan-1", 10),
+      ],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.checkedRefunds).toBe(1)
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          sourceType: "REFUND",
+          sourceId: "refund-1",
+          issueType: "MISSING_VOUCHER",
+        }),
+        expect.objectContaining({
+          sourceType: "REFUND",
+          sourceId: "orphan-1",
+          issueType: "MISSING_REFUND",
+        }),
+      ])
+    )
+  })
+
+  it("K. reports no refund issues when voucher matches refund amount", async () => {
+    const prisma = createAuditMockPrisma({
+      refunds: [{ id: "refund-1", amount: new Prisma.Decimal("25.00") }],
+      vouchers: [matchingRefundVoucher("refund-1", 25)],
+    })
+
+    const result = await runFinanceReconciliation(prisma as never)
+
+    expect(result.issues.filter((row) => row.sourceType === "REFUND")).toEqual([])
+  })
+
   it("I. performs read-only prisma access and never calls mutation methods", async () => {
     const prisma = createAuditMockPrisma({
       sales: [{ id: "sale-1", total: new Prisma.Decimal("100.00") }],
@@ -472,6 +641,7 @@ describe("runFinanceReconciliation", () => {
 
     expect(prisma.sale.findMany).toHaveBeenCalled()
     expect(prisma.stockDocument.findMany).toHaveBeenCalled()
+    expect(prisma.refund.findMany).toHaveBeenCalled()
     expect(prisma.stockTransaction.findMany).toHaveBeenCalled()
     expect(prisma.voucher.findMany).toHaveBeenCalled()
     expect(prisma.$transaction).not.toHaveBeenCalled()

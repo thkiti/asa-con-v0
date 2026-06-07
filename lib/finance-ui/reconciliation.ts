@@ -3,6 +3,7 @@ import type {
   FinanceFilterValues,
   InventoryReconciliationResult,
   ReconciliationVariance,
+  RefundReconciliationResult,
   SalesReconciliationResult,
 } from "./types"
 
@@ -133,6 +134,8 @@ function domainLabel(domain: string): string {
       return "Revenue"
     case "tender":
       return "Tender"
+    case "refund":
+      return "Refunds"
     default:
       return domain
   }
@@ -141,6 +144,7 @@ function domainLabel(domain: string): string {
 export function varianceRowsFromResults(input: {
   inventory: InventoryReconciliationResult
   sales: SalesReconciliationResult
+  refunds?: RefundReconciliationResult
 }): ReconciliationVariance[] {
   const seen = new Set<string>()
   const rows: ReconciliationVariance[] = []
@@ -148,6 +152,7 @@ export function varianceRowsFromResults(input: {
   for (const row of [
     ...input.inventory.variances,
     ...input.sales.variances,
+    ...(input.refunds?.variances ?? []),
   ]) {
     const key = `${row.domain}:${row.label}`
     if (seen.has(key)) continue
