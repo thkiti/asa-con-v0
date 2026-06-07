@@ -187,6 +187,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "/shop/stock-documents",
           "Transfers, performance, adjustments"
         ),
+        available(
+          "catalog-image",
+          "Catalog Image",
+          "/operations/catalog-image",
+          "Crop catalog PDFs, match products, upload images"
+        ),
         planned("stock-card", "Stock Card"),
         planned("stock-movement", "Stock Movement"),
         planned("supplier-order", "Supplier Order"),

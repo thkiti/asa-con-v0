@@ -53,3 +53,5 @@ data/legacy/**/csv/*
 !data/legacy/**/csv/.gitkeep
 data/legacy/**/manifest.json
 tmp/import-reports/
+
+/local/catalog-image/

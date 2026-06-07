@@ -25,6 +25,7 @@ export const API_BYPASS_PATHS = [
   "/api/pos",
   "/api/stock-document",
   "/api/system",
+  "/api/operation",
 ] as const
 
 function pathnameArea(pathname: string): AppArea | null {

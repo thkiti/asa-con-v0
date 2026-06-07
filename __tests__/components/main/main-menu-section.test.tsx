@@ -55,7 +55,7 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain('href="/admin/receipt-setup"')
   })
 
-  it("renders planned items without href", () => {
+  it("renders operations section as card grid", () => {
     const section = getMainMenuSectionDetail("HO_ADMIN", "operations")
     const html = renderToStaticMarkup(
       <MainMenuSectionView user={hoAdmin} section={section!} />
@@ -63,6 +63,9 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain("Stock Card")
     expect(html).toContain('aria-disabled="true"')
     expect(html).toContain('href="/shop/stock-documents"')
+    expect(html).toContain('href="/operations/catalog-image"')
+    expect(html).toContain("Export Image To Cloud")
+    expect(html).toContain("min-h-[5.5rem]")
   })
 
   it("renders shop section as clickable app cards", () => {

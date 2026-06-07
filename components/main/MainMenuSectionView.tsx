@@ -13,6 +13,7 @@ import {
   themeMenuRowPlanned,
   themeMuted,
 } from "@/lib/theme/theme-classes"
+import { OperationsHubMenu } from "@/components/operations/OperationsHubMenu"
 import { MainMenuShell } from "./MainMenuShell"
 
 type MainMenuSectionViewProps = {
@@ -102,6 +103,8 @@ export function MainMenuSectionView({ user, section }: MainMenuSectionViewProps)
 
       {section.key === "shop" ? (
         <ShopSectionMenu section={section} />
+      ) : section.key === "operations" ? (
+        <OperationsHubMenu section={section} />
       ) : (
         <DefaultSectionMenu section={section} />
       )}
