@@ -55,7 +55,6 @@ export function OperationsHubMenu({ section }: OperationsHubMenuProps) {
   const items = section.items
   const stockDocuments = findItem(items, "stock-documents")
   const catalogImage = findItem(items, "catalog-image")
-  const catalogUpload = findItem(items, "catalog-upload")
   const stockCard = findItem(items, "stock-card")
   const stockMovement = findItem(items, "stock-movement")
   const supplierOrder = findItem(items, "supplier-order")
@@ -75,10 +74,9 @@ export function OperationsHubMenu({ section }: OperationsHubMenuProps) {
         <div className="grid gap-3">{renderCard(supplierOrder)}</div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {renderCard(catalogImage)}
-        {renderCard(catalogUpload)}
-      </div>
+      {catalogImage ? (
+        <div className="grid gap-3">{renderCard(catalogImage)}</div>
+      ) : null}
     </nav>
   )
 }

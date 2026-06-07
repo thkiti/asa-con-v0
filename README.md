@@ -38,6 +38,11 @@ npm run build
 |----------|---------|---------|
 | `DATABASE_URL` | `postgresql://...` | Prisma connection |
 | `FINANCE_POSTING_ENABLED` | `true` | Enable finance hooks on checkout/stock post |
+| `BLOB_READ_WRITE_TOKEN` | `vercel_blob_rw_...` | Vercel Blob auth (legacy token; optional if OIDC is set) |
+| `VERCEL_OIDC_TOKEN` | (from `vercel env pull`) | Vercel Blob OIDC auth |
+| `BLOB_STORE_ID` | `store_...` | Blob store id (required with OIDC) |
+
+**Blob auth:** use either `BLOB_READ_WRITE_TOKEN` or `VERCEL_OIDC_TOKEN` + `BLOB_STORE_ID` for catalog image upload. Run `vercel env pull` after linking the project to fetch OIDC credentials locally. `BLOB_WEBHOOK_PUBLIC_KEY` is not needed for server-side upload.
 
 Restart `npm run dev` after changing env vars.
 

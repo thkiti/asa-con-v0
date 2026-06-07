@@ -6,7 +6,10 @@ import {
   type CropImageSize,
   type CropRect,
 } from "@/lib/catalog-image-ui/crop-template"
-import type { CatalogImageAssignedSlot } from "@/lib/catalog-image-ui/types"
+import type {
+  CatalogImageAssignedSlot,
+  CatalogImageCloudUploadItemResult,
+} from "@/lib/catalog-image-ui/types"
 import {
   themeBtnSecondary,
   themeMenuGroup,
@@ -34,7 +37,13 @@ type CatalogImageViewProps = {
   layoutPreviewUrl: string | null
   layoutPreviewLoading: boolean
   saving: boolean
+  replaceLocalFilesOnSave: boolean
+  onReplaceLocalFilesOnSaveChange: (value: boolean) => void
   lastSaveMessage: string | null
+  lastSavedProductCodes: string[]
+  uploading: boolean
+  lastUploadMessage: string | null
+  uploadErrorDetail: CatalogImageCloudUploadItemResult[] | null
   error: string | null
   onOpenFile: (file: File) => void | Promise<void>
   onCropSettingsChange: (settings: CatalogImageCropSettingsVM) => void
@@ -44,6 +53,7 @@ type CatalogImageViewProps = {
   onProductIdInputChange: (value: string) => void
   onAssignSlots: () => void
   onConfirmedSave: () => void
+  onUploadToCloud: () => void
   onLayoutPreviewLoad: () => void
   onLayoutPreviewError: () => void
   onImageDimensionsChange: (size: CropImageSize) => void
@@ -68,7 +78,13 @@ export function CatalogImageView({
   layoutPreviewUrl,
   layoutPreviewLoading,
   saving,
+  replaceLocalFilesOnSave,
+  onReplaceLocalFilesOnSaveChange,
   lastSaveMessage,
+  lastSavedProductCodes,
+  uploading,
+  lastUploadMessage,
+  uploadErrorDetail,
   error,
   onOpenFile,
   onCropSettingsChange,
@@ -78,6 +94,7 @@ export function CatalogImageView({
   onProductIdInputChange,
   onAssignSlots,
   onConfirmedSave,
+  onUploadToCloud,
   onLayoutPreviewLoad,
   onLayoutPreviewError,
   onImageDimensionsChange,
@@ -94,6 +111,8 @@ export function CatalogImageView({
 
   const canAssign = Boolean(layoutPreviewUrl && cropRect)
   const canSave = canAssign && assignedSlots.length > 0 && !saving
+  const canUploadToCloud =
+    lastSavedProductCodes.length > 0 && !uploading && !saving
 
   return (
     <div className={themeMenuGroup}>
@@ -129,6 +148,9 @@ export function CatalogImageView({
         ) : null}
         {lastSaveMessage ? (
           <span className="text-sm text-emerald-400">{lastSaveMessage}</span>
+        ) : null}
+        {lastUploadMessage ? (
+          <span className="text-sm text-sky-300">{lastUploadMessage}</span>
         ) : null}
       </div>
 
@@ -306,6 +328,17 @@ export function CatalogImageView({
           >
             Assign Slot
           </button>
+          <label className="flex items-center gap-2 text-sm text-card-foreground">
+            <input
+              type="checkbox"
+              checked={replaceLocalFilesOnSave}
+              disabled={saving}
+              onChange={(event) =>
+                onReplaceLocalFilesOnSaveChange(event.target.checked)
+              }
+            />
+            Replace local files on Confirmed &amp; Save
+          </label>
           <button
             type="button"
             className="rounded border border-sky-800 bg-sky-950/40 px-4 py-2 text-sm font-medium text-sky-200 hover:bg-sky-900/50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -314,7 +347,36 @@ export function CatalogImageView({
           >
             {saving ? "Saving…" : "Confirmed & Save"}
           </button>
+          {lastSaveMessage ? (
+            <span className="text-sm text-emerald-400">{lastSaveMessage}</span>
+          ) : null}
+          <button
+            type="button"
+            className="rounded border border-violet-800 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-200 hover:bg-violet-900/50 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!canUploadToCloud}
+            onClick={onUploadToCloud}
+          >
+            {uploading ? "Uploading…" : "Upload to Cloud"}
+          </button>
         </div>
+
+        {uploadErrorDetail && uploadErrorDetail.length > 0 ? (
+          <div className="border-t border-border px-4 py-3">
+            <p className={`mb-2 text-sm font-medium ${themeMuted}`}>
+              Cloud upload details
+            </p>
+            <ul className="space-y-1 text-sm text-amber-200">
+              {uploadErrorDetail.map((item) => (
+                <li key={`${item.productCode}-${item.status}`}>
+                  <span className="font-mono">{item.productCode}</span>:{" "}
+                  {item.status}
+                  {item.error ? ` — ${item.error}` : ""}
+                  {item.cloudPath ? ` (${item.cloudPath})` : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {assignedSlots.length > 0 ? (
           <div className="px-4 py-3">

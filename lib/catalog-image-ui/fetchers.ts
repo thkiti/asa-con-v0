@@ -6,6 +6,7 @@ import type {
   CatalogImageMatchResult,
   CatalogImageSaveMatchedResult,
   CatalogImageScanResult,
+  CatalogImageUploadToCloudResult,
 } from "./types"
 
 export class CatalogImageUiError extends Error {
@@ -227,6 +228,18 @@ export async function fetchCatalogImageUpload(params: {
   })
   if (!res.ok) throw await parseJsonError(res)
   return (await res.json()) as { cloudPath: string; publicUrl?: string | null }
+}
+
+export async function fetchCatalogImageUploadToCloud(
+  productCodes: string[]
+): Promise<CatalogImageUploadToCloudResult> {
+  const res = await fetch("/api/operation/catalog-image/upload-to-cloud", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ productCodes }),
+  })
+  if (!res.ok) throw await parseJsonError(res)
+  return (await res.json()) as CatalogImageUploadToCloudResult
 }
 
 export function catalogImagePreviewUrl(

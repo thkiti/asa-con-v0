@@ -64,7 +64,7 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain('aria-disabled="true"')
     expect(html).toContain('href="/shop/stock-documents"')
     expect(html).toContain('href="/operations/catalog-image"')
-    expect(html).toContain("Export Image To Cloud")
+    expect(html).not.toContain("Export Image To Cloud")
     expect(html).toContain("min-h-[5.5rem]")
   })
 

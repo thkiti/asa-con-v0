@@ -16,11 +16,11 @@ describe("OperationsHubMenu", () => {
 
     expect(html).toContain('href="/shop/stock-documents"')
     expect(html).toContain('href="/operations/catalog-image"')
-    expect(html).toContain('href="/operations/catalog-upload"')
+    expect(html).not.toContain('href="/operations/catalog-upload"')
     expect(html).toContain("Stock Card")
     expect(html).toContain("Stock Movement")
     expect(html).toContain("Supplier Order")
-    expect(html).toContain("Export Image To Cloud")
+    expect(html).not.toContain("Export Image To Cloud")
     expect(html).toContain("Planned")
     expect(html).toContain("min-h-[5.5rem]")
     expect(html).toContain('aria-label="OPERATIONS"')

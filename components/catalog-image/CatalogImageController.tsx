@@ -12,12 +12,15 @@ import {
   type CropRect,
   type CropTemplate,
 } from "@/lib/catalog-image-ui/crop-template"
+import { buildConfirmedSaveUxResult } from "@/lib/catalog-image-ui/confirmed-save-ux"
 import {
   buildConfirmedSaveRequestBody,
   catalogImagePagePreviewUrl,
   fetchCatalogImageConfirmedSave,
   fetchCatalogImageOpenFile,
+  fetchCatalogImageUploadToCloud,
 } from "@/lib/catalog-image-ui/fetchers"
+import type { CatalogImageCloudUploadItemResult } from "@/lib/catalog-image-ui/types"
 import type { CatalogImageAssignedSlot } from "@/lib/catalog-image-ui/types"
 import {
   CatalogImageView,
@@ -58,7 +61,18 @@ export function CatalogImageController() {
     []
   )
   const [saving, setSaving] = useState(false)
+  const [replaceLocalFilesOnSave, setReplaceLocalFilesOnSave] = useState(false)
   const [lastSaveMessage, setLastSaveMessage] = useState<string | null>(null)
+  const [lastSavedProductCodes, setLastSavedProductCodes] = useState<string[]>(
+    []
+  )
+  const [uploading, setUploading] = useState(false)
+  const [lastUploadMessage, setLastUploadMessage] = useState<string | null>(
+    null
+  )
+  const [uploadErrorDetail, setUploadErrorDetail] = useState<
+    CatalogImageCloudUploadItemResult[] | null
+  >(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const openFileInFlightRef = useRef(false)
@@ -142,6 +156,9 @@ export function CatalogImageController() {
       setOpening(true)
       setError(null)
       setLastSaveMessage(null)
+      setLastSavedProductCodes([])
+      setLastUploadMessage(null)
+      setUploadErrorDetail(null)
       clearPreviewForNewFile()
       setOpenedFilePath(getOpenedFileDisplayPath(file))
       setLayoutPreviewLoading(true)
@@ -262,6 +279,9 @@ export function CatalogImageController() {
   const handleConfirmedSave = useCallback(async () => {
     setError(null)
     setLastSaveMessage(null)
+    setLastSavedProductCodes([])
+    setLastUploadMessage(null)
+    setUploadErrorDetail(null)
 
     if (!selectedFileName) {
       setError("Open a PDF file first")
@@ -300,32 +320,21 @@ export function CatalogImageController() {
           assignedSlots.map((slot) => ({
             sourceSlot: slot.sourceSlot,
             productCode: slot.productCode,
-          }))
+          })),
+          { replace: replaceLocalFilesOnSave }
         )
       )
 
-      const failed = result.items.filter((item) => item.status !== "SAVED")
+      const uxResult = buildConfirmedSaveUxResult({
+        finalDir: result.finalDir,
+        items: result.items,
+      })
 
-      if (failed.length > 0) {
-        const detail = failed
-          .map((item) => {
-            const label = item.finalFileName || item.productCode
-            return `${label}: ${item.error ?? item.status}`
-          })
-          .join("; ")
-        setError(
-          result.savedCount > 0
-            ? `Some files were not saved — ${detail}`
-            : `No files were saved — ${detail}`
-        )
-      } else if (result.savedCount === 0) {
-        setError("No files were saved")
-      }
+      setLastSavedProductCodes(uxResult.uploadableProductCodes)
+      setLastSaveMessage(uxResult.saveMessage)
+      setError(uxResult.errorMessage)
 
-      if (failed.length === 0 && result.savedCount > 0) {
-        setLastSaveMessage(
-          `Saved ${result.savedCount} file${result.savedCount === 1 ? "" : "s"} to ${result.finalDir}`
-        )
+      if (uxResult.shouldResetPage) {
         resetPageAfterSuccessfulSave()
       }
     } catch (err) {
@@ -337,10 +346,45 @@ export function CatalogImageController() {
     assignedSlots,
     cropRect,
     cropSettings,
+    replaceLocalFilesOnSave,
     resetPageAfterSuccessfulSave,
     selectedFileName,
     selectedPage,
   ])
+
+  const handleUploadToCloud = useCallback(async () => {
+    if (lastSavedProductCodes.length === 0) return
+
+    setUploading(true)
+    setLastUploadMessage(null)
+    setUploadErrorDetail(null)
+    setError(null)
+
+    try {
+      const result = await fetchCatalogImageUploadToCloud(lastSavedProductCodes)
+      const { summary } = result
+      const issueCount =
+        summary.skippedExists +
+        summary.localMissing +
+        summary.localDuplicate +
+        summary.error
+
+      setLastUploadMessage(
+        `Uploaded ${summary.uploaded} / Skipped existing ${summary.skippedExists} / Errors ${summary.error + summary.localMissing + summary.localDuplicate}`
+      )
+
+      if (issueCount > 0) {
+        const detailItems = result.results.filter(
+          (item) => item.status !== "UPLOADED"
+        )
+        setUploadErrorDetail(detailItems)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Cloud upload failed")
+    } finally {
+      setUploading(false)
+    }
+  }, [lastSavedProductCodes])
 
   return (
     <CatalogImageView
@@ -355,7 +399,13 @@ export function CatalogImageController() {
       layoutPreviewUrl={layoutPreviewUrl}
       layoutPreviewLoading={layoutPreviewLoading}
       saving={saving}
+      replaceLocalFilesOnSave={replaceLocalFilesOnSave}
+      onReplaceLocalFilesOnSaveChange={setReplaceLocalFilesOnSave}
       lastSaveMessage={lastSaveMessage}
+      lastSavedProductCodes={lastSavedProductCodes}
+      uploading={uploading}
+      lastUploadMessage={lastUploadMessage}
+      uploadErrorDetail={uploadErrorDetail}
       error={error}
       onOpenFile={handleOpenFile}
       onCropSettingsChange={handleCropSettingsChange}
@@ -365,6 +415,7 @@ export function CatalogImageController() {
       onProductIdInputChange={setProductIdInput}
       onAssignSlots={handleAssignSlots}
       onConfirmedSave={handleConfirmedSave}
+      onUploadToCloud={handleUploadToCloud}
       onLayoutPreviewLoad={handleLayoutPreviewLoad}
       onLayoutPreviewError={handleLayoutPreviewError}
       onImageDimensionsChange={handleImageDimensionsChange}

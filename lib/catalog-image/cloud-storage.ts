@@ -12,7 +12,7 @@ export type UploadCatalogProductImageResult = {
 }
 
 export function getCatalogProductCloudPath(productCode: string): string {
-  return `catalog-products/${productCode}.png`
+  return `products/${productCode}.png`
 }
 
 export async function uploadCatalogProductImage(

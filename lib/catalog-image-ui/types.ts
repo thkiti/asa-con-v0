@@ -93,3 +93,31 @@ export type CatalogImageConfirmedSaveResult = {
   savedCount: number
   items: CatalogImageConfirmedSaveSlotResult[]
 }
+
+export type CatalogImageCloudUploadItemStatus =
+  | "UPLOADED"
+  | "SKIPPED_EXISTS"
+  | "LOCAL_MISSING"
+  | "LOCAL_DUPLICATE"
+  | "ERROR"
+
+export type CatalogImageCloudUploadItemResult = {
+  productCode: string
+  status: CatalogImageCloudUploadItemStatus
+  cloudPath?: string
+  url?: string
+  error?: string
+}
+
+export type CatalogImageCloudUploadSummary = {
+  uploaded: number
+  skippedExists: number
+  localMissing: number
+  localDuplicate: number
+  error: number
+}
+
+export type CatalogImageUploadToCloudResult = {
+  results: CatalogImageCloudUploadItemResult[]
+  summary: CatalogImageCloudUploadSummary
+}
