@@ -29,7 +29,7 @@ describe("buildConfirmedSaveUxResult", () => {
 
     expect(result.uploadableProductCodes).toEqual(["0101015", "0101016"])
     expect(result.saveMessage).toBe(
-      "Local files already exist. Ready to upload. Duplicate local files: 2"
+      "Local files already exist. Duplicate local files: 2"
     )
     expect(result.errorMessage).toBeNull()
     expect(result.shouldResetPage).toBe(true)
@@ -94,7 +94,8 @@ describe("buildConfirmedSaveUxResult", () => {
       items: [{ productCode: "0101015", status: "DUPLICATE" }],
     })
 
-    expect(result.saveMessage).toContain("Local files already exist. Ready to upload")
+    expect(result.saveMessage).toContain("Local files already exist")
+    expect(result.saveMessage).not.toContain("Ready to upload")
   })
 
   it("partial success with errors still enables upload for saved and duplicate", () => {

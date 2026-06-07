@@ -63,9 +63,6 @@ export function CatalogImageController() {
   const [saving, setSaving] = useState(false)
   const [replaceLocalFilesOnSave, setReplaceLocalFilesOnSave] = useState(false)
   const [lastSaveMessage, setLastSaveMessage] = useState<string | null>(null)
-  const [lastSavedProductCodes, setLastSavedProductCodes] = useState<string[]>(
-    []
-  )
   const [uploading, setUploading] = useState(false)
   const [lastUploadMessage, setLastUploadMessage] = useState<string | null>(
     null
@@ -156,7 +153,6 @@ export function CatalogImageController() {
       setOpening(true)
       setError(null)
       setLastSaveMessage(null)
-      setLastSavedProductCodes([])
       setLastUploadMessage(null)
       setUploadErrorDetail(null)
       clearPreviewForNewFile()
@@ -279,7 +275,6 @@ export function CatalogImageController() {
   const handleConfirmedSave = useCallback(async () => {
     setError(null)
     setLastSaveMessage(null)
-    setLastSavedProductCodes([])
     setLastUploadMessage(null)
     setUploadErrorDetail(null)
 
@@ -330,7 +325,6 @@ export function CatalogImageController() {
         items: result.items,
       })
 
-      setLastSavedProductCodes(uxResult.uploadableProductCodes)
       setLastSaveMessage(uxResult.saveMessage)
       setError(uxResult.errorMessage)
 
@@ -353,24 +347,23 @@ export function CatalogImageController() {
   ])
 
   const handleUploadToCloud = useCallback(async () => {
-    if (lastSavedProductCodes.length === 0) return
-
     setUploading(true)
     setLastUploadMessage(null)
     setUploadErrorDetail(null)
     setError(null)
 
     try {
-      const result = await fetchCatalogImageUploadToCloud(lastSavedProductCodes)
+      const result = await fetchCatalogImageUploadToCloud()
       const { summary } = result
       const issueCount =
         summary.skippedExists +
         summary.localMissing +
         summary.localDuplicate +
-        summary.error
+        summary.error +
+        summary.unmatchedProduct
 
       setLastUploadMessage(
-        `Uploaded ${summary.uploaded} / Skipped existing ${summary.skippedExists} / Errors ${summary.error + summary.localMissing + summary.localDuplicate}`
+        `Uploaded ${summary.uploaded} / Skipped existing ${summary.skippedExists} / Local duplicates ${summary.localDuplicate} / Errors ${summary.error + summary.localMissing + summary.unmatchedProduct}`
       )
 
       if (issueCount > 0) {
@@ -384,7 +377,7 @@ export function CatalogImageController() {
     } finally {
       setUploading(false)
     }
-  }, [lastSavedProductCodes])
+  }, [])
 
   return (
     <CatalogImageView
@@ -402,7 +395,6 @@ export function CatalogImageController() {
       replaceLocalFilesOnSave={replaceLocalFilesOnSave}
       onReplaceLocalFilesOnSaveChange={setReplaceLocalFilesOnSave}
       lastSaveMessage={lastSaveMessage}
-      lastSavedProductCodes={lastSavedProductCodes}
       uploading={uploading}
       lastUploadMessage={lastUploadMessage}
       uploadErrorDetail={uploadErrorDetail}

@@ -64,7 +64,7 @@ export function buildConfirmedSaveUxResult(params: {
       saveMessage = formatSavedMessage(finalDir, savedCount)
       shouldResetPage = true
     } else if (savedCount === 0 && duplicateCount > 0) {
-      saveMessage = `Local files already exist. Ready to upload. Duplicate local files: ${duplicateCount}`
+      saveMessage = `Local files already exist. Duplicate local files: ${duplicateCount}`
       shouldResetPage = true
     } else if (savedCount > 0 && duplicateCount > 0) {
       saveMessage = `${formatSavedMessage(finalDir, savedCount)}. Duplicate local files: ${duplicateCount}`

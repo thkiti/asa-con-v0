@@ -40,7 +40,6 @@ type CatalogImageViewProps = {
   replaceLocalFilesOnSave: boolean
   onReplaceLocalFilesOnSaveChange: (value: boolean) => void
   lastSaveMessage: string | null
-  lastSavedProductCodes: string[]
   uploading: boolean
   lastUploadMessage: string | null
   uploadErrorDetail: CatalogImageCloudUploadItemResult[] | null
@@ -81,7 +80,6 @@ export function CatalogImageView({
   replaceLocalFilesOnSave,
   onReplaceLocalFilesOnSaveChange,
   lastSaveMessage,
-  lastSavedProductCodes,
   uploading,
   lastUploadMessage,
   uploadErrorDetail,
@@ -111,8 +109,7 @@ export function CatalogImageView({
 
   const canAssign = Boolean(layoutPreviewUrl && cropRect)
   const canSave = canAssign && assignedSlots.length > 0 && !saving
-  const canUploadToCloud =
-    lastSavedProductCodes.length > 0 && !uploading && !saving
+  const canUploadToCloud = !uploading && !saving
 
   return (
     <div className={themeMenuGroup}>

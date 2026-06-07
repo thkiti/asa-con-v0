@@ -99,6 +99,7 @@ export type CatalogImageCloudUploadItemStatus =
   | "SKIPPED_EXISTS"
   | "LOCAL_MISSING"
   | "LOCAL_DUPLICATE"
+  | "UNMATCHED_PRODUCT"
   | "ERROR"
 
 export type CatalogImageCloudUploadItemResult = {
@@ -114,6 +115,7 @@ export type CatalogImageCloudUploadSummary = {
   skippedExists: number
   localMissing: number
   localDuplicate: number
+  unmatchedProduct: number
   error: number
 }
 

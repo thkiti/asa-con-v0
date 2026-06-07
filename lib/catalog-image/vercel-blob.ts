@@ -6,6 +6,7 @@ import { CatalogImageError } from "./errors"
 import { assertSafeProductCode } from "./paths"
 import {
   CATALOG_PRODUCT_IMAGE_EXTENSIONS,
+  discoverProductCodesInImageDir,
   findExistingProductImageFiles,
   getImageExtensionFromFileName,
   isCatalogProductImageExtension,
@@ -16,6 +17,7 @@ export type CloudUploadItemStatus =
   | "SKIPPED_EXISTS"
   | "LOCAL_MISSING"
   | "LOCAL_DUPLICATE"
+  | "UNMATCHED_PRODUCT"
   | "ERROR"
 
 export type CloudUploadItemResult = {
@@ -31,7 +33,21 @@ export type CloudUploadSummary = {
   skippedExists: number
   localMissing: number
   localDuplicate: number
+  unmatchedProduct: number
   error: number
+}
+
+type ProductLookupDb = {
+  product: {
+    findUnique: (args: {
+      where: { code: string }
+      select: { id: true }
+    }) => Promise<{ id: string } | null>
+  }
+}
+
+export type UploadProductImagesToBlobOptions = {
+  db?: ProductLookupDb
 }
 
 const CLOUD_PRODUCT_PREFIX = "products"
@@ -184,6 +200,9 @@ function buildCloudUploadSummary(
         case "LOCAL_DUPLICATE":
           summary.localDuplicate += 1
           break
+        case "UNMATCHED_PRODUCT":
+          summary.unmatchedProduct += 1
+          break
         case "ERROR":
           summary.error += 1
           break
@@ -195,18 +214,83 @@ function buildCloudUploadSummary(
       skippedExists: 0,
       localMissing: 0,
       localDuplicate: 0,
+      unmatchedProduct: 0,
       error: 0,
     }
   )
 }
 
+async function processProductCodeUpload(
+  productCode: string,
+  imageDir: string,
+  options: { checkProductMatch: boolean; db?: ProductLookupDb }
+): Promise<CloudUploadItemResult> {
+  try {
+    if (options.checkProductMatch) {
+      if (!options.db) {
+        throw new CatalogImageError(
+          "Database is required for scan-all cloud upload",
+          "DB_REQUIRED",
+          500
+        )
+      }
+      const product = await options.db.product.findUnique({
+        where: { code: productCode },
+        select: { id: true },
+      })
+      if (!product) {
+        return { productCode, status: "UNMATCHED_PRODUCT" }
+      }
+    }
+
+    const existingCloud = await listExistingProductCloudImages(productCode)
+    if (existingCloud.length > 0) {
+      return {
+        productCode,
+        status: "SKIPPED_EXISTS",
+        cloudPath: existingCloud[0],
+      }
+    }
+
+    const localFiles = await findExistingProductImageFiles(imageDir, productCode)
+
+    if (localFiles.length === 0) {
+      return { productCode, status: "LOCAL_MISSING" }
+    }
+
+    if (localFiles.length > 1) {
+      return { productCode, status: "LOCAL_DUPLICATE" }
+    }
+
+    const uploaded = await uploadProductImageToBlob(localFiles[0]!, productCode)
+    return {
+      productCode,
+      status: "UPLOADED",
+      cloudPath: uploaded.cloudPath,
+      url: uploaded.url,
+    }
+  } catch (err) {
+    return {
+      productCode,
+      status: "ERROR",
+      error: err instanceof Error ? err.message : "Upload failed",
+    }
+  }
+}
+
 export async function uploadProductImagesToBlob(
-  productCodes: string[]
+  productCodes: string[],
+  options?: UploadProductImagesToBlobOptions
 ): Promise<{ results: CloudUploadItemResult[]; summary: CloudUploadSummary }> {
   const imageDir = getCatalogProductImageDir()
   const results: CloudUploadItemResult[] = []
 
-  for (const rawCode of productCodes) {
+  const scanAll = productCodes.length === 0
+  const codesToProcess = scanAll
+    ? await discoverProductCodesInImageDir(imageDir)
+    : productCodes
+
+  for (const rawCode of codesToProcess) {
     let productCode: string
     try {
       productCode = assertSafeProductCode(String(rawCode ?? "").trim())
@@ -219,49 +303,12 @@ export async function uploadProductImagesToBlob(
       continue
     }
 
-    try {
-      const existingCloud = await listExistingProductCloudImages(productCode)
-      if (existingCloud.length > 0) {
-        results.push({
-          productCode,
-          status: "SKIPPED_EXISTS",
-          cloudPath: existingCloud[0],
-        })
-        continue
-      }
-
-      const localFiles = await findExistingProductImageFiles(
-        imageDir,
-        productCode
-      )
-
-      if (localFiles.length === 0) {
-        results.push({ productCode, status: "LOCAL_MISSING" })
-        continue
-      }
-
-      if (localFiles.length > 1) {
-        results.push({ productCode, status: "LOCAL_DUPLICATE" })
-        continue
-      }
-
-      const uploaded = await uploadProductImageToBlob(
-        localFiles[0]!,
-        productCode
-      )
-      results.push({
-        productCode,
-        status: "UPLOADED",
-        cloudPath: uploaded.cloudPath,
-        url: uploaded.url,
+    results.push(
+      await processProductCodeUpload(productCode, imageDir, {
+        checkProductMatch: scanAll,
+        db: options?.db,
       })
-    } catch (err) {
-      results.push({
-        productCode,
-        status: "ERROR",
-        error: err instanceof Error ? err.message : "Upload failed",
-      })
-    }
+    )
   }
 
   return { results, summary: buildCloudUploadSummary(results) }

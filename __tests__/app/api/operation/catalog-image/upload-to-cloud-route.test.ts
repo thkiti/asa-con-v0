@@ -8,6 +8,10 @@ jest.mock("@/lib/catalog-image/vercel-blob", () => ({
   uploadProductImagesToBlob: jest.fn(),
 }))
 
+jest.mock("@/lib/shared/prisma", () => ({
+  prisma: { product: { findUnique: jest.fn() } },
+}))
+
 import { getSession } from "@/lib/auth/session"
 import { uploadProductImagesToBlob } from "@/lib/catalog-image/vercel-blob"
 
@@ -45,6 +49,7 @@ describe("POST /api/operation/catalog-image/upload-to-cloud", () => {
         skippedExists: 0,
         localMissing: 0,
         localDuplicate: 0,
+        unmatchedProduct: 0,
         error: 0,
       },
     })
@@ -69,6 +74,38 @@ describe("POST /api/operation/catalog-image/upload-to-cloud", () => {
       })
     )
     expect(mockedUpload).toHaveBeenCalledWith(["0101015", "0202020"])
+  })
+
+  it("empty body calls uploadProductImagesToBlob with db for scan-all", async () => {
+    const res = await POST(
+      new Request(
+        "http://localhost/api/operation/catalog-image/upload-to-cloud",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }
+      )
+    )
+
+    expect(res.status).toBe(200)
+    expect(mockedUpload).toHaveBeenCalledWith([], { db: expect.anything() })
+  })
+
+  it("empty productCodes array calls uploadProductImagesToBlob with db", async () => {
+    const res = await POST(
+      new Request(
+        "http://localhost/api/operation/catalog-image/upload-to-cloud",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productCodes: [] }),
+        }
+      )
+    )
+
+    expect(res.status).toBe(200)
+    expect(mockedUpload).toHaveBeenCalledWith([], { db: expect.anything() })
   })
 
   it("returns 401 when unauthenticated", async () => {

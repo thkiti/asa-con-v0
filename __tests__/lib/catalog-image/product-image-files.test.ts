@@ -1,6 +1,7 @@
 import path from "path"
 import {
   CATALOG_PRODUCT_IMAGE_EXTENSIONS,
+  discoverProductCodesInImageDir,
   findExistingProductImageFiles,
   getImageExtensionFromFileName,
   getProductCodeFromImageFileName,
@@ -12,11 +13,13 @@ import {
 const mockAccess = jest.fn()
 const mockMkdir = jest.fn()
 const mockUnlink = jest.fn()
+const mockReaddir = jest.fn()
 
 jest.mock("fs/promises", () => ({
   access: (...args: unknown[]) => mockAccess(...args),
   mkdir: (...args: unknown[]) => mockMkdir(...args),
   unlink: (...args: unknown[]) => mockUnlink(...args),
+  readdir: (...args: unknown[]) => mockReaddir(...args),
 }))
 
 describe("product-image-files", () => {
@@ -56,6 +59,20 @@ describe("product-image-files", () => {
     expect(getProductCodeFromImageFileName("0101015.png")).toBe("0101015")
     expect(getImageExtensionFromFileName("0101015.webp")).toBe(".webp")
     expect(getProductCodeFromImageFileName("bad-name.pdf")).toBeNull()
+  })
+
+  it("discovers unique sorted product codes from image dir", async () => {
+    mockReaddir.mockResolvedValue([
+      { name: "0202020.png", isFile: () => true },
+      { name: "0101015.jpg", isFile: () => true },
+      { name: "0101015.webp", isFile: () => true },
+      { name: "readme.txt", isFile: () => true },
+      { name: "subdir", isFile: () => false },
+    ])
+
+    const codes = await discoverProductCodesInImageDir(imageDir)
+    expect(codes).toEqual(["0101015", "0202020"])
+    expect(mockReaddir).toHaveBeenCalledWith(imageDir, { withFileTypes: true })
   })
 
   it("finds existing files across allowed extensions", async () => {

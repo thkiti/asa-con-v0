@@ -231,12 +231,14 @@ export async function fetchCatalogImageUpload(params: {
 }
 
 export async function fetchCatalogImageUploadToCloud(
-  productCodes: string[]
+  productCodes?: string[]
 ): Promise<CatalogImageUploadToCloudResult> {
+  const body =
+    productCodes == null || productCodes.length === 0 ? {} : { productCodes }
   const res = await fetch("/api/operation/catalog-image/upload-to-cloud", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productCodes }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw await parseJsonError(res)
   return (await res.json()) as CatalogImageUploadToCloudResult

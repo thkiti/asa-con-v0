@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/session"
 import { requireCatalogImageSession } from "@/lib/catalog-image/catalog-image-access"
 import { catalogImageErrorResponse } from "@/lib/catalog-image/errors"
 import { uploadProductImagesToBlob } from "@/lib/catalog-image/vercel-blob"
+import { prisma } from "@/lib/shared/prisma"
 
 type UploadToCloudBody = {
   productCodes?: string[]
@@ -17,7 +18,10 @@ export async function POST(req: Request) {
       ? body.productCodes.map((code) => String(code ?? "").trim()).filter(Boolean)
       : []
 
-    const { results, summary } = await uploadProductImagesToBlob(productCodes)
+    const { results, summary } =
+      productCodes.length === 0
+        ? await uploadProductImagesToBlob([], { db: prisma })
+        : await uploadProductImagesToBlob(productCodes)
     return NextResponse.json({ results, summary })
   } catch (err: unknown) {
     return catalogImageErrorResponse(

@@ -9,6 +9,7 @@ import {
 const mockList = jest.fn()
 const mockPut = jest.fn()
 const mockReadFile = jest.fn()
+const mockReaddir = jest.fn()
 const mockFindExisting = jest.fn()
 
 jest.mock("@vercel/blob", () => ({
@@ -18,6 +19,7 @@ jest.mock("@vercel/blob", () => ({
 
 jest.mock("fs/promises", () => ({
   readFile: (...args: unknown[]) => mockReadFile(...args),
+  readdir: (...args: unknown[]) => mockReaddir(...args),
 }))
 
 jest.mock("@/lib/catalog-image/product-image-files", () => {
@@ -184,6 +186,7 @@ describe("vercel-blob", () => {
       skippedExists: 1,
       localMissing: 0,
       localDuplicate: 0,
+      unmatchedProduct: 0,
       error: 0,
     })
     expect(mockFindExisting).not.toHaveBeenCalled()
@@ -239,6 +242,111 @@ describe("vercel-blob", () => {
       skippedExists: 0,
       localMissing: 0,
       localDuplicate: 0,
+      unmatchedProduct: 0,
+      error: 0,
+    })
+  })
+
+  it("scan-all discovers local codes and skips UNMATCHED_PRODUCT", async () => {
+    mockReaddir.mockResolvedValue([
+      { name: "0101015.png", isFile: () => true },
+      { name: "9999999.jpg", isFile: () => true },
+      { name: "readme.txt", isFile: () => true },
+    ])
+    const mockFindUnique = jest.fn(async ({ where }: { where: { code: string } }) =>
+      where.code === "0101015" ? { id: "prod-1" } : null
+    )
+    mockList.mockResolvedValue({ blobs: [] })
+    mockFindExisting.mockResolvedValue([path.join(imageDir, "0101015.png")])
+
+    const { results, summary } = await uploadProductImagesToBlob([], {
+      db: { product: { findUnique: mockFindUnique } },
+    })
+
+    expect(mockFindUnique).toHaveBeenCalledWith({
+      where: { code: "0101015" },
+      select: { id: true },
+    })
+    expect(mockFindUnique).toHaveBeenCalledWith({
+      where: { code: "9999999" },
+      select: { id: true },
+    })
+    expect(results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          productCode: "0101015",
+          status: "UPLOADED",
+        }),
+        expect.objectContaining({
+          productCode: "9999999",
+          status: "UNMATCHED_PRODUCT",
+        }),
+      ])
+    )
+    expect(summary).toEqual({
+      uploaded: 1,
+      skippedExists: 0,
+      localMissing: 0,
+      localDuplicate: 0,
+      unmatchedProduct: 1,
+      error: 0,
+    })
+  })
+
+  it("scan-all returns SKIPPED_EXISTS, LOCAL_DUPLICATE, and UPLOADED", async () => {
+    mockReaddir.mockResolvedValue([
+      { name: "0101015.png", isFile: () => true },
+      { name: "0202020.jpg", isFile: () => true },
+      { name: "0303030.png", isFile: () => true },
+      { name: "0303030.webp", isFile: () => true },
+    ])
+    const mockFindUnique = jest.fn(async () => ({ id: "prod-1" }))
+    mockList.mockImplementation(async () => {
+      const callCount = mockList.mock.calls.length
+      if (callCount === 1) {
+        return {
+          blobs: [{ pathname: "products/0101015.webp", url: "https://example/x" }],
+        }
+      }
+      return { blobs: [] }
+    })
+    mockFindExisting.mockImplementation(async (_dir: string, code: string) => {
+      if (code === "0202020") return [path.join(imageDir, "0202020.jpg")]
+      if (code === "0303030") {
+        return [
+          path.join(imageDir, "0303030.png"),
+          path.join(imageDir, "0303030.webp"),
+        ]
+      }
+      return [path.join(imageDir, `${code}.png`)]
+    })
+
+    const { results, summary } = await uploadProductImagesToBlob([], {
+      db: { product: { findUnique: mockFindUnique } },
+    })
+
+    expect(results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          productCode: "0101015",
+          status: "SKIPPED_EXISTS",
+        }),
+        expect.objectContaining({
+          productCode: "0202020",
+          status: "UPLOADED",
+        }),
+        expect.objectContaining({
+          productCode: "0303030",
+          status: "LOCAL_DUPLICATE",
+        }),
+      ])
+    )
+    expect(summary).toEqual({
+      uploaded: 1,
+      skippedExists: 1,
+      localMissing: 0,
+      localDuplicate: 1,
+      unmatchedProduct: 0,
       error: 0,
     })
   })

@@ -93,6 +93,22 @@ export async function hasProductImageConflict(
   return existing.length > 0
 }
 
+export async function discoverProductCodesInImageDir(
+  dir: string
+): Promise<string[]> {
+  const entries = await fs.readdir(dir, { withFileTypes: true })
+  const codes = new Set<string>()
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue
+    if (!isCatalogProductImageFileName(entry.name)) continue
+    const code = getProductCodeFromImageFileName(entry.name)
+    if (code) codes.add(code)
+  }
+
+  return [...codes].sort()
+}
+
 export async function ensureCatalogProductImageDir(): Promise<string> {
   const dir = getCatalogProductImageDir()
   await fs.mkdir(dir, { recursive: true })
