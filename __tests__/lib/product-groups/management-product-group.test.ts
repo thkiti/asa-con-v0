@@ -4,6 +4,8 @@ import {
   normalizeToSummaryHeader,
   POLICY_SUMMARY_HEADERS,
   resolveConfiguredProductGroup,
+  resolveReadReportAggregateKey,
+  resolveReadReportDisplayCatalog,
   resolveToSummaryHeader,
 } from "@/lib/product-groups/management-product-group"
 
@@ -97,6 +99,75 @@ describe("loadSummaryHeaderLabels", () => {
       name: null,
       labelStatus: "missing",
     })
+  })
+})
+
+describe("resolveReadReportDisplayCatalog", () => {
+  it("shows 900 parent when no 901/902 children are configured", () => {
+    const catalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [])
+    expect(catalog).toEqual([...POLICY_SUMMARY_HEADERS])
+    expect(catalog).toContain("0100900")
+    expect(catalog).toContain("4100900")
+  })
+
+  it("hides 900 parent when both 901 and 902 children exist", () => {
+    const catalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [
+      "0101901",
+      "0101902",
+      "5100900",
+    ])
+    expect(catalog).not.toContain("0100900")
+    expect(catalog).toContain("0101901")
+    expect(catalog).toContain("0101902")
+    expect(catalog.indexOf("0101901")).toBeLessThan(catalog.indexOf("0101902"))
+    expect(catalog).toContain("5100900")
+  })
+
+  it("hides 900 parent when only 901 child exists", () => {
+    const catalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [
+      "1101901",
+    ])
+    expect(catalog).not.toContain("1100900")
+    expect(catalog).toContain("1101901")
+  })
+
+  it("zero-fills all selected display headers in stable sort", () => {
+    const displayCatalog = resolveReadReportDisplayCatalog(
+      POLICY_SUMMARY_HEADERS,
+      ["0101901", "0101902"]
+    )
+    const rows = mergeManagementGroupSummary({
+      catalog: displayCatalog,
+      labels: new Map(),
+      aggregates: new Map(),
+      includeZeroRows: true,
+    })
+
+    expect(rows.map((r) => r.headerCode)).toEqual(displayCatalog)
+    expect(rows.length).toBe(POLICY_SUMMARY_HEADERS.length + 1)
+    expect(rows.every((r) => r.qty === 0 && r.amount === 0)).toBe(true)
+  })
+
+  it("maps configured variant refs to display aggregate keys", () => {
+    const displayCatalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [
+      "0101901",
+      "0101902",
+    ])
+    const displaySet = new Set(displayCatalog)
+    expect(
+      resolveReadReportAggregateKey({
+        configuredHeader: "0101901",
+        displayCatalogSet: displaySet,
+      })
+    ).toBe("0101901")
+    expect(
+      resolveReadReportAggregateKey({
+        configuredHeader: "0101901",
+        displayCatalogSet: new Set(
+          resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [])
+        ),
+      })
+    ).toBe("0100900")
   })
 })
 

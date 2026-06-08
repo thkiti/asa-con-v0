@@ -1,9 +1,17 @@
 import { SaleStatus, type PrismaClient } from "@/generated/prisma/client"
 import {
+  aggregatePosDailyReadReportFromSales,
   aggregatePosReadReportFromSales,
   computeReadReportNetTotal,
   summarizeRefundsForReadReport,
 } from "@/lib/pos/aggregatePosReadReport"
+import {
+  loadConfiguredManagementHeaderCodes,
+  loadSummaryHeaderLabels,
+  POLICY_SUMMARY_HEADERS,
+  resolveReadReportDisplayCatalog,
+  type ReferenceProductGroupRow,
+} from "@/lib/product-groups/management-product-group"
 import {
   bangkokCalendarYm,
   bangkokCalendarYmd,
@@ -12,7 +20,10 @@ import {
 } from "@/lib/pos/bangkokDayBounds"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
-type ReadReportPrisma = Pick<PrismaClient, "sale" | "product" | "refund">
+type ReadReportPrisma = Pick<
+  PrismaClient,
+  "sale" | "product" | "refund" | "referenceStock"
+>
 
 async function loadSalesForReadReport(
   prisma: ReadReportPrisma,
@@ -61,6 +72,26 @@ async function loadProductsForSales(
   })
 }
 
+async function loadReferenceStockByProductIds(
+  prisma: ReadReportPrisma,
+  productIds: string[]
+): Promise<Map<string, ReferenceProductGroupRow[]>> {
+  if (productIds.length === 0) return new Map()
+
+  const rows = await prisma.referenceStock.findMany({
+    where: { productId: { in: productIds }, deleted: false },
+    select: { productId: true, productGroup: true },
+  })
+
+  const map = new Map<string, ReferenceProductGroupRow[]>()
+  for (const row of rows) {
+    const list = map.get(row.productId) ?? []
+    list.push({ productGroup: row.productGroup })
+    map.set(row.productId, list)
+  }
+  return map
+}
+
 /** READ X / READ Z — วันนี้ (ปฏิทินกรุงเทพ), read-only */
 export async function buildPosDailyReadReport(
   prisma: ReadReportPrisma,
@@ -76,13 +107,30 @@ export async function buildPosDailyReadReport(
   const ymd = bangkokCalendarYmd(new Date())
   const { start, endExclusive } = utcRangeForBangkokCalendarDay(ymd)
 
-  const [sales, refunds] = await Promise.all([
+  const configuredHeaders = await loadConfiguredManagementHeaderCodes(prisma)
+  const displayCatalog = resolveReadReportDisplayCatalog(
+    POLICY_SUMMARY_HEADERS,
+    configuredHeaders
+  )
+
+  const [sales, refunds, labels] = await Promise.all([
     loadSalesForReadReport(prisma, opts.branchId, start, endExclusive),
     loadRefundsForReadReport(prisma, opts.branchId, start, endExclusive),
+    loadSummaryHeaderLabels(prisma, displayCatalog),
   ])
   const products = await loadProductsForSales(prisma, sales)
+  const productIds = [
+    ...new Set(sales.flatMap((s) => s.items.map((i) => i.productId))),
+  ]
+  const refByProductId = await loadReferenceStockByProductIds(prisma, productIds)
   const { groupLines, paymentLines, grandTotal, saleCount } =
-    aggregatePosReadReportFromSales(sales, products)
+    aggregatePosDailyReadReportFromSales(
+      sales,
+      products,
+      labels,
+      displayCatalog,
+      refByProductId
+    )
   const { refundCount, refundTotal } = summarizeRefundsForReadReport(refunds)
   const netTotal = computeReadReportNetTotal(grandTotal, refundTotal)
 

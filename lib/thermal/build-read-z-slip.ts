@@ -60,13 +60,8 @@ export function buildReadZSlipText(
     `${"Group Code-Name".padEnd(17)}${"Qty".padStart(4)} ${"Amount".padStart(8)}`.slice(0, w)
   )
 
-  if (report.groupLines.length === 0) {
-    const empty = centerThermalLine("No sales today", w)
-    if (empty) lines.push(empty)
-  } else {
-    for (const row of report.groupLines) {
-      lines.push(formatDetailLine(row.displayLeft, row.qty, row.amount, w))
-    }
+  for (const row of report.groupLines) {
+    lines.push(formatDetailLine(row.displayLeft, row.qty, row.amount, w))
   }
 
   lines.push("")

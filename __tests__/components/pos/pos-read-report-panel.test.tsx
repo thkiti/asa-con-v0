@@ -5,10 +5,22 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PosReadReportPanel } from "@/components/pos/PosReadReportPanel"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
+import {
+  POLICY_SUMMARY_HEADERS,
+  resolveReadReportDisplayCatalog,
+} from "@/lib/product-groups/management-product-group"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
+
+const displayCatalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [])
+const policyGroupLines = displayCatalog.map((headerCode) => ({
+  lineKey: headerCode,
+  displayLeft: `${headerCode}-${headerCode}`,
+  qty: 0,
+  amount: 0,
+}))
 
 const baseReport: ReadReportPayload = {
   mode: "X",
@@ -18,7 +30,7 @@ const baseReport: ReadReportPayload = {
   staffName: "Test",
   branchCode: "SH001",
   branchName: "Chidlom",
-  groupLines: [],
+  groupLines: policyGroupLines,
   paymentLines: [{ key: "CASH", label: "Cash", amount: 0 }],
   grandTotal: 0,
   saleCount: 0,
@@ -28,9 +40,8 @@ const baseReport: ReadReportPayload = {
 }
 
 describe("PosReadReportPanel", () => {
-  it("READ X shows close only and no print-and-exit", () => {
+  it("READ X shows close only and all policy group rows", () => {
     const onClose = jest.fn()
-    const onPrintAndExit = jest.fn()
     const container = document.createElement("div")
     document.body.appendChild(container)
     const root: Root = createRoot(container)
@@ -40,7 +51,6 @@ describe("PosReadReportPanel", () => {
         <PosReadReportPanel
           report={baseReport}
           onClose={onClose}
-          onPrintAndExit={onPrintAndExit}
           collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
           readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
         />
@@ -51,17 +61,17 @@ describe("PosReadReportPanel", () => {
     expect(container.textContent).toContain("ณ เวลานี้")
     expect(container.textContent).not.toContain("Print Report and Exit")
     expect(container.querySelector('[aria-label="ปิดรายงาน"]')).not.toBeNull()
+    expect(container.textContent).toContain("0100900")
+    expect(container.textContent).toContain("8001900")
 
     act(() => {
       container.querySelector<HTMLButtonElement>('[aria-label="ปิดรายงาน"]')?.click()
     })
     expect(onClose).toHaveBeenCalledTimes(1)
-    expect(onPrintAndExit).not.toHaveBeenCalled()
   })
 
-  it("READ Z shows Print Report and Exit without close button", () => {
+  it("READ Z has no visible close or print button; emergency close works", () => {
     const onClose = jest.fn()
-    const onPrintAndExit = jest.fn()
     const container = document.createElement("div")
     document.body.appendChild(container)
     const root: Root = createRoot(container)
@@ -71,7 +81,6 @@ describe("PosReadReportPanel", () => {
         <PosReadReportPanel
           report={{ ...baseReport, mode: "Z" }}
           onClose={onClose}
-          onPrintAndExit={onPrintAndExit}
           collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
           readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
         />
@@ -80,15 +89,12 @@ describe("PosReadReportPanel", () => {
 
     expect(container.textContent).toContain("READ Z")
     expect(container.textContent).not.toContain("ณ เวลานี้")
+    expect(container.textContent).not.toContain("Print Report and Exit")
     expect(container.querySelector('[aria-label="ปิดรายงาน"]')).toBeNull()
-    expect(container.textContent).toContain("Print Report and Exit")
 
     act(() => {
-      ;[...container.querySelectorAll("button")]
-        .find((btn) => btn.textContent?.includes("Print Report and Exit"))
-        ?.click()
+      container.querySelector<HTMLButtonElement>('[aria-label="Emergency close"]')?.click()
     })
-    expect(onPrintAndExit).toHaveBeenCalledTimes(1)
-    expect(onClose).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

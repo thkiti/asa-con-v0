@@ -88,6 +88,21 @@ describe("buildReadZSlipText", () => {
     expect(text).toContain("75.00")
   })
 
+  it("prints the same group rows as the on-screen READ Z report", () => {
+    const layout = resolveThermalLayout("READ_Z", DEFAULT_THERMAL_LAYOUTS)
+    const groupLines = [
+      { lineKey: "0101901", displayLeft: "0101901-Home Small", qty: 0, amount: 0 },
+      { lineKey: "0101902", displayLeft: "0101902-Home Large", qty: 2, amount: 60 },
+      { lineKey: "5100900", displayLeft: "5100900-Ladies Heels", qty: 1, amount: 25 },
+    ]
+    const text = buildReadZSlipText({ ...baseReport, groupLines }, layout)
+
+    expect(text).toContain("0101901-Home Small")
+    expect(text).toContain("0101902-Home Large")
+    expect(text).toContain("5100900-Ladies Heels")
+    expect(text).not.toContain("0100900")
+  })
+
   it("requires Z mode", () => {
     expect(() =>
       buildReadZSlipText(

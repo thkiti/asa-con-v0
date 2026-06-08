@@ -167,6 +167,86 @@ export async function loadSummaryHeaderLabels(
   return result
 }
 
+/** True when code is a 901/902 variant display header (not the 900 parent). */
+export function isVariantChildSummaryHeader(code7: string): boolean {
+  const d = digitsOnly(code7)
+  if (d.length !== 7) return false
+  const run = d.slice(4, 7)
+  return run === "901" || run === "902"
+}
+
+/**
+ * READ X/Z display catalog: for each policy 900 parent, show configured 901/902
+ * children when present; otherwise show the 900 parent. Stable sort by header code.
+ */
+export function resolveReadReportDisplayCatalog(
+  policy900Headers: readonly string[],
+  configuredHeaderCodes: readonly string[]
+): string[] {
+  const policySet = new Set<string>(policy900Headers)
+  const variantsByParent = new Map<string, string[]>()
+
+  for (const code of configuredHeaderCodes) {
+    if (!isVariantChildSummaryHeader(code)) continue
+    const parent = normalizeToSummaryHeader(code)
+    if (!parent || !policySet.has(parent)) continue
+    const list = variantsByParent.get(parent) ?? []
+    list.push(code)
+    variantsByParent.set(parent, list)
+  }
+
+  const result: string[] = []
+  for (const parent of [...policy900Headers].sort((a, b) => a.localeCompare(b))) {
+    const variants = variantsByParent.get(parent)
+    if (variants?.length) {
+      result.push(...[...variants].sort((a, b) => a.localeCompare(b)))
+    } else {
+      result.push(parent)
+    }
+  }
+  return result
+}
+
+/** Map a configured header to the display-catalog aggregate bucket. */
+export function resolveReadReportAggregateKey(input: {
+  configuredHeader: string | null
+  displayCatalogSet: ReadonlySet<string>
+}): string | null {
+  const configured = input.configuredHeader?.trim()
+  if (!configured) return null
+  if (input.displayCatalogSet.has(configured)) return configured
+  const parent = normalizeToSummaryHeader(configured)
+  if (parent && input.displayCatalogSet.has(parent)) return parent
+  return null
+}
+
+type ConfiguredHeaderDb = Pick<PrismaClient, "product">
+
+/** Product codes that are policy 900 parents or 901/902 children under a policy parent. */
+export async function loadConfiguredManagementHeaderCodes(
+  db: ConfiguredHeaderDb
+): Promise<string[]> {
+  const policySet = new Set<string>(POLICY_SUMMARY_HEADERS)
+  const products = await db.product.findMany({
+    where: { deleted: false },
+    select: { code: true },
+  })
+
+  const codes = new Set<string>()
+  for (const { code } of products) {
+    const trimmed = code.trim()
+    if (policySet.has(trimmed)) {
+      codes.add(trimmed)
+      continue
+    }
+    if (!isVariantChildSummaryHeader(trimmed)) continue
+    const parent = normalizeToSummaryHeader(trimmed)
+    if (parent && policySet.has(parent)) codes.add(trimmed)
+  }
+
+  return [...codes].sort((a, b) => a.localeCompare(b))
+}
+
 export function mergeManagementGroupSummary(input: {
   catalog: readonly string[]
   labels: ReadonlyMap<string, SummaryHeaderLabel>

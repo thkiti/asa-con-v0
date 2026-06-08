@@ -267,11 +267,6 @@ export function PosShell({
             <PosReadReportPanel
               report={readReport}
               onClose={onCloseReadReport}
-              onPrintAndExit={
-                readReport.mode === "Z"
-                  ? () => printReadZReportAndExit(readReport, onCloseReadReport)
-                  : undefined
-              }
               collectorLayout={thermalLayouts.COLLECTOR}
               readZLayout={thermalLayouts.READ_Z}
             />

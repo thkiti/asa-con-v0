@@ -1,5 +1,12 @@
 import type { PaymentMethod, Product } from "@/generated/prisma/client"
 import {
+  mergeManagementGroupSummary,
+  resolveConfiguredProductGroup,
+  resolveReadReportAggregateKey,
+  type ReferenceProductGroupRow,
+  type SummaryHeaderLabel,
+} from "@/lib/product-groups/management-product-group"
+import {
   READ_REPORT_PAYMENT_LABEL,
   READ_REPORT_PAYMENT_ORDER,
   readReportPaymentBucket,
@@ -42,7 +49,98 @@ export type ReadReportPaymentLine = {
   amount: number
 }
 
-/** รวมตามกลุ่มสินค้า + ช่องทางชำระ — logic เดียวกับ READ X/Z */
+function formatReadReportGroupDisplayLeft(
+  headerCode: string,
+  label: string | null
+): string {
+  const name = label?.trim() || headerCode
+  const nameShort = name.length > 22 ? `${name.slice(0, 20)}…` : name
+  return `${headerCode}-${nameShort}`
+}
+
+function aggregatePaymentAndTotals(sales: SaleRowForReadReport[]) {
+  const paymentTotals: Record<string, number> = {}
+  for (const k of READ_REPORT_PAYMENT_ORDER) paymentTotals[k] = 0
+
+  let grandTotal = 0
+  for (const sale of sales) {
+    const t = Number(sale.total)
+    grandTotal += t
+    const method = sale.payment?.method ?? "CASH"
+    const bucket = readReportPaymentBucket(method)
+    paymentTotals[bucket] = (paymentTotals[bucket] ?? 0) + t
+  }
+  grandTotal = Math.round(grandTotal * 100) / 100
+
+  const paymentLines = READ_REPORT_PAYMENT_ORDER.map((key) => ({
+    key,
+    label: READ_REPORT_PAYMENT_LABEL[key],
+    amount: Math.round((paymentTotals[key] ?? 0) * 100) / 100,
+  }))
+
+  return { paymentLines, grandTotal, saleCount: sales.length }
+}
+
+/** READ X/Z — dynamic display catalog (900 parent or 901/902 children), zero-filled. */
+export function aggregatePosDailyReadReportFromSales(
+  sales: SaleRowForReadReport[],
+  products: Pick<
+    Product,
+    "id" | "name" | "groupCode" | "typeCode" | "runningCode" | "code"
+  >[],
+  labels: ReadonlyMap<string, SummaryHeaderLabel>,
+  displayCatalog: readonly string[],
+  refByProductId?: ReadonlyMap<string, readonly ReferenceProductGroupRow[]>
+): {
+  groupLines: ReadReportGroupLine[]
+  paymentLines: ReadReportPaymentLine[]
+  grandTotal: number
+  saleCount: number
+} {
+  const productById = new Map(products.map((p) => [p.id, p]))
+  const displayCatalogSet = new Set(displayCatalog)
+  const aggregates = new Map<string, { qty: number; amount: number }>()
+
+  for (const sale of sales) {
+    for (const line of sale.items) {
+      const product = productById.get(line.productId)
+      if (!product) continue
+
+      const fromRef = refByProductId
+        ? resolveConfiguredProductGroup(line.productId, refByProductId)
+        : null
+      const aggregateKey = resolveReadReportAggregateKey({
+        configuredHeader: fromRef ?? product.code?.trim() ?? null,
+        displayCatalogSet,
+      })
+      if (!aggregateKey) continue
+
+      const cur = aggregates.get(aggregateKey) ?? { qty: 0, amount: 0 }
+      cur.qty += Number(line.qty)
+      cur.amount += Number(line.lineTotal)
+      aggregates.set(aggregateKey, cur)
+    }
+  }
+
+  const summaryRows = mergeManagementGroupSummary({
+    catalog: displayCatalog,
+    labels,
+    aggregates,
+    includeZeroRows: true,
+  })
+
+  const groupLines = summaryRows.map((row) => ({
+    lineKey: row.headerCode,
+    displayLeft: formatReadReportGroupDisplayLeft(row.headerCode, row.label),
+    qty: row.qty,
+    amount: Math.round(row.amount * 100) / 100,
+  }))
+
+  const totals = aggregatePaymentAndTotals(sales)
+  return { groupLines, ...totals }
+}
+
+/** COLLECTOR — sales-only groups (legacy product groupCode rollup). */
 export function aggregatePosReadReportFromSales(
   sales: SaleRowForReadReport[],
   products: Pick<
@@ -97,31 +195,8 @@ export function aggregatePosReadReportFromSales(
       }
     })
 
-  const paymentTotals: Record<string, number> = {}
-  for (const k of READ_REPORT_PAYMENT_ORDER) paymentTotals[k] = 0
-
-  let grandTotal = 0
-  for (const sale of sales) {
-    const t = Number(sale.total)
-    grandTotal += t
-    const method = sale.payment?.method ?? "CASH"
-    const bucket = readReportPaymentBucket(method)
-    paymentTotals[bucket] = (paymentTotals[bucket] ?? 0) + t
-  }
-  grandTotal = Math.round(grandTotal * 100) / 100
-
-  const paymentLines = READ_REPORT_PAYMENT_ORDER.map((key) => ({
-    key,
-    label: READ_REPORT_PAYMENT_LABEL[key],
-    amount: Math.round((paymentTotals[key] ?? 0) * 100) / 100,
-  }))
-
-  return {
-    groupLines,
-    paymentLines,
-    grandTotal,
-    saleCount: sales.length,
-  }
+  const totals = aggregatePaymentAndTotals(sales)
+  return { groupLines, ...totals }
 }
 
 export function summarizeRefundsForReadReport(
