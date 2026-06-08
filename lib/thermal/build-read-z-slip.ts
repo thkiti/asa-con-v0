@@ -32,7 +32,7 @@ function formatDetailLine(
   return `${leftPart}${" ".repeat(Math.max(1, gap))}${rightPart}`
 }
 
-/** Minimum READ Z thermal slip from existing ReadReportPayload — no P3 aggregation. */
+/** READ Z slip: Header → Group → Payment → Summary → Total → Footer. */
 export function buildReadZSlipText(
   report: ReadReportPayload,
   layout: ResolvedThermalLayout
@@ -55,10 +55,6 @@ export function buildReadZSlipText(
   }
   lines.push("")
 
-  lines.push(padThermalLine("Tickets", String(report.saleCount), w))
-  lines.push(padThermalLine("TOTAL", formatThermalMoney2(report.grandTotal), w))
-  lines.push("")
-
   lines.push(repeatThermalChar("-", w))
   lines.push(
     `${"Group Code-Name".padEnd(17)}${"Qty".padStart(4)} ${"Amount".padStart(8)}`.slice(0, w)
@@ -74,9 +70,23 @@ export function buildReadZSlipText(
   }
 
   lines.push("")
+  lines.push(repeatThermalChar("-", w))
   for (const payment of report.paymentLines) {
+    if (payment.amount === 0) continue
     lines.push(padThermalLine(payment.label, formatThermalMoney2(payment.amount), w))
   }
+
+  lines.push("")
+  lines.push(repeatThermalChar("-", w))
+  lines.push(padThermalLine("Receipts", String(report.saleCount), w))
+  lines.push(padThermalLine("Refunds", String(report.refundCount), w))
+  lines.push(padThermalLine("Gross sales", formatThermalMoney2(report.grandTotal), w))
+  if (report.refundCount > 0) {
+    lines.push(padThermalLine("Refund total", formatThermalMoney2(report.refundTotal), w))
+  }
+  lines.push(padThermalLine("Net sales", formatThermalMoney2(report.netTotal), w))
+
+  lines.push("")
   lines.push(padThermalLine("TOTAL", formatThermalMoney2(report.grandTotal), w))
 
   appendThermalFooterLines(lines, layout, w)

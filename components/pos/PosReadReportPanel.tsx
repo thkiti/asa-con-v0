@@ -20,6 +20,7 @@ function formatReadRowQty(q: number): string {
 type PosReadReportPanelProps = {
   report: ReadReportPayload
   onClose: () => void
+  onPrintAndExit?: () => void
   collectorLayout: ResolvedThermalLayout
   readZLayout: ResolvedThermalLayout
 }
@@ -27,6 +28,7 @@ type PosReadReportPanelProps = {
 export function PosReadReportPanel({
   report,
   onClose,
+  onPrintAndExit,
   collectorLayout,
   readZLayout,
 }: PosReadReportPanelProps) {
@@ -42,14 +44,16 @@ export function PosReadReportPanel({
           <PosReadZSlip report={report} layout={readZLayout} />
         </div>
       ) : null}
-      <button
-        type="button"
-        aria-label="ปิดรายงาน"
-        onClick={onClose}
-        className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 bg-white/20 text-lg font-bold leading-none text-white shadow hover:bg-white/30 print:hidden"
-      >
-        ×
-      </button>
+      {report.mode !== "Z" ? (
+        <button
+          type="button"
+          aria-label="ปิดรายงาน"
+          onClick={onClose}
+          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 bg-white/20 text-lg font-bold leading-none text-white shadow hover:bg-white/30 print:hidden"
+        >
+          ×
+        </button>
+      ) : null}
       <div className="shrink-0 space-y-2 border-b border-white/25 px-3 pb-3 pt-10 text-center print:border-zinc-200 print:pb-2 print:pt-3">
         <div className="text-sm font-bold print:text-zinc-900">
           ASA SERVICES ({report.branchCode})
@@ -64,8 +68,8 @@ export function PosReadReportPanel({
         <div className="text-[10px] text-white/85 print:text-zinc-600">
           {report.mode === "COLLECT"
             ? `ช่วงวันที่ (กรุงเทพ) ${report.bangkokDate}`
-            : `วันที่ (กรุงเทพ) ${report.bangkokDate}`}{" "}
-          · พิมพ์{" "}
+            : `วันที่ (กรุงเทพ) ${report.bangkokDate}`}
+          {report.mode === "X" ? " · ณ เวลานี้" : ""} · โหลดเมื่อ{" "}
           {new Date(report.generatedAt).toLocaleString("th-TH", {
             timeZone: "Asia/Bangkok",
           })}
@@ -76,7 +80,26 @@ export function PosReadReportPanel({
         </div>
         <div className="text-[10px] text-white/75 print:text-zinc-500">
           จำนวนบิล {report.saleCount} ใบ
+          {report.mode === "Z" && report.refundCount > 0
+            ? ` · คืนเงิน ${report.refundCount} ใบ`
+            : ""}
         </div>
+        {report.mode === "Z" ? (
+          <div className="grid grid-cols-3 gap-2 text-[10px] font-semibold text-white/90 print:text-zinc-700">
+            <div>
+              <div className="text-white/70 print:text-zinc-500">Gross</div>
+              <div className="tabular-nums">{formatMoney2(report.grandTotal)}</div>
+            </div>
+            <div>
+              <div className="text-white/70 print:text-zinc-500">Refund</div>
+              <div className="tabular-nums">{formatMoney2(report.refundTotal)}</div>
+            </div>
+            <div>
+              <div className="text-white/70 print:text-zinc-500">Net</div>
+              <div className="tabular-nums">{formatMoney2(report.netTotal)}</div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2 print:overflow-visible">
@@ -142,6 +165,15 @@ export function PosReadReportPanel({
                 ))}
               </div>
             </div>
+          ) : null}
+          {report.mode === "Z" && onPrintAndExit ? (
+            <button
+              type="button"
+              onClick={onPrintAndExit}
+              className="mt-3 w-full rounded-lg border-2 border-red-950 bg-gradient-to-b from-red-600 to-red-900 py-3 text-sm font-black text-white shadow print:hidden"
+            >
+              Print Report and Exit
+            </button>
           ) : null}
         </div>
       </div>

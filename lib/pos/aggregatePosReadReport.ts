@@ -123,3 +123,23 @@ export function aggregatePosReadReportFromSales(
     saleCount: sales.length,
   }
 }
+
+export function summarizeRefundsForReadReport(
+  refunds: Array<{ amount: unknown }>
+): { refundCount: number; refundTotal: number } {
+  let refundTotal = 0
+  for (const refund of refunds) {
+    refundTotal += Number(refund.amount)
+  }
+  return {
+    refundCount: refunds.length,
+    refundTotal: Math.round(refundTotal * 100) / 100,
+  }
+}
+
+export function computeReadReportNetTotal(
+  grandTotal: number,
+  refundTotal: number
+): number {
+  return Math.round((grandTotal - refundTotal) * 100) / 100
+}

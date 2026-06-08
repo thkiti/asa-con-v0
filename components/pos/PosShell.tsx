@@ -17,6 +17,7 @@ import {
   isPrintReportHighlighted,
   shouldGhostPrintReportButton,
 } from "@/lib/pos-ui/pos-actions"
+import { printReadZReportAndExit } from "@/lib/pos-ui/print-read-report"
 import { THERMAL_CLONE_PRINT_STYLES } from "@/lib/thermal/print-css"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
@@ -215,6 +216,9 @@ export function PosShell({
               onAction={onKeypadAction}
               disabled={muted && !readReport}
               printReportHighlighted={isPrintReportHighlighted(readReportMode)}
+              printReportLabel={
+                readReportMode === "Z" ? "PRINT REPORT\nAND EXIT" : undefined
+              }
               ghostButtonIds={ghostButtonIds.size > 0 ? ghostButtonIds : undefined}
             />
           </div>
@@ -263,6 +267,11 @@ export function PosShell({
             <PosReadReportPanel
               report={readReport}
               onClose={onCloseReadReport}
+              onPrintAndExit={
+                readReport.mode === "Z"
+                  ? () => printReadZReportAndExit(readReport, onCloseReadReport)
+                  : undefined
+              }
               collectorLayout={thermalLayouts.COLLECTOR}
               readZLayout={thermalLayouts.READ_Z}
             />

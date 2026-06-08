@@ -58,6 +58,9 @@ const sampleReport = {
   paymentLines: [],
   grandTotal: 0,
   saleCount: 0,
+  refundCount: 0,
+  refundTotal: 0,
+  netTotal: 0,
 }
 
 describe("POST /api/pos/read-report", () => {

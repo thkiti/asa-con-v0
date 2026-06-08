@@ -17,7 +17,10 @@ import {
   isPosPlaceholderId,
   keypadDigitChar,
 } from "@/lib/pos-ui/pos-actions"
-import { printPosReadReport } from "@/lib/pos-ui/print-read-report"
+import {
+  printPosReadReport,
+  printReadZReportAndExit,
+} from "@/lib/pos-ui/print-read-report"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import {
   POS_STOCK_COUNT_HREF,
@@ -365,7 +368,11 @@ export function PosTerminalPage() {
       }
 
       if (kind === "wire-print-report") {
-        printPosReadReport(readReport)
+        if (readReport?.mode === "Z") {
+          printReadZReportAndExit(readReport, () => setReadReport(null))
+        } else {
+          printPosReadReport(readReport)
+        }
         return
       }
 

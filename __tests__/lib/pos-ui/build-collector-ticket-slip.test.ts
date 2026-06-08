@@ -28,6 +28,9 @@ function collectReport(
     ],
     grandTotal: 100,
     saleCount: 3,
+    refundCount: 0,
+    refundTotal: 0,
+    netTotal: 100,
     ...overrides,
   }
 }

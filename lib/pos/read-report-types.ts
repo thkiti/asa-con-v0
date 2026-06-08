@@ -16,6 +16,11 @@ export type ReadReportPayload = {
   paymentLines: ReadReportPaymentLine[]
   grandTotal: number
   saleCount: number
+  /** Same-day refunds for Z/X daily report (read-only). */
+  refundCount: number
+  refundTotal: number
+  /** grandTotal − refundTotal */
+  netTotal: number
   monthlySubtotals?: Array<{
     month: string
     grandTotal: number

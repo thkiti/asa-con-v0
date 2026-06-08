@@ -10,6 +10,7 @@ type PosKeypadGridProps = {
   onAction: (id: PosKeypadActionId) => void
   disabled?: boolean
   printReportHighlighted?: boolean
+  printReportLabel?: string
   ghostButtonIds?: ReadonlySet<PosKeypadActionId>
 }
 
@@ -59,6 +60,7 @@ export function PosKeypadGrid({
   onAction,
   disabled = false,
   printReportHighlighted = false,
+  printReportLabel,
   ghostButtonIds,
 }: PosKeypadGridProps) {
   return (
@@ -66,10 +68,15 @@ export function PosKeypadGrid({
       {POS_KEYPAD_BUTTONS.map((btn) => {
         const colSpan = btn.colSpan ?? 1
         const rowSpan = btn.rowSpan ?? 1
-        const lines = labelLines(btn.label, btn.multiline)
+        const isPrint = btn.id === "print-report"
+        const label =
+          isPrint && printReportLabel ? printReportLabel : btn.label
+        const lines = labelLines(
+          label,
+          isPrint && printReportLabel?.includes("\n") ? true : btn.multiline
+        )
         const isDigit = btn.variant === "digit" || btn.variant === "control"
         const isGhost = ghostButtonIds?.has(btn.id) ?? false
-        const isPrint = btn.id === "print-report"
         const printClass = isPrint && printReportHighlighted
           ? "border-4 border-red-950 bg-gradient-to-b from-red-600 to-red-900 text-white shadow-[0_0_0_2px_rgba(254,202,202,0.95),0_4px_0_#450a0a] hover:brightness-110 active:translate-y-[1px]"
           : variantClassName(btn.variant)
@@ -110,7 +117,7 @@ export function PosKeypadGrid({
                 </span>
               ))
             ) : (
-              btn.label
+              label
             )}
           </button>
         )

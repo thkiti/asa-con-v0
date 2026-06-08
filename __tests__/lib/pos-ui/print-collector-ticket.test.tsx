@@ -36,6 +36,9 @@ const collectReport: ReadReportPayload = {
   paymentLines: [{ key: "CASH", label: "CASH", amount: 50 }],
   grandTotal: 50,
   saleCount: 1,
+  refundCount: 0,
+  refundTotal: 0,
+  netTotal: 50,
 }
 
 const collectorLayout = resolveThermalLayout("COLLECTOR", DEFAULT_THERMAL_LAYOUTS)

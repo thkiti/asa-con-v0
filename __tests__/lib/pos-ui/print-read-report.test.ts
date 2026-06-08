@@ -4,6 +4,7 @@
 import {
   canPrintPosReadReport,
   printPosReadReport,
+  printReadZReportAndExit,
 } from "@/lib/pos-ui/print-read-report"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
@@ -19,6 +20,9 @@ const baseReport: ReadReportPayload = {
   paymentLines: [],
   grandTotal: 0,
   saleCount: 0,
+  refundCount: 0,
+  refundTotal: 0,
+  netTotal: 0,
 }
 
 describe("printPosReadReport", () => {
@@ -71,5 +75,26 @@ describe("printPosReadReport", () => {
     const result = printPosReadReport({ ...baseReport, mode: "X" })
     expect(result).toBe(false)
     expect(printSpy).not.toHaveBeenCalled()
+  })
+
+  it("prints READ Z and exits on printReadZReportAndExit", () => {
+    document.body.innerHTML = `
+      <div data-thermal-print-source="read-z" class="thermal-print-area">
+        <pre>read z slip</pre>
+      </div>
+    `
+    const onExit = jest.fn()
+    const result = printReadZReportAndExit({ ...baseReport, mode: "Z" }, onExit)
+    expect(result).toBe(true)
+    expect(printSpy).toHaveBeenCalledTimes(1)
+    expect(onExit).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not exit READ Z when print source is missing", () => {
+    document.body.innerHTML = ""
+    const onExit = jest.fn()
+    const result = printReadZReportAndExit({ ...baseReport, mode: "Z" }, onExit)
+    expect(result).toBe(false)
+    expect(onExit).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,9 @@
 import { SaleStatus, type PrismaClient } from "@/generated/prisma/client"
-import { aggregatePosReadReportFromSales } from "@/lib/pos/aggregatePosReadReport"
+import {
+  aggregatePosReadReportFromSales,
+  computeReadReportNetTotal,
+  summarizeRefundsForReadReport,
+} from "@/lib/pos/aggregatePosReadReport"
 import {
   bangkokCalendarYm,
   bangkokCalendarYmd,
@@ -8,7 +12,7 @@ import {
 } from "@/lib/pos/bangkokDayBounds"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
-type ReadReportPrisma = Pick<PrismaClient, "sale" | "product">
+type ReadReportPrisma = Pick<PrismaClient, "sale" | "product" | "refund">
 
 async function loadSalesForReadReport(
   prisma: ReadReportPrisma,
@@ -26,6 +30,21 @@ async function loadSalesForReadReport(
       items: true,
       payment: true,
     },
+  })
+}
+
+async function loadRefundsForReadReport(
+  prisma: ReadReportPrisma,
+  branchId: string,
+  start: Date,
+  endExclusive: Date
+) {
+  return prisma.refund.findMany({
+    where: {
+      branchId,
+      createdAt: { gte: start, lt: endExclusive },
+    },
+    select: { amount: true },
   })
 }
 
@@ -57,15 +76,15 @@ export async function buildPosDailyReadReport(
   const ymd = bangkokCalendarYmd(new Date())
   const { start, endExclusive } = utcRangeForBangkokCalendarDay(ymd)
 
-  const sales = await loadSalesForReadReport(
-    prisma,
-    opts.branchId,
-    start,
-    endExclusive
-  )
+  const [sales, refunds] = await Promise.all([
+    loadSalesForReadReport(prisma, opts.branchId, start, endExclusive),
+    loadRefundsForReadReport(prisma, opts.branchId, start, endExclusive),
+  ])
   const products = await loadProductsForSales(prisma, sales)
   const { groupLines, paymentLines, grandTotal, saleCount } =
     aggregatePosReadReportFromSales(sales, products)
+  const { refundCount, refundTotal } = summarizeRefundsForReadReport(refunds)
+  const netTotal = computeReadReportNetTotal(grandTotal, refundTotal)
 
   return {
     mode: opts.mode,
@@ -79,6 +98,9 @@ export async function buildPosDailyReadReport(
     paymentLines,
     grandTotal,
     saleCount,
+    refundCount,
+    refundTotal,
+    netTotal,
   }
 }
 
@@ -145,6 +167,9 @@ export async function buildPosCollectReport(
     paymentLines,
     grandTotal,
     saleCount,
+    refundCount: 0,
+    refundTotal: 0,
+    netTotal: grandTotal,
     monthlySubtotals,
   }
 }

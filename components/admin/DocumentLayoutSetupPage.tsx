@@ -106,6 +106,9 @@ const SAMPLE_READ_REPORT: ReadReportPayload = {
   paymentLines: [{ key: "CASH", label: "Cash", amount: 120 }],
   grandTotal: 120,
   saleCount: 2,
+  refundCount: 1,
+  refundTotal: 20,
+  netTotal: 100,
 }
 
 function layoutInputFromView(view: ThermalDocumentLayoutView) {

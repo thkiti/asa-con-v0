@@ -17,5 +17,16 @@ export function printPosReadReport(report: ReadReportPayload | null): boolean {
   return printThermalSlipClone(thermalPrintSourceSelector("read-z"))
 }
 
+/** READ Z end-of-day: print thermal slip then close the report overlay. */
+export function printReadZReportAndExit(
+  report: ReadReportPayload | null,
+  onExit: () => void
+): boolean {
+  if (!report || report.mode !== "Z") return false
+  if (!printPosReadReport(report)) return false
+  onExit()
+  return true
+}
+
 /** @deprecated READ Z now uses thermal clone print */
 export const POS_READ_REPORT_PRINT_STYLES = ""

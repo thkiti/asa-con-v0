@@ -1,5 +1,9 @@
 import { PaymentMethod } from "@/generated/prisma/client"
-import { aggregatePosReadReportFromSales } from "@/lib/pos/aggregatePosReadReport"
+import {
+  aggregatePosReadReportFromSales,
+  computeReadReportNetTotal,
+  summarizeRefundsForReadReport,
+} from "@/lib/pos/aggregatePosReadReport"
 
 describe("aggregatePosReadReportFromSales", () => {
   it("aggregates v0 sale rows by group and payment method", () => {
@@ -44,5 +48,15 @@ describe("aggregatePosReadReportFromSales", () => {
     expect(result.groupLines).toHaveLength(2)
     expect(result.paymentLines.find((p) => p.key === "CASH")?.amount).toBe(150)
     expect(result.paymentLines.find((p) => p.key === "CREDIT_CARD")?.amount).toBe(200)
+  })
+
+  it("summarizes refunds and net total for daily read report", () => {
+    const summary = summarizeRefundsForReadReport([
+      { amount: 25.5 },
+      { amount: 10 },
+    ])
+    expect(summary.refundCount).toBe(2)
+    expect(summary.refundTotal).toBe(35.5)
+    expect(computeReadReportNetTotal(350, 35.5)).toBe(314.5)
   })
 })
