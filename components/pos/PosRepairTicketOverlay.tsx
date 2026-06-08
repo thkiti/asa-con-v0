@@ -1,30 +1,32 @@
 "use client"
 
-import { useEffect, useRef, useState, type CSSProperties } from "react"
+import { useEffect, useRef, useState } from "react"
+import { PosRepairTicketSlip } from "@/components/pos/PosRepairTicketSlip"
 import { blobUrl } from "@/lib/blob-url"
-import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
 import {
-  REPAIR_PICKUP_WARN_DAYS,
   appendRepairTicketRecord,
   buildRepairTicketNo,
   loadRepairTicketsFromStorage,
   type RepairTicketRecord,
 } from "@/lib/pos-ui/repair-ticket-storage"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
+import { printThermalSlipClone, thermalPrintSourceSelector } from "@/lib/thermal/print-dom"
+import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
 type PosRepairTicketOverlayProps = {
   session: PosTerminalSession
   onClose: () => void
+  repairLayout: ResolvedThermalLayout
 }
 
 export function PosRepairTicketOverlay({
   session,
   onClose,
+  repairLayout,
 }: PosRepairTicketOverlayProps) {
   const cameraVideoRef = useRef<HTMLVideoElement>(null)
   const repairSessionFilesRef = useRef<string[]>([])
   const pendingRepairTicketNoRef = useRef<string | null>(null)
-  const printCloneRef = useRef<HTMLElement | null>(null)
 
   const [panel, setPanel] = useState<"capture" | "list">("capture")
   const [sessionTicketNo, setSessionTicketNo] = useState<string | null>(null)
@@ -36,40 +38,8 @@ export function PosRepairTicketOverlay({
   const [hoverFile, setHoverFile] = useState<string | null>(null)
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 })
 
-  const repairSlipWidth = `${RECEIPT_COLUMNS}ch`
-  const repairSlipStyle = {
-    ["--receipt-slip-ch-width"]: repairSlipWidth,
-    width: repairSlipWidth,
-    maxWidth: repairSlipWidth,
-  } as CSSProperties
-
-  useEffect(() => {
-    const cleanup = () => {
-      document.body.classList.remove("printing-repair-ticket")
-      printCloneRef.current?.remove()
-      printCloneRef.current = null
-    }
-    window.addEventListener("afterprint", cleanup)
-    return () => {
-      window.removeEventListener("afterprint", cleanup)
-      cleanup()
-    }
-  }, [])
-
   function handlePrintRepairTicket() {
-    const source = document.querySelector<HTMLElement>(
-      "[data-repair-ticket-print-source]"
-    )
-    if (!source) return
-
-    printCloneRef.current?.remove()
-    const clone = source.cloneNode(true) as HTMLElement
-    clone.setAttribute("data-repair-ticket-print-clone", "")
-    printCloneRef.current = clone
-    document.body.appendChild(clone)
-
-    document.body.classList.add("printing-repair-ticket")
-    window.print()
+    printThermalSlipClone(thermalPrintSourceSelector("repair-ticket"))
   }
 
   useEffect(() => {
@@ -214,40 +184,14 @@ export function PosRepairTicketOverlay({
                 id="repair-ticket-print"
                 className="absolute inset-0 z-10 flex flex-col overflow-hidden rounded-md border-2 border-lime-500 bg-white p-2 text-zinc-900 shadow-xl"
               >
-                <div
-                  data-repair-ticket-print-source
-                  className="repair-ticket-print-area mx-auto min-h-0 flex-1 overflow-y-auto text-center"
-                  style={repairSlipStyle}
-                >
-                  <div className="font-bold">🔧 REPAIR TICKET</div>
-                  <div>ตั๋วรับซ่อม / ฝากซ่อม</div>
-                  <div className="text-zinc-600">ASA SERVICES</div>
-                  <div className="mb-1 font-medium">{session.branchName}</div>
-                  <div className="border-t border-zinc-200 pt-1 text-left">
-                    <div className="font-bold">{sessionTicketNo}</div>
-                    <div className="text-zinc-600">
-                      {(receiptAt ? new Date(receiptAt) : new Date()).toLocaleString(
-                        "th-TH",
-                        { timeZone: "Asia/Bangkok" }
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-2 border-t border-zinc-200 pt-1 text-left">
-                    <div className="mb-0.5 font-semibold">
-                      รายการภาพ ({sessionFileNames.length})
-                    </div>
-                    <ol className="list-decimal space-y-0.5 pl-4 text-left">
-                      {sessionFileNames.map((name) => (
-                        <li key={name} className="break-all">
-                          {name}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                  <div className="mt-2 border-t border-amber-200 bg-amber-50 px-1 py-1.5 text-left leading-snug text-amber-950">
-                    <span className="font-bold">คำเตือน:</span> นำหลักฐานนี้มาเมื่อมารับของ{" "}
-                    <span className="font-bold">ภายใน {REPAIR_PICKUP_WARN_DAYS} วัน</span> นับจากวันที่ออกตั๋ว
-                  </div>
+                <div className="mx-auto min-h-0 flex-1 overflow-y-auto">
+                  <PosRepairTicketSlip
+                    ticketNo={sessionTicketNo}
+                    branchName={session.branchName}
+                    issuedAt={receiptAt || new Date().toISOString()}
+                    fileNames={sessionFileNames}
+                    layout={repairLayout}
+                  />
                 </div>
                 <div className="no-print mt-1 flex shrink-0 flex-wrap justify-center gap-1.5 border-t border-zinc-200 pt-1.5 print:hidden">
                   <button

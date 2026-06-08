@@ -55,6 +55,9 @@ describe("loadRefundReceiptPrintContext", () => {
           showVatIncludedMessage: true,
         }),
       },
+      thermalDocumentLayout: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
     }
 
     const ctx = await loadRefundReceiptPrintContext(db as never, {
@@ -108,6 +111,9 @@ describe("loadRefundReceiptPrintContext", () => {
       },
       receiptPrintSettings: {
         findUnique: jest.fn().mockResolvedValue(null),
+      },
+      thermalDocumentLayout: {
+        findMany: jest.fn().mockResolvedValue([]),
       },
     }
 

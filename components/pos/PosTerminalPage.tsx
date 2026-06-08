@@ -36,6 +36,11 @@ import { resolvePosReceiptPanelNo } from "@/lib/pos-ui/pos-session-display"
 import { fetchSessionUser } from "@/lib/pos-ui/session-client"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
+import {
+  defaultResolvedThermalLayouts,
+  fetchPosThermalLayouts,
+} from "@/lib/pos-ui/pos-thermal-layouts-client"
+import type { ResolvedThermalLayout, ThermalDocumentType } from "@/lib/thermal/types"
 
 export function PosTerminalPage() {
   const router = useRouter()
@@ -74,6 +79,9 @@ export function PosTerminalPage() {
   const [refundLookupPending, setRefundLookupPending] = useState(false)
   const [refundPending, setRefundPending] = useState(false)
   const [refundError, setRefundError] = useState<string | null>(null)
+  const [thermalLayouts, setThermalLayouts] = useState<
+    Record<ThermalDocumentType, ResolvedThermalLayout>
+  >(defaultResolvedThermalLayouts())
 
   const refreshPreviewReceiptNo = useCallback(async () => {
     const result = await fetchPosReceiptNoPreview()
@@ -95,6 +103,12 @@ export function PosTerminalPage() {
       }
       setSession(result.user)
       await refreshPreviewReceiptNo()
+      try {
+        const layoutResult = await fetchPosThermalLayouts()
+        if (!cancelled) setThermalLayouts(layoutResult.resolved)
+      } catch {
+        if (!cancelled) setThermalLayouts(defaultResolvedThermalLayouts())
+      }
       if (!cancelled) setLoading(false)
     })()
     return () => {
@@ -477,6 +491,7 @@ export function PosTerminalPage() {
       onCloseReadReport={() => setReadReport(null)}
       repairTicketOpen={repairTicketOpen}
       onCloseRepairTicket={() => setRepairTicketOpen(false)}
+      thermalLayouts={thermalLayouts}
       keypadDisabled={
         logoutPending || lookupPending || checkoutPending || refundPending || refundLookupPending
       }

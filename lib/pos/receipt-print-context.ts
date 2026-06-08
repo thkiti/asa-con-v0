@@ -3,6 +3,9 @@ import { COMPANY_TAX_BRANCH_CODE } from "@/lib/receipt-settings/constants"
 import { loadCompanyTaxId } from "@/lib/receipt-settings/resolve-company-tax"
 import { loadReceiptPrintSettings } from "@/lib/receipt-settings/load-settings"
 import type { ReceiptPrintSettingsView } from "@/lib/receipt-settings/types"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
+import { loadThermalLayouts } from "@/lib/thermal/load-layouts"
+import type { ResolvedThermalLayout, ThermalLayoutMap } from "@/lib/thermal/types"
 import { loadSaleReceiptForPrint, type SaleReceiptLine } from "./load-sale-receipt"
 
 export type ReceiptPrintContext = {
@@ -23,22 +26,28 @@ export type ReceiptPrintContext = {
   cashAmount: string
   change: string
   settings: ReceiptPrintSettingsView
+  thermalLayouts?: ThermalLayoutMap
+  thermalLayout?: ResolvedThermalLayout
 }
 
-export type ReceiptPrintDb = Pick<PrismaClient, "sale" | "staff" | "branch" | "receiptPrintSettings">
+export type ReceiptPrintDb = Pick<
+  PrismaClient,
+  "sale" | "staff" | "branch" | "receiptPrintSettings" | "thermalDocumentLayout"
+>
 
 export async function loadReceiptPrintContext(
   db: ReceiptPrintDb,
   input: { saleId: string; branchId: string }
 ): Promise<ReceiptPrintContext> {
   const saleView = await loadSaleReceiptForPrint(db, input)
-  const [settings, companyTaxId, branchContact] = await Promise.all([
+  const [settings, companyTaxId, branchContact, thermalLayouts] = await Promise.all([
     loadReceiptPrintSettings(db),
     loadCompanyTaxId(db),
     db.branch.findUnique({
       where: { id: input.branchId },
       select: { code: true, address: true, phone: true, taxId: true },
     }),
+    loadThermalLayouts(db),
   ])
 
   const branchCode = branchContact?.code?.trim() || saleView.branchCode
@@ -64,5 +73,7 @@ export async function loadReceiptPrintContext(
     cashAmount: saleView.cashAmount,
     change: saleView.change,
     settings,
+    thermalLayouts,
+    thermalLayout: resolveThermalLayout("RECEIPT", thermalLayouts),
   }
 }

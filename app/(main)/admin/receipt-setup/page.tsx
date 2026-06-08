@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { ReceiptSetupPage } from "@/components/admin/ReceiptSetupPage"
+import { DocumentLayoutSetupPage } from "@/components/admin/DocumentLayoutSetupPage"
 import { getSession } from "@/lib/auth"
 import { toSessionUserApi } from "@/lib/auth/session-user-api"
 import { canAccessMasterDatabase } from "@/lib/permissions/master"
@@ -13,5 +13,5 @@ export default async function AdminReceiptSetupPage() {
     redirect("/unauthorized")
   }
 
-  return <ReceiptSetupPage user={toSessionUserApi(session)} />
+  return <DocumentLayoutSetupPage user={toSessionUserApi(session)} />
 }

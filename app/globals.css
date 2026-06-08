@@ -213,6 +213,7 @@ body {
 }
 
 .pos-receipt-slip,
+.thermal-slip,
 .receipt-setup-preview-slip {
   box-sizing: content-box;
   margin: 0;
@@ -228,9 +229,10 @@ body {
   color: #111;
 }
 
-.pos-receipt-slip {
-  width: var(--receipt-slip-ch-width, 30ch);
-  max-width: var(--receipt-slip-ch-width, 30ch);
+.pos-receipt-slip,
+.thermal-slip {
+  width: var(--thermal-slip-ch-width, var(--receipt-slip-ch-width, 30ch));
+  max-width: var(--thermal-slip-ch-width, var(--receipt-slip-ch-width, 30ch));
 }
 
 .repair-ticket-print-area {

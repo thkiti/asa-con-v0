@@ -50,6 +50,23 @@ describe("loadReceiptPrintContext", () => {
           showVatIncludedMessage: true,
         }),
       },
+      thermalDocumentLayout: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            documentType: "RECEIPT",
+            headerLine1: "ASA SERVICES",
+            headerLine2: null,
+            headerLine3: null,
+            footerLine1: null,
+            footerLine2: null,
+            footerLine3: null,
+            footerLine4: null,
+            footerLine5: null,
+            showAbbreviatedTaxTitle: true,
+            showVatIncludedMessage: true,
+          },
+        ]),
+      },
     }
 
     const ctx = await loadReceiptPrintContext(db as never, {
@@ -97,6 +114,9 @@ describe("loadReceiptPrintContext", () => {
       },
       receiptPrintSettings: {
         findUnique: jest.fn().mockResolvedValue(null),
+      },
+      thermalDocumentLayout: {
+        findMany: jest.fn().mockResolvedValue([]),
       },
     }
 

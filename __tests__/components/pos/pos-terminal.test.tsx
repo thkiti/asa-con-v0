@@ -30,6 +30,20 @@ jest.mock("next/navigation", () => ({
   }),
 }))
 
+jest.mock("@/lib/pos-ui/pos-thermal-layouts-client", () => {
+  const { DEFAULT_THERMAL_LAYOUTS } = require("@/lib/thermal/layout-defaults")
+  const { resolveThermalLayout } = require("@/lib/thermal/layout")
+  const resolved = Object.fromEntries(
+    (Object.keys(DEFAULT_THERMAL_LAYOUTS) as Array<keyof typeof DEFAULT_THERMAL_LAYOUTS>).map(
+      (type) => [type, resolveThermalLayout(type, DEFAULT_THERMAL_LAYOUTS)]
+    )
+  )
+  return {
+    defaultResolvedThermalLayouts: () => resolved,
+    fetchPosThermalLayouts: jest.fn(async () => ({ resolved })),
+  }
+})
+
 function renderPosTerminal(): { container: HTMLDivElement; root: Root } {
   const container = document.createElement("div")
   document.body.appendChild(container)

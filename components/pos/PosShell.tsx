@@ -17,8 +17,8 @@ import {
   isPrintReportHighlighted,
   shouldGhostPrintReportButton,
 } from "@/lib/pos-ui/pos-actions"
-import { COLLECTOR_TICKET_PRINT_STYLES } from "@/lib/pos-ui/print-collector-ticket"
-import { POS_READ_REPORT_PRINT_STYLES } from "@/lib/pos-ui/print-read-report"
+import { THERMAL_CLONE_PRINT_STYLES } from "@/lib/thermal/print-css"
+import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import type { PosCartLine } from "@/lib/pos/cart"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
@@ -79,6 +79,10 @@ type PosShellProps = {
   onCloseReadReport: () => void
   repairTicketOpen: boolean
   onCloseRepairTicket: () => void
+  thermalLayouts: Record<
+    "RECEIPT" | "REFUND" | "COLLECTOR" | "REPAIR_TICKET" | "READ_Z",
+    ResolvedThermalLayout
+  >
   keypadDisabled?: boolean
 }
 
@@ -135,6 +139,7 @@ export function PosShell({
   onCloseReadReport,
   repairTicketOpen,
   onCloseRepairTicket,
+  thermalLayouts,
   keypadDisabled = false,
 }: PosShellProps) {
   const keypadSideMuted =
@@ -169,7 +174,7 @@ export function PosShell({
     <div className="pos-terminal-root fixed inset-0 flex bg-white">
       <style
         dangerouslySetInnerHTML={{
-          __html: `${POS_READ_REPORT_PRINT_STYLES}\n${COLLECTOR_TICKET_PRINT_STYLES}`,
+          __html: THERMAL_CLONE_PRINT_STYLES,
         }}
       />
       {worktimeOpen ? (
@@ -255,9 +260,18 @@ export function PosShell({
               onClose={onRefundClose}
             />
           ) : readReport ? (
-            <PosReadReportPanel report={readReport} onClose={onCloseReadReport} />
+            <PosReadReportPanel
+              report={readReport}
+              onClose={onCloseReadReport}
+              collectorLayout={thermalLayouts.COLLECTOR}
+              readZLayout={thermalLayouts.READ_Z}
+            />
           ) : repairTicketOpen ? (
-            <PosRepairTicketOverlay session={session} onClose={onCloseRepairTicket} />
+            <PosRepairTicketOverlay
+              session={session}
+              onClose={onCloseRepairTicket}
+              repairLayout={thermalLayouts.REPAIR_TICKET}
+            />
           ) : placeholderOverlay ? (
             <PosPlaceholderOverlay
               placeholderId={placeholderOverlay}

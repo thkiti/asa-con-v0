@@ -1,9 +1,10 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import { receiptSettingsToThermalLayout } from "@/lib/thermal/layout"
 import { RECEIPT_PRINT_SETTINGS_ID } from "./constants"
 import { toReceiptPrintSettingsView } from "./mapper"
 import type { ReceiptPrintSettingsView, UpdateReceiptPrintSettingsInput } from "./types"
 
-type SettingsDb = Pick<PrismaClient, "receiptPrintSettings">
+type SettingsDb = Pick<PrismaClient, "receiptPrintSettings" | "thermalDocumentLayout">
 
 export async function updateReceiptPrintSettings(
   db: SettingsDb,
@@ -33,5 +34,36 @@ export async function updateReceiptPrintSettings(
       showVatIncludedMessage: input.showVatIncludedMessage,
     },
   })
+
+  const thermalLayout = receiptSettingsToThermalLayout(toReceiptPrintSettingsView(row))
+  await db.thermalDocumentLayout.upsert({
+    where: { documentType: "RECEIPT" },
+    create: {
+      documentType: "RECEIPT",
+      headerLine1: thermalLayout.headerLine1,
+      headerLine2: thermalLayout.headerLine2,
+      headerLine3: thermalLayout.headerLine3,
+      footerLine1: thermalLayout.footerLine1,
+      footerLine2: thermalLayout.footerLine2,
+      footerLine3: thermalLayout.footerLine3,
+      footerLine4: thermalLayout.footerLine4,
+      footerLine5: thermalLayout.footerLine5,
+      showAbbreviatedTaxTitle: thermalLayout.showAbbreviatedTaxTitle,
+      showVatIncludedMessage: thermalLayout.showVatIncludedMessage,
+    },
+    update: {
+      headerLine1: thermalLayout.headerLine1,
+      headerLine2: thermalLayout.headerLine2,
+      headerLine3: thermalLayout.headerLine3,
+      footerLine1: thermalLayout.footerLine1,
+      footerLine2: thermalLayout.footerLine2,
+      footerLine3: thermalLayout.footerLine3,
+      footerLine4: thermalLayout.footerLine4,
+      footerLine5: thermalLayout.footerLine5,
+      showAbbreviatedTaxTitle: thermalLayout.showAbbreviatedTaxTitle,
+      showVatIncludedMessage: thermalLayout.showVatIncludedMessage,
+    },
+  })
+
   return toReceiptPrintSettingsView(row)
 }

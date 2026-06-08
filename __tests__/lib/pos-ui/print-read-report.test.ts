@@ -25,7 +25,8 @@ describe("printPosReadReport", () => {
   const printSpy = jest.spyOn(window, "print").mockImplementation(() => {})
 
   afterEach(() => {
-    document.body.classList.remove("pos-read-z-print-active")
+    document.body.classList.remove("thermal-clone-print-active")
+    document.querySelector("[data-thermal-print-clone]")?.remove()
     printSpy.mockClear()
   })
 
@@ -40,27 +41,30 @@ describe("printPosReadReport", () => {
     expect(canPrintPosReadReport(null)).toBe(false)
   })
 
-  it("prints Z using the passed payload without fetching", () => {
+  it("prints Z using thermal clone from on-screen slip source", () => {
+    document.body.innerHTML = `
+      <div data-thermal-print-source="read-z" class="thermal-print-area">
+        <pre>read z slip</pre>
+      </div>
+    `
     const report = { ...baseReport, grandTotal: 999 }
     const result = printPosReadReport(report)
     expect(result).toBe(true)
     expect(printSpy).toHaveBeenCalledTimes(1)
-    expect(document.body.classList.contains("pos-read-z-print-active")).toBe(true)
+    expect(document.body.classList.contains("thermal-clone-print-active")).toBe(true)
   })
 
   it("routes COLLECT to collector ticket print source", () => {
     document.body.innerHTML = `
-      <div data-collector-ticket-print-source class="collector-ticket-print-area">
+      <div data-thermal-print-source="collector" class="thermal-print-area">
         <pre>ticket</pre>
-        <div data-testid="collector-ticket-signature-space" class="collector-ticket-signature-space"></div>
+        <div data-testid="collector-ticket-signature-space" class="thermal-signature-space"></div>
       </div>
     `
     const result = printPosReadReport({ ...baseReport, mode: "COLLECT" })
     expect(result).toBe(true)
     expect(printSpy).toHaveBeenCalledTimes(1)
-    expect(document.body.classList.contains("printing-collector-ticket")).toBe(true)
-    document.body.classList.remove("printing-collector-ticket")
-    document.querySelector("[data-collector-ticket-print-clone]")?.remove()
+    expect(document.body.classList.contains("thermal-clone-print-active")).toBe(true)
   })
 
   it("no-ops for READ X payload", () => {

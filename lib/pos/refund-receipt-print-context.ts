@@ -3,6 +3,9 @@ import { COMPANY_TAX_BRANCH_CODE } from "@/lib/receipt-settings/constants"
 import { loadCompanyTaxId } from "@/lib/receipt-settings/resolve-company-tax"
 import { loadReceiptPrintSettings } from "@/lib/receipt-settings/load-settings"
 import type { ReceiptPrintSettingsView } from "@/lib/receipt-settings/types"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
+import { loadThermalLayouts } from "@/lib/thermal/load-layouts"
+import type { ResolvedThermalLayout, ThermalLayoutMap } from "@/lib/thermal/types"
 import { loadRefundReceiptForPrint } from "./load-refund-receipt"
 
 export type RefundReceiptPrintContext = {
@@ -25,11 +28,13 @@ export type RefundReceiptPrintContext = {
   originalReceiptId: string | null
   originalReceiptNo: string | null
   settings: ReceiptPrintSettingsView
+  thermalLayouts?: ThermalLayoutMap
+  thermalLayout?: ResolvedThermalLayout
 }
 
 export type RefundReceiptPrintDb = Pick<
   PrismaClient,
-  "refund" | "staff" | "branch" | "receiptPrintSettings"
+  "refund" | "staff" | "branch" | "receiptPrintSettings" | "thermalDocumentLayout"
 >
 
 export async function loadRefundReceiptPrintContext(
@@ -37,13 +42,14 @@ export async function loadRefundReceiptPrintContext(
   input: { refundId: string; branchId: string }
 ): Promise<RefundReceiptPrintContext> {
   const refundView = await loadRefundReceiptForPrint(db, input)
-  const [settings, companyTaxId, branchContact] = await Promise.all([
+  const [settings, companyTaxId, branchContact, thermalLayouts] = await Promise.all([
     loadReceiptPrintSettings(db),
     loadCompanyTaxId(db),
     db.branch.findUnique({
       where: { id: input.branchId },
       select: { code: true, address: true, phone: true, taxId: true },
     }),
+    loadThermalLayouts(db),
   ])
 
   const branchCode = branchContact?.code?.trim() || refundView.branchCode
@@ -71,5 +77,7 @@ export async function loadRefundReceiptPrintContext(
     originalReceiptId: refundView.originalReceiptId,
     originalReceiptNo: refundView.originalReceiptNo,
     settings,
+    thermalLayouts,
+    thermalLayout: resolveThermalLayout("REFUND", thermalLayouts),
   }
 }

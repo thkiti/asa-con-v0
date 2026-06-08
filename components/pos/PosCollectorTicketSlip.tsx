@@ -1,40 +1,31 @@
-import type { CSSProperties } from "react"
+"use client"
+
+import { ThermalPrintSource, ThermalSlipPre } from "@/components/thermal/ThermalSlipPre"
 import {
-  buildCollectorTicketSlipText,
-  COLLECTOR_TICKET_SIGNATURE_LINES,
-} from "@/lib/pos-ui/build-collector-ticket-slip"
-import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
+  buildCollectorSlipText,
+  COLLECTOR_SIGNATURE_LINES,
+} from "@/lib/thermal/build-collector-slip"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
 type PosCollectorTicketSlipProps = {
   report: ReadReportPayload
+  layout: ResolvedThermalLayout
 }
 
-export function PosCollectorTicketSlip({ report }: PosCollectorTicketSlipProps) {
-  const slipText = buildCollectorTicketSlipText(report)
-  const signatureText = COLLECTOR_TICKET_SIGNATURE_LINES.join("\n")
-  const slipWidth = `${RECEIPT_COLUMNS}ch`
-  const slipStyle = {
-    ["--receipt-slip-ch-width"]: slipWidth,
-    width: slipWidth,
-    maxWidth: slipWidth,
-  } as CSSProperties
+export function PosCollectorTicketSlip({ report, layout }: PosCollectorTicketSlipProps) {
+  const slipText = buildCollectorSlipText(report, layout)
+  const signatureText = COLLECTOR_SIGNATURE_LINES.join("\n")
 
   return (
-    <div
-      data-collector-ticket-print-source
-      className="collector-ticket-print-area"
-      style={slipStyle}
-    >
-      <pre className="pos-receipt-slip whitespace-pre" aria-label="Collector ticket">
-        {slipText}
-      </pre>
+    <ThermalPrintSource kind="collector">
+      <ThermalSlipPre text={slipText} ariaLabel="Collector ticket" />
       <div
         data-testid="collector-ticket-signature-space"
-        className="collector-ticket-signature-space"
+        className="thermal-signature-space collector-ticket-signature-space"
         aria-hidden="true"
       />
-      <pre className="pos-receipt-slip whitespace-pre">{signatureText}</pre>
-    </div>
+      <ThermalSlipPre text={signatureText} ariaLabel="Collector signature" />
+    </ThermalPrintSource>
   )
 }

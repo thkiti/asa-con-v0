@@ -8,6 +8,8 @@ import {
   cleanupCollectorTicketPrint,
   printCollectorTicket,
 } from "@/lib/pos-ui/print-collector-ticket"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
+import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -36,6 +38,8 @@ const collectReport: ReadReportPayload = {
   saleCount: 1,
 }
 
+const collectorLayout = resolveThermalLayout("COLLECTOR", DEFAULT_THERMAL_LAYOUTS)
+
 describe("printCollectorTicket", () => {
   const printSpy = jest.spyOn(window, "print").mockImplementation(() => {})
 
@@ -46,7 +50,9 @@ describe("printCollectorTicket", () => {
     document.body.appendChild(mount)
     const root = createRoot(mount)
     act(() => {
-      root.render(<PosCollectorTicketSlip report={collectReport} />)
+      root.render(
+        <PosCollectorTicketSlip report={collectReport} layout={collectorLayout} />
+      )
     })
   })
 
@@ -63,12 +69,10 @@ describe("printCollectorTicket", () => {
     const ok = printCollectorTicket(collectReport)
     expect(ok).toBe(true)
     expect(printSpy).toHaveBeenCalledTimes(1)
-    expect(document.body.classList.contains("printing-collector-ticket")).toBe(true)
-    expect(document.querySelector("[data-collector-ticket-print-clone]")).not.toBeNull()
+    expect(document.body.classList.contains("thermal-clone-print-active")).toBe(true)
+    expect(document.querySelector("[data-thermal-print-clone]")).not.toBeNull()
     expect(
-      document
-        .querySelector("[data-collector-ticket-print-source] pre")
-        ?.textContent
+      document.querySelector('[data-thermal-print-source="collector"] pre')?.textContent
     ).toContain("0101001-Widget")
   })
 
@@ -79,9 +83,7 @@ describe("printCollectorTicket", () => {
   })
 
   it("rejects non-COLLECT payloads", () => {
-    expect(
-      printCollectorTicket({ ...collectReport, mode: "Z" })
-    ).toBe(false)
+    expect(printCollectorTicket({ ...collectReport, mode: "Z" })).toBe(false)
     expect(printSpy).not.toHaveBeenCalled()
   })
 })

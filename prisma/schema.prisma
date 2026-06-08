@@ -416,6 +416,7 @@ model Refund {
 }
 
 /// Singleton receipt layout/footer (id = "default").
+/// P2A: kept for compatibility — P2B will remove after thermal migration.
 model ReceiptPrintSettings {
   id                      String   @id @default("default")
   companyDisplayName      String?
@@ -428,6 +429,31 @@ model ReceiptPrintSettings {
   showVatIncludedMessage  Boolean  @default(true)
   updatedAt               DateTime @updatedAt
 }
+
+enum ThermalDocumentType {
+  RECEIPT
+  REFUND
+  COLLECTOR
+  REPAIR_TICKET
+  READ_Z
+}
+
+/// Thermal 80mm layout — one row per document type.
+model ThermalDocumentLayout {
+  documentType            ThermalDocumentType @id
+  headerLine1             String?
+  headerLine2             String?
+  headerLine3             String?
+  footerLine1             String?
+  footerLine2             String?
+  footerLine3             String?
+  footerLine4             String?
+  footerLine5             String?
+  showAbbreviatedTaxTitle Boolean             @default(true)
+  showVatIncludedMessage  Boolean             @default(true)
+  updatedAt               DateTime            @updatedAt
+}
+
 enum GlAccountType {
   ASSET
   LIABILITY

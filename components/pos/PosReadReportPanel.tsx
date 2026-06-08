@@ -1,7 +1,9 @@
 "use client"
 
 import { PosCollectorTicketSlip } from "@/components/pos/PosCollectorTicketSlip"
+import { PosReadZSlip } from "@/components/pos/PosReadZSlip"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
 function formatMoney2(n: number): string {
   return n.toLocaleString("en-US", {
@@ -18,18 +20,26 @@ function formatReadRowQty(q: number): string {
 type PosReadReportPanelProps = {
   report: ReadReportPayload
   onClose: () => void
+  collectorLayout: ResolvedThermalLayout
+  readZLayout: ResolvedThermalLayout
 }
 
-export function PosReadReportPanel({ report, onClose }: PosReadReportPanelProps) {
-  const printRoot = report.mode === "Z" ? "pos-read-z-print-root" : ""
-
+export function PosReadReportPanel({
+  report,
+  onClose,
+  collectorLayout,
+  readZLayout,
+}: PosReadReportPanelProps) {
   return (
-    <div
-      className={`absolute inset-0 z-[46] flex min-h-0 flex-col bg-orange-600 text-white print:bg-white print:text-zinc-900 ${printRoot}`}
-    >
+    <div className="absolute inset-0 z-[46] flex min-h-0 flex-col bg-orange-600 text-white print:bg-white print:text-zinc-900">
       {report.mode === "COLLECT" ? (
         <div className="pointer-events-none absolute -left-[9999px] top-0 opacity-0">
-          <PosCollectorTicketSlip report={report} />
+          <PosCollectorTicketSlip report={report} layout={collectorLayout} />
+        </div>
+      ) : null}
+      {report.mode === "Z" ? (
+        <div className="pointer-events-none absolute -left-[9999px] top-0 opacity-0">
+          <PosReadZSlip report={report} layout={readZLayout} />
         </div>
       ) : null}
       <button
