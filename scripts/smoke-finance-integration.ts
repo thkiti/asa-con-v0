@@ -7,7 +7,10 @@ import { BranchType, ProductType, GlAccountType, AccountingPeriodStatus } from "
 import { ensureDevPeriodAdminStaff } from "../lib/auth/period-admin-staff"
 import { prisma } from "../lib/shared/prisma"
 import { DEFAULT_ACCOUNT_CODES } from "../lib/finance/account-map"
+import { FINANCE_REF_TYPES } from "../lib/finance/posting-types"
+import { setSellingPrice } from "../lib/pricing/selling-price"
 import { checkout } from "../lib/pos/checkout"
+import { STOCK_REF_TYPES } from "../lib/stock/transaction-types"
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000"
 const results: { name: string; pass: boolean; detail: string }[] = []
@@ -41,6 +44,11 @@ async function seed() {
     branch = await prisma.branch.create({
       data: { code: "SMOKE01", name: "Smoke Test Shop", type: BranchType.SH },
     })
+  } else if (branch.deleted || !branch.isActive) {
+    branch = await prisma.branch.update({
+      where: { id: branch.id },
+      data: { deleted: false, isActive: true },
+    })
   }
   let product = await prisma.product.findFirst({ where: { code: "SMOKE-PROD-001" } })
   if (!product) {
@@ -54,7 +62,13 @@ async function seed() {
         productType: ProductType.TRACKED,
       },
     })
+  } else if (product.deleted) {
+    product = await prisma.product.update({
+      where: { id: product.id },
+      data: { deleted: false },
+    })
   }
+  await setSellingPrice(prisma, { productId: product.id, price: 100 })
   await prisma.stock.upsert({
     where: { branchId_productId: { branchId: branch.id, productId: product.id } },
     create: { branchId: branch.id, productId: product.id, qty: 100, avgCost: 10 },
@@ -86,16 +100,16 @@ async function counts() {
   }
 }
 
-async function tryCheckout(branchId: string, productId: string) {
+async function tryCheckout(branchId: string, productId: string, paidAmount = 100) {
   try {
-    await checkout({
+    const result = await checkout({
       branchId,
       staffId: "smoke-staff",
       paymentMethod: "CASH",
-      paidAmount: 100,
+      paidAmount,
       lines: [{ productId, qty: 1 }],
     })
-    return { ok: true as const }
+    return { ok: true as const, saleId: result.sale.id }
   } catch (err) {
     return {
       ok: false as const,
@@ -133,6 +147,11 @@ async function main() {
   const dupCount = await prisma.accountingPeriod.count({ where: { branchId, periodKey: PERIOD_KEY } })
   record("A/H Idempotent bootstrap", dupCount === 1, `count=${dupCount}`)
 
+  const stockBeforeOpen = await prisma.stock.findUnique({
+    where: { branchId_productId: { branchId, productId } },
+  })
+  const qtyBeforeOpen = stockBeforeOpen?.qty ?? 0
+
   const beforeOpen = await counts()
   const openCheckout = await tryCheckout(branchId, productId)
   const afterOpen = await counts()
@@ -141,6 +160,50 @@ async function main() {
     openCheckout.ok && afterOpen.sales === beforeOpen.sales + 1 && afterOpen.vouchers > beforeOpen.vouchers,
     `sales+${afterOpen.sales - beforeOpen.sales} vouchers+${afterOpen.vouchers - beforeOpen.vouchers}`
   )
+
+  if (openCheckout.ok) {
+    const stockAfterOpen = await prisma.stock.findUnique({
+      where: { branchId_productId: { branchId, productId } },
+    })
+    record(
+      "P1 sale stock decremented",
+      stockAfterOpen?.qty === qtyBeforeOpen - 1,
+      `qty ${qtyBeforeOpen}→${stockAfterOpen?.qty ?? "?"}`
+    )
+
+    const saleLedgerRows = await prisma.stockTransaction.findMany({
+      where: {
+        refType: STOCK_REF_TYPES.POS_SALE,
+        refId: openCheckout.saleId,
+      },
+    })
+    record(
+      "P1 sale StockTransaction POS_SALE",
+      saleLedgerRows.length === 1 && saleLedgerRows[0]?.qtyOut === 1,
+      `rows=${saleLedgerRows.length} qtyOut=${saleLedgerRows[0]?.qtyOut ?? "?"}`
+    )
+
+    const saleVoucher = await prisma.voucher.findFirst({
+      where: {
+        refType: FINANCE_REF_TYPES.POS_SALE,
+        refId: openCheckout.saleId,
+      },
+    })
+    record(
+      "P1 sale POS_SALE voucher",
+      Boolean(saleVoucher),
+      saleVoucher ? `voucherNo=${saleVoucher.voucherNo}` : "missing"
+    )
+
+    const { runFinanceReconciliation } = await import("../lib/finance/reconciliation")
+    const recon = await runFinanceReconciliation(prisma, { branchId })
+    const saleIssues = recon.issues.filter((issue) => issue.sourceId === openCheckout.saleId)
+    record(
+      "P1 sale reconciliation clean",
+      saleIssues.length === 0,
+      `saleIssues=${saleIssues.length} totalIssues=${recon.issueCount}`
+    )
+  }
 
   await prisma.$transaction((tx) => closeAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY, mode: "SOFT" }))
   const soft = await prisma.accountingPeriod.findUnique({ where: { branchId_periodKey: { branchId, periodKey: PERIOD_KEY } } })

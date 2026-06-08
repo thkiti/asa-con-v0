@@ -45,11 +45,13 @@ Sale → Stock Movement → Inventory Balance → Finance Posting
 
 **ต้อง verify**
 
-- Sale หัก stock ถูกต้อง
-- Refund คืน stock ถูกต้อง
-- Inventory balance ตรง
-- Finance posting ตรง
+- Sale หัก stock ถูกต้อง (TRACKED → `issueStock`; CONSUMABLE → skip พร้อม `ledgerSkippedReason`)
+- Refund ไม่กระทบ stock โดยไม่ตั้งใจ — **money-only** ตาม [AD001 ใน 99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md); ไม่เรียก `receiveStock`; คืนสินค้าเข้าคลังผ่าน Stock Document แยก
+- Inventory balance ตรงหลัง sale
+- Finance posting ตรง (`POS_SALE` / `POS_REFUND`)
 - Reconciliation ตรง
+
+**หลักฐาน:** [P1_POSTING_STOCK_VALIDATION.md](./P1_POSTING_STOCK_VALIDATION.md) · refund E2E: [P1C_REFUND_E2E_VALIDATION.md](./P1C_REFUND_E2E_VALIDATION.md)
 
 **Exit:** flow ปฏิบัติการ validate end-to-end แล้ว
 
@@ -192,7 +194,7 @@ Sale → Stock Movement → Inventory Balance → Finance Posting
 
 ## Checklist ก่อน deploy POS Complete
 
-- [ ] P1 — sale/refund/stock/finance/reconcile verified
+- [x] P1 — sale/refund/stock/finance/reconcile verified — see [P1_POSTING_STOCK_VALIDATION.md](./P1_POSTING_STOCK_VALIDATION.md)
 - [ ] P2 — 5 thermal types บน `lib/thermal`, layout setup ครบ, tests ผ่าน
 - [ ] P3 — READ_Z slip ครบข้อมูล + validate ที่ร้าน
 - [ ] P4 — repair workflow decision บันทึกแล้ว

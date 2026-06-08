@@ -16,6 +16,16 @@ jest.mock("@/lib/shared/prisma", () => ({
   },
 }))
 
+jest.mock("@/lib/finance/config", () => ({
+  isFinancePostingEnabled: jest.fn(),
+}))
+
+jest.mock("@/lib/finance/posting", () => ({
+  postSaleVoucher: jest.fn(),
+}))
+
+import { isFinancePostingEnabled } from "@/lib/finance/config"
+import { postSaleVoucher } from "@/lib/finance/posting"
 import { resolvePosRetailPrice } from "@/lib/pricing/resolve-pos-retail-price"
 import { prisma } from "@/lib/shared/prisma"
 
@@ -39,6 +49,11 @@ describe("checkout", () => {
       id: branchId,
       deleted: false,
       isActive: true,
+    })
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(false)
+    ;(postSaleVoucher as jest.Mock).mockResolvedValue({
+      voucherId: "v-1",
+      alreadyPosted: false,
     })
     resolveMock.mockImplementation(async (_db, input: { productId: string }) => {
       if (input.productId === "p-tracked") return mockResolvedRetailPrice(50)

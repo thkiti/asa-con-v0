@@ -1,9 +1,9 @@
 # Management Product Group — Master Data Backfill Plan (Step 1A)
 
-**Date:** 2026-06-08 · **Updated:** 2026-06-08 (master-data correction)  
+**Date:** 2026-06-08 · **Updated:** 2026-06-08 (apply complete)  
 **Repo:** `asa-con-v0`  
-**Status:** Dry-run script ready — **no production data changes approved**  
-**Script:** `scripts/seed-management-product-group-backfill.ts` (default dry-run; `--apply` gated)  
+**Status:** **Applied** (2026-06-08) — pre-snapshot: `data/backfill-snapshots/pre-apply-2026-06-08T06-59-11`  
+**Script:** `scripts/seed-management-product-group-backfill.ts` · post-validate: `scripts/validate-post-backfill.ts`  
 **Prerequisite audit:** [MANAGEMENT_PRODUCT_GROUP_AUDIT.md](./MANAGEMENT_PRODUCT_GROUP_AUDIT.md)  
 **Code reference:** [PRODUCT CODE ASSIGNED.md](../../asa-con/docs/PRODUCT%20CODE%20ASSIGNED.md)
 
@@ -216,17 +216,17 @@ All other active `80*` (`8001001`–`8001006`) unchanged → `8001900`.
 
 Before enabling READ_Z zero-fill or Stock Document label wire-up in production:
 
-- [ ] All **14** summary header `Product` rows exist (`code` + `name`)
-- [ ] `loadSummaryHeaderLabels()` returns `labelStatus: "ok"` for all 14
-- [ ] Shoe SKUs: each active `51/55/61/65` product has ≥1 `ReferenceStock` with correct `productGroup`
-- [ ] Add-on `41*` SKUs: refs point to `4100900`
-- [ ] Retail `80*` SKUs: refs point to `8001900` (9 SKUs `8001001`–`8001009`)
-- [ ] `7003001` / `7003002` / `7003003` retired; replacements `8001008` / `8001009` created; `8001007` repurposed
-- [ ] No refs normalize to headers outside 14-policy catalog (no `7003900`)
-- [ ] No `7003*` mapped to `7001900` / `7002900`
+- [x] All **14** summary header `Product` rows exist (`code` + `name`)
+- [x] `loadSummaryHeaderLabels()` returns `labelStatus: "ok"` for all 14
+- [x] Shoe SKUs: each active `51/55/61/65` product has ≥1 `ReferenceStock` with correct `productGroup`
+- [x] Add-on `41*` SKUs: refs point to `4100900`
+- [x] Retail `80*` SKUs: refs point to `8001900` (9 SKUs `8001001`–`8001009`)
+- [x] `7003001` / `7003002` / `7003003` retired; replacements `8001008` / `8001009` created; `8001007` repurposed
+- [x] No refs normalize to headers outside 14-policy catalog (no `7003900`)
+- [x] No `7003*` mapped to `7001900` / `7002900`
 - [ ] POS smoke products (`SMOKE-*`, `P1C-*`) excluded or linked intentionally
 - [ ] Re-run audit queries from [MANAGEMENT_PRODUCT_GROUP_AUDIT.md](./MANAGEMENT_PRODUCT_GROUP_AUDIT.md)
-- [ ] `npm test -- --testPathPatterns=management-product-group` passes
+- [x] `npm test -- --testPathPatterns=management-product-group` passes
 - [ ] Manual: Master UI group lookup finds header for each summary code
 
 ---
@@ -245,14 +245,41 @@ Keep a **pre-backfill dump** of `Product` + `ReferenceStock` (read-only export) 
 
 ---
 
+## 8. Post-apply record (2026-06-08)
+
+| Metric | Pre-apply | Post-apply |
+|--------|----------:|-----------:|
+| `Product` rows | 1,022 | 1,038 |
+| `ReferenceStock` active | 595 | 710 |
+| Key refs (K/C/M) | 595 | 595 |
+
+### ReferenceStock create count: dry-run 113 vs apply 115
+
+Dry-run originally projected **113** `ReferenceStock` creates. Apply created **115** (+2).
+
+**Accepted explanation (master-data correction, not a code defect):**  
+Two legacy imported records were already known to be misclassified / missing proper `ReferenceStock` coverage. During the GG=70/GG=80 correction and shoe/add-on backfill, those records became resolvable and were included in the final create set.
+
+**Post-apply validation is source of truth:**
+
+- Active `ReferenceStock` = **710**
+- Helper resolves **113** intended mapped SKUs
+- Key refs unchanged = **595**
+- No unresolved mapped SKUs
+- `npm test -- --testPathPatterns=management-product-group` passed
+- `npm run build` passed
+
+---
+
 ## Execution gate
 
-| Step | Owner | Blocker |
-|------|-------|---------|
-| Approve this plan | HO / ops | — |
-| Create 14 `Product` headers | Master / import | Approval |
-| GG=80 reclassification (`7003*` retire, `8001007`–`8001009`) | Master / import | Approval |
-| Shoe + add-on + service `ReferenceStock` | Master / import | Header Products + reclassification |
-| Wire READ_Z / Stock Document | Engineering | Steps 1B + backfill apply |
+| Step | Owner | Status |
+|------|-------|--------|
+| Approve this plan | HO / ops | Done |
+| Create 14 `Product` headers | Master / import | **Applied** |
+| GG=80 reclassification (`7003*` retire, `8001007`–`8001009`) | Master / import | **Applied** |
+| Shoe + add-on + service `ReferenceStock` | Master / import | **Applied** |
+| Wire READ_Z / Stock Document | Engineering | Pending |
 
-**Dry-run:** `npx tsx scripts/seed-management-product-group-backfill.ts` — reports planned mutations only.
+**Dry-run:** `npx tsx scripts/seed-management-product-group-backfill.ts`  
+**Post-validate:** `npx tsx scripts/validate-post-backfill.ts`

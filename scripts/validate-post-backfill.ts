@@ -1,3 +1,8 @@
+/**
+ * Post-apply validation for management product group backfill.
+ * Mapped SKU resolution (113) is the target; active refs (710) may exceed the
+ * dry-run create projection when legacy misclassified rows gain coverage.
+ */
 import "dotenv/config"
 import { config } from "dotenv"
 config({ path: ".env.local" })

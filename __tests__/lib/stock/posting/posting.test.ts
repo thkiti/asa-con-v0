@@ -9,6 +9,16 @@ jest.mock("@/lib/shared/prisma", () => ({
   },
 }))
 
+jest.mock("@/lib/finance/config", () => ({
+  isFinancePostingEnabled: jest.fn(),
+}))
+
+jest.mock("@/lib/finance/posting", () => ({
+  postStockDocumentVoucher: jest.fn(),
+}))
+
+import { isFinancePostingEnabled } from "@/lib/finance/config"
+import { postStockDocumentVoucher } from "@/lib/finance/posting"
 import { prisma } from "@/lib/shared/prisma"
 
 function doc(
@@ -37,6 +47,11 @@ function doc(
 describe("postDocument", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(false)
+    ;(postStockDocumentVoucher as jest.Mock).mockResolvedValue({
+      voucherId: "v-1",
+      alreadyPosted: false,
+    })
   })
 
   it("posts TRANSFER_OUT with issueStock and sets POSTED atomically", async () => {

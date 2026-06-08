@@ -4,7 +4,7 @@
 
 เอกสารนี้บันทึกการตัดสินใจเชิงสถาปัตยกรรม ความเป็นจริงทางธุรกิจ สมมติฐานการปฏิบัติงาน และข้อยกเว้นที่อธิบายว่า **ทำไม** asa-con-v0 จึงถูกออกแบบในลักษณะนี้
 
-สำหรับรายละเอียดการ implement ให้อ่านเอกสารที่มีหมายเลขในโฟลเดอร์นี้ (เช่น finance posting, reconciliation, POS checkout) สำหรับหลักฐานการทดสอบ ดู [P1C_REFUND_E2E_VALIDATION.md](./P1C_REFUND_E2E_VALIDATION.md)
+สำหรับรายละเอียดการ implement ให้อ่านเอกสารที่มีหมายเลขในโฟลเดอร์นี้ (เช่น finance posting, reconciliation, POS checkout) สำหรับหลักฐานการทดสอบ P1 ดู [P1_POSTING_STOCK_VALIDATION.md](./P1_POSTING_STOCK_VALIDATION.md) และ [P1C_REFUND_E2E_VALIDATION.md](./P1C_REFUND_E2E_VALIDATION.md)
 
 ---
 
@@ -60,7 +60,8 @@
 
 ครอบคลุม:
 
-- Refund Finance
+- Sale checkout → stock → finance → reconciliation
+- Refund Finance (money-only)
 - Refund Reconciliation
 - Refund Traceability
 - End-to-End Validation
