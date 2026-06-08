@@ -1,7 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client"
-import { updateReceiptPrintSettings } from "@/lib/receipt-settings/update-settings"
 import { loadThermalLayouts, toThermalDocumentLayoutView } from "@/lib/thermal/load-layouts"
-import { thermalReceiptLayoutToSettings } from "@/lib/thermal/layout"
 import type {
   ThermalDocumentLayoutView,
   ThermalDocumentType,
@@ -9,13 +7,12 @@ import type {
   UpdateThermalDocumentLayoutInput,
 } from "@/lib/thermal/types"
 
-type LayoutDb = Pick<PrismaClient, "thermalDocumentLayout" | "receiptPrintSettings">
+type LayoutDb = Pick<PrismaClient, "thermalDocumentLayout">
 
 export async function loadAllThermalDocumentLayouts(db: LayoutDb): Promise<ThermalLayoutMap> {
   return loadThermalLayouts(db)
 }
 
-/** P2A: dual-write RECEIPT updates to ReceiptPrintSettings for compatibility. */
 export async function updateThermalDocumentLayout(
   db: LayoutDb,
   documentType: ThermalDocumentType,
@@ -50,11 +47,5 @@ export async function updateThermalDocumentLayout(
     },
   })
 
-  const view = toThermalDocumentLayoutView(row)
-
-  if (documentType === "RECEIPT") {
-    await updateReceiptPrintSettings(db, thermalReceiptLayoutToSettings(view))
-  }
-
-  return view
+  return toThermalDocumentLayoutView(row)
 }

@@ -1,6 +1,6 @@
 import { RefundKind } from "@/generated/prisma/client"
 import { loadRefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
-import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
+import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 
 describe("loadRefundReceiptPrintContext", () => {
   it("resolves company tax from HO999 and machine id from current branch", async () => {
@@ -42,21 +42,22 @@ describe("loadRefundReceiptPrintContext", () => {
           return Promise.resolve(null)
         }),
       },
-      receiptPrintSettings: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: "default",
-          companyDisplayName: "ASA SERVICES",
-          footerLine1: null,
-          footerLine2: null,
-          footerLine3: null,
-          footerLine4: null,
-          footerLine5: null,
-          showAbbreviatedTaxTitle: true,
-          showVatIncludedMessage: true,
-        }),
-      },
       thermalDocumentLayout: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            documentType: "RECEIPT",
+            headerLine1: "ASA SERVICES",
+            headerLine2: null,
+            headerLine3: null,
+            footerLine1: null,
+            footerLine2: null,
+            footerLine3: null,
+            footerLine4: null,
+            footerLine5: null,
+            showAbbreviatedTaxTitle: true,
+            showVatIncludedMessage: true,
+          },
+        ]),
       },
     }
 
@@ -74,7 +75,7 @@ describe("loadRefundReceiptPrintContext", () => {
     expect(ctx.originalReceiptNo).toBe("REC-SH001-202606-0001")
   })
 
-  it("omits machine id when current branch is HO999 and uses default settings", async () => {
+  it("omits machine id when current branch is HO999 and uses default thermal layout", async () => {
     const refund = {
       id: "refund-1",
       refundNo: "REF-HO999-202606-0001",
@@ -109,9 +110,6 @@ describe("loadRefundReceiptPrintContext", () => {
           return Promise.resolve(null)
         }),
       },
-      receiptPrintSettings: {
-        findUnique: jest.fn().mockResolvedValue(null),
-      },
       thermalDocumentLayout: {
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -123,7 +121,7 @@ describe("loadRefundReceiptPrintContext", () => {
     })
 
     expect(ctx.machineTaxId).toBeNull()
-    expect(ctx.settings).toEqual(DEFAULT_RECEIPT_PRINT_SETTINGS)
+    expect(ctx.thermalLayout).toEqual(DEFAULT_THERMAL_LAYOUTS.REFUND)
     expect(ctx.originalReceiptNo).toBeNull()
   })
 })

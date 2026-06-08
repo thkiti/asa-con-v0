@@ -5,9 +5,10 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PosRefundReceiptSlip } from "@/components/pos/PosRefundReceiptSlip"
 import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
-import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
 import { RefundKind } from "@/generated/prisma/client"
 import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
+import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -31,7 +32,8 @@ const sampleReceipt: RefundReceiptPrintContext = {
   saleId: "sale-1",
   originalReceiptId: "rcpt-1",
   originalReceiptNo: "REC-SH001-202606-0001",
-  settings: DEFAULT_RECEIPT_PRINT_SETTINGS,
+  thermalLayouts: DEFAULT_THERMAL_LAYOUTS,
+  thermalLayout: resolveThermalLayout("REFUND", DEFAULT_THERMAL_LAYOUTS),
 }
 
 describe("PosRefundReceiptSlip", () => {

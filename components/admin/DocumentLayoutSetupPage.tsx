@@ -10,7 +10,6 @@ import {
 import { buildCollectorSlipText } from "@/lib/thermal/build-collector-slip"
 import { buildReadZSlipText } from "@/lib/thermal/build-read-z-slip"
 import { buildRepairTicketSlipText } from "@/lib/thermal/build-repair-ticket-slip"
-import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
 import { buildReceiptSlipText } from "@/lib/pos/receipt-slip-format"
 import { buildRefundSlipText } from "@/lib/pos/refund-slip-format"
 import type { ReceiptPrintContext } from "@/lib/pos/receipt-print-context"
@@ -66,7 +65,8 @@ const SAMPLE_RECEIPT: ReceiptPrintContext = {
   paymentMethod: "CASH",
   cashAmount: "60.00",
   change: "0.00",
-  settings: { ...DEFAULT_RECEIPT_PRINT_SETTINGS },
+  thermalLayouts: DEFAULT_THERMAL_LAYOUTS,
+  thermalLayout: DEFAULT_THERMAL_LAYOUTS.RECEIPT,
 }
 
 const SAMPLE_REFUND: RefundReceiptPrintContext = {
@@ -88,7 +88,8 @@ const SAMPLE_REFUND: RefundReceiptPrintContext = {
   saleId: "sale",
   originalReceiptId: "receipt",
   originalReceiptNo: "REC-SH001-202606-0001",
-  settings: { ...DEFAULT_RECEIPT_PRINT_SETTINGS },
+  thermalLayouts: DEFAULT_THERMAL_LAYOUTS,
+  thermalLayout: DEFAULT_THERMAL_LAYOUTS.REFUND,
 }
 
 const SAMPLE_READ_REPORT: ReadReportPayload = {

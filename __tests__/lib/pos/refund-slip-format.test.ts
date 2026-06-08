@@ -1,8 +1,9 @@
 import { RefundKind } from "@/generated/prisma/client"
-import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
 import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
 import { buildRefundSlipText } from "@/lib/pos/refund-slip-format"
 import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
+import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 
 function expectSlipLinesWithinColumns(text: string): void {
   for (const line of text.split("\n")) {
@@ -33,7 +34,8 @@ function sampleContext(
     saleId: "sale-1",
     originalReceiptId: "rcpt-1",
     originalReceiptNo: "REC-SH001-202606-0001",
-    settings: { ...DEFAULT_RECEIPT_PRINT_SETTINGS },
+    thermalLayouts: DEFAULT_THERMAL_LAYOUTS,
+    thermalLayout: resolveThermalLayout("REFUND", DEFAULT_THERMAL_LAYOUTS),
     ...overrides,
   }
 }
@@ -109,11 +111,11 @@ describe("buildRefundSlipText", () => {
     expectSlipLinesWithinColumns(text)
   })
 
-  it("reuses footer settings from receipt print settings", () => {
+  it("reuses footer lines from thermal layout", () => {
     const text = buildRefundSlipText(
       sampleContext({
-        settings: {
-          ...DEFAULT_RECEIPT_PRINT_SETTINGS,
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.REFUND,
           footerLine1: "Thank you",
         },
       })

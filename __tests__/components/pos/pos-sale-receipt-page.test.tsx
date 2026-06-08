@@ -5,8 +5,8 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PosSaleReceiptPage } from "@/components/pos/PosSaleReceiptPage"
 import type { ReceiptPrintContext } from "@/lib/pos/receipt-print-context"
-import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
 import * as autoprint from "@/lib/pos-ui/pos-receipt-autoprint"
+import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -36,7 +36,8 @@ const sampleReceipt: ReceiptPrintContext = {
   paymentMethod: "CASH",
   cashAmount: "25.00",
   change: "0.00",
-  settings: DEFAULT_RECEIPT_PRINT_SETTINGS,
+  thermalLayouts: DEFAULT_THERMAL_LAYOUTS,
+  thermalLayout: DEFAULT_THERMAL_LAYOUTS.RECEIPT,
 }
 
 describe("PosSaleReceiptPage", () => {

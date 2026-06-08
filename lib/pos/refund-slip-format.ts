@@ -9,9 +9,8 @@ import {
   truncateThermalText as truncateReceiptText,
   wrapThermalTextLines as wrapReceiptTextLines,
 } from "@/lib/thermal/format"
-import { receiptSettingsToThermalLayout, resolveThermalLayout } from "@/lib/thermal/layout"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
-import type { ThermalLayoutMap } from "@/lib/thermal/types"
 import type { RefundReceiptPrintContext } from "./refund-receipt-print-context"
 
 export {
@@ -26,14 +25,8 @@ export {
 }
 
 export function buildRefundSlipText(context: RefundReceiptPrintContext): string {
-  if (context.thermalLayout) {
-    return buildThermalRefundSlipText(context, context.thermalLayout)
-  }
-  const layouts: ThermalLayoutMap =
-    context.thermalLayouts ??
-    ({
-      ...DEFAULT_THERMAL_LAYOUTS,
-      RECEIPT: receiptSettingsToThermalLayout(context.settings),
-    } as ThermalLayoutMap)
-  return buildThermalRefundSlipText(context, resolveThermalLayout("REFUND", layouts))
+  const layout =
+    context.thermalLayout ??
+    resolveThermalLayout("REFUND", context.thermalLayouts ?? DEFAULT_THERMAL_LAYOUTS)
+  return buildThermalRefundSlipText(context, layout)
 }

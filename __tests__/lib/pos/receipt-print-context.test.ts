@@ -1,5 +1,5 @@
 import { loadReceiptPrintContext } from "@/lib/pos/receipt-print-context"
-import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
+import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 
 describe("loadReceiptPrintContext", () => {
   it("resolves company tax from HO999 and machine id from current branch", async () => {
@@ -37,19 +37,6 @@ describe("loadReceiptPrintContext", () => {
           return Promise.resolve(null)
         }),
       },
-      receiptPrintSettings: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: "default",
-          companyDisplayName: "ASA SERVICES",
-          footerLine1: null,
-          footerLine2: null,
-          footerLine3: null,
-          footerLine4: null,
-          footerLine5: null,
-          showAbbreviatedTaxTitle: true,
-          showVatIncludedMessage: true,
-        }),
-      },
       thermalDocumentLayout: {
         findMany: jest.fn().mockResolvedValue([
           {
@@ -79,6 +66,7 @@ describe("loadReceiptPrintContext", () => {
     expect(ctx.companyDisplayName).toBe("ASA SERVICES")
     expect(ctx.branchAddress).toBe("Addr")
     expect(ctx.branchPhone).toBe("02-111")
+    expect(ctx.thermalLayout.headerLine1).toBe("ASA SERVICES")
   })
 
   it("omits machine id when current branch is HO999", async () => {
@@ -112,9 +100,6 @@ describe("loadReceiptPrintContext", () => {
           return Promise.resolve(null)
         }),
       },
-      receiptPrintSettings: {
-        findUnique: jest.fn().mockResolvedValue(null),
-      },
       thermalDocumentLayout: {
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -126,6 +111,6 @@ describe("loadReceiptPrintContext", () => {
     })
 
     expect(ctx.machineTaxId).toBeNull()
-    expect(ctx.settings).toEqual(DEFAULT_RECEIPT_PRINT_SETTINGS)
+    expect(ctx.thermalLayout).toEqual(DEFAULT_THERMAL_LAYOUTS.RECEIPT)
   })
 })

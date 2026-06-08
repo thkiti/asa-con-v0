@@ -1,5 +1,5 @@
-import { DEFAULT_RECEIPT_PRINT_SETTINGS } from "@/lib/receipt-settings/defaults"
 import type { ReceiptPrintContext } from "@/lib/pos/receipt-print-context"
+import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 import {
   buildReceiptSlipText,
   centerReceiptLine,
@@ -73,7 +73,17 @@ function sampleContext(overrides: Partial<ReceiptPrintContext> = {}): ReceiptPri
     paymentMethod: "CASH",
     cashAmount: "60.00",
     change: "0.00",
-    settings: { ...DEFAULT_RECEIPT_PRINT_SETTINGS },
+    thermalLayouts: {
+      ...DEFAULT_THERMAL_LAYOUTS,
+      RECEIPT: {
+        ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+        headerLine1: "ASA SERVICES",
+      },
+    },
+    thermalLayout: {
+      ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+      headerLine1: "ASA SERVICES",
+    },
     ...overrides,
   }
 }
@@ -241,8 +251,9 @@ describe("receipt-slip-format", () => {
     const footerText = "Thank you for shopping"
     const text = buildReceiptSlipText(
       sampleContext({
-        settings: {
-          ...DEFAULT_RECEIPT_PRINT_SETTINGS,
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+          headerLine1: "ASA SERVICES",
           footerLine1: footerText,
           showAbbreviatedTaxTitle: true,
           showVatIncludedMessage: true,
@@ -274,8 +285,9 @@ describe("receipt-slip-format", () => {
             lineTotal: "60.00",
           },
         ],
-        settings: {
-          ...DEFAULT_RECEIPT_PRINT_SETTINGS,
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+          headerLine1: "ASA SERVICES",
           footerLine1: "Centered footer message",
           showAbbreviatedTaxTitle: true,
           showVatIncludedMessage: true,
@@ -324,8 +336,9 @@ describe("receipt-slip-format", () => {
     const text = buildReceiptSlipText(
       sampleContext({
         branchPhone: "02-111-2222",
-        settings: {
-          ...DEFAULT_RECEIPT_PRINT_SETTINGS,
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+          headerLine1: "ASA SERVICES",
           showAbbreviatedTaxTitle: true,
           showVatIncludedMessage: true,
         },
@@ -344,11 +357,12 @@ describe("receipt-slip-format", () => {
     expect(afterTotals.some((l) => l.includes("ใบกำกับภาษีอย่างย่อ"))).toBe(false)
   })
 
-  it("uses settings footer lines and omits hard-coded legal text when disabled", () => {
+  it("uses thermal footer lines and omits hard-coded legal text when disabled", () => {
     const text = buildReceiptSlipText(
       sampleContext({
-        settings: {
-          ...DEFAULT_RECEIPT_PRINT_SETTINGS,
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+          headerLine1: "ASA SERVICES",
           footerLine1: "Thank you",
           showAbbreviatedTaxTitle: false,
           showVatIncludedMessage: false,
@@ -377,8 +391,8 @@ describe("receipt-slip-format", () => {
         companyDisplayName: "Shop Co",
         companyTaxId: null,
         machineTaxId: null,
-        settings: {
-          ...DEFAULT_RECEIPT_PRINT_SETTINGS,
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
           footerLine1: "  ",
           footerLine2: "Only footer",
           showAbbreviatedTaxTitle: false,

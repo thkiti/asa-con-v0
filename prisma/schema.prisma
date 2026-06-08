@@ -416,7 +416,7 @@ model Refund {
 }
 
 /// Singleton receipt layout/footer (id = "default").
-/// P2A: kept for compatibility — P2B will remove after thermal migration.
+/// P2B drop deferred — keep until ThermalDocumentLayout backfill is verified in DB.
 model ReceiptPrintSettings {
   id                      String   @id @default("default")
   companyDisplayName      String?

@@ -1,8 +1,5 @@
 import type { PrismaClient, RefundKind } from "@/generated/prisma/client"
-import { COMPANY_TAX_BRANCH_CODE } from "@/lib/receipt-settings/constants"
-import { loadCompanyTaxId } from "@/lib/receipt-settings/resolve-company-tax"
-import { loadReceiptPrintSettings } from "@/lib/receipt-settings/load-settings"
-import type { ReceiptPrintSettingsView } from "@/lib/receipt-settings/types"
+import { COMPANY_TAX_BRANCH_CODE, loadCompanyTaxId } from "@/lib/thermal/company-tax"
 import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { loadThermalLayouts } from "@/lib/thermal/load-layouts"
 import type { ResolvedThermalLayout, ThermalLayoutMap } from "@/lib/thermal/types"
@@ -27,14 +24,13 @@ export type RefundReceiptPrintContext = {
   saleId: string | null
   originalReceiptId: string | null
   originalReceiptNo: string | null
-  settings: ReceiptPrintSettingsView
-  thermalLayouts?: ThermalLayoutMap
-  thermalLayout?: ResolvedThermalLayout
+  thermalLayouts: ThermalLayoutMap
+  thermalLayout: ResolvedThermalLayout
 }
 
 export type RefundReceiptPrintDb = Pick<
   PrismaClient,
-  "refund" | "staff" | "branch" | "receiptPrintSettings" | "thermalDocumentLayout"
+  "refund" | "staff" | "branch" | "thermalDocumentLayout"
 >
 
 export async function loadRefundReceiptPrintContext(
@@ -42,8 +38,7 @@ export async function loadRefundReceiptPrintContext(
   input: { refundId: string; branchId: string }
 ): Promise<RefundReceiptPrintContext> {
   const refundView = await loadRefundReceiptForPrint(db, input)
-  const [settings, companyTaxId, branchContact, thermalLayouts] = await Promise.all([
-    loadReceiptPrintSettings(db),
+  const [companyTaxId, branchContact, thermalLayouts] = await Promise.all([
     loadCompanyTaxId(db),
     db.branch.findUnique({
       where: { id: input.branchId },
@@ -56,6 +51,7 @@ export async function loadRefundReceiptPrintContext(
   const machineRaw = branchContact?.taxId?.trim() || null
   const machineTaxId =
     branchCode === COMPANY_TAX_BRANCH_CODE ? null : machineRaw
+  const thermalLayout = resolveThermalLayout("REFUND", thermalLayouts)
 
   return {
     refundId: refundView.refundId,
@@ -69,15 +65,14 @@ export async function loadRefundReceiptPrintContext(
     branchName: refundView.branchName,
     branchAddress: branchContact?.address?.trim() || null,
     branchPhone: branchContact?.phone?.trim() || null,
-    companyDisplayName: settings.companyDisplayName,
+    companyDisplayName: thermalLayouts.RECEIPT.headerLine1,
     companyTaxId,
     machineTaxId,
     cashierDisplay: refundView.cashierDisplay,
     saleId: refundView.saleId,
     originalReceiptId: refundView.originalReceiptId,
     originalReceiptNo: refundView.originalReceiptNo,
-    settings,
     thermalLayouts,
-    thermalLayout: resolveThermalLayout("REFUND", thermalLayouts),
+    thermalLayout,
   }
 }

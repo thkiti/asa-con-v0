@@ -1,5 +1,4 @@
 import { formatShopBranchCode } from "@/lib/import/validation/branch-code"
-import { RECEIPT_SETTINGS_MAX } from "@/lib/receipt-settings/constants"
 import { MasterDomainError } from "./errors"
 
 export function parseOptionalBranchContactField(

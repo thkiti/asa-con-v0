@@ -1,13 +1,9 @@
 import type { PrismaClient, ThermalDocumentLayout } from "@/generated/prisma/client"
-import { loadReceiptPrintSettings } from "@/lib/receipt-settings/load-settings"
-import {
-  buildThermalLayoutMap,
-  receiptSettingsToThermalLayout,
-} from "./layout"
+import { buildThermalLayoutMap } from "./layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "./layout-defaults"
 import type { ThermalDocumentLayoutView, ThermalDocumentType, ThermalLayoutMap } from "./types"
 
-type LayoutDb = Pick<PrismaClient, "thermalDocumentLayout" | "receiptPrintSettings">
+type LayoutDb = Pick<PrismaClient, "thermalDocumentLayout">
 
 function toThermalDocumentLayoutView(row: ThermalDocumentLayout): ThermalDocumentLayoutView {
   return {
@@ -25,21 +21,13 @@ function toThermalDocumentLayoutView(row: ThermalDocumentLayout): ThermalDocumen
   }
 }
 
-/** Load all thermal layouts; RECEIPT falls back to ReceiptPrintSettings when row missing. */
 export async function loadThermalLayouts(db: LayoutDb): Promise<ThermalLayoutMap> {
-  const [rows, receiptSettings] = await Promise.all([
-    db.thermalDocumentLayout.findMany(),
-    loadReceiptPrintSettings(db),
-  ])
+  const rows = await db.thermalDocumentLayout.findMany()
 
   const byType: Partial<Record<ThermalDocumentType, ThermalDocumentLayoutView>> = {}
   for (const row of rows) {
     const view = toThermalDocumentLayoutView(row)
     byType[view.documentType] = view
-  }
-
-  if (!byType.RECEIPT) {
-    byType.RECEIPT = receiptSettingsToThermalLayout(receiptSettings)
   }
 
   for (const type of Object.keys(DEFAULT_THERMAL_LAYOUTS) as ThermalDocumentType[]) {

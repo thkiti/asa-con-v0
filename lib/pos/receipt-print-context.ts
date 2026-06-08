@@ -1,8 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client"
-import { COMPANY_TAX_BRANCH_CODE } from "@/lib/receipt-settings/constants"
-import { loadCompanyTaxId } from "@/lib/receipt-settings/resolve-company-tax"
-import { loadReceiptPrintSettings } from "@/lib/receipt-settings/load-settings"
-import type { ReceiptPrintSettingsView } from "@/lib/receipt-settings/types"
+import { COMPANY_TAX_BRANCH_CODE, loadCompanyTaxId } from "@/lib/thermal/company-tax"
 import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { loadThermalLayouts } from "@/lib/thermal/load-layouts"
 import type { ResolvedThermalLayout, ThermalLayoutMap } from "@/lib/thermal/types"
@@ -25,14 +22,13 @@ export type ReceiptPrintContext = {
   paymentMethod: string
   cashAmount: string
   change: string
-  settings: ReceiptPrintSettingsView
-  thermalLayouts?: ThermalLayoutMap
-  thermalLayout?: ResolvedThermalLayout
+  thermalLayouts: ThermalLayoutMap
+  thermalLayout: ResolvedThermalLayout
 }
 
 export type ReceiptPrintDb = Pick<
   PrismaClient,
-  "sale" | "staff" | "branch" | "receiptPrintSettings" | "thermalDocumentLayout"
+  "sale" | "staff" | "branch" | "thermalDocumentLayout"
 >
 
 export async function loadReceiptPrintContext(
@@ -40,8 +36,7 @@ export async function loadReceiptPrintContext(
   input: { saleId: string; branchId: string }
 ): Promise<ReceiptPrintContext> {
   const saleView = await loadSaleReceiptForPrint(db, input)
-  const [settings, companyTaxId, branchContact, thermalLayouts] = await Promise.all([
-    loadReceiptPrintSettings(db),
+  const [companyTaxId, branchContact, thermalLayouts] = await Promise.all([
     loadCompanyTaxId(db),
     db.branch.findUnique({
       where: { id: input.branchId },
@@ -54,6 +49,7 @@ export async function loadReceiptPrintContext(
   const machineRaw = branchContact?.taxId?.trim() || null
   const machineTaxId =
     branchCode === COMPANY_TAX_BRANCH_CODE ? null : machineRaw
+  const thermalLayout = resolveThermalLayout("RECEIPT", thermalLayouts)
 
   return {
     saleId: saleView.saleId,
@@ -63,7 +59,7 @@ export async function loadReceiptPrintContext(
     branchName: saleView.branchName,
     branchAddress: branchContact?.address?.trim() || null,
     branchPhone: branchContact?.phone?.trim() || null,
-    companyDisplayName: settings.companyDisplayName,
+    companyDisplayName: thermalLayout.headerLine1,
     companyTaxId,
     machineTaxId,
     cashierDisplay: saleView.cashierDisplay,
@@ -72,8 +68,7 @@ export async function loadReceiptPrintContext(
     paymentMethod: saleView.paymentMethod,
     cashAmount: saleView.cashAmount,
     change: saleView.change,
-    settings,
     thermalLayouts,
-    thermalLayout: resolveThermalLayout("RECEIPT", thermalLayouts),
+    thermalLayout,
   }
 }

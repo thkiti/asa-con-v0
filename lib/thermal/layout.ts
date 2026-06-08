@@ -1,4 +1,3 @@
-import type { ReceiptPrintSettingsView } from "@/lib/receipt-settings/types"
 import { DEFAULT_THERMAL_LAYOUTS } from "./layout-defaults"
 import type {
   ResolvedThermalLayout,
@@ -59,39 +58,6 @@ export function resolveThermalLayout(
     return mergeRefundLayoutFromReceipt(layouts.RECEIPT, layouts.REFUND)
   }
   return layouts[type]
-}
-
-export function receiptSettingsToThermalLayout(
-  settings: ReceiptPrintSettingsView
-): ThermalDocumentLayoutView {
-  return {
-    documentType: "RECEIPT",
-    headerLine1: settings.companyDisplayName,
-    headerLine2: null,
-    headerLine3: null,
-    footerLine1: settings.footerLine1,
-    footerLine2: settings.footerLine2,
-    footerLine3: settings.footerLine3,
-    footerLine4: settings.footerLine4,
-    footerLine5: settings.footerLine5,
-    showAbbreviatedTaxTitle: settings.showAbbreviatedTaxTitle,
-    showVatIncludedMessage: settings.showVatIncludedMessage,
-  }
-}
-
-export function thermalReceiptLayoutToSettings(
-  layout: ThermalDocumentLayoutView
-): ReceiptPrintSettingsView {
-  return {
-    companyDisplayName: layout.headerLine1,
-    footerLine1: layout.footerLine1,
-    footerLine2: layout.footerLine2,
-    footerLine3: layout.footerLine3,
-    footerLine4: layout.footerLine4,
-    footerLine5: layout.footerLine5,
-    showAbbreviatedTaxTitle: layout.showAbbreviatedTaxTitle,
-    showVatIncludedMessage: layout.showVatIncludedMessage,
-  }
 }
 
 export function buildThermalLayoutMap(

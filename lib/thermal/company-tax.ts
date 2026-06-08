@@ -1,5 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client"
-import { COMPANY_TAX_BRANCH_CODE } from "./constants"
+import { BOOTSTRAP_HO_BRANCH_CODE } from "@/lib/import/constants"
+
+/** Branch row whose taxId is the company tax ID on all receipts. */
+export const COMPANY_TAX_BRANCH_CODE = BOOTSTRAP_HO_BRANCH_CODE
 
 type BranchDb = Pick<PrismaClient, "branch">
 

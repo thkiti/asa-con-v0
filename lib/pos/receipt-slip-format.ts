@@ -14,9 +14,8 @@ import {
   truncateThermalText as truncateReceiptText,
   wrapThermalTextLines as wrapReceiptTextLines,
 } from "@/lib/thermal/format"
-import { receiptSettingsToThermalLayout, resolveThermalLayout } from "@/lib/thermal/layout"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
-import type { ThermalLayoutMap } from "@/lib/thermal/types"
 import type { ReceiptPrintContext } from "./receipt-print-context"
 import { formatReceiptMoney } from "./receipt-money"
 export { formatReceiptMoney } from "./receipt-money"
@@ -36,14 +35,6 @@ export {
   repeatReceiptChar,
   formatReceiptDateTime,
   wrapReceiptTextLines,
-}
-
-function receiptLayoutFromContext(receipt: ReceiptPrintContext) {
-  const fromSettings = receiptSettingsToThermalLayout(receipt.settings)
-  return {
-    ...fromSettings,
-    headerLine1: fromSettings.headerLine1 ?? receipt.companyDisplayName,
-  }
 }
 
 export function computeReceiptMaxAmountWidth(receipt: ReceiptPrintContext): number {
@@ -81,14 +72,8 @@ export function wrapReceiptProductName(name: string, width = RECEIPT_COLUMNS): s
 }
 
 export function buildReceiptSlipText(receipt: ReceiptPrintContext): string {
-  if (receipt.thermalLayout) {
-    return buildThermalReceiptSlipText(receipt, receipt.thermalLayout)
-  }
-  const layouts: ThermalLayoutMap =
-    receipt.thermalLayouts ??
-    ({
-      ...DEFAULT_THERMAL_LAYOUTS,
-      RECEIPT: receiptLayoutFromContext(receipt),
-    } as ThermalLayoutMap)
-  return buildThermalReceiptSlipText(receipt, resolveThermalLayout("RECEIPT", layouts))
+  const layout =
+    receipt.thermalLayout ??
+    resolveThermalLayout("RECEIPT", receipt.thermalLayouts ?? DEFAULT_THERMAL_LAYOUTS)
+  return buildThermalReceiptSlipText(receipt, layout)
 }
