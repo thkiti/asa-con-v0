@@ -1,0 +1,122 @@
+[
+  {
+    "id": "cabcb14c-b8e3-46f9-99d3-dc0afa76ddf5",
+    "groupCode": 70,
+    "typeCode": 3,
+    "runningCode": 1,
+    "code": "7003001",
+    "name": "ยกเลิก VINYL INNERSOLE -LADIES",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.167Z",
+    "updatedAt": "2026-06-02T23:46:57.167Z"
+  },
+  {
+    "id": "75839121-770c-4eed-91d9-5dbf1950163d",
+    "groupCode": 70,
+    "typeCode": 3,
+    "runningCode": 2,
+    "code": "7003002",
+    "name": "ยกเลิก VINYL INNERSOLE -MEN",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.236Z",
+    "updatedAt": "2026-06-02T23:46:57.236Z"
+  },
+  {
+    "id": "55ce1b9f-3fa5-4673-af83-4550a52c91d8",
+    "groupCode": 70,
+    "typeCode": 3,
+    "runningCode": 3,
+    "code": "7003003",
+    "name": "LEATHER-INNERSOLE",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.306Z",
+    "updatedAt": "2026-06-02T23:46:57.306Z"
+  },
+  {
+    "id": "50853c14-1b19-40a5-8538-89c570c2facb",
+    "groupCode": 80,
+    "typeCode": 1,
+    "runningCode": 1,
+    "code": "8001001",
+    "name": "แผ่นรองพื้นรองเท้า",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.378Z",
+    "updatedAt": "2026-06-02T23:46:57.378Z"
+  },
+  {
+    "id": "2de41a65-ba47-4206-81a7-8e6bcfba6d99",
+    "groupCode": 80,
+    "typeCode": 1,
+    "runningCode": 2,
+    "code": "8001002",
+    "name": "เชือกรองเท้า",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.447Z",
+    "updatedAt": "2026-06-02T23:46:57.447Z"
+  },
+  {
+    "id": "9262ae57-61ea-452a-b173-bdec7bbb39c1",
+    "groupCode": 80,
+    "typeCode": 1,
+    "runningCode": 3,
+    "code": "8001003",
+    "name": "แผ่นเจลใสรองฝ่าเท้าด้านหน้า",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.516Z",
+    "updatedAt": "2026-06-02T23:46:57.516Z"
+  },
+  {
+    "id": "77406279-5df2-42af-8fc7-f4bfce547181",
+    "groupCode": 80,
+    "typeCode": 1,
+    "runningCode": 4,
+    "code": "8001004",
+    "name": "แผ่นเจลใสรองใต้ส้นเท้า",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.585Z",
+    "updatedAt": "2026-06-02T23:46:57.585Z"
+  },
+  {
+    "id": "16c203e0-12ae-4625-9fd0-fe62eff91fab",
+    "groupCode": 80,
+    "typeCode": 1,
+    "runningCode": 5,
+    "code": "8001005",
+    "name": "แผ่นเจลใสกันรองเท้ากัด",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.654Z",
+    "updatedAt": "2026-06-02T23:46:57.654Z"
+  },
+  {
+    "id": "02e0fd63-5322-4b9b-b706-cbec4309b728",
+    "groupCode": 80,
+    "typeCode": 1,
+    "runningCode": 6,
+    "code": "8001006",
+    "name": "เจลกลมใสป้องกันการเสียดสี",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.723Z",
+    "updatedAt": "2026-06-02T23:46:57.723Z"
+  },
+  {
+    "id": "d1ec05c3-36a4-456d-979a-8fa56f859ac0",
+    "groupCode": 80,
+    "typeCode": 1,
+    "runningCode": 7,
+    "code": "8001007",
+    "name": "ยกเลิก Herbal Insole",
+    "productType": "TRACKED",
+    "deleted": false,
+    "createdAt": "2026-06-02T23:46:57.792Z",
+    "updatedAt": "2026-06-02T23:46:57.792Z"
+  }
+]

@@ -1,0 +1,39 @@
+{
+  "exportedAt": "2026-06-08T06:59:13.285Z",
+  "outDir": "D:\\_projects\\asa-con-v0\\data\\backfill-snapshots\\pre-apply-2026-06-08T06-59-11",
+  "counts": {
+    "productTotal": 1022,
+    "referenceStockTotal": 595,
+    "referenceStockActive": 595,
+    "affectedProductsFound": 10,
+    "affectedReferenceStockFound": 0
+  },
+  "affectedProductCodes": [
+    "0100900",
+    "1100900",
+    "1200900",
+    "2100900",
+    "2200900",
+    "3100900",
+    "4100900",
+    "5100900",
+    "5500900",
+    "6100900",
+    "6500900",
+    "7001900",
+    "7002900",
+    "7003001",
+    "7003002",
+    "7003003",
+    "8001001",
+    "8001002",
+    "8001003",
+    "8001004",
+    "8001005",
+    "8001006",
+    "8001007",
+    "8001008",
+    "8001009",
+    "8001900"
+  ]
+}
