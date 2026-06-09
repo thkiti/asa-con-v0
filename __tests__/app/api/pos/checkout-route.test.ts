@@ -43,7 +43,7 @@ describe("POST /api/pos/checkout", () => {
     mockedCheckout.mockReset()
   })
 
-  it("calls checkout with session branch and CASH", async () => {
+  it("calls checkout with session branch and CASH by default", async () => {
     mockedGetSession.mockResolvedValue(shopSession)
     mockedCheckout.mockResolvedValue({
       sale: {
@@ -80,6 +80,63 @@ describe("POST /api/pos/checkout", () => {
       paidAmount: 0,
       lines: [{ productId: "p1", qty: 1 }],
     })
+  })
+
+  it("forwards paymentMethod and paidAmount from the request body", async () => {
+    mockedGetSession.mockResolvedValue(shopSession)
+    mockedCheckout.mockResolvedValue({
+      sale: {
+        id: "sale-2",
+        branchId: "branch-shop",
+        staffId: "staff-1",
+        total: { toString: () => "100.00" },
+        createdAt: new Date(),
+      },
+      items: [],
+      payment: {
+        id: "pay-2",
+        method: "BANK_TRANSFER",
+        amount: { toString: () => "100.00" },
+        change: { toString: () => "0.00" },
+      },
+      receipt: {
+        id: "rcpt-2",
+        receiptNo: "R-branch-s-20260115-0002",
+        issuedAt: new Date(),
+      },
+      ledger: { applied: 0, skippedZeroQty: 0 },
+    } as never)
+
+    const res = await post({
+      lines: [{ productId: "p1", qty: 1 }],
+      paymentMethod: "BANK_TRANSFER",
+      paidAmount: 100,
+    })
+
+    expect(res.status).toBe(200)
+    expect(mockedCheckout).toHaveBeenCalledWith({
+      branchId: "branch-shop",
+      staffId: "staff-1",
+      paymentMethod: "BANK_TRANSFER",
+      paidAmount: 100,
+      lines: [{ productId: "p1", qty: 1 }],
+    })
+  })
+
+  it("rejects invalid paymentMethod", async () => {
+    mockedGetSession.mockResolvedValue(shopSession)
+
+    const res = await post({
+      lines: [{ productId: "p1", qty: 1 }],
+      paymentMethod: "PROMPTPAY",
+    })
+
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "Invalid payment method",
+      code: "INVALID_PAYMENT_METHOD",
+    })
+    expect(mockedCheckout).not.toHaveBeenCalled()
   })
 
   it("returns 401 when unauthenticated", async () => {

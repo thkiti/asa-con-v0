@@ -1,6 +1,7 @@
 import { SaleStatus, type Prisma } from "@/generated/prisma/client"
 import { getRefundPreview } from "@/lib/pos/refund"
 import { RefundError } from "@/lib/pos/refund-errors"
+import { resolveReceiptEvidenceStatus } from "@/lib/pos/payment-evidence"
 import { getSalesDashboardMetrics } from "@/lib/pos/sales-dashboard-metrics"
 import {
   bangkokDayRange,
@@ -153,8 +154,31 @@ async function loadBranchDaySales(
       status: SaleStatus.COMPLETED,
       createdAt: { gte: start, lte: end },
     },
-    include: { receipt: true },
+    include: {
+      receipt: true,
+      payment: { include: { paymentEvidence: true } },
+    },
     orderBy: { createdAt: "asc" },
+  })
+}
+
+function mapReceiptEvidenceStatus(
+  sale: {
+    payment: {
+      method: string
+      paymentEvidence: { status: string } | null
+    } | null
+  }
+): "PENDING" | "UPLOADED" | "MISSING" | null {
+  const method = sale.payment?.method
+  if (!method) return null
+  return resolveReceiptEvidenceStatus({
+    paymentMethod: method,
+    evidenceStatus: sale.payment?.paymentEvidence?.status as
+      | "PENDING"
+      | "UPLOADED"
+      | "MISSING"
+      | undefined,
   })
 }
 
@@ -192,7 +216,10 @@ export async function getSalesDashboardDayDetail(
 
     const sale = await db.sale.findFirst({
       where: { id: saleId, branchId, status: SaleStatus.COMPLETED },
-      include: { receipt: true },
+      include: {
+        receipt: true,
+        payment: { include: { paymentEvidence: true } },
+      },
     })
     if (!sale?.receipt) {
       throw new SalesDashboardError("Sale not found", "SALE_NOT_FOUND", 404)
@@ -224,6 +251,7 @@ export async function getSalesDashboardDayDetail(
           printUrl: `/shop/refund-receipt/${encodeURIComponent(r.id)}?branchId=${encodeURIComponent(branchId)}`,
         })),
         salePrintUrl,
+        evidenceStatus: mapReceiptEvidenceStatus(sale),
       },
     }
   }
@@ -248,6 +276,7 @@ export async function getSalesDashboardDayDetail(
           receiptNo: s.receipt!.receiptNo,
           time: bangkokTimeLabel(s.createdAt),
           total: toDec(s.total).toFixed(2),
+          evidenceStatus: mapReceiptEvidenceStatus(s),
         })),
     }
   }

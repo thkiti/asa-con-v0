@@ -1,6 +1,7 @@
 import { formatReceiptMoney } from "@/lib/pos/receipt-money"
 import { calculateReceiptVat7FromInclusive } from "@/lib/pos/receipt-vat-display"
 import type { ReceiptPrintContext } from "@/lib/pos/receipt-print-context"
+import { posReceiptSlipPaymentLabel } from "@/lib/pos-ui/pos-payment-methods"
 import type { ResolvedThermalLayout } from "./types"
 import {
   THERMAL_COLUMNS,
@@ -106,7 +107,14 @@ export function buildReceiptSlipText(
       amountWidth
     )
   )
-  out.push(formatThermalAmountLine("CASH", formatReceiptMoney(receipt.cashAmount), w, amountWidth))
+  out.push(
+    formatThermalAmountLine(
+      posReceiptSlipPaymentLabel(receipt.paymentMethod),
+      formatReceiptMoney(receipt.cashAmount),
+      w,
+      amountWidth
+    )
+  )
   out.push(
     formatThermalAmountLine("CHANGE", formatReceiptMoney(receipt.change), w, amountWidth)
   )

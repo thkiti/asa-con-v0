@@ -7,6 +7,7 @@ import { checkout } from "@/lib/pos/checkout"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import type { CheckoutCartLine } from "@/lib/pos/checkout-types"
 import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { isPosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
 
 function parseCheckoutLines(raw: unknown): CheckoutCartLine[] {
   if (!Array.isArray(raw)) return []
@@ -18,11 +19,31 @@ function parseCheckoutLines(raw: unknown): CheckoutCartLine[] {
     .filter((line) => line.productId.length > 0)
 }
 
+function parsePaymentMethod(raw: unknown): PaymentMethod {
+  if (raw == null || raw === "") {
+    return PaymentMethod.CASH
+  }
+  const value = String(raw).trim().toUpperCase()
+  if (!isPosCheckoutPaymentMethod(value)) {
+    throw new CheckoutError("Invalid payment method", "INVALID_PAYMENT_METHOD", 400)
+  }
+  return value as PaymentMethod
+}
+
+function parsePaidAmount(raw: unknown): number | string {
+  if (raw == null || raw === "") {
+    return 0
+  }
+  return raw as number | string
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = requireStockDocumentSession(await getSession())
     const body = (await req.json().catch(() => ({}))) as {
       lines?: unknown
+      paymentMethod?: unknown
+      paidAmount?: unknown
     }
 
     const branchId = session.branchId.trim()
@@ -33,8 +54,8 @@ export async function POST(req: NextRequest) {
     const result = await checkout({
       branchId,
       staffId: session.staffId,
-      paymentMethod: PaymentMethod.CASH,
-      paidAmount: 0,
+      paymentMethod: parsePaymentMethod(body.paymentMethod),
+      paidAmount: parsePaidAmount(body.paidAmount),
       lines: parseCheckoutLines(body.lines),
     })
 

@@ -22,7 +22,9 @@ export const READ_REPORT_PAYMENT_LABEL: Record<ReadReportPaymentKey, string> = {
 export function readReportPaymentBucket(method: PaymentMethod): ReadReportPaymentKey {
   if (method === "CASH") return "CASH"
   if (method === "CARD") return "CREDIT_CARD"
+  if (method === "BANK_TRANSFER") return "TRANSFER"
   if (method === "TRANSFER") return "TRANSFER"
   if (method === "QR") return "QR_CODE"
+  if (method === "OTHER") return "PROMPT_PAY"
   return "QR_CODE"
 }

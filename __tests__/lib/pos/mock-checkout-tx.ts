@@ -38,6 +38,16 @@ type ReceiptRow = {
   issuedAt: Date
 }
 
+type PaymentEvidenceRow = {
+  id: string
+  branchId: string
+  receiptNo: string
+  receiptId: string
+  saleId: string
+  paymentId: string
+  status: string
+}
+
 let seq = 0
 function nextId(prefix: string) {
   seq += 1
@@ -49,6 +59,7 @@ export type CheckoutMockState = MockTxState & {
   saleItems: SaleItemRow[]
   payments: PaymentRow[]
   receipts: ReceiptRow[]
+  paymentEvidences: PaymentEvidenceRow[]
 }
 
 export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
@@ -60,6 +71,7 @@ export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
     saleItems: [],
     payments: [],
     receipts: [],
+    paymentEvidences: [],
   }
 
   const tx = {
@@ -163,6 +175,24 @@ export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
       }) => {
         const row: ReceiptRow = { id: nextId("rcpt"), ...data }
         state.receipts.push(row)
+        return row
+      },
+    },
+    paymentEvidence: {
+      create: async ({
+        data,
+      }: {
+        data: {
+          branchId: string
+          receiptNo: string
+          receiptId: string
+          saleId: string
+          paymentId: string
+          status: string
+        }
+      }) => {
+        const row: PaymentEvidenceRow = { id: nextId("evidence"), ...data }
+        state.paymentEvidences.push(row)
         return row
       },
     },

@@ -2,13 +2,26 @@
 
 import { cartTotal } from "@/lib/pos/cart"
 import type { PosCartLine } from "@/lib/pos/cart"
+import {
+  POS_CHECKOUT_PAYMENT_DEFAULT,
+  POS_CHECKOUT_PAYMENT_OPTIONS,
+  posCheckoutConfirmLabel,
+  posCheckoutReceiptLabel,
+  type PosCheckoutPaymentMethod,
+} from "@/lib/pos-ui/pos-payment-methods"
+import { useState } from "react"
 
 type PosCheckoutOverlayProps = {
   lines: readonly PosCartLine[]
   pending: boolean
   error: string | null
-  success: { saleId: string; receiptNo: string; total: string } | null
-  onConfirmCash: () => void
+  success: {
+    saleId: string
+    receiptNo: string
+    total: string
+    paymentMethod: PosCheckoutPaymentMethod
+  } | null
+  onConfirm: (paymentMethod: PosCheckoutPaymentMethod) => void
   onPrintReceiptAndNewSale: (saleId: string) => void
   onNewSaleWithoutPrint: () => void
   onClose: () => void
@@ -27,12 +40,16 @@ export function PosCheckoutOverlay({
   pending,
   error,
   success,
-  onConfirmCash,
+  onConfirm,
   onPrintReceiptAndNewSale,
   onNewSaleWithoutPrint,
   onClose,
 }: PosCheckoutOverlayProps) {
   const total = cartTotal(lines)
+  const [paymentMethod, setPaymentMethod] = useState<PosCheckoutPaymentMethod>(
+    POS_CHECKOUT_PAYMENT_DEFAULT
+  )
+  const confirmLabel = posCheckoutConfirmLabel(paymentMethod)
 
   return (
     <div
@@ -58,7 +75,9 @@ export function PosCheckoutOverlay({
 
         {success ? (
           <>
-            <p className="text-sm text-white/90">Receipt (CASH)</p>
+            <p className="text-sm text-white/90">
+              Receipt ({posCheckoutReceiptLabel(success.paymentMethod)})
+            </p>
             <p className="font-mono text-lg font-bold tabular-nums">{success.receiptNo}</p>
             <p className="text-2xl font-bold tabular-nums">{formatMoney(success.total)}</p>
             <div className="mt-2 flex w-full max-w-xs flex-col gap-2">
@@ -81,9 +100,37 @@ export function PosCheckoutOverlay({
         ) : (
           <>
             <p className="text-sm text-white/90">
-              {lines.length} line{lines.length === 1 ? "" : "s"} · CASH only
+              {lines.length} line{lines.length === 1 ? "" : "s"}
             </p>
             <p className="text-3xl font-bold tabular-nums">{formatMoney(total)}</p>
+            <p className="w-full max-w-xs text-left text-xs font-bold text-white/90">
+              Payment method
+            </p>
+            <div
+              className="grid w-full max-w-xs grid-cols-1 gap-2"
+              role="group"
+              aria-label="Payment method"
+            >
+              {POS_CHECKOUT_PAYMENT_OPTIONS.map((option) => {
+                const selected = paymentMethod === option.value
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    disabled={pending}
+                    aria-pressed={selected}
+                    onClick={() => setPaymentMethod(option.value)}
+                    className={`rounded-lg border-2 px-4 py-3 text-sm font-bold shadow disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer ${
+                      selected
+                        ? "border-white bg-white text-orange-700"
+                        : "border-white/70 bg-white/15 text-white hover:bg-white/25"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
             {error ? (
               <p className="max-w-xs text-sm font-medium text-red-100" role="alert">
                 {error}
@@ -91,11 +138,11 @@ export function PosCheckoutOverlay({
             ) : null}
             <button
               type="button"
-              onClick={onConfirmCash}
+              onClick={() => onConfirm(paymentMethod)}
               disabled={pending || lines.length === 0}
               className="mt-2 rounded-lg border-2 border-white bg-white px-8 py-3 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
-              {pending ? "Processing…" : "Pay CASH"}
+              {pending ? "Processing…" : confirmLabel}
             </button>
           </>
         )}

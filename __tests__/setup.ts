@@ -49,6 +49,12 @@ jest.mock("@/generated/prisma/client", () => {
       QR: "QR",
       TRANSFER: "TRANSFER",
       OTHER: "OTHER",
+      BANK_TRANSFER: "BANK_TRANSFER",
+    },
+    PaymentEvidenceStatus: {
+      PENDING: "PENDING",
+      UPLOADED: "UPLOADED",
+      MISSING: "MISSING",
     },
     LedgerSkipReason: {
       CONSUMABLE: "CONSUMABLE",

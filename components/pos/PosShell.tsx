@@ -1,5 +1,6 @@
 "use client"
 
+import type { PosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
 import { PosBarcodeCapture } from "./PosBarcodeCapture"
 import { PosKeypadGrid } from "./PosKeypadGrid"
 import { PosCheckoutOverlay } from "./PosCheckoutOverlay"
@@ -43,9 +44,14 @@ type PosShellProps = {
   checkoutOpen: boolean
   checkoutPending: boolean
   checkoutError: string | null
-  checkoutSuccess: { saleId: string; receiptNo: string; total: string } | null
+  checkoutSuccess: {
+    saleId: string
+    receiptNo: string
+    total: string
+    paymentMethod: PosCheckoutPaymentMethod
+  } | null
   onCheckoutClose: () => void
-  onCheckoutConfirm: () => void
+  onCheckoutConfirm: (paymentMethod: PosCheckoutPaymentMethod) => void
   onCheckoutPrintReceiptAndNewSale: (saleId: string) => void
   onCheckoutNewSaleWithoutPrint: () => void
   refundOpen: boolean
@@ -241,7 +247,7 @@ export function PosShell({
               pending={checkoutPending}
               error={checkoutError}
               success={checkoutSuccess}
-              onConfirmCash={onCheckoutConfirm}
+              onConfirm={onCheckoutConfirm}
               onPrintReceiptAndNewSale={onCheckoutPrintReceiptAndNewSale}
               onNewSaleWithoutPrint={onCheckoutNewSaleWithoutPrint}
               onClose={onCheckoutClose}

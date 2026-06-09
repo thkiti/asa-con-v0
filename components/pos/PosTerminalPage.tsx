@@ -12,6 +12,7 @@ import {
   type PosCartLine,
 } from "@/lib/pos/cart"
 import { fetchPosCheckout } from "@/lib/pos-ui/pos-checkout-client"
+import type { PosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
 import {
   getPosActionKind,
   isPosPlaceholderId,
@@ -67,6 +68,7 @@ export function PosTerminalPage() {
     saleId: string
     receiptNo: string
     total: string
+    paymentMethod: PosCheckoutPaymentMethod
   } | null>(null)
   const [lastReceiptNo, setLastReceiptNo] = useState<string | null>(null)
   const [previewReceiptNo, setPreviewReceiptNo] = useState<string | null>(null)
@@ -164,30 +166,35 @@ export function PosTerminalPage() {
     setCheckoutOpen(true)
   }, [cartLines.length])
 
-  const confirmCheckout = useCallback(async () => {
-    if (checkoutPending || cartLines.length === 0) return
+  const confirmCheckout = useCallback(
+    async (paymentMethod: PosCheckoutPaymentMethod) => {
+      if (checkoutPending || cartLines.length === 0) return
 
-    setCheckoutPending(true)
-    setCheckoutError(null)
-    try {
-      const result = await fetchPosCheckout(
-        cartLines.map((line) => ({ productId: line.productId, qty: line.qty }))
-      )
-      if (!result.ok) {
-        setCheckoutError(result.error)
-        return
+      setCheckoutPending(true)
+      setCheckoutError(null)
+      try {
+        const result = await fetchPosCheckout(
+          cartLines.map((line) => ({ productId: line.productId, qty: line.qty })),
+          { paymentMethod }
+        )
+        if (!result.ok) {
+          setCheckoutError(result.error)
+          return
+        }
+        const receiptNo = result.result.receipt.receiptNo
+        setCheckoutSuccess({
+          saleId: result.result.sale.id,
+          receiptNo,
+          total: result.result.sale.total.toString(),
+          paymentMethod: result.result.payment.method as PosCheckoutPaymentMethod,
+        })
+        setLastReceiptNo(receiptNo)
+      } finally {
+        setCheckoutPending(false)
       }
-      const receiptNo = result.result.receipt.receiptNo
-      setCheckoutSuccess({
-        saleId: result.result.sale.id,
-        receiptNo,
-        total: result.result.sale.total.toString(),
-      })
-      setLastReceiptNo(receiptNo)
-    } finally {
-      setCheckoutPending(false)
-    }
-  }, [cartLines, checkoutPending])
+    },
+    [cartLines, checkoutPending]
+  )
 
   const resetPosForNextSale = useCallback(() => {
     setCartLines(clearCart())
@@ -452,8 +459,8 @@ export function PosTerminalPage() {
           }
         }
       }}
-      onCheckoutConfirm={() => {
-        void confirmCheckout()
+      onCheckoutConfirm={(paymentMethod) => {
+        void confirmCheckout(paymentMethod)
       }}
       onCheckoutPrintReceiptAndNewSale={printReceiptAndNewSale}
       onCheckoutNewSaleWithoutPrint={newSaleWithoutPrint}

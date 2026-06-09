@@ -1,8 +1,15 @@
 import type { CheckoutResult } from "@/lib/pos/checkout-types"
+import type { PosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
 
 export type PosCheckoutLinePayload = {
   productId: string
   qty: number
+}
+
+export type PosCheckoutFetchOptions = {
+  paymentMethod?: PosCheckoutPaymentMethod
+  paidAmount?: number | string
+  fetchFn?: typeof fetch
 }
 
 export type PosCheckoutResult =
@@ -11,10 +18,29 @@ export type PosCheckoutResult =
 
 export async function fetchPosCheckout(
   lines: readonly PosCheckoutLinePayload[],
-  fetchFn: typeof fetch = fetch
+  options: PosCheckoutFetchOptions = {}
 ): Promise<PosCheckoutResult> {
   if (lines.length === 0) {
     return { ok: false, status: 400, error: "Cart is empty", code: "EMPTY_CART" }
+  }
+
+  const fetchFn = options.fetchFn ?? fetch
+  const body: {
+    lines: PosCheckoutLinePayload[]
+    paymentMethod?: PosCheckoutPaymentMethod
+    paidAmount?: number | string
+  } = {
+    lines: lines.map((line) => ({
+      productId: line.productId,
+      qty: line.qty,
+    })),
+  }
+
+  if (options.paymentMethod != null) {
+    body.paymentMethod = options.paymentMethod
+  }
+  if (options.paidAmount != null) {
+    body.paidAmount = options.paidAmount
   }
 
   const res = await fetchFn("/api/pos/checkout", {
@@ -22,12 +48,7 @@ export async function fetchPosCheckout(
     credentials: "include",
     cache: "no-store",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      lines: lines.map((line) => ({
-        productId: line.productId,
-        qty: line.qty,
-      })),
-    }),
+    body: JSON.stringify(body),
   })
 
   const payload = (await res.json().catch(() => ({}))) as CheckoutResult & {

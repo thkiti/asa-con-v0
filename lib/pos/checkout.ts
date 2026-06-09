@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client"
+import { createPendingPaymentEvidenceRow, requiresPaymentEvidence } from "./payment-evidence"
 import { isFinancePostingEnabled } from "@/lib/finance/config"
 import { postSaleVoucher } from "@/lib/finance/posting"
 import { prisma } from "@/lib/shared/prisma"
@@ -101,6 +102,16 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       receiptNo,
       issuedAt: sale.createdAt,
     })
+
+    if (requiresPaymentEvidence(prepared.paymentMethod)) {
+      await createPendingPaymentEvidenceRow(tx, {
+        branchId: prepared.branchId,
+        receiptNo: receipt.receiptNo,
+        receiptId: receipt.id,
+        saleId: sale.id,
+        paymentId: payment.id,
+      })
+    }
 
     if (isFinancePostingEnabled()) {
       const ledgerRows = await tx.stockTransaction.findMany({

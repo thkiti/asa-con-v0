@@ -59,6 +59,13 @@ enum PaymentMethod {
   QR
   TRANSFER
   OTHER
+  BANK_TRANSFER
+}
+
+enum PaymentEvidenceStatus {
+  PENDING
+  UPLOADED
+  MISSING
 }
 
 enum LedgerSkipReason {
@@ -344,11 +351,12 @@ model Sale {
   status    SaleStatus @default(COMPLETED)
   createdAt DateTime   @default(now())
 
-  branch  Branch     @relation(fields: [branchId], references: [id])
-  items   SaleItem[]
-  payment Payment?
-  receipt Receipt?
-  refunds Refund[]
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  items           SaleItem[]
+  payment         Payment?
+  receipt         Receipt?
+  refunds         Refund[]
+  paymentEvidence PaymentEvidence?
 }
 
 model SaleItem {
@@ -377,7 +385,8 @@ model Payment {
   change    Decimal       @default(0) @db.Decimal(18, 2)
   createdAt DateTime      @default(now())
 
-  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  sale            Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  paymentEvidence PaymentEvidence?
 }
 
 model Receipt {
@@ -387,10 +396,31 @@ model Receipt {
   receiptNo String
   issuedAt  DateTime @default(now())
 
-  sale              Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  refundsAsOriginal Refund[] @relation("OriginalReceipt")
+  sale              Sale              @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  refundsAsOriginal Refund[]          @relation("OriginalReceipt")
+  paymentEvidence   PaymentEvidence?
 
   @@unique([branchId, receiptNo])
+}
+
+/// Bank-transfer slip evidence — keyed by receiptNo; cloud upload in later phases.
+model PaymentEvidence {
+  id        String                @id @default(uuid())
+  branchId  String
+  receiptNo String
+  receiptId String                @unique
+  saleId    String                @unique
+  paymentId String                @unique
+  status    PaymentEvidenceStatus @default(PENDING)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, receiptNo])
+  @@index([branchId, status])
 }
 
 model Refund {

@@ -37,6 +37,8 @@ export type SalesDashboardReceiptRow = {
   receiptNo: string
   time: string
   total: string
+  /** null for CASH/CARD; PENDING | UPLOADED | MISSING for BANK_TRANSFER */
+  evidenceStatus: "PENDING" | "UPLOADED" | "MISSING" | null
 }
 
 export type SalesDashboardLinkedRefund = {
@@ -58,6 +60,8 @@ export type SalesDashboardReceiptPreview = {
   items: { name: string; qty: number; lineTotal: string }[]
   linkedRefunds: SalesDashboardLinkedRefund[]
   salePrintUrl: string
+  /** null for CASH/CARD; PENDING | UPLOADED | MISSING for BANK_TRANSFER */
+  evidenceStatus: "PENDING" | "UPLOADED" | "MISSING" | null
 }
 
 export type SalesDashboardDayDetail =

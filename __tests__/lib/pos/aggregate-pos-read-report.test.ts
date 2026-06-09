@@ -56,6 +56,44 @@ describe("aggregatePosReadReportFromSales", () => {
     expect(result.paymentLines.find((p) => p.key === "CREDIT_CARD")?.amount).toBe(200)
   })
 
+  it("splits payment methods across READ report buckets including Prompt Pay", () => {
+    const displayCatalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [])
+    const labels = new Map<string, SummaryHeaderLabel>(
+      displayCatalog.map((headerCode) => [
+        headerCode,
+        { headerCode, name: `Group ${headerCode}`, labelStatus: "ok" as const },
+      ])
+    )
+    const product = {
+      id: "p1",
+      name: "Alpha Product",
+      groupCode: 41,
+      typeCode: 0,
+      runningCode: 900,
+      code: "4100900",
+    }
+
+    const result = aggregatePosDailyReadReportFromSales(
+      [
+        { total: 10, payment: { method: PaymentMethod.CASH }, items: [{ productId: "p1", qty: 1, lineTotal: 10 }] },
+        { total: 20, payment: { method: PaymentMethod.CARD }, items: [{ productId: "p1", qty: 1, lineTotal: 20 }] },
+        { total: 30, payment: { method: PaymentMethod.OTHER }, items: [{ productId: "p1", qty: 1, lineTotal: 30 }] },
+        { total: 40, payment: { method: PaymentMethod.QR }, items: [{ productId: "p1", qty: 1, lineTotal: 40 }] },
+        { total: 50, payment: { method: PaymentMethod.TRANSFER }, items: [{ productId: "p1", qty: 1, lineTotal: 50 }] },
+      ],
+      [product],
+      labels,
+      displayCatalog
+    )
+
+    expect(result.paymentLines.find((p) => p.key === "CASH")?.amount).toBe(10)
+    expect(result.paymentLines.find((p) => p.key === "CREDIT_CARD")?.amount).toBe(20)
+    expect(result.paymentLines.find((p) => p.key === "PROMPT_PAY")?.amount).toBe(30)
+    expect(result.paymentLines.find((p) => p.key === "QR_CODE")?.amount).toBe(40)
+    expect(result.paymentLines.find((p) => p.key === "TRANSFER")?.amount).toBe(50)
+    expect(result.grandTotal).toBe(150)
+  })
+
   it("daily READ X/Z uses dynamic display catalog with zero-fill", () => {
     const displayCatalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [])
     const labels = new Map<string, SummaryHeaderLabel>(

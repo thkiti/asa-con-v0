@@ -404,4 +404,27 @@ describe("receipt-slip-format", () => {
     expect(text).not.toContain("Machine ID")
     expect(text).toContain("Only footer")
   })
+
+  it.each([
+    ["CASH", "CASH"],
+    ["CARD", "CARD"],
+    ["BANK_TRANSFER", "BANK TRANSFER"],
+    ["OTHER", "PROMPT PAY"],
+    ["QR", "QR CODE"],
+    ["TRANSFER", "TRANSFER"],
+  ] as const)("prints %s payment line as %s", (paymentMethod, expectedLabel) => {
+    const text = buildReceiptSlipText(
+      sampleContext({
+        paymentMethod,
+        cashAmount: "60.00",
+        change: "0.00",
+      })
+    )
+    const paymentLine = text.split("\n").find((line) => line.trimStart().startsWith(expectedLabel))
+    expect(paymentLine).toBeDefined()
+    expect(paymentLine).toContain("60.00")
+    if (paymentMethod !== "CASH") {
+      expect(text.split("\n").some((line) => line.trimStart().startsWith("CASH "))).toBe(false)
+    }
+  })
 })
