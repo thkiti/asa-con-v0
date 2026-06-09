@@ -42,6 +42,8 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain('href="/finance"')
     expect(html).toContain("Journal")
     expect(html).toContain("Planned")
+    expect(html).toContain("h-[108px]")
+    expect(html).toContain("line-clamp-2")
   })
 
   it("renders administration master links", () => {
@@ -62,13 +64,17 @@ describe("MainMenuSectionView", () => {
     )
     expect(html).toContain("Stock Card")
     expect(html).toContain('aria-disabled="true"')
-    expect(html).toContain('href="/shop/stock-documents"')
+    expect(html).toContain('href="/operations/check-receipt"')
     expect(html).toContain('href="/operations/catalog-image"')
+    expect(html).toContain('href="/shop/stock-documents"')
+    expect(html).toContain("w-[482px]")
+    expect(html).toContain("h-[108px]")
+    expect(html).toContain("max-h-[108px]")
+    expect(html).toContain("line-clamp-2")
     expect(html).not.toContain("Export Image To Cloud")
-    expect(html).toContain("min-h-[5.5rem]")
   })
 
-  it("renders shop section as clickable app cards", () => {
+  it("renders shop section through the shared main menu card grid", () => {
     const section = getMainMenuSectionDetail("HO_ADMIN", "shop")
     expect(section).not.toBeNull()
     const html = renderToStaticMarkup(
@@ -78,6 +84,8 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain("Sales Target Setup")
     expect(html).toContain("Target / Sales")
     expect(html).toContain("Planned")
-    expect(html).toContain("min-h-[5.5rem]")
+    expect(html).toContain("h-[108px]")
+    expect(html).toContain("line-clamp-2")
+    expect(html).not.toContain("min-h-[5.5rem]")
   })
 })

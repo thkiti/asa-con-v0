@@ -14,6 +14,8 @@ import {
 } from "@/lib/pos/cart"
 import { fetchPosCheckout } from "@/lib/pos-ui/pos-checkout-client"
 import { uploadPaymentEvidenceSlipInBackground } from "@/lib/pos-ui/payment-evidence-upload-client"
+import { fetchPendingPaymentEvidence } from "@/lib/pos-ui/payment-evidence-pending-client"
+import type { PendingPaymentEvidenceRow } from "@/lib/pos/pending-payment-evidence-types"
 import type { PosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
 import {
   getPosActionKind,
@@ -47,6 +49,11 @@ import {
   fetchPosThermalLayouts,
 } from "@/lib/pos-ui/pos-thermal-layouts-client"
 import type { ResolvedThermalLayout, ThermalDocumentType } from "@/lib/thermal/types"
+
+const PENDING_EVIDENCE_POLL_MS = 60_000
+const PENDING_EVIDENCE_OVERLAY_POLL_MS = 10_000
+const PENDING_EVIDENCE_QR_POLL_MS = 5_000
+const isJestRuntime = typeof process !== "undefined" && Boolean(process.env.JEST_WORKER_ID)
 
 export function PosTerminalPage() {
   const router = useRouter()
@@ -89,6 +96,35 @@ export function PosTerminalPage() {
   const [thermalLayouts, setThermalLayouts] = useState<
     Record<ThermalDocumentType, ResolvedThermalLayout>
   >(defaultResolvedThermalLayouts())
+  const [pendingEvidenceCount, setPendingEvidenceCount] = useState(0)
+  const [pendingEvidenceReceipts, setPendingEvidenceReceipts] = useState<
+    PendingPaymentEvidenceRow[]
+  >([])
+  const [pendingEvidenceLoading, setPendingEvidenceLoading] = useState(false)
+  const [pendingEvidenceError, setPendingEvidenceError] = useState<string | null>(
+    null
+  )
+  const [evidencePendingOpen, setEvidencePendingOpen] = useState(false)
+  const [evidenceQrModalOpen, setEvidenceQrModalOpen] = useState(false)
+
+  const refreshPendingEvidence = useCallback(async () => {
+    const result = await fetchPendingPaymentEvidence()
+    if (!result.ok) {
+      setPendingEvidenceError(result.error)
+      return
+    }
+    setPendingEvidenceError(null)
+    setPendingEvidenceCount(result.result.count)
+    setPendingEvidenceReceipts(result.result.receipts)
+  }, [])
+
+  const openPendingEvidence = useCallback(async () => {
+    setEvidencePendingOpen(true)
+    setPendingEvidenceLoading(true)
+    setPendingEvidenceError(null)
+    await refreshPendingEvidence()
+    setPendingEvidenceLoading(false)
+  }, [refreshPendingEvidence])
 
   const refreshPreviewReceiptNo = useCallback(async () => {
     const result = await fetchPosReceiptNoPreview()
@@ -122,6 +158,29 @@ export function PosTerminalPage() {
       cancelled = true
     }
   }, [router, refreshPreviewReceiptNo])
+
+  useEffect(() => {
+    if (!session) return
+    void refreshPendingEvidence()
+  }, [session, refreshPendingEvidence])
+
+  useEffect(() => {
+    if (!session || isJestRuntime) return
+    const pollMs = evidenceQrModalOpen
+      ? PENDING_EVIDENCE_QR_POLL_MS
+      : evidencePendingOpen
+        ? PENDING_EVIDENCE_OVERLAY_POLL_MS
+        : PENDING_EVIDENCE_POLL_MS
+    const timer = setInterval(() => {
+      void refreshPendingEvidence()
+    }, pollMs)
+    return () => clearInterval(timer)
+  }, [
+    session,
+    refreshPendingEvidence,
+    evidencePendingOpen,
+    evidenceQrModalOpen,
+  ])
 
   const onLogout = useCallback(async () => {
     setLogoutPending(true)
@@ -210,6 +269,27 @@ export function PosTerminalPage() {
     void refreshPreviewReceiptNo()
   }, [refreshPreviewReceiptNo])
 
+  const completeBankTransferCheckout = useCallback(async () => {
+    const result = await fetchPosCheckout(
+      cartLines.map((line) => ({ productId: line.productId, qty: line.qty })),
+      {
+        paymentMethod: "BANK_TRANSFER",
+        paidAmount: cartTotal(cartLines),
+      }
+    )
+    if (!result.ok) {
+      setCheckoutError(result.error)
+      return null
+    }
+
+    const receiptNo = result.result.receipt.receiptNo
+    setLastReceiptNo(receiptNo)
+    openPosReceiptPrint(result.result.sale.id)
+    resetPosForNextSale()
+    void refreshPendingEvidence()
+    return receiptNo
+  }, [cartLines, refreshPendingEvidence, resetPosForNextSale])
+
   const handleBankTransferCapture = useCallback(
     async (capturedBlob: Blob) => {
       if (checkoutPending || cartLines.length === 0) return
@@ -220,23 +300,7 @@ export function PosTerminalPage() {
       let receiptNoForUpload: string | null = null
 
       try {
-        const result = await fetchPosCheckout(
-          cartLines.map((line) => ({ productId: line.productId, qty: line.qty })),
-          {
-            paymentMethod: "BANK_TRANSFER",
-            paidAmount: cartTotal(cartLines),
-          }
-        )
-        if (!result.ok) {
-          setCheckoutError(result.error)
-          return
-        }
-
-        receiptNoForUpload = result.result.receipt.receiptNo
-        setLastReceiptNo(receiptNoForUpload)
-
-        openPosReceiptPrint(result.result.sale.id)
-        resetPosForNextSale()
+        receiptNoForUpload = await completeBankTransferCheckout()
       } finally {
         setCheckoutPending(false)
       }
@@ -246,10 +310,29 @@ export function PosTerminalPage() {
           file: capturedBlob,
           receiptNo: receiptNoForUpload,
         })
+        if (isJestRuntime) {
+          void refreshPendingEvidence()
+        } else {
+          window.setTimeout(() => {
+            void refreshPendingEvidence()
+          }, 2500)
+        }
       }
     },
-    [cartLines, checkoutPending, resetPosForNextSale]
+    [cartLines.length, checkoutPending, completeBankTransferCheckout, refreshPendingEvidence]
   )
+
+  const handleBankTransferUploadLater = useCallback(async () => {
+    if (checkoutPending || cartLines.length === 0) return
+
+    setCheckoutPending(true)
+    setCheckoutError(null)
+    try {
+      await completeBankTransferCheckout()
+    } finally {
+      setCheckoutPending(false)
+    }
+  }, [cartLines.length, checkoutPending, completeBankTransferCheckout])
 
   const printReceiptAndNewSale = useCallback(
     (saleId: string) => {
@@ -508,6 +591,9 @@ export function PosTerminalPage() {
       onBankTransferCapture={(blob) => {
         void handleBankTransferCapture(blob)
       }}
+      onBankTransferUploadLater={() => {
+        void handleBankTransferUploadLater()
+      }}
       onCheckoutPrintReceiptAndNewSale={printReceiptAndNewSale}
       onCheckoutNewSaleWithoutPrint={newSaleWithoutPrint}
       refundOpen={refundOpen}
@@ -555,6 +641,27 @@ export function PosTerminalPage() {
       keypadDisabled={
         logoutPending || lookupPending || checkoutPending || refundPending || refundLookupPending
       }
+      pendingEvidenceCount={pendingEvidenceCount}
+      onOpenPendingEvidence={() => {
+        void openPendingEvidence()
+      }}
+      evidencePendingOpen={evidencePendingOpen}
+      pendingEvidenceReceipts={pendingEvidenceReceipts}
+      pendingEvidenceLoading={pendingEvidenceLoading}
+      pendingEvidenceError={pendingEvidenceError}
+      onClosePendingEvidence={() => {
+        setEvidencePendingOpen(false)
+        setEvidenceQrModalOpen(false)
+      }}
+      onPendingEvidenceUploadSuccess={() => {
+        void refreshPendingEvidence()
+      }}
+      onPendingEvidenceQrModalOpenChange={(open) => {
+        setEvidenceQrModalOpen(open)
+        if (!open) {
+          void refreshPendingEvidence()
+        }
+      }}
     />
   )
 }

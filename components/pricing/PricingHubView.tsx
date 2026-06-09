@@ -1,8 +1,10 @@
 import Link from "next/link"
 import {
+  mainMenuCardHintClass,
+  mainMenuCardTitleClass,
+} from "@/lib/main-ui/main-menu-layout"
+import {
   themeMenuCard,
-  themeMenuCardHint,
-  themeMenuCardTitle,
   themeMuted,
   themePage,
   themePageTitle,
@@ -49,8 +51,8 @@ export function PricingHubView() {
         {PRICING_ENTRIES.map((entry) =>
           entry.available ? (
             <Link key={entry.title} href={entry.href} className={themeMenuCard}>
-              <span className={themeMenuCardTitle}>{entry.title}</span>
-              <span className={themeMenuCardHint}>{entry.hint}</span>
+              <span className={mainMenuCardTitleClass}>{entry.title}</span>
+              <span className={mainMenuCardHintClass}>{entry.hint}</span>
             </Link>
           ) : (
             <div
@@ -58,11 +60,11 @@ export function PricingHubView() {
               className={`${themeMenuCard} cursor-not-allowed opacity-70`}
               aria-disabled="true"
             >
-              <span className={themeMenuCardTitle}>
+              <span className={mainMenuCardTitleClass}>
                 {entry.title}{" "}
                 <span className="text-xs font-normal text-amber-700">(Planned)</span>
               </span>
-              <span className={themeMenuCardHint}>{entry.hint}</span>
+              <span className={mainMenuCardHintClass}>{entry.hint}</span>
             </div>
           )
         )}

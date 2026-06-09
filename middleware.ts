@@ -10,6 +10,14 @@ import {
 } from "@/lib/permissions"
 import type { Role } from "@/lib/shared"
 
+function nextWithPathname(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-pathname", request.nextUrl.pathname)
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  })
+}
+
 function parseRole(value: string | undefined): Role | null {
   const roles: Role[] = [
     "HO_FINANCE",
@@ -29,7 +37,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/favicon.ico") ||
     isApiBypassPath(pathname)
   ) {
-    return NextResponse.next()
+    return nextWithPathname(request)
   }
 
   const payload = readSessionCookies(request.cookies)
@@ -37,7 +45,7 @@ export function middleware(request: NextRequest) {
   const authenticated = isSessionValid(payload) && role !== null
 
   if (isPublicPath(pathname)) {
-    return NextResponse.next()
+    return nextWithPathname(request)
   }
 
   if (!authenticated) {
@@ -75,7 +83,7 @@ export function middleware(request: NextRequest) {
     )
   }
 
-  return NextResponse.next()
+  return nextWithPathname(request)
 }
 
 export const config = {

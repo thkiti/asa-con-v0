@@ -9,6 +9,10 @@ export const compactHeaderControlClass =
 
 export const compactHeaderFieldClass = `${compactHeaderControlClass} mt-0 ${compactNumericInputClass}`
 
+/** Borderless input inside CompactFieldBox. */
+export const compactEmbeddedInputClass =
+  "min-w-0 flex-1 border-0 bg-transparent px-2 text-sm text-foreground tabular-nums focus:outline-none"
+
 /** Default desktop grid: Branch | Year | Month | Target on one row. */
 export const compactHeaderRowGridClass =
   "grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_4.25rem_3rem_minmax(10rem,14rem)] sm:items-center"

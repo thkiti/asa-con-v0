@@ -13,6 +13,8 @@ import { PosRepairTicketOverlay } from "./PosRepairTicketOverlay"
 import { PosTargetVsSalesOverlay } from "./PosTargetVsSalesOverlay"
 import { PosWorktimeOverlay } from "./PosWorktimeOverlay"
 import { PosReceiptPanel } from "./PosReceiptPanel"
+import { PosEvidencePendingBanner } from "./PosEvidencePendingBanner"
+import { PosEvidencePendingOverlay } from "./PosEvidencePendingOverlay"
 import { PosSessionBanner } from "./PosSessionBanner"
 import {
   isPrintReportHighlighted,
@@ -26,6 +28,7 @@ import type { PosCartLine } from "@/lib/pos/cart"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
 import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
 import { POS_KEYPAD_BUTTONS } from "@/lib/pos-ui/keypad-layout"
+import type { PendingPaymentEvidenceRow } from "@/lib/pos/pending-payment-evidence-types"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 
 type PosShellProps = {
@@ -53,6 +56,7 @@ type PosShellProps = {
   onCheckoutClose: () => void
   onCheckoutConfirm: (paymentMethod: PosCheckoutPaymentMethod) => void
   onBankTransferCapture: (blob: Blob) => void
+  onBankTransferUploadLater: () => void
   onCheckoutPrintReceiptAndNewSale: (saleId: string) => void
   onCheckoutNewSaleWithoutPrint: () => void
   refundOpen: boolean
@@ -92,6 +96,15 @@ type PosShellProps = {
     ResolvedThermalLayout
   >
   keypadDisabled?: boolean
+  pendingEvidenceCount?: number
+  onOpenPendingEvidence?: () => void
+  evidencePendingOpen?: boolean
+  pendingEvidenceReceipts?: PendingPaymentEvidenceRow[]
+  pendingEvidenceLoading?: boolean
+  pendingEvidenceError?: string | null
+  onClosePendingEvidence?: () => void
+  onPendingEvidenceUploadSuccess?: () => void
+  onPendingEvidenceQrModalOpenChange?: (open: boolean) => void
 }
 
 export function PosShell({
@@ -114,6 +127,7 @@ export function PosShell({
   onCheckoutClose,
   onCheckoutConfirm,
   onBankTransferCapture,
+  onBankTransferUploadLater,
   onCheckoutPrintReceiptAndNewSale,
   onCheckoutNewSaleWithoutPrint,
   refundOpen,
@@ -150,6 +164,15 @@ export function PosShell({
   onCloseRepairTicket,
   thermalLayouts,
   keypadDisabled = false,
+  pendingEvidenceCount = 0,
+  onOpenPendingEvidence,
+  evidencePendingOpen = false,
+  pendingEvidenceReceipts = [],
+  pendingEvidenceLoading = false,
+  pendingEvidenceError = null,
+  onClosePendingEvidence,
+  onPendingEvidenceUploadSuccess,
+  onPendingEvidenceQrModalOpenChange,
 }: PosShellProps) {
   const keypadSideMuted =
     collectorOpen || readStaffGate !== null || repairTicketOpen
@@ -159,6 +182,7 @@ export function PosShell({
     !!placeholderOverlay ||
     targetVsSalesOpen ||
     worktimeOpen ||
+    evidencePendingOpen ||
     checkoutOpen ||
     refundOpen ||
     keypadSideMuted ||
@@ -200,9 +224,26 @@ export function PosShell({
           branchName={session.branchName}
         />
       ) : null}
+      {evidencePendingOpen ? (
+        <PosEvidencePendingOverlay
+          receipts={pendingEvidenceReceipts}
+          loading={pendingEvidenceLoading}
+          error={pendingEvidenceError}
+          branchCode={session.branchCode}
+          branchName={session.branchName}
+          onClose={() => onClosePendingEvidence?.()}
+          onUploadSuccess={() => onPendingEvidenceUploadSuccess?.()}
+          onQrModalOpenChange={onPendingEvidenceQrModalOpenChange}
+        />
+      ) : null}
       <div className="flex min-h-0 flex-1 flex-col p-4">
         <div className="mx-auto flex h-full w-full min-h-0 max-w-[1200px] flex-col gap-3">
           <PosSessionBanner session={session} />
+
+          <PosEvidencePendingBanner
+            count={pendingEvidenceCount}
+            onOpen={() => onOpenPendingEvidence?.()}
+          />
 
           <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-zinc-500 bg-gradient-to-b from-zinc-100 to-zinc-300 p-3 shadow-sm">
             <div className="flex items-center justify-center py-1">
@@ -251,6 +292,7 @@ export function PosShell({
               success={checkoutSuccess}
               onConfirm={onCheckoutConfirm}
               onBankTransferCapture={onBankTransferCapture}
+              onBankTransferUploadLater={onBankTransferUploadLater}
               onPrintReceiptAndNewSale={onCheckoutPrintReceiptAndNewSale}
               onNewSaleWithoutPrint={onCheckoutNewSaleWithoutPrint}
               onClose={onCheckoutClose}

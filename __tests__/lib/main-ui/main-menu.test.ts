@@ -89,6 +89,19 @@ describe("getMainMenuSectionDetail", () => {
     )
   })
 
+  it("includes Check Receipt under operations for HO roles", () => {
+    expect(findItem("HO_ADMIN", "check-receipt")?.href).toBe(
+      "/operations/check-receipt"
+    )
+    expect(findItem("HO_FINANCE", "check-receipt")?.href).toBe(
+      "/operations/check-receipt"
+    )
+    expect(findItem("HO_OPERATIONS", "check-receipt")?.href).toBe(
+      "/operations/check-receipt"
+    )
+    expect(findItem("SH_STAFF", "check-receipt")).toBeUndefined()
+  })
+
   it("returns null for SH_STAFF on any section", () => {
     expect(getMainMenuSectionDetail("SH_STAFF", "operations")).toBeNull()
     expect(getMainMenuSectionDetail("SH_STAFF", "shop")).toBeNull()

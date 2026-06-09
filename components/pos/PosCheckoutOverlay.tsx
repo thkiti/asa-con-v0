@@ -8,6 +8,7 @@ import {
   stopMediaStream,
 } from "@/lib/pos-ui/capture-video-frame"
 import {
+  POS_BANK_TRANSFER_UPLOAD_LATER_LABEL,
   POS_CHECKOUT_PAYMENT_DEFAULT,
   POS_CHECKOUT_PAYMENT_OPTIONS,
   posCheckoutConfirmLabel,
@@ -28,6 +29,7 @@ type PosCheckoutOverlayProps = {
   } | null
   onConfirm: (paymentMethod: PosCheckoutPaymentMethod) => void
   onBankTransferCapture: (blob: Blob) => void
+  onBankTransferUploadLater: () => void
   onPrintReceiptAndNewSale: (saleId: string) => void
   onNewSaleWithoutPrint: () => void
   onClose: () => void
@@ -50,6 +52,7 @@ export function PosCheckoutOverlay({
   success,
   onConfirm,
   onBankTransferCapture,
+  onBankTransferUploadLater,
   onPrintReceiptAndNewSale,
   onNewSaleWithoutPrint,
   onClose,
@@ -104,6 +107,7 @@ export function PosCheckoutOverlay({
 
   const confirmLabel = posCheckoutConfirmLabel(paymentMethod)
   const displayError = view === "bank_capture" ? captureError ?? error : error
+  const canUploadLater = view === "bank_capture" && Boolean(captureError)
 
   function handleSelectMethod(method: PosCheckoutPaymentMethod) {
     if (pending) return
@@ -125,6 +129,11 @@ export function PosCheckoutOverlay({
       return
     }
     onBankTransferCapture(blob)
+  }
+
+  function handleUploadLater() {
+    if (pending) return
+    onBankTransferUploadLater()
   }
 
   return (
@@ -194,11 +203,15 @@ export function PosCheckoutOverlay({
             <div className="flex w-full max-w-md flex-col gap-2">
               <button
                 type="button"
-                onClick={() => void handleCaptureAndPrint()}
+                onClick={() => void (canUploadLater ? handleUploadLater() : handleCaptureAndPrint())}
                 disabled={pending || lines.length === 0}
                 className="rounded-lg border-2 border-white bg-white px-8 py-3 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               >
-                {pending ? "Processing…" : "Capture & Print"}
+                {pending
+                  ? "Processing…"
+                  : canUploadLater
+                    ? POS_BANK_TRANSFER_UPLOAD_LATER_LABEL
+                    : "Capture & Print"}
               </button>
               <button
                 type="button"

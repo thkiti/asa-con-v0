@@ -36,14 +36,22 @@ describe("GET /api/shop/sales-targets/branches", () => {
     jest.clearAllMocks()
   })
 
-  it("returns branches for HO_ADMIN", async () => {
+  it("returns branches for HO_ADMIN with real shops before smoke/test shops", async () => {
     mockedGetSession.mockResolvedValue(hoAdminSession)
-    mockedList.mockResolvedValue([{ id: "sh1", code: "SH001", name: "Shop" }])
+    mockedList.mockResolvedValue([
+      { id: "p1c", code: "P1C01", name: "P1C Smoke" },
+      { id: "sh1", code: "SH001", name: "Shop" },
+      { id: "smoke", code: "SMOKE01", name: "Smoke Test" },
+    ])
 
     const res = await GET()
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.branches).toHaveLength(1)
+    expect(body.branches.map((b: { code: string }) => b.code)).toEqual([
+      "SH001",
+      "P1C01",
+      "SMOKE01",
+    ])
   })
 
   it("returns 403 for SH_STAFF", async () => {

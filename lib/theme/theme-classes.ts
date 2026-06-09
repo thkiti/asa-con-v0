@@ -22,10 +22,6 @@ export const themeLinkMuted =
 export const themeMenuCard =
   "block rounded border border-[var(--btn-secondary-border)] bg-card p-3 hover:bg-[var(--btn-secondary-hover)]"
 
-export const themeMenuCardTitle = "text-sm font-semibold text-card-foreground"
-
-export const themeMenuCardHint = "mt-1 block text-xs text-muted-foreground"
-
 export const themeMenuSummary =
   "rounded border border-border bg-[var(--btn-secondary-hover)] p-3 text-sm text-card-foreground"
 

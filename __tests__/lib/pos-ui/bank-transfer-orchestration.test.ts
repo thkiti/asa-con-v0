@@ -26,6 +26,7 @@ async function runBankTransferFlow(input: {
   lines: { productId: string; qty: number; unitPrice: string }[]
   blob: Blob
   reset: () => void
+  refreshPending?: () => void
 }) {
   let receiptNoForUpload: string | null = null
   const result = await fetchPosCheckout(
@@ -40,6 +41,7 @@ async function runBankTransferFlow(input: {
   receiptNoForUpload = result.result.receipt.receiptNo
   openPosReceiptPrint(result.result.sale.id)
   input.reset()
+  input.refreshPending?.()
 
   if (receiptNoForUpload) {
     uploadPaymentEvidenceSlipInBackground({
@@ -48,6 +50,27 @@ async function runBankTransferFlow(input: {
     })
   }
   return { ok: true as const, receiptNo: receiptNoForUpload }
+}
+
+/** Mirrors PosTerminalPage upload-later path when capture/camera fails. */
+async function runBankTransferUploadLaterFlow(input: {
+  lines: { productId: string; qty: number; unitPrice: string }[]
+  reset: () => void
+  refreshPending: () => void
+}) {
+  const result = await fetchPosCheckout(
+    input.lines.map((line) => ({ productId: line.productId, qty: line.qty })),
+    {
+      paymentMethod: "BANK_TRANSFER",
+      paidAmount: cartTotal(input.lines as never),
+    }
+  )
+  if (!result.ok) return { ok: false as const }
+
+  openPosReceiptPrint(result.result.sale.id)
+  input.reset()
+  input.refreshPending()
+  return { ok: true as const, receiptNo: result.result.receipt.receiptNo }
 }
 
 describe("bank transfer orchestration order", () => {
@@ -92,5 +115,37 @@ describe("bank transfer orchestration order", () => {
     expect(mockedCheckout).toHaveBeenCalledTimes(1)
     expect(mockedPrint).toHaveBeenCalledTimes(1)
     expect(mockedBackgroundUpload).toHaveBeenCalledTimes(1)
+  })
+
+  it("upload-later runs checkout and print without background upload", async () => {
+    const order: string[] = []
+    mockedPrint.mockImplementation(() => {
+      order.push("print")
+    })
+
+    const lines = [
+      {
+        productId: "p1",
+        qty: 1,
+        unitPrice: "100.00",
+        code: "0101001",
+        name: "Widget",
+        priceSource: "SELLING_PRICE" as const,
+      },
+    ]
+
+    await runBankTransferUploadLaterFlow({
+      lines,
+      reset: () => order.push("reset"),
+      refreshPending: () => order.push("refresh-pending"),
+    })
+
+    expect(order).toEqual(["print", "reset", "refresh-pending"])
+    expect(mockedCheckout).toHaveBeenCalledWith(
+      [{ productId: "p1", qty: 1 }],
+      expect.objectContaining({ paymentMethod: "BANK_TRANSFER" })
+    )
+    expect(mockedPrint).toHaveBeenCalledTimes(1)
+    expect(mockedBackgroundUpload).not.toHaveBeenCalled()
   })
 })

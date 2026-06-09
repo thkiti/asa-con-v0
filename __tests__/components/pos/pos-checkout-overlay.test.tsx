@@ -17,9 +17,16 @@ jest.mock("@/lib/pos-ui/capture-video-frame", () => ({
   stopMediaStream: jest.fn(),
 }))
 
-import { captureVideoFrame } from "@/lib/pos-ui/capture-video-frame"
+import {
+  captureVideoFrame,
+  startCheckoutCameraStream,
+} from "@/lib/pos-ui/capture-video-frame"
+import { POS_BANK_TRANSFER_UPLOAD_LATER_LABEL } from "@/lib/pos-ui/pos-payment-methods"
 
 const mockedCapture = captureVideoFrame as jest.MockedFunction<typeof captureVideoFrame>
+const mockedStartCamera = startCheckoutCameraStream as jest.MockedFunction<
+  typeof startCheckoutCameraStream
+>
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -47,6 +54,7 @@ function renderOverlay(props: Partial<ComponentProps<typeof PosCheckoutOverlay>>
     success: null,
     onConfirm: () => {},
     onBankTransferCapture: () => {},
+    onBankTransferUploadLater: () => {},
     onPrintReceiptAndNewSale: () => {},
     onNewSaleWithoutPrint: () => {},
     onClose: () => {},
@@ -70,6 +78,8 @@ function renderOverlay(props: Partial<ComponentProps<typeof PosCheckoutOverlay>>
 describe("PosCheckoutOverlay", () => {
   beforeEach(() => {
     mockedCapture.mockReset()
+    mockedStartCamera.mockReset()
+    mockedStartCamera.mockResolvedValue({} as MediaStream)
   })
 
   it("shows three payment method buttons and defaults to CASH", () => {
@@ -134,11 +144,15 @@ describe("PosCheckoutOverlay", () => {
     unmount()
   })
 
-  it("does not call onBankTransferCapture when capture fails", async () => {
+  it("offers upload-later checkout when capture fails", async () => {
     const onBankTransferCapture = jest.fn()
+    const onBankTransferUploadLater = jest.fn()
     mockedCapture.mockResolvedValue(null)
 
-    const { container, unmount } = renderOverlay({ onBankTransferCapture })
+    const { container, unmount } = renderOverlay({
+      onBankTransferCapture,
+      onBankTransferUploadLater,
+    })
 
     const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
       btn.textContent?.includes("Bank Transfer")
@@ -158,6 +172,48 @@ describe("PosCheckoutOverlay", () => {
 
     expect(onBankTransferCapture).not.toHaveBeenCalled()
     expect(container.textContent).toContain("Capture failed")
+    expect(container.textContent).toContain(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+
+    const uploadLaterButton = [...container.querySelectorAll("button")].find((btn) =>
+      btn.textContent?.includes(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+    )
+
+    act(() => {
+      uploadLaterButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+
+    expect(onBankTransferUploadLater).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it("offers upload-later checkout when camera is unavailable", async () => {
+    const onBankTransferUploadLater = jest.fn()
+    mockedStartCamera.mockResolvedValue(null)
+
+    const { container, unmount } = renderOverlay({ onBankTransferUploadLater })
+
+    const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
+      btn.textContent?.includes("Bank Transfer")
+    )
+    act(() => {
+      bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain("Could not open camera")
+    expect(container.textContent).toContain(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+
+    const uploadLaterButton = [...container.querySelectorAll("button")].find((btn) =>
+      btn.textContent?.includes(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+    )
+    act(() => {
+      uploadLaterButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+
+    expect(onBankTransferUploadLater).toHaveBeenCalledTimes(1)
     unmount()
   })
 

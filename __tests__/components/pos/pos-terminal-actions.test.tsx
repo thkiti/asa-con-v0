@@ -30,6 +30,13 @@ jest.mock("next/navigation", () => ({
   }),
 }))
 
+jest.mock("@/lib/pos-ui/payment-evidence-pending-client", () => ({
+  fetchPendingPaymentEvidence: jest.fn(async () => ({
+    ok: true,
+    result: { count: 0, receipts: [] },
+  })),
+}))
+
 jest.mock("@/lib/pos-ui/pos-thermal-layouts-client", () => {
   const { DEFAULT_THERMAL_LAYOUTS } = require("@/lib/thermal/layout-defaults")
   const { resolveThermalLayout } = require("@/lib/thermal/layout")

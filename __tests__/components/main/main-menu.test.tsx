@@ -47,6 +47,8 @@ describe("MainMenuView", () => {
     const html = renderToStaticMarkup(<MainMenuView user={hoAdmin} />)
     expect(html).toContain("Main Menu")
     expect(html).toContain(">Logout<")
+    expect(html).toContain("invisible")
+    expect(html).toContain("Back to Main Menu")
   })
 
   it("renders HO Control Center intro", () => {

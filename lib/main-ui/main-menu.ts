@@ -182,16 +182,22 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
       if (!canAccessMenu(role, "operations")) return []
       return [
         available(
-          "stock-documents",
-          "Stock Documents",
-          "/shop/stock-documents",
-          "Transfers, performance, adjustments"
+          "check-receipt",
+          "Check Receipt",
+          "/operations/check-receipt",
+          "Review receipts and bank-transfer slips by shop and month"
         ),
         available(
           "catalog-image",
           "Catalog Image",
           "/operations/catalog-image",
           "Crop catalog PDFs, match products, upload images"
+        ),
+        available(
+          "stock-documents",
+          "Stock Documents",
+          "/shop/stock-documents",
+          "Transfers, performance, adjustments"
         ),
         planned("stock-card", "Stock Card"),
         planned("stock-movement", "Stock Movement"),

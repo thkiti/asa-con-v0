@@ -154,6 +154,22 @@ describe("middleware unrelated API behavior", () => {
     expect(res.headers.get("location")).toBeNull()
   })
 
+  it("passes /api/payment-evidence/mobile/upload through without redirect", () => {
+    const res = middleware(
+      requestFor("/api/payment-evidence/mobile/upload")
+    )
+    expect(res.status).toBe(200)
+    expect(res.headers.get("location")).toBeNull()
+  })
+
+  it("allows unauthenticated access to mobile upload page", () => {
+    const res = middleware(
+      requestFor("/payment-evidence/mobile/signed.token")
+    )
+    expect(res.status).toBe(200)
+    expect(res.headers.get("location")).toBeNull()
+  })
+
   it("allows HO roles through /api/shop/sales-targets/branches", () => {
     const res = middleware(
       requestFor("/api/shop/sales-targets/branches", {

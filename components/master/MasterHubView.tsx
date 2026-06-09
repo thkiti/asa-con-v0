@@ -1,12 +1,7 @@
 import Link from "next/link"
-import {
-  themeMenuCard,
-  themeMenuCardHint,
-  themeMenuCardTitle,
-  themeMuted,
-  themePage,
-  themePageTitle,
-} from "@/lib/theme/theme-classes"
+import { MainMenuHubPage } from "@/components/main/MainMenuHubPage"
+import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { mainMenuDescriptionLinkClass } from "@/lib/main-ui/main-menu-layout"
 
 const ADMINISTRATION_ENTRIES = [
   {
@@ -36,32 +31,35 @@ const ADMINISTRATION_ENTRIES = [
   },
 ] as const
 
-export function MasterHubView() {
+type MasterHubViewProps = {
+  user: SessionUserApi
+}
+
+export function MasterHubView({ user }: MasterHubViewProps) {
   return (
-    <main className={`mx-auto max-w-5xl p-6 ${themePage}`}>
-      <header className="border-b border-border pb-4">
-        <Link href="/main" className={`text-sm ${themeMuted} underline hover:text-foreground`}>
-          ← Main Menu
-        </Link>
-        <h1 className={`mt-3 ${themePageTitle}`}>ADMINISTRATION</h1>
-        <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>
+    <MainMenuHubPage
+      user={user}
+      title="ADMINISTRATION"
+      backHref="/main"
+      backLabel="← Back to Main Menu"
+      description={
+        <>
           Maintenance for product master, branches, staff, pricing, and POS receipt layout.
           Bulk load from legacy files remains under{" "}
-          <Link href="/system/import" className="underline hover:text-foreground">
+          <Link href="/system/import" className={mainMenuDescriptionLinkClass}>
             System Import
           </Link>
           .
-        </p>
-      </header>
-
-      <nav className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Administration">
-        {ADMINISTRATION_ENTRIES.map((entry) => (
-          <Link key={entry.href} href={entry.href} className={themeMenuCard}>
-            <span className={themeMenuCardTitle}>{entry.title}</span>
-            <span className={themeMenuCardHint}>{entry.hint}</span>
-          </Link>
-        ))}
-      </nav>
-    </main>
+        </>
+      }
+      gridAriaLabel="Administration"
+      items={ADMINISTRATION_ENTRIES.map((entry) => ({
+        key: entry.href,
+        label: entry.title,
+        hint: entry.hint,
+        href: entry.href,
+        status: "available" as const,
+      }))}
+    />
   )
 }

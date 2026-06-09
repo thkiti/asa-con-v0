@@ -5,6 +5,18 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PosTerminalPage } from "@/components/pos/PosTerminalPage"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { captureVideoFrame } from "@/lib/pos-ui/capture-video-frame"
+import { fetchPendingPaymentEvidence } from "@/lib/pos-ui/payment-evidence-pending-client"
+import { uploadPaymentEvidenceSlipInBackground } from "@/lib/pos-ui/payment-evidence-upload-client"
+import { POS_BANK_TRANSFER_UPLOAD_LATER_LABEL } from "@/lib/pos-ui/pos-payment-methods"
+
+const mockedCapture = captureVideoFrame as jest.MockedFunction<typeof captureVideoFrame>
+const mockedPendingEvidence = fetchPendingPaymentEvidence as jest.MockedFunction<
+  typeof fetchPendingPaymentEvidence
+>
+const mockedBackgroundUpload = uploadPaymentEvidenceSlipInBackground as jest.MockedFunction<
+  typeof uploadPaymentEvidenceSlipInBackground
+>
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -28,6 +40,23 @@ jest.mock("next/navigation", () => ({
     replace,
     refresh: jest.fn(),
   }),
+}))
+
+jest.mock("@/lib/pos-ui/payment-evidence-pending-client", () => ({
+  fetchPendingPaymentEvidence: jest.fn(async () => ({
+    ok: true,
+    result: { count: 0, receipts: [] },
+  })),
+}))
+
+jest.mock("@/lib/pos-ui/capture-video-frame", () => ({
+  captureVideoFrame: jest.fn(),
+  startCheckoutCameraStream: jest.fn().mockResolvedValue({} as MediaStream),
+  stopMediaStream: jest.fn(),
+}))
+
+jest.mock("@/lib/pos-ui/payment-evidence-upload-client", () => ({
+  uploadPaymentEvidenceSlipInBackground: jest.fn(),
 }))
 
 jest.mock("@/lib/pos-ui/pos-thermal-layouts-client", () => {
@@ -128,6 +157,19 @@ function mockWorktimeResponse() {
 describe("PosTerminalPage", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockedCapture.mockResolvedValue(null)
+    mockedPendingEvidence.mockResolvedValue({
+      ok: true,
+      result: { count: 0, receipts: [] },
+    })
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: jest.fn().mockResolvedValue({
+          getTracks: () => [{ stop: jest.fn() }],
+        }),
+      },
+    })
     global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       if (url === "/api/pos/receipt-no/preview") {
@@ -151,12 +193,14 @@ describe("PosTerminalPage", () => {
         } as Response)
       }
       if (url === "/api/pos/checkout" && init?.method === "POST") {
+        const body = init?.body ? JSON.parse(String(init.body)) : {}
+        const paymentMethod = body.paymentMethod ?? "CASH"
         return Promise.resolve({
           ok: true,
           status: 200,
           json: async () => ({
             sale: {
-              id: "sale-checkout-1",
+              id: paymentMethod === "BANK_TRANSFER" ? "sale-bank-1" : "sale-checkout-1",
               branchId: "b1",
               staffId: "S001",
               total: "25.00",
@@ -165,13 +209,16 @@ describe("PosTerminalPage", () => {
             items: [],
             payment: {
               id: "pay-1",
-              method: "CASH",
+              method: paymentMethod,
               amount: "25.00",
               change: "0.00",
             },
             receipt: {
               id: "r1",
-              receiptNo: "R-test-20260101-0001",
+              receiptNo:
+                paymentMethod === "BANK_TRANSFER"
+                  ? "R-test-bank-0001"
+                  : "R-test-20260101-0001",
               issuedAt: new Date().toISOString(),
             },
             ledger: { applied: 0, skippedZeroQty: 0 },
@@ -429,7 +476,7 @@ describe("PosTerminalPage", () => {
         } as Response)
       }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
-    })
+    }) as typeof fetch
 
     const { container, root } = renderPosTerminal()
     await flushPromises()
@@ -758,6 +805,110 @@ describe("PosTerminalPage", () => {
     expect(openSpy).not.toHaveBeenCalled()
     expect(container.textContent).toContain("Scan a product to add to cart")
     expect(container.textContent).not.toContain("Sale complete")
+
+    openSpy.mockRestore()
+    act(() => root.unmount())
+  })
+
+  it("bank transfer capture failure allows checkout, print, and pending slip warning", async () => {
+    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
+    const fetchMock = global.fetch as jest.Mock
+    let pendingCount = 0
+
+    mockedPendingEvidence.mockImplementation(async () => ({
+      ok: true,
+      result: {
+        count: pendingCount,
+        receipts:
+          pendingCount > 0
+            ? [
+                {
+                  evidenceId: "ev-1",
+                  receiptNo: "R-test-bank-0001",
+                  issuedAt: "2026-06-06T14:32:00.000Z",
+                  total: "25.00",
+                  staff: "103-Somsak Kamnuch",
+                },
+              ]
+            : [],
+      },
+    }))
+
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const input = container.querySelector(
+      'input[aria-label="Barcode scan input"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(input, "1010015")
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
+      )
+    })
+    await flushPromises()
+    await flushPromises()
+
+    const checkoutBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "CHECKOUT"
+    )
+    act(() => {
+      checkoutBtn!.click()
+    })
+    await flushPromises()
+
+    const bankTransferBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Bank Transfer")
+    )
+    act(() => {
+      bankTransferBtn!.click()
+    })
+    await flushPromises()
+
+    const captureBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Capture & Print")
+    )
+    await act(async () => {
+      captureBtn!.click()
+      await Promise.resolve()
+    })
+    await flushPromises()
+
+    expect(container.textContent).toContain(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+
+    pendingCount = 1
+
+    const uploadLaterBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+    )
+    await act(async () => {
+      uploadLaterBtn!.click()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    await flushPromises()
+
+    const checkoutCalls = fetchMock.mock.calls.filter(
+      ([url, init]) =>
+        String(url) === "/api/pos/checkout" && (init as RequestInit | undefined)?.method === "POST"
+    )
+    expect(checkoutCalls.length).toBeGreaterThan(0)
+    const lastCheckoutBody = JSON.parse(String(checkoutCalls.at(-1)?.[1]?.body))
+    expect(lastCheckoutBody.paymentMethod).toBe("BANK_TRANSFER")
+
+    expect(openSpy).toHaveBeenCalledWith("/shop/receipt/sale-bank-1?autoprint=1", "_blank")
+    expect(mockedBackgroundUpload).not.toHaveBeenCalled()
+    expect(container.textContent).toContain("Scan a product to add to cart")
+    expect(container.querySelector('[data-testid="pos-evidence-pending-banner"]')).toBeTruthy()
+    expect(container.textContent).toContain("SLIP PENDING")
 
     openSpy.mockRestore()
     act(() => root.unmount())
