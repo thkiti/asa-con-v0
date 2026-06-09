@@ -14,11 +14,12 @@ describe("shouldLoadShopBranches", () => {
     expect(shouldLoadShopBranches(null)).toBe(false)
   })
 
-  it("returns true only for replacer staff", () => {
+  it("returns true for replacer SH_STAFF and HO_ADMIN", () => {
     expect(
       shouldLoadShopBranches({
         staffId: "002",
         staffName: "Replacer",
+        role: "SH_STAFF",
         branchId: "branch-sh-home",
         branchCode: "SH999",
         branchName: "Buffer",
@@ -29,6 +30,18 @@ describe("shouldLoadShopBranches", () => {
       shouldLoadShopBranches({
         staffId: "001",
         staffName: "Admin",
+        role: "HO_ADMIN",
+        branchId: "branch-ho",
+        branchCode: "HO999",
+        branchName: "Head Office",
+        allowAnyBranchLogin: false,
+      })
+    ).toBe(true)
+    expect(
+      shouldLoadShopBranches({
+        staffId: "003",
+        staffName: "Finance",
+        role: "HO_FINANCE",
         branchId: "branch-ho",
         branchCode: "HO999",
         branchName: "Head Office",
@@ -49,6 +62,7 @@ describe("resolveLoginBranchOptions", () => {
         {
           staffId: "002",
           staffName: "Shop User",
+          role: "SH_STAFF",
           branchId: "branch-sh-home",
           branchCode: "SH999",
           branchName: "Buffer",
@@ -65,6 +79,7 @@ describe("resolveLoginBranchOptions", () => {
         {
           staffId: "002",
           staffName: "Replacer",
+          role: "SH_STAFF",
           branchId: "branch-sh-home",
           branchCode: "SH999",
           branchName: "Buffer",
@@ -75,12 +90,30 @@ describe("resolveLoginBranchOptions", () => {
     ).toEqual(shopBranches)
   })
 
-  it("returns home branch for HO staff not in shop list", () => {
+  it("returns shop branches for HO_ADMIN", () => {
     expect(
       resolveLoginBranchOptions(
         {
           staffId: "001",
           staffName: "Admin",
+          role: "HO_ADMIN",
+          branchId: "branch-ho",
+          branchCode: "HO999",
+          branchName: "Head Office",
+          allowAnyBranchLogin: false,
+        },
+        shopBranches
+      )
+    ).toEqual(shopBranches)
+  })
+
+  it("returns home branch for HO_FINANCE not in shop list", () => {
+    expect(
+      resolveLoginBranchOptions(
+        {
+          staffId: "003",
+          staffName: "Finance",
+          role: "HO_FINANCE",
           branchId: "branch-ho",
           branchCode: "HO999",
           branchName: "Head Office",

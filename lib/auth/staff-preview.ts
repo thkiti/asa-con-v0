@@ -19,6 +19,7 @@ export async function previewStaffByStaffId(
     select: {
       staffId: true,
       name: true,
+      role: true,
       deleted: true,
       allowAnyBranchLogin: true,
       branch: {
@@ -45,6 +46,7 @@ export async function previewStaffByStaffId(
   return {
     staffId: staff.staffId,
     staffName: staff.name,
+    role: staff.role,
     branchId: staff.branch.id,
     branchCode: staff.branch.code,
     branchName: staff.branch.name,

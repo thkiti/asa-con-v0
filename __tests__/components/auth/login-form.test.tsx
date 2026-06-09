@@ -131,17 +131,18 @@ const shopBranches = [
 const staffPreview = {
   staffId: "001",
   staffName: "Admin User",
+  role: "HO_ADMIN" as const,
   branchId: "branch-ho",
   branchCode: "HO999",
   branchName: "Head Office",
   allowAnyBranchLogin: false,
 }
 
-const branchPreview = {
-  branchId: "branch-ho",
-  branchCode: "HO999",
-  branchName: "Head Office",
-  branchType: "HO" as const,
+const shopBranchPreview = {
+  branchId: "branch-sh-1",
+  branchCode: "SH001",
+  branchName: "Shop 1",
+  branchType: "SH" as const,
 }
 
 function wrapLoginForm() {
@@ -173,7 +174,7 @@ describe("LoginForm", () => {
     window.localStorage.clear()
     mockFetchLoginBranches.mockResolvedValue(shopBranches)
     mockPostStaffPreview.mockResolvedValue(staffPreview)
-    mockPostBranchPreview.mockResolvedValue(branchPreview)
+    mockPostBranchPreview.mockResolvedValue(shopBranchPreview)
   })
 
   it("focuses staff input on mount for barcode scan", async () => {
@@ -236,6 +237,7 @@ describe("LoginForm", () => {
     mockPostStaffPreview.mockResolvedValue({
       staffId: "002",
       staffName: "Replacer User",
+      role: "SH_STAFF",
       branchId: "branch-sh-home",
       branchCode: "SH999",
       branchName: "Buffer",
@@ -268,6 +270,7 @@ describe("LoginForm", () => {
     mockPostStaffPreview.mockResolvedValue({
       staffId: "002",
       staffName: "Shop User",
+      role: "SH_STAFF",
       branchId: "branch-sh-home",
       branchCode: "SH999",
       branchName: "Buffer",
@@ -293,7 +296,7 @@ describe("LoginForm", () => {
     expect(mockPostBranchPreview).toHaveBeenCalledWith({ branchCode: "SH999" })
   })
 
-  it("staff Enter moves focus to password for HO after auto home branch", async () => {
+  it("staff Enter moves focus to branch for HO_ADMIN after loading shop branches", async () => {
     const { container } = renderLoginForm()
     const staffInput = container.querySelector(
       'input[name="staffId"]'
@@ -306,18 +309,19 @@ describe("LoginForm", () => {
     await runStaffEnter(container, "001")
 
     expect(mockPostStaffPreview).toHaveBeenCalledWith({ staffId: "001" })
-    expect(mockFetchLoginBranches).not.toHaveBeenCalled()
+    expect(mockFetchLoginBranches).toHaveBeenCalledTimes(1)
     expect(mockPostCredentialLogin).not.toHaveBeenCalled()
     expect(staffInput.value).toBe("001 • Admin User")
-    expect(branchSelect.value).toBe("HO999")
-    expect(document.activeElement).toBe(passwordInput)
-    expect(passwordInput.disabled).toBe(false)
+    expect(branchSelect.value).toBe("")
+    expect(document.activeElement).toBe(branchSelect)
+    expect(passwordInput.disabled).toBe(true)
   })
 
   it("staff Enter moves focus to branch for replacer", async () => {
     mockPostStaffPreview.mockResolvedValue({
       staffId: "002",
       staffName: "Replacer User",
+      role: "SH_STAFF",
       branchId: "branch-sh-home",
       branchCode: "SH999",
       branchName: "Buffer",
@@ -368,6 +372,7 @@ describe("LoginForm", () => {
     ) as HTMLInputElement
 
     await runStaffEnter(container, "001")
+    await selectBranch(container, "SH001")
 
     await act(async () => {
       keyDown(branchSelect, "Enter")
@@ -375,8 +380,8 @@ describe("LoginForm", () => {
       await flushAsyncUpdates()
     })
 
-    expect(mockPostBranchPreview).toHaveBeenCalledWith({ branchCode: "HO999" })
-    expect(branchSelect.value).toBe("HO999")
+    expect(mockPostBranchPreview).toHaveBeenCalledWith({ branchCode: "SH001" })
+    expect(branchSelect.value).toBe("SH001")
     expect(document.activeElement).toBe(passwordInput)
     expect(passwordInput.disabled).toBe(false)
     expect(mockPostCredentialLogin).not.toHaveBeenCalled()
@@ -390,9 +395,9 @@ describe("LoginForm", () => {
         staffId: "001",
         name: "Admin User",
         role: "HO_ADMIN",
-        branchId: "branch-ho",
-        branchCode: "HO999",
-        branchName: "Head Office",
+        branchId: "branch-sh-1",
+        branchCode: "SH001",
+        branchName: "Shop 1",
       },
     })
 
@@ -408,7 +413,7 @@ describe("LoginForm", () => {
     const requestSubmitSpy = jest.spyOn(form, "requestSubmit")
 
     await runStaffEnter(container, "001")
-    await selectBranch(container, "HO999", true)
+    await selectBranch(container, "SH001", true)
 
     await act(async () => {
       setInputValue(passwordInput, "secret")
@@ -421,12 +426,12 @@ describe("LoginForm", () => {
     expect(mockPostCredentialLogin).toHaveBeenCalledWith({
       username: "001",
       password: "secret",
-      branchCode: "HO999",
+      branchCode: "SH001",
       returnTo: undefined,
     })
   })
 
-  it("HO staff dropdown offers home branch only after preview", async () => {
+  it("HO_ADMIN dropdown offers shop branches only after preview", async () => {
     const { container } = renderLoginForm()
     const branchSelect = getBranchSelect(container)
     const passwordInput = container.querySelector(
@@ -437,10 +442,10 @@ describe("LoginForm", () => {
 
     expect(
       Array.from(branchSelect.options).map((option) => option.value)
-    ).toEqual(["", "HO999"])
-    expect(branchSelect.value).toBe("HO999")
-    expect(document.activeElement).toBe(passwordInput)
-    expect(passwordInput.disabled).toBe(false)
+    ).toEqual(["", "SH999", "SH001"])
+    expect(branchSelect.value).toBe("")
+    expect(document.activeElement).toBe(branchSelect)
+    expect(passwordInput.disabled).toBe(true)
   })
 
   it("submits login with branchCode after previews", async () => {
@@ -451,9 +456,9 @@ describe("LoginForm", () => {
         staffId: "001",
         name: "Admin User",
         role: "HO_ADMIN",
-        branchId: "branch-ho",
-        branchCode: "HO999",
-        branchName: "Head Office",
+        branchId: "branch-sh-1",
+        branchCode: "SH001",
+        branchName: "Shop 1",
       },
     })
 
@@ -478,7 +483,7 @@ describe("LoginForm", () => {
     })
 
     await act(async () => {
-      selectBranchValue(branchSelect, "HO999")
+      selectBranchValue(branchSelect, "SH001")
       keyDown(branchSelect, "Enter")
       await Promise.resolve()
       await Promise.resolve()
@@ -499,7 +504,7 @@ describe("LoginForm", () => {
     expect(mockPostCredentialLogin).toHaveBeenCalledWith({
       username: "001",
       password: "secret",
-      branchCode: "HO999",
+      branchCode: "SH001",
       returnTo: undefined,
     })
   })
@@ -593,9 +598,9 @@ describe("LoginForm", () => {
     const branchSelect = getBranchSelect(container)
 
     await runStaffEnter(container, "001")
-    await selectBranch(container, "HO999")
+    await selectBranch(container, "SH001")
 
-    expect(branchSelect.value).toBe("HO999")
+    expect(branchSelect.value).toBe("SH001")
     expect(branchSelect.className).toContain("border-red-600")
     expect(
       container.querySelector("#login-branch-code-error")?.textContent
@@ -617,7 +622,7 @@ describe("LoginForm", () => {
     ) as HTMLInputElement
 
     await runStaffEnter(container, "001")
-    await selectBranch(container, "HO999")
+    await selectBranch(container, "SH001")
 
     expect(branchSelect.className).toContain("border-red-600")
 
@@ -641,6 +646,7 @@ describe("LoginForm", () => {
     mockPostStaffPreview.mockResolvedValue({
       staffId: "002",
       staffName: "Replacer User",
+      role: "SH_STAFF",
       branchId: "branch-sh-home",
       branchCode: "SH999",
       branchName: "Buffer",
@@ -674,6 +680,7 @@ describe("LoginForm", () => {
     mockPostStaffPreview.mockResolvedValue({
       staffId: "002",
       staffName: "Shop User",
+      role: "SH_STAFF",
       branchId: "branch-sh-home",
       branchCode: "SH999",
       branchName: "Buffer",
@@ -720,7 +727,7 @@ describe("LoginForm", () => {
     ) as HTMLButtonElement
 
     await runStaffEnter(container, "001")
-    await selectBranch(container, "HO999", true)
+    await selectBranch(container, "SH001", true)
 
     await act(async () => {
       setInputValue(passwordInput, "wrong")
@@ -748,7 +755,7 @@ describe("LoginForm", () => {
     ).toBeNull()
     expect(document.activeElement).toBe(passwordInput)
     expect(staffInput.value).toBe("001 • Admin User")
-    expect(branchSelect.value).toBe("HO999")
+    expect(branchSelect.value).toBe("SH001")
     expect(mockPostCredentialLogin.mock.calls.length).toBe(loginCallsBeforeRetry)
   })
 
@@ -760,9 +767,9 @@ describe("LoginForm", () => {
         staffId: "001",
         name: "Admin User",
         role: "HO_ADMIN",
-        branchId: "branch-ho",
-        branchCode: "HO999",
-        branchName: "Head Office",
+        branchId: "branch-sh-1",
+        branchCode: "SH001",
+        branchName: "Shop 1",
       },
     })
 
@@ -770,12 +777,14 @@ describe("LoginForm", () => {
     const staffInput = container.querySelector(
       'input[name="staffId"]'
     ) as HTMLInputElement
+    const branchSelect = getBranchSelect(container)
     const passwordInput = container.querySelector(
       'input[name="password"]'
     ) as HTMLInputElement
     const form = container.querySelector("form") as HTMLFormElement
 
     await runStaffEnter(container, "001")
+    await selectBranch(container, "SH001", true)
     expect(document.activeElement).toBe(passwordInput)
 
     await act(async () => {
@@ -787,7 +796,7 @@ describe("LoginForm", () => {
     expect(mockPostCredentialLogin).toHaveBeenCalledWith({
       username: "001",
       password: "secret",
-      branchCode: "HO999",
+      branchCode: "SH001",
       returnTo: undefined,
     })
     expect(form).toBeTruthy()
@@ -815,7 +824,7 @@ describe("LoginForm", () => {
     ) as HTMLButtonElement
 
     await runStaffEnter(container, "001")
-    await selectBranch(container, "HO999", true)
+    await selectBranch(container, "SH001", true)
 
     await act(async () => {
       setInputValue(passwordInput, "x")

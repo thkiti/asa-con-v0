@@ -19,6 +19,9 @@ export function canStaffUseBranch(
   loginBranch: LoginBranchGate
 ): boolean {
   if (loginBranch.deleted || !loginBranch.isActive) return false
+  if (staff.role === "HO_ADMIN") {
+    return loginBranch.type === "SH"
+  }
   if (staff.branchId === loginBranch.id) return true
   if (
     staff.role === "SH_STAFF" &&

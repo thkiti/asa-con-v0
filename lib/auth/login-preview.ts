@@ -10,9 +10,12 @@ export class LoginPreviewError extends Error {
   }
 }
 
+import type { Role } from "@/generated/prisma/client"
+
 export type StaffPreview = {
   staffId: string
   staffName: string
+  role: Role
   branchId: string
   branchCode: string
   branchName: string

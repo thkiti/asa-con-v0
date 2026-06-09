@@ -224,6 +224,7 @@ describe("POST /api/auth/staff-preview", () => {
     mockPreviewStaffByStaffId.mockResolvedValue({
       staffId: "001",
       staffName: "Admin User",
+      role: "HO_ADMIN",
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
@@ -231,7 +232,7 @@ describe("POST /api/auth/staff-preview", () => {
     })
   })
 
-  it("returns staff preview without role", async () => {
+  it("returns staff preview with role", async () => {
     const res = await POSTStaffPreview(
       new Request("http://localhost/api/auth/staff-preview", {
         method: "POST",
@@ -245,12 +246,12 @@ describe("POST /api/auth/staff-preview", () => {
     expect(body).toEqual({
       staffId: "001",
       staffName: "Admin User",
+      role: "HO_ADMIN",
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
       allowAnyBranchLogin: false,
     })
-    expect(body).not.toHaveProperty("role")
     expect(body).not.toHaveProperty("password")
   })
 

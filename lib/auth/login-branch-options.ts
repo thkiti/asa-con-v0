@@ -9,7 +9,9 @@ export type LoginBranchOption = {
 export function shouldLoadShopBranches(
   staffPreview: StaffPreview | null
 ): boolean {
-  return Boolean(staffPreview?.allowAnyBranchLogin)
+  if (!staffPreview) return false
+  if (staffPreview.allowAnyBranchLogin) return true
+  return staffPreview.role === "HO_ADMIN"
 }
 
 export function resolveLoginBranchOptions(
@@ -18,7 +20,7 @@ export function resolveLoginBranchOptions(
 ): LoginBranchOption[] {
   if (!staffPreview) return []
 
-  if (staffPreview.allowAnyBranchLogin) {
+  if (shouldLoadShopBranches(staffPreview)) {
     return shopBranches
   }
 

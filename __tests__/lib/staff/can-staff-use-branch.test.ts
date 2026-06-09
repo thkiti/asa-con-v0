@@ -86,7 +86,7 @@ describe("canStaffUseBranch", () => {
     ).toBe(false)
   })
 
-  it("rejects HO_ADMIN on non-home branch", () => {
+  it("allows HO_ADMIN on shop branch only", () => {
     expect(
       canStaffUseBranch(
         {
@@ -95,6 +95,16 @@ describe("canStaffUseBranch", () => {
           allowAnyBranchLogin: false,
         },
         activeShop
+      )
+    ).toBe(true)
+    expect(
+      canStaffUseBranch(
+        {
+          branchId: "branch-ho",
+          role: Role.HO_ADMIN,
+          allowAnyBranchLogin: false,
+        },
+        activeHo
       )
     ).toBe(false)
   })

@@ -36,6 +36,16 @@ function loginBranch(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function shopLoginBranch(overrides: Record<string, unknown> = {}) {
+  return loginBranch({
+    id: "branch-sh-1",
+    code: "SH001",
+    name: "Shop 1",
+    type: "SH",
+    ...overrides,
+  })
+}
+
 async function activeStaffRecord(overrides: {
   password?: string
   deleted?: boolean
@@ -75,10 +85,12 @@ async function activeStaffRecord(overrides: {
 describe("credentialLogin", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.mocked(prisma.branch.findUnique).mockResolvedValue(loginBranch() as never)
+    jest
+      .mocked(prisma.branch.findUnique)
+      .mockResolvedValue(shopLoginBranch() as never)
   })
 
-  it("returns SessionUser with selected login branch fields on valid password", async () => {
+  it("returns SessionUser with selected shop branch fields on valid password", async () => {
     jest
       .mocked(prisma.staff.findUnique)
       .mockResolvedValue((await activeStaffRecord()) as never)
@@ -86,7 +98,7 @@ describe("credentialLogin", () => {
     const result = await credentialLogin({
       username: "001",
       password: "1234",
-      branchCode: "HO999",
+      branchCode: "SH001",
     })
 
     expect(result.sessionUser).toEqual({
@@ -95,9 +107,9 @@ describe("credentialLogin", () => {
       role: "HO_ADMIN",
       staffId: "001",
       name: "Admin User",
-      branchId: "branch-ho",
-      branchCode: "HO999",
-      branchName: "Head Office",
+      branchId: "branch-sh-1",
+      branchCode: "SH001",
+      branchName: "Shop 1",
     })
     expect(result.redirectTo).toBe("/main")
   })
@@ -108,7 +120,7 @@ describe("credentialLogin", () => {
       .mockResolvedValue((await activeStaffRecord()) as never)
 
     await expect(
-      credentialLogin({ username: "001", password: "wrong", branchCode: "HO999" })
+      credentialLogin({ username: "001", password: "wrong", branchCode: "SH001" })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_INVALID_MESSAGE,
       code: "INVALID_CREDENTIALS",
@@ -144,24 +156,31 @@ describe("credentialLogin", () => {
     })
   })
 
-  it("rejects branch code mismatch before password check", async () => {
+  it("allows HO_ADMIN to login to active shop branch", async () => {
     jest
       .mocked(prisma.staff.findUnique)
       .mockResolvedValue((await activeStaffRecord()) as never)
-    jest.mocked(prisma.branch.findUnique).mockResolvedValue(
-      loginBranch({
-        id: "branch-sh-1",
-        code: "SH001",
-        name: "Shop 1",
-        type: "SH",
-      }) as never
-    )
+
+    const result = await credentialLogin({
+      username: "001",
+      password: "1234",
+      branchCode: "SH001",
+    })
+
+    expect(result.sessionUser.branchCode).toBe("SH001")
+  })
+
+  it("rejects HO_ADMIN on HO home branch", async () => {
+    jest
+      .mocked(prisma.staff.findUnique)
+      .mockResolvedValue((await activeStaffRecord()) as never)
+    jest.mocked(prisma.branch.findUnique).mockResolvedValue(loginBranch() as never)
 
     await expect(
       credentialLogin({
         username: "001",
         password: "1234",
-        branchCode: "SH001",
+        branchCode: "HO999",
       })
     ).rejects.toMatchObject({
       message: CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE,
@@ -258,6 +277,7 @@ describe("credentialLogin", () => {
         },
       })) as never
     )
+    jest.mocked(prisma.branch.findUnique).mockResolvedValue(loginBranch() as never)
 
     await expect(
       credentialLogin({
@@ -360,7 +380,7 @@ describe("credentialLogin", () => {
     const result = await credentialLogin({
       username: "001",
       password: "1234",
-      branchCode: "HO999",
+      branchCode: "SH001",
       returnTo: "/shop/stock-documents",
     })
 
@@ -376,7 +396,7 @@ describe("credentialLogin", () => {
     const result = await credentialLogin({
       username: "001",
       password: "secret-pass",
-      branchCode: "HO999",
+      branchCode: "SH001",
     })
 
     expect(result.sessionUser.staffId).toBe("001")

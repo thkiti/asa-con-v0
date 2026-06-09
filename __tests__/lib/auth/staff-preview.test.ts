@@ -20,10 +20,11 @@ describe("previewStaffByStaffId", () => {
     jest.clearAllMocks()
   })
 
-  it("returns staff and branch fields without role or password", async () => {
+  it("returns staff and branch fields with role but without password", async () => {
     jest.mocked(prisma.staff.findUnique).mockResolvedValue({
       staffId: "001",
       name: "Admin User",
+      role: "HO_ADMIN",
       deleted: false,
       allowAnyBranchLogin: true,
       branch: {
@@ -40,17 +41,17 @@ describe("previewStaffByStaffId", () => {
     expect(result).toEqual({
       staffId: "001",
       staffName: "Admin User",
+      role: "HO_ADMIN",
       branchId: "branch-ho",
       branchCode: "HO999",
       branchName: "Head Office",
       allowAnyBranchLogin: true,
     })
-    expect(result).not.toHaveProperty("role")
     expect(result).not.toHaveProperty("password")
 
     const select = jest.mocked(prisma.staff.findUnique).mock.calls[0][0]?.select
     expect(select).toBeDefined()
-    expect(select).not.toHaveProperty("role")
+    expect(select).toHaveProperty("role")
     expect(select).not.toHaveProperty("password")
   })
 
