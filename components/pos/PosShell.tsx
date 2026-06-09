@@ -52,6 +52,7 @@ type PosShellProps = {
   } | null
   onCheckoutClose: () => void
   onCheckoutConfirm: (paymentMethod: PosCheckoutPaymentMethod) => void
+  onBankTransferCapture: (blob: Blob) => void
   onCheckoutPrintReceiptAndNewSale: (saleId: string) => void
   onCheckoutNewSaleWithoutPrint: () => void
   refundOpen: boolean
@@ -112,6 +113,7 @@ export function PosShell({
   checkoutSuccess,
   onCheckoutClose,
   onCheckoutConfirm,
+  onBankTransferCapture,
   onCheckoutPrintReceiptAndNewSale,
   onCheckoutNewSaleWithoutPrint,
   refundOpen,
@@ -248,6 +250,7 @@ export function PosShell({
               error={checkoutError}
               success={checkoutSuccess}
               onConfirm={onCheckoutConfirm}
+              onBankTransferCapture={onBankTransferCapture}
               onPrintReceiptAndNewSale={onCheckoutPrintReceiptAndNewSale}
               onNewSaleWithoutPrint={onCheckoutNewSaleWithoutPrint}
               onClose={onCheckoutClose}

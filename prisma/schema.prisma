@@ -403,17 +403,23 @@ model Receipt {
   @@unique([branchId, receiptNo])
 }
 
-/// Bank-transfer slip evidence — keyed by receiptNo; cloud upload in later phases.
+/// Bank-transfer slip evidence — keyed by receiptNo.
 model PaymentEvidence {
-  id        String                @id @default(uuid())
-  branchId  String
-  receiptNo String
-  receiptId String                @unique
-  saleId    String                @unique
-  paymentId String                @unique
-  status    PaymentEvidenceStatus @default(PENDING)
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  id           String                @id @default(uuid())
+  branchId     String
+  receiptNo    String
+  receiptId    String                @unique
+  saleId       String                @unique
+  paymentId    String                @unique
+  status       PaymentEvidenceStatus @default(PENDING)
+  blobPathname String?
+  blobUrl      String?
+  mimeType     String                @default("image/jpeg")
+  byteSize     Int?
+  uploadedAt   DateTime?
+  uploadError  String?               @db.Text
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)

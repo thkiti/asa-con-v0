@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react"
 import { PosShell } from "./PosShell"
 import {
   addProductToCart,
+  cartTotal,
   clearCart,
   decrementLineQty,
   incrementLineQty,
@@ -12,6 +13,7 @@ import {
   type PosCartLine,
 } from "@/lib/pos/cart"
 import { fetchPosCheckout } from "@/lib/pos-ui/pos-checkout-client"
+import { uploadPaymentEvidenceSlipInBackground } from "@/lib/pos-ui/payment-evidence-upload-client"
 import type { PosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
 import {
   getPosActionKind,
@@ -206,7 +208,48 @@ export function PosTerminalPage() {
     setBarcode("")
     setBarcodeFocusRequest((n) => n + 1)
     void refreshPreviewReceiptNo()
-  }, [session, refreshPreviewReceiptNo])
+  }, [refreshPreviewReceiptNo])
+
+  const handleBankTransferCapture = useCallback(
+    async (capturedBlob: Blob) => {
+      if (checkoutPending || cartLines.length === 0) return
+
+      setCheckoutPending(true)
+      setCheckoutError(null)
+
+      let receiptNoForUpload: string | null = null
+
+      try {
+        const result = await fetchPosCheckout(
+          cartLines.map((line) => ({ productId: line.productId, qty: line.qty })),
+          {
+            paymentMethod: "BANK_TRANSFER",
+            paidAmount: cartTotal(cartLines),
+          }
+        )
+        if (!result.ok) {
+          setCheckoutError(result.error)
+          return
+        }
+
+        receiptNoForUpload = result.result.receipt.receiptNo
+        setLastReceiptNo(receiptNoForUpload)
+
+        openPosReceiptPrint(result.result.sale.id)
+        resetPosForNextSale()
+      } finally {
+        setCheckoutPending(false)
+      }
+
+      if (receiptNoForUpload) {
+        uploadPaymentEvidenceSlipInBackground({
+          file: capturedBlob,
+          receiptNo: receiptNoForUpload,
+        })
+      }
+    },
+    [cartLines, checkoutPending, resetPosForNextSale]
+  )
 
   const printReceiptAndNewSale = useCallback(
     (saleId: string) => {
@@ -461,6 +504,9 @@ export function PosTerminalPage() {
       }}
       onCheckoutConfirm={(paymentMethod) => {
         void confirmCheckout(paymentMethod)
+      }}
+      onBankTransferCapture={(blob) => {
+        void handleBankTransferCapture(blob)
       }}
       onCheckoutPrintReceiptAndNewSale={printReceiptAndNewSale}
       onCheckoutNewSaleWithoutPrint={newSaleWithoutPrint}

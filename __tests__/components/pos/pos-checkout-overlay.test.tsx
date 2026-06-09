@@ -11,6 +11,16 @@ import { createRoot, type Root } from "react-dom/client"
 import { PosCheckoutOverlay } from "@/components/pos/PosCheckoutOverlay"
 import type { PosCartLine } from "@/lib/pos/cart"
 
+jest.mock("@/lib/pos-ui/capture-video-frame", () => ({
+  captureVideoFrame: jest.fn(),
+  startCheckoutCameraStream: jest.fn().mockResolvedValue({} as MediaStream),
+  stopMediaStream: jest.fn(),
+}))
+
+import { captureVideoFrame } from "@/lib/pos-ui/capture-video-frame"
+
+const mockedCapture = captureVideoFrame as jest.MockedFunction<typeof captureVideoFrame>
+
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
 
@@ -36,6 +46,7 @@ function renderOverlay(props: Partial<ComponentProps<typeof PosCheckoutOverlay>>
     error: null,
     success: null,
     onConfirm: () => {},
+    onBankTransferCapture: () => {},
     onPrintReceiptAndNewSale: () => {},
     onNewSaleWithoutPrint: () => {},
     onClose: () => {},
@@ -57,6 +68,10 @@ function renderOverlay(props: Partial<ComponentProps<typeof PosCheckoutOverlay>>
 }
 
 describe("PosCheckoutOverlay", () => {
+  beforeEach(() => {
+    mockedCapture.mockReset()
+  })
+
   it("shows three payment method buttons and defaults to CASH", () => {
     const { container, unmount } = renderOverlay()
 
@@ -74,9 +89,9 @@ describe("PosCheckoutOverlay", () => {
     unmount()
   })
 
-  it("updates confirm label when BANK TRANSFER is selected", () => {
-    const onConfirm = jest.fn()
-    const { container, unmount } = renderOverlay({ onConfirm })
+  it("opens bank capture view when BANK TRANSFER is selected", () => {
+    const onBankTransferCapture = jest.fn()
+    const { container, unmount } = renderOverlay({ onBankTransferCapture })
 
     const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
       btn.textContent?.includes("Bank Transfer")
@@ -86,10 +101,72 @@ describe("PosCheckoutOverlay", () => {
       bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
     })
 
-    expect(container.textContent).toContain("Pay BANK TRANSFER")
+    expect(container.textContent).toContain("Capture & Print")
+    expect(container.textContent).not.toContain("Pay BANK TRANSFER")
+
+    unmount()
+  })
+
+  it("calls onBankTransferCapture when capture succeeds", async () => {
+    const onBankTransferCapture = jest.fn()
+    const blob = new Blob(["jpeg"], { type: "image/jpeg" })
+    mockedCapture.mockResolvedValue(blob)
+
+    const { container, unmount } = renderOverlay({ onBankTransferCapture })
+
+    const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
+      btn.textContent?.includes("Bank Transfer")
+    )
+    act(() => {
+      bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+
+    const captureButton = [...container.querySelectorAll("button")].find((btn) =>
+      btn.textContent?.includes("Capture & Print")
+    )
+
+    await act(async () => {
+      captureButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(onBankTransferCapture).toHaveBeenCalledWith(blob)
+    unmount()
+  })
+
+  it("does not call onBankTransferCapture when capture fails", async () => {
+    const onBankTransferCapture = jest.fn()
+    mockedCapture.mockResolvedValue(null)
+
+    const { container, unmount } = renderOverlay({ onBankTransferCapture })
+
+    const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
+      btn.textContent?.includes("Bank Transfer")
+    )
+    act(() => {
+      bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+
+    const captureButton = [...container.querySelectorAll("button")].find((btn) =>
+      btn.textContent?.includes("Capture & Print")
+    )
+
+    await act(async () => {
+      captureButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(onBankTransferCapture).not.toHaveBeenCalled()
+    expect(container.textContent).toContain("Capture failed")
+    unmount()
+  })
+
+  it("confirms CASH checkout via onConfirm", () => {
+    const onConfirm = jest.fn()
+    const { container, unmount } = renderOverlay({ onConfirm })
 
     const confirmButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Pay BANK TRANSFER")
+      btn.textContent?.includes("Pay CASH")
     )
 
     act(() => {
@@ -97,7 +174,7 @@ describe("PosCheckoutOverlay", () => {
     })
 
     expect(onConfirm).toHaveBeenCalledWith(
-      "BANK_TRANSFER" satisfies PosCheckoutPaymentMethod
+      "CASH" satisfies PosCheckoutPaymentMethod
     )
     unmount()
   })

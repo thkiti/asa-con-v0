@@ -1,6 +1,7 @@
 import { PaymentEvidenceStatus, PaymentMethod } from "@/generated/prisma/client"
 import {
   createPendingPaymentEvidenceRow,
+  markPaymentEvidenceUploaded,
   requiresPaymentEvidence,
   resolveReceiptEvidenceStatus,
 } from "@/lib/pos/payment-evidence"
@@ -65,6 +66,39 @@ describe("payment-evidence", () => {
           paymentId: "pay-1",
           status: PaymentEvidenceStatus.PENDING,
         },
+      })
+    })
+  })
+
+  describe("markPaymentEvidenceUploaded", () => {
+    it("marks evidence UPLOADED with blob metadata", async () => {
+      const update = jest.fn().mockResolvedValue({
+        id: "ev-1",
+        receiptNo: "REC-SH001-202606-0001",
+        status: PaymentEvidenceStatus.UPLOADED,
+        blobPathname: "payment-slips/SH001/REC-SH001-202606-0001.jpg",
+        blobUrl: "https://blob.example/slip.jpg",
+      })
+      const db = { paymentEvidence: { update } } as never
+
+      await markPaymentEvidenceUploaded(db, {
+        evidenceId: "ev-1",
+        blobPathname: "payment-slips/SH001/REC-SH001-202606-0001.jpg",
+        blobUrl: "https://blob.example/slip.jpg",
+        byteSize: 1234,
+        mimeType: "image/jpeg",
+      })
+
+      expect(update).toHaveBeenCalledWith({
+        where: { id: "ev-1" },
+        data: expect.objectContaining({
+          status: PaymentEvidenceStatus.UPLOADED,
+          blobPathname: "payment-slips/SH001/REC-SH001-202606-0001.jpg",
+          blobUrl: "https://blob.example/slip.jpg",
+          byteSize: 1234,
+          mimeType: "image/jpeg",
+          uploadError: null,
+        }),
       })
     })
   })

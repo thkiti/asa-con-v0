@@ -2,6 +2,7 @@ import {
   PaymentEvidenceStatus,
   PaymentMethod,
   type Prisma,
+  type PrismaClient,
 } from "@/generated/prisma/client"
 
 export type ReceiptEvidenceStatus = PaymentEvidenceStatus
@@ -40,4 +41,32 @@ export async function createPendingPaymentEvidenceRow(
 
 export function requiresPaymentEvidence(method: PaymentMethod): boolean {
   return method === PaymentMethod.BANK_TRANSFER
+}
+
+export type MarkPaymentEvidenceUploadedInput = {
+  evidenceId: string
+  blobPathname: string
+  blobUrl: string
+  byteSize: number
+  mimeType?: string
+}
+
+export type PaymentEvidenceMarkDb = Pick<PrismaClient, "paymentEvidence">
+
+export async function markPaymentEvidenceUploaded(
+  db: PaymentEvidenceMarkDb,
+  input: MarkPaymentEvidenceUploadedInput
+) {
+  return db.paymentEvidence.update({
+    where: { id: input.evidenceId },
+    data: {
+      status: PaymentEvidenceStatus.UPLOADED,
+      blobPathname: input.blobPathname,
+      blobUrl: input.blobUrl,
+      byteSize: input.byteSize,
+      mimeType: input.mimeType?.trim() || "image/jpeg",
+      uploadedAt: new Date(),
+      uploadError: null,
+    },
+  })
 }
