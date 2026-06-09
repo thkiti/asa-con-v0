@@ -106,24 +106,36 @@ Sale → Stock Movement → Inventory Balance → Finance Posting
 
 **เป้าหมาย:** ใบสรุปปิดวันสำหรับ shop manager / เก็บ hard copy ที่เคาน์เตอร์
 
+**สถานะปัจจุบัน (2026-06-10)**
+
+| หัวข้อ | สถานะ |
+|--------|--------|
+| Core flow (keypad → credential → API → panel → print+exit) | **ครบ** — `POST /api/pos/read-report`, `buildPosDailyReadReport`, `PosReadReportPanel` |
+| Thermal print path (`build-read-z-slip`, `PosReadZSlip`, clone print) | **ครบ** — Z-mode พิมพ์ thermal แทน full-panel print |
+| Aggregation: receipt count, refund count, gross, net | **ครบ** — `ReadReportPayload` + management product-group zero-fill |
+| **TOTAL = Net sales** (`netTotal`) | **ครบ** — thermal slip + Z-mode panel footer (ไม่ใช่ gross) |
+| ส่วนลด (discount line) | **N/A ใน v0** — schema ไม่มี discount field บน `Sale` / `SaleItem` |
+| Validate ที่ร้าน (XPrinter 80mm) | **ยังไม่ครบ** — **blocker เดียวที่เหลือสำหรับ P3 exit** |
+
 **แยกจาก P2**
 
 | หัวข้อ | P2 (architecture) | P3 (operational) |
 |--------|-------------------|------------------|
-| `build-read-z-slip`, `PosReadZSlip`, layout tab | ✓ | |
-| Z-mode พิมพ์ thermal แทน full-panel print | ✓ | |
-| ข้อมูลจาก `ReadReportPayload` ที่มีอยู่ | ✓ (minimum slip) | |
-| Aggregation เพิ่ม: receipt count, refund count, net/discounts | stub/omit | **ต้องครบ** |
-| Validate ที่ร้าน (XPrinter 80mm) | | **ต้องครบ** |
+| `build-read-z-slip`, `PosReadZSlip`, layout tab | ✓ | ✓ |
+| Z-mode พิมพ์ thermal แทน full-panel print | ✓ | ✓ |
+| ข้อมูลจาก `ReadReportPayload` | ✓ | ✓ |
+| Aggregation + TOTAL semantics | | ✓ (discount N/A) |
+| Validate ที่ร้าน (XPrinter 80mm) | | **ค้าง** |
 
 **ข้อมูลบน slip (เป้าหมาย)**
 
 - Header จาก layout
 - หัวข้อ: READ Z / Daily Sales Summary
 - สาขา, วันทำการ, staff
-- ยอดขาย, ส่วนลด, refund, net
-- ยอดชำระแยกช่องทาง (cash, transfer/QR, อื่นๆ)
-- จำนวน transaction / receipt / refund
+- Gross sales, refund total, net sales — **TOTAL = net sales**
+- ส่วนลด — **ไม่แสดงใน v0** (ไม่มี discount ใน schema/checkout)
+- ยอดชำระแยกช่องทาง (cash, credit card, prompt pay, QR, transfer)
+- จำนวน receipt / refund (`saleCount`, `refundCount`)
 - Footer จาก layout
 
 **ข้อจำกัด (ห้ามละเมิด)**
@@ -131,7 +143,7 @@ Sale → Stock Movement → Inventory Balance → Finance Posting
 - **Read-only** — ห้าม post GL, ห้าม move stock, ห้ามแก้ sale/payment/refund
 - แผง READ X/Z บนจอ **ไม่ redesign** — เปลี่ยนเฉพาะ artifact ที่พิมพ์ออกมา
 
-**Exit:** READ_Z ใช้ปิดวันได้จริง + validate ที่ร้านแล้ว
+**Exit:** READ_Z ใช้ปิดวันได้จริง + **validate ที่ร้าน (XPrinter 80mm) แล้ว** — code path พร้อม; รอ physical print test ที่สาขา
 
 ---
 
@@ -184,7 +196,8 @@ Sale → Stock Movement → Inventory Balance → Finance Posting
 | Refund slip | `lib/pos/refund-slip-format.ts` |
 | Collector slip | `lib/pos-ui/build-collector-ticket-slip.ts` |
 | Repair ticket | `components/pos/PosRepairTicketOverlay.tsx` |
-| READ Z (panel) | `components/pos/PosReadReportPanel.tsx`, `lib/pos/build-pos-read-report.ts` |
+| READ Z (panel + API) | `components/pos/PosReadReportPanel.tsx`, `lib/pos/build-pos-read-report.ts`, `app/api/pos/read-report/route.ts` |
+| READ Z (thermal slip) | `lib/thermal/build-read-z-slip.ts`, `components/pos/PosReadZSlip.tsx`, `lib/pos-ui/print-read-report.ts` |
 | Receipt setup (ปัจจุบัน) | `components/admin/ReceiptSetupPage.tsx`, model `ReceiptPrintSettings` |
 | Print CSS | `app/globals.css` |
 
@@ -196,10 +209,10 @@ Sale → Stock Movement → Inventory Balance → Finance Posting
 
 - [x] P1 — sale/refund/stock/finance/reconcile verified — see [P1_POSTING_STOCK_VALIDATION.md](./P1_POSTING_STOCK_VALIDATION.md)
 - [ ] P2 — 5 thermal types บน `lib/thermal`, layout setup ครบ, tests ผ่าน
-- [ ] P3 — READ_Z slip ครบข้อมูล + validate ที่ร้าน
+- [ ] P3 — READ_Z operational (code ครบ; **ค้าง:** validate ที่ร้าน XPrinter 80mm)
 - [ ] P4 — repair workflow decision บันทึกแล้ว
 - [ ] CI / build ผ่าน
 
 ---
 
-*Last updated: 2026-06-08 — sync กับ thermal architecture plan + POS Completion Roadmap*
+*Last updated: 2026-06-10 — P3 READ_Z: core flow + thermal print + TOTAL=netTotal ครบ; discount N/A (v0 schema); ค้าง shop XPrinter validation*

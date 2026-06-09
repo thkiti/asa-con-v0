@@ -82,7 +82,7 @@ export function buildReadZSlipText(
   lines.push(padThermalLine("Net sales", formatThermalMoney2(report.netTotal), w))
 
   lines.push("")
-  lines.push(padThermalLine("TOTAL", formatThermalMoney2(report.grandTotal), w))
+  lines.push(padThermalLine("TOTAL", formatThermalMoney2(report.netTotal), w))
 
   appendThermalFooterLines(lines, layout, w)
   lines.push("")

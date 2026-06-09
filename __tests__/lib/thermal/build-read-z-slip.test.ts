@@ -86,6 +86,9 @@ describe("buildReadZSlipText", () => {
     expect(text).toContain("25.00")
     expect(text).toContain("Net sales")
     expect(text).toContain("75.00")
+    const totalLine = text.split("\n").find((line) => line.trim().startsWith("TOTAL"))
+    expect(totalLine).toContain("75.00")
+    expect(totalLine).not.toContain("100.00")
   })
 
   it("prints the same group rows as the on-screen READ Z report", () => {

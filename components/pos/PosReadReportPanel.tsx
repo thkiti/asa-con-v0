@@ -202,7 +202,9 @@ export function PosReadReportPanel({
         <div className="shrink-0 border-t border-white/35 bg-blue-600 px-3 py-3 print:border-t print:border-zinc-300 print:bg-zinc-100">
           <div className="flex items-baseline justify-between text-lg font-black text-white print:text-black">
             <span>TOTAL</span>
-            <span className="tabular-nums">{formatMoney2(report.grandTotal)}</span>
+            <span className="tabular-nums">
+              {formatMoney2(report.mode === "Z" ? report.netTotal : report.grandTotal)}
+            </span>
           </div>
         </div>
       </div>
