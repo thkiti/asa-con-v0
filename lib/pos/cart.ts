@@ -89,6 +89,7 @@ export function decrementLineQty(
 ): PosCartLine[] {
   const line = lines.find((l) => l.productId === productId)
   if (!line) return [...lines]
+  if (line.qty <= 1) return removeCartLine(lines, productId)
   return setLineQty(lines, productId, line.qty - 1)
 }
 

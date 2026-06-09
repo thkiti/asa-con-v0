@@ -55,10 +55,24 @@ describe("pos cart", () => {
     expect(lines).toHaveLength(2)
   })
 
-  it("enforces minimum qty of 1", () => {
+  it("setLineQty enforces minimum qty of 1 for explicit sets", () => {
     const base: PosCartLine[] = [{ ...productA, qty: 2 }]
     expect(setLineQty(base, "p1", 0)[0].qty).toBe(1)
-    expect(decrementLineQty(base, "p1")[0].qty).toBe(1)
+  })
+
+  it("decrementLineQty removes the line when qty would reach 0", () => {
+    const base: PosCartLine[] = [{ ...productA, qty: 1 }]
+    const lines = decrementLineQty(base, "p1")
+    expect(lines).toHaveLength(0)
+    expect(cartTotal(lines)).toBe("0.00")
+  })
+
+  it("decrementLineQty decreases qty normally above 1", () => {
+    const base: PosCartLine[] = [{ ...productA, qty: 3 }]
+    const lines = decrementLineQty(base, "p1")
+    expect(lines).toHaveLength(1)
+    expect(lines[0]?.qty).toBe(2)
+    expect(cartTotal(lines)).toBe("199.00")
   })
 
   it("increments and removes lines", () => {

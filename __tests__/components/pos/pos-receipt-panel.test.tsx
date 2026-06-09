@@ -80,6 +80,23 @@ const cartLineWithoutImage: PosCartLine = {
   catalogImageUrl: null,
 }
 
+function mockMatchMedia(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: jest.fn().mockImplementation((query: string) => ({
+      matches: query === "(pointer: coarse)" ? matches : false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  })
+}
+
 function renderPanel(lines: PosCartLine[]): {
   container: HTMLDivElement
   root: Root
@@ -107,37 +124,127 @@ function renderPanel(lines: PosCartLine[]): {
   return { container, root, incrementQty, decrementQty }
 }
 
-describe("PosReceiptPanel catalog hover preview", () => {
-  it("shows preview when hovering product code with image URL", () => {
-    const { container } = renderPanel([cartLineWithImage])
-    const code = container.querySelector('[data-testid="pos-cart-product-code"]')
-    expect(code).not.toBeNull()
+describe("PosReceiptPanel product detail popup", () => {
+  const originalMatchMedia = window.matchMedia
 
-    act(() => {
-      code!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))
+  afterEach(() => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: originalMatchMedia,
     })
-
-    const preview = container.querySelector('[data-testid="pos-cart-catalog-preview"]')
-    expect(preview).not.toBeNull()
-    expect(preview?.querySelector("img")?.getAttribute("src")).toBe(
-      "https://blob.example/products/0101001.png"
-    )
   })
 
-  it("does not show preview when cart line has no image URL", () => {
-    const { container } = renderPanel([cartLineWithoutImage])
-    const code = container.querySelector('[data-testid="pos-cart-product-code"]')
+  it("desktop: shows popup on row hover with image, name, and code", () => {
+    mockMatchMedia(false)
+    const { container } = renderPanel([cartLineWithImage])
+    const row = container.querySelector('[data-testid="pos-cart-row"]')
+    expect(row).not.toBeNull()
 
     act(() => {
-      code!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))
+      row!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))
     })
 
+    const popup = container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    expect(popup).not.toBeNull()
+    expect(popup?.textContent).toContain("Widget A")
+    expect(popup?.textContent).toContain("0101001")
+    expect(popup?.querySelector("img")?.getAttribute("src")).toBe(
+      "https://blob.example/products/0101001.png"
+    )
     expect(
-      container.querySelector('[data-testid="pos-cart-catalog-preview"]')
+      container.querySelector('[data-testid="pos-cart-detail-backdrop"]')
     ).toBeNull()
   })
 
-  it("still calls qty handlers when buttons are clicked", () => {
+  it("desktop: hides popup on row mouse leave", () => {
+    mockMatchMedia(false)
+    const { container } = renderPanel([cartLineWithImage])
+    const row = container.querySelector('[data-testid="pos-cart-row"]')
+
+    act(() => {
+      row!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))
+    })
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    ).not.toBeNull()
+
+    act(() => {
+      row!.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }))
+    })
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    ).toBeNull()
+  })
+
+  it("desktop: shows name and code without image when catalogImageUrl is null", () => {
+    mockMatchMedia(false)
+    const { container } = renderPanel([cartLineWithoutImage])
+    const row = container.querySelector('[data-testid="pos-cart-row"]')
+
+    act(() => {
+      row!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))
+    })
+
+    const popup = container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    expect(popup).not.toBeNull()
+    expect(popup?.textContent).toContain("Widget B")
+    expect(popup?.textContent).toContain("0101002")
+    expect(popup?.textContent).toContain("No image")
+    expect(popup?.querySelector("img")).toBeNull()
+  })
+
+  it("tablet: opens modal popup on row tap and closes on backdrop tap", () => {
+    mockMatchMedia(true)
+    const { container } = renderPanel([cartLineWithImage])
+    const row = container.querySelector('[data-testid="pos-cart-row"]')
+
+    act(() => {
+      row!.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+
+    expect(
+      container.querySelector('[data-testid="pos-cart-detail-backdrop"]')
+    ).not.toBeNull()
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    ).not.toBeNull()
+
+    const backdrop = container.querySelector('[data-testid="pos-cart-detail-backdrop"]')
+    act(() => {
+      backdrop!.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    })
+
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    ).toBeNull()
+  })
+
+  it("tablet: qty button clicks do not open popup", () => {
+    mockMatchMedia(true)
+    const { container, incrementQty, decrementQty } = renderPanel([cartLineWithImage])
+
+    const inc = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.getAttribute("aria-label")?.includes("Increase qty")
+    )
+    const dec = Array.from(container.querySelectorAll("button")).find((btn) =>
+      btn.getAttribute("aria-label")?.includes("Decrease qty")
+    )
+
+    act(() => {
+      inc!.click()
+      dec!.click()
+    })
+
+    expect(incrementQty).toHaveBeenCalledWith("p1")
+    expect(decrementQty).toHaveBeenCalledWith("p1")
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    ).toBeNull()
+  })
+
+  it("desktop: qty buttons still call handlers", () => {
+    mockMatchMedia(false)
     const { container, incrementQty, decrementQty } = renderPanel([cartLineWithImage])
 
     const inc = Array.from(container.querySelectorAll("button")).find((btn) =>

@@ -1,11 +1,13 @@
 "use client"
 
+import { PosCartProductDetailPopup } from "@/components/pos/PosCartProductDetailPopup"
 import type { PosCartLine } from "@/lib/pos/cart"
 import { cartTotal, lineAmount } from "@/lib/pos/cart"
 import {
   formatReceiptDisplay,
   formatStaffDisplay,
 } from "@/lib/pos-ui/pos-session-display"
+import { isTouchPrimaryDevice } from "@/lib/pos-ui/use-touch-primary"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import { useRef, useState, type ReactNode } from "react"
 
@@ -21,9 +23,9 @@ type PosReceiptPanelProps = {
   overlay?: ReactNode
 }
 
-type CatalogPreviewState = {
-  url: string
-  top: number
+type DetailPopupState = {
+  line: PosCartLine
+  anchorTop: number
 }
 
 function formatMoney(value: string | number): string {
@@ -46,25 +48,32 @@ export function PosReceiptPanel({
   overlay,
 }: PosReceiptPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
-  const [catalogPreview, setCatalogPreview] = useState<CatalogPreviewState | null>(
-    null
-  )
+  const touchPrimary = isTouchPrimaryDevice()
+  const [detailPopup, setDetailPopup] = useState<DetailPopupState | null>(null)
   const total = cartTotal(lines)
 
-  function showCatalogPreview(
-    line: PosCartLine,
-    target: HTMLElement
-  ): void {
-    const imageUrl = line.catalogImageUrl
-    if (!imageUrl) return
+  function openDetailPopup(line: PosCartLine, rowEl: HTMLElement): void {
     const panel = panelRef.current
     if (!panel) return
     const panelRect = panel.getBoundingClientRect()
-    const rowRect = target.getBoundingClientRect()
-    setCatalogPreview({
-      url: imageUrl,
-      top: rowRect.top - panelRect.top,
+    const rowRect = rowEl.getBoundingClientRect()
+    setDetailPopup({
+      line,
+      anchorTop: rowRect.top - panelRect.top,
     })
+  }
+
+  function closeDetailPopup(): void {
+    setDetailPopup(null)
+  }
+
+  function handleRowClick(
+    line: PosCartLine,
+    event: React.MouseEvent<HTMLLIElement>
+  ): void {
+    if (!touchPrimary) return
+    if ((event.target as HTMLElement).closest("button")) return
+    openDetailPopup(line, event.currentTarget)
   }
 
   return (
@@ -72,21 +81,20 @@ export function PosReceiptPanel({
       ref={panelRef}
       className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white"
     >
-      {catalogPreview ? (
-        <div
-          data-testid="pos-cart-catalog-preview"
-          className="pos-cart-catalog-preview pointer-events-none absolute z-[60] box-border h-40 w-40 border border-zinc-300 bg-white p-1"
-          style={{
-            right: "calc(100% + 8px)",
-            top: catalogPreview.top,
-          }}
-        >
-          <img
-            src={catalogPreview.url}
-            alt=""
-            className="h-full w-full object-contain"
-          />
-        </div>
+      {detailPopup && touchPrimary ? (
+        <PosCartProductDetailPopup
+          line={detailPopup.line}
+          variant="modal"
+          onClose={closeDetailPopup}
+        />
+      ) : null}
+
+      {detailPopup && !touchPrimary ? (
+        <PosCartProductDetailPopup
+          line={detailPopup.line}
+          variant="anchored"
+          anchorTop={detailPopup.anchorTop}
+        />
       ) : null}
 
       {overlay}
@@ -135,23 +143,30 @@ export function PosReceiptPanel({
               {lines.map((line) => (
                 <li
                   key={line.productId}
+                  data-testid="pos-cart-row"
                   className="grid grid-cols-[1fr_88px_80px] items-center gap-1 rounded bg-white/10 px-1 py-1.5 text-xs"
+                  onMouseOver={
+                    touchPrimary
+                      ? undefined
+                      : (event) => openDetailPopup(line, event.currentTarget)
+                  }
+                  onMouseOut={touchPrimary ? undefined : closeDetailPopup}
+                  onClick={(event) => handleRowClick(line, event)}
                 >
                   <div className="min-w-0">
                     <div className="truncate font-medium">{line.name}</div>
                     <div
                       data-testid="pos-cart-product-code"
                       className="font-mono text-[10px] text-white/75"
-                      onMouseOver={(event) =>
-                        showCatalogPreview(line, event.currentTarget)
-                      }
-                      onMouseOut={() => setCatalogPreview(null)}
                     >
                       {line.code}
                     </div>
                     <button
                       type="button"
-                      onClick={() => onRemoveLine(line.productId)}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onRemoveLine(line.productId)
+                      }}
                       className="mt-0.5 cursor-pointer text-[10px] text-white/80 underline-offset-2 hover:underline"
                     >
                       Remove
@@ -161,7 +176,10 @@ export function PosReceiptPanel({
                     <button
                       type="button"
                       aria-label={`Decrease qty for ${line.name}`}
-                      onClick={() => onDecrementQty(line.productId)}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onDecrementQty(line.productId)
+                      }}
                       className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
                     >
                       −
@@ -172,7 +190,10 @@ export function PosReceiptPanel({
                     <button
                       type="button"
                       aria-label={`Increase qty for ${line.name}`}
-                      onClick={() => onIncrementQty(line.productId)}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        onIncrementQty(line.productId)
+                      }}
                       className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
                     >
                       +
