@@ -172,6 +172,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "Periods, reconciliation, vouchers"
         ),
         available(
+          "trial-balance",
+          "Trial Balance",
+          "/finance/reports/trial-balance",
+          "GL trial balance integrity report"
+        ),
+        available(
           "manual-journal",
           "Manual Journal",
           "/finance/journal-entries",

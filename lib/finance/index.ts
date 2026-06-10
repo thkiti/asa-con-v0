@@ -328,6 +328,18 @@ export {
   loadJournalEntryWithLines,
   loadJournalLineage,
 } from "./journal-lineage"
+export {
+  signedBalanceForAccountType,
+  isTrialBalanceBalanced,
+  trialBalanceDifference,
+} from "./reports/balance-helpers"
+export { parseTrialBalanceFilter } from "./reports/report-filter"
+export { getTrialBalance } from "./reports/trial-balance"
+export type {
+  TrialBalanceFilter,
+  TrialBalanceResult,
+  TrialBalanceRow,
+} from "./reports/trial-balance-types"
 export type {
   JournalLineageNode,
   JournalLineageResult,

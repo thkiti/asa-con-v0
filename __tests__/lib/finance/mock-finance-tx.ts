@@ -201,19 +201,37 @@ export function createFinanceMockTx(branchId = "branch-1") {
     glAccount: {
       findMany: async ({
         where,
+        orderBy,
       }: {
         where?: {
           code?: { in: string[] }
           deleted?: boolean
           isActive?: boolean
         }
+        orderBy?: Array<{ accountType?: "asc" | "desc"; code?: "asc" | "desc" }>
       }) => {
-        return state.glAccounts.filter((a) => {
+        let rows = state.glAccounts.filter((a) => {
           if (where?.deleted !== undefined && a.deleted !== where.deleted) return false
           if (where?.isActive !== undefined && a.isActive !== where.isActive) return false
           if (where?.code?.in && !where.code.in.includes(a.code)) return false
           return true
         })
+        if (orderBy?.length) {
+          rows = [...rows].sort((a, b) => {
+            for (const ob of orderBy) {
+              if (ob.accountType) {
+                const diff = a.accountType.localeCompare(b.accountType)
+                if (diff !== 0) return ob.accountType === "desc" ? -diff : diff
+              }
+              if (ob.code) {
+                const diff = a.code.localeCompare(b.code)
+                if (diff !== 0) return ob.code === "desc" ? -diff : diff
+              }
+            }
+            return 0
+          })
+        }
+        return rows
       },
     },
     accountingPeriod: {
@@ -1014,6 +1032,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
           glAccountId?: { in: string[] }
           journalEntry?: {
             branchId?: string
+            periodId?: string
             date?: { gte?: Date; lt?: Date }
           }
         }
@@ -1028,6 +1047,12 @@ export function createFinanceMockTx(branchId = "branch-1") {
             if (
               where.journalEntry.branchId &&
               entry.branchId !== where.journalEntry.branchId
+            ) {
+              return false
+            }
+            if (
+              where.journalEntry.periodId &&
+              entry.periodId !== where.journalEntry.periodId
             ) {
               return false
             }

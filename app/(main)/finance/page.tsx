@@ -10,6 +10,14 @@ export default function Page() {
       <ul className="mt-6 space-y-3">
         <li>
           <Link
+            href="/finance/reports/trial-balance"
+            className="text-zinc-900 underline hover:text-zinc-600"
+          >
+            Trial balance
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/finance/journal-entries"
             className="text-zinc-900 underline hover:text-zinc-600"
           >

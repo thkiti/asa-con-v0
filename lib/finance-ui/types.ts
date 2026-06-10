@@ -159,6 +159,30 @@ export type JournalInquiryLine = {
   memo: string | null
 }
 
+export type TrialBalanceRow = {
+  accountCode: string
+  accountName: string
+  accountType: string
+  totalDebit: string
+  totalCredit: string
+  signedBalance: string
+}
+
+export type TrialBalanceResult = {
+  filter: {
+    branchId: string
+    periodKey?: string
+    from?: string
+    to?: string
+    hideZeroBalances?: boolean
+  }
+  rows: TrialBalanceRow[]
+  totalDebits: string
+  totalCredits: string
+  difference: string
+  isBalanced: boolean
+}
+
 export type JournalInquiryResult = {
   id: string
   voucherId: string
