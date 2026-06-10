@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth/session"
 import { checkout } from "@/lib/pos/checkout"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import type { CheckoutCartLine } from "@/lib/pos/checkout-types"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 import { isPosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
 
 function parseCheckoutLines(raw: unknown): CheckoutCartLine[] {
@@ -39,7 +39,7 @@ function parsePaidAmount(raw: unknown): number | string {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const body = (await req.json().catch(() => ({}))) as {
       lines?: unknown
       paymentMethod?: unknown

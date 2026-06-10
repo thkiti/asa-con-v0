@@ -86,7 +86,7 @@ describe("canStaffUseBranch", () => {
     ).toBe(false)
   })
 
-  it("allows HO_ADMIN on shop branch only", () => {
+  it("allows HO_ADMIN on home HO branch or shop branch", () => {
     expect(
       canStaffUseBranch(
         {
@@ -106,6 +106,6 @@ describe("canStaffUseBranch", () => {
         },
         activeHo
       )
-    ).toBe(false)
+    ).toBe(true)
   })
 })

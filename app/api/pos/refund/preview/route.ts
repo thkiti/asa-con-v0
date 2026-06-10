@@ -5,11 +5,11 @@ import { getSession } from "@/lib/auth/session"
 import { getRefundPreview } from "@/lib/pos/refund"
 import { RefundError } from "@/lib/pos/refund-errors"
 import { prisma } from "@/lib/shared/prisma"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const saleId = req.nextUrl.searchParams.get("saleId")?.trim() ?? ""
     const receiptNo = req.nextUrl.searchParams.get("receiptNo")?.trim() ?? ""
     const branchId = session.branchId.trim()

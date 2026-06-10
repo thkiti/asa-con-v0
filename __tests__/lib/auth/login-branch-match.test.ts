@@ -37,7 +37,7 @@ describe("isLoginBranchAllowed", () => {
     ).toBe(false)
   })
 
-  it("allows HO_ADMIN on shop branch only", () => {
+  it("allows HO_ADMIN on home HO branch or shop branch", () => {
     expect(
       isLoginBranchAllowed(
         { branchId: "b-ho", allowAnyBranchLogin: false, role: "HO_ADMIN" },
@@ -49,6 +49,6 @@ describe("isLoginBranchAllowed", () => {
         { branchId: "b-ho", allowAnyBranchLogin: false, role: "HO_ADMIN" },
         { branchId: "b-ho", branchType: "HO" }
       )
-    ).toBe(false)
+    ).toBe(true)
   })
 })

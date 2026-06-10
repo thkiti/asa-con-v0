@@ -5,12 +5,12 @@ import { posApiErrorResponse } from "@/app/api/pos/shared/pos-api-errors"
 import { getSession } from "@/lib/auth/session"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import { previewNextReceiptNo } from "@/lib/pos/receipt"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET() {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const branchId = session.branchId.trim()
     if (!branchId) {
       throw new CheckoutError("Shop session requires branchId", "INVALID_BRANCH", 400)

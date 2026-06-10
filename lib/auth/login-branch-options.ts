@@ -20,8 +20,18 @@ export function resolveLoginBranchOptions(
 ): LoginBranchOption[] {
   if (!staffPreview) return []
 
-  if (shouldLoadShopBranches(staffPreview)) {
+  if (staffPreview.allowAnyBranchLogin) {
     return shopBranches
+  }
+
+  if (staffPreview.role === "HO_ADMIN") {
+    const home: LoginBranchOption = {
+      id: staffPreview.branchId,
+      code: staffPreview.branchCode,
+      name: staffPreview.branchName,
+    }
+    const rest = shopBranches.filter((branch) => branch.id !== home.id)
+    return [home, ...rest]
   }
 
   const home = shopBranches.find((branch) => branch.id === staffPreview.branchId)

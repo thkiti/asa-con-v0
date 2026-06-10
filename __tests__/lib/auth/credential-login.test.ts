@@ -170,23 +170,21 @@ describe("credentialLogin", () => {
     expect(result.sessionUser.branchCode).toBe("SH001")
   })
 
-  it("rejects HO_ADMIN on HO home branch", async () => {
+  it("allows HO_ADMIN on HO home branch", async () => {
     jest
       .mocked(prisma.staff.findUnique)
       .mockResolvedValue((await activeStaffRecord()) as never)
     jest.mocked(prisma.branch.findUnique).mockResolvedValue(loginBranch() as never)
 
-    await expect(
-      credentialLogin({
-        username: "001",
-        password: "1234",
-        branchCode: "HO999",
-      })
-    ).rejects.toMatchObject({
-      message: CREDENTIAL_LOGIN_BRANCH_MISMATCH_MESSAGE,
-      code: "BRANCH_MISMATCH",
-      httpStatus: 403,
+    const result = await credentialLogin({
+      username: "001",
+      password: "1234",
+      branchCode: "HO999",
     })
+
+    expect(result.sessionUser.branchCode).toBe("HO999")
+    expect(result.sessionUser.branchId).toBe("branch-ho")
+    expect(result.redirectTo).toBe("/main")
   })
 
   it("allows replacer SH_STAFF to login to another active shop branch", async () => {

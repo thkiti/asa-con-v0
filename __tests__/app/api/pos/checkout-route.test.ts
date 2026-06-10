@@ -146,6 +146,25 @@ describe("POST /api/pos/checkout", () => {
     expect(mockedCheckout).not.toHaveBeenCalled()
   })
 
+  it("returns 403 when session branch is not a shop branch", async () => {
+    mockedGetSession.mockResolvedValue({
+      ...shopSession,
+      role: "HO_ADMIN",
+      branchId: "branch-ho",
+      branchCode: "HO999",
+      branchName: "Head Office",
+    })
+
+    const res = await post({ lines: [{ productId: "p1", qty: 1 }] })
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({
+      error: "Full POS requires a shop branch",
+      code: "POS_SHOP_BRANCH_REQUIRED",
+    })
+    expect(mockedCheckout).not.toHaveBeenCalled()
+  })
+
   it("maps CheckoutError to structured JSON", async () => {
     mockedGetSession.mockResolvedValue(shopSession)
     mockedCheckout.mockRejectedValue(

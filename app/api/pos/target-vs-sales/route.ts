@@ -4,11 +4,11 @@ import { posApiErrorResponse } from "@/app/api/pos/shared/pos-api-errors"
 import { getSession } from "@/lib/auth/session"
 import { buildPosTargetVsSalesSummary } from "@/lib/pos/target-vs-sales"
 import { prisma } from "@/lib/shared/prisma"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const branchId = session.branchId.trim()
     if (!branchId) {
       return NextResponse.json(

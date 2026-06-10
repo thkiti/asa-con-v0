@@ -4,7 +4,10 @@ const mockRedirect = jest.fn()
 const mockGetSession = jest.fn()
 
 jest.mock("next/navigation", () => ({
-  redirect: (...args: unknown[]) => mockRedirect(...args),
+  redirect: (...args: unknown[]) => {
+    mockRedirect(...args)
+    throw new Error("NEXT_REDIRECT")
+  },
 }))
 
 jest.mock("@/lib/auth/session", () => ({
@@ -23,7 +26,7 @@ describe("ShopPage", () => {
   it("redirects to login without session", async () => {
     mockGetSession.mockResolvedValue(null)
 
-    await ShopPage()
+    await expect(ShopPage()).rejects.toThrow("NEXT_REDIRECT")
 
     expect(mockRedirect).toHaveBeenCalledWith("/login")
   })
@@ -40,7 +43,7 @@ describe("ShopPage", () => {
       branchName: "Shop",
     })
 
-    await ShopPage()
+    await expect(ShopPage()).rejects.toThrow("NEXT_REDIRECT")
 
     expect(mockRedirect).toHaveBeenCalledWith("/login")
   })
@@ -61,5 +64,22 @@ describe("ShopPage", () => {
 
     expect(mockRedirect).not.toHaveBeenCalled()
     expect(page).toBeTruthy()
+  })
+
+  it("redirects HO_ADMIN on HO999 to main menu", async () => {
+    mockGetSession.mockResolvedValue({
+      sessionId: "sess-1",
+      role: "HO_ADMIN",
+      staffId: "001",
+      userId: "u1",
+      name: "Admin",
+      branchId: "branch-ho",
+      branchCode: "HO999",
+      branchName: "Head Office",
+    })
+
+    await expect(ShopPage()).rejects.toThrow("NEXT_REDIRECT")
+
+    expect(mockRedirect).toHaveBeenCalledWith("/main")
   })
 })

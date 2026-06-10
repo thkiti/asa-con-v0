@@ -5,11 +5,11 @@ import { getSession } from "@/lib/auth/session"
 import { searchRefundableReceipts } from "@/lib/pos/search-refundable-receipts"
 import { RefundError } from "@/lib/pos/refund-errors"
 import { prisma } from "@/lib/shared/prisma"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const branchId = session.branchId.trim()
     if (!branchId) {
       throw new RefundError("Shop session requires branchId", "MISSING_BRANCH", 400)

@@ -8,11 +8,11 @@ import {
 } from "@/lib/pos/payment-evidence-upload-token"
 import { PosLookupError } from "@/lib/pos/pos-errors"
 import { prisma } from "@/lib/shared/prisma"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 export async function POST(req: Request) {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const branchId = session.branchId.trim()
     const branchCode = session.branchCode?.trim() ?? ""
     if (!branchId || !branchCode) {

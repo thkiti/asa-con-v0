@@ -431,7 +431,7 @@ describe("LoginForm", () => {
     })
   })
 
-  it("HO_ADMIN dropdown offers shop branches only after preview", async () => {
+  it("HO_ADMIN dropdown offers HO home plus shop branches after preview", async () => {
     const { container } = renderLoginForm()
     const branchSelect = getBranchSelect(container)
     const passwordInput = container.querySelector(
@@ -442,7 +442,7 @@ describe("LoginForm", () => {
 
     expect(
       Array.from(branchSelect.options).map((option) => option.value)
-    ).toEqual(["", "SH999", "SH001"])
+    ).toEqual(["", "HO999", "SH999", "SH001"])
     expect(branchSelect.value).toBe("")
     expect(document.activeElement).toBe(branchSelect)
     expect(passwordInput.disabled).toBe(true)

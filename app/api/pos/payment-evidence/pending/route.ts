@@ -5,11 +5,11 @@ import { getSession } from "@/lib/auth/session"
 import { listPendingPaymentEvidence } from "@/lib/pos/list-pending-payment-evidence"
 import { PosLookupError } from "@/lib/pos/pos-errors"
 import { prisma } from "@/lib/shared/prisma"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 export async function GET() {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const branchId = session.branchId.trim()
     if (!branchId) {
       throw new PosLookupError("Shop session requires branchId", "INVALID_BRANCH", 400)

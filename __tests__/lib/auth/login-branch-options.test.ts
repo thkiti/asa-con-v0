@@ -90,7 +90,7 @@ describe("resolveLoginBranchOptions", () => {
     ).toEqual(shopBranches)
   })
 
-  it("returns shop branches for HO_ADMIN", () => {
+  it("returns HO home plus shop branches for HO_ADMIN", () => {
     expect(
       resolveLoginBranchOptions(
         {
@@ -104,7 +104,14 @@ describe("resolveLoginBranchOptions", () => {
         },
         shopBranches
       )
-    ).toEqual(shopBranches)
+    ).toEqual([
+      {
+        id: "branch-ho",
+        code: "HO999",
+        name: "Head Office",
+      },
+      ...shopBranches,
+    ])
   })
 
   it("returns home branch for HO_FINANCE not in shop list", () => {

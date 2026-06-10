@@ -1,6 +1,6 @@
 import type { SessionUser } from "@/lib/auth/types"
 import { WorktimeError } from "@/lib/pos/worktime-errors"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 export type PosWorktimeContext = {
   branchId: string
@@ -10,7 +10,7 @@ export type PosWorktimeContext = {
 export function requirePosWorktimeContext(
   session: SessionUser | null
 ): PosWorktimeContext {
-  const user = requireStockDocumentSession(session)
+  const user = requirePosShopSession(session)
   const branchId = user.branchId.trim()
   const staffId = user.staffId.trim()
 

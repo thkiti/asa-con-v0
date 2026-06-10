@@ -4,7 +4,7 @@ import { posApiErrorResponse } from "@/app/api/pos/shared/pos-api-errors"
 import { getSession } from "@/lib/auth/session"
 import { createRefund } from "@/lib/pos/refund"
 import { RefundError } from "@/lib/pos/refund-errors"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 function parseOptionalBodyAmount(raw: unknown): string | number | undefined {
   if (raw === null || raw === undefined) return undefined
@@ -14,7 +14,7 @@ function parseOptionalBodyAmount(raw: unknown): string | number | undefined {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = requireStockDocumentSession(await getSession())
+    const session = requirePosShopSession(await getSession())
     const body = (await req.json().catch(() => ({}))) as {
       saleId?: unknown
       amount?: unknown

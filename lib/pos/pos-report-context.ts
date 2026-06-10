@@ -1,6 +1,6 @@
 import type { SessionUser } from "@/lib/auth/types"
 import { PosLookupError } from "@/lib/pos/pos-errors"
-import { requireStockDocumentSession } from "@/lib/stock/document-read"
+import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
 
 export type PosReportContext = {
   branchId: string
@@ -12,7 +12,7 @@ export type PosReportContext = {
 export function requirePosReportContext(
   session: SessionUser | null
 ): PosReportContext {
-  const user = requireStockDocumentSession(session)
+  const user = requirePosShopSession(session)
   const branchId = user.branchId.trim()
   const branchCode = user.branchCode.trim()
   const sessionStaffId = user.staffId.trim()
