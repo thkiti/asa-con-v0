@@ -69,6 +69,7 @@ type JournalEntryRow = {
   periodId: string
   postedAt: Date
   createdAt: Date
+  reversalOfJournalEntryId: string | null
 }
 
 let seq = 0
@@ -641,15 +642,324 @@ export function createFinanceMockTx(branchId = "branch-1") {
         }
         return rows
       },
-    },    journalEntry: {
-      findUnique: async ({ where }: { where: { voucherId?: string } }) => {
+    },
+    journalEntry: {
+      findUnique: async ({
+        where,
+        include,
+        select,
+      }: {
+        where: { voucherId?: string; id?: string }
+        include?: {
+          lines?: { orderBy?: { lineNo: "asc" } }
+          voucher?: { select: Record<string, boolean> }
+          reversedBy?: { select: Record<string, unknown> }
+          reverses?: { select: Record<string, unknown> }
+        }
+        select?: Record<string, unknown>
+      }) => {
+        let entry: JournalEntryRow | null = null
         if (where.voucherId) {
-          return (
+          entry =
             state.journalEntries.find((j) => j.voucherId === where.voucherId) ??
             null
+        } else if (where.id) {
+          entry = state.journalEntries.find((j) => j.id === where.id) ?? null
+        }
+        if (!entry) return null
+
+        const buildLine = (line: JournalEntryLineRow) => {
+          const account = state.glAccounts.find((a) => a.id === line.glAccountId)!
+          return {
+            ...line,
+            glAccount: { code: account.code, name: account.name },
+          }
+        }
+
+        const buildVoucher = (voucherId: string, voucherSelect?: Record<string, boolean>) => {
+          const voucher = state.vouchers.find((v) => v.id === voucherId)!
+          if (!voucherSelect) return voucher
+          const result: Record<string, unknown> = {}
+          for (const key of Object.keys(voucherSelect)) {
+            if (voucherSelect[key]) {
+              result[key] = voucher[key as keyof VoucherRow]
+            }
+          }
+          return result
+        }
+
+        if (select) {
+          const result: Record<string, unknown> = {}
+          for (const key of Object.keys(select)) {
+            if (key === "lines") {
+              let lines = state.journalEntryLines.filter(
+                (l) => l.journalEntryId === entry!.id
+              )
+              const orderBy = (select.lines as { orderBy?: { lineNo: "asc" } })?.orderBy
+              if (orderBy?.lineNo === "asc") {
+                lines = [...lines].sort((a, b) => a.lineNo - b.lineNo)
+              }
+              const lineSelect = (select.lines as { select?: Record<string, unknown> })
+                ?.select
+              result.lines = lines.map((line) => {
+                if (!lineSelect) return line
+                const row: Record<string, unknown> = {}
+                for (const lk of Object.keys(lineSelect)) {
+                  if (lk === "glAccount") {
+                    const account = state.glAccounts.find((a) => a.id === line.glAccountId)!
+                    row.glAccount = { code: account.code, name: account.name }
+                  } else {
+                    row[lk] = line[lk as keyof JournalEntryLineRow]
+                  }
+                }
+                return row
+              })
+            } else if (key === "voucher") {
+              const voucherSelect = (select.voucher as { select?: Record<string, boolean> })
+                ?.select
+              result.voucher = buildVoucher(entry.voucherId, voucherSelect)
+            } else if (key === "reverses" || key === "reversedBy") {
+              const relSelect = (select[key] as { select?: Record<string, unknown> })?.select
+              const relEntry =
+                key === "reverses"
+                  ? entry!.reversalOfJournalEntryId
+                    ? (state.journalEntries.find(
+                        (j) => j.id === entry!.reversalOfJournalEntryId
+                      ) ?? null)
+                    : null
+                  : state.journalEntries.find(
+                      (j) => j.reversalOfJournalEntryId === entry!.id
+                    ) ?? null
+              if (!relEntry) {
+                result[key] = null
+              } else if (!relSelect) {
+                result[key] = relEntry
+              } else {
+                const row: Record<string, unknown> = {}
+                for (const rk of Object.keys(relSelect)) {
+                  if (rk === "voucher") {
+                    const vs = (relSelect.voucher as { select?: Record<string, boolean> })
+                      ?.select
+                    row.voucher = buildVoucher(relEntry.voucherId, vs)
+                  } else {
+                    row[rk] = relEntry[rk as keyof JournalEntryRow]
+                  }
+                }
+                result[key] = row
+              }
+            } else {
+              result[key] = entry[key as keyof JournalEntryRow]
+            }
+          }
+          return result
+        }
+
+        if (!include) return entry
+
+        const result: Record<string, unknown> = { ...entry }
+        if (include.lines) {
+          let lines = state.journalEntryLines.filter(
+            (l) => l.journalEntryId === entry!.id
+          )
+          if (include.lines.orderBy?.lineNo === "asc") {
+            lines = [...lines].sort((a, b) => a.lineNo - b.lineNo)
+          }
+          result.lines = lines.map(buildLine)
+        }
+        if (include.voucher) {
+          result.voucher = buildVoucher(
+            entry.voucherId,
+            include.voucher.select as Record<string, boolean> | undefined
           )
         }
-        return null
+        if (include.reversedBy) {
+          const reversedBy =
+            state.journalEntries.find(
+              (j) => j.reversalOfJournalEntryId === entry!.id
+            ) ?? null
+          if (reversedBy) {
+            const row: Record<string, unknown> = { id: reversedBy.id }
+            const sel = include.reversedBy.select as Record<string, unknown> | undefined
+            if (sel?.voucher) {
+              const vs = (sel.voucher as { select?: Record<string, boolean> }).select
+              row.voucher = buildVoucher(reversedBy.voucherId, vs)
+            }
+            result.reversedBy = row
+          } else {
+            result.reversedBy = null
+          }
+        }
+        if (include.reverses) {
+          const reverses = entry.reversalOfJournalEntryId
+            ? (state.journalEntries.find((j) => j.id === entry!.reversalOfJournalEntryId) ??
+              null)
+            : null
+          if (reverses) {
+            const row: Record<string, unknown> = { ...reverses }
+            const sel = include.reverses.select as Record<string, unknown> | undefined
+            if (sel?.voucher) {
+              const vs = (sel.voucher as { select?: Record<string, boolean> }).select
+              row.voucher = buildVoucher(reverses.voucherId, vs)
+            }
+            result.reverses = row
+          } else {
+            result.reverses = null
+          }
+        }
+        return result
+      },
+      findMany: async ({
+        where,
+        orderBy,
+        take,
+        skip,
+        select,
+      }: {
+        where?: {
+          branchId?: string
+          periodId?: string
+          date?: { gte?: Date; lte?: Date }
+          voucher?: { refType?: { in: string[] } }
+        }
+        orderBy?: Array<{ date?: "desc" | "asc"; createdAt?: "desc" | "asc" }>
+        take?: number
+        skip?: number
+        select?: Record<string, unknown>
+      }) => {
+        let rows = state.journalEntries.filter((entry) => {
+          if (where?.branchId && entry.branchId !== where.branchId) return false
+          if (where?.periodId && entry.periodId !== where.periodId) return false
+          if (where?.date) {
+            if (where.date.gte && entry.date.getTime() < where.date.gte.getTime()) {
+              return false
+            }
+            if (where.date.lte && entry.date.getTime() > where.date.lte.getTime()) {
+              return false
+            }
+          }
+          if (where?.voucher?.refType?.in) {
+            const voucher = state.vouchers.find((v) => v.id === entry.voucherId)
+            if (!voucher || !where.voucher.refType.in.includes(voucher.refType)) {
+              return false
+            }
+          }
+          return true
+        })
+
+        if (orderBy?.length) {
+          rows = [...rows].sort((a, b) => {
+            for (const ob of orderBy) {
+              if (ob.date) {
+                const diff = a.date.getTime() - b.date.getTime()
+                if (diff !== 0) return ob.date === "desc" ? -diff : diff
+              }
+              if (ob.createdAt) {
+                const diff = a.createdAt.getTime() - b.createdAt.getTime()
+                if (diff !== 0) return ob.createdAt === "desc" ? -diff : diff
+              }
+            }
+            return 0
+          })
+        }
+
+        if (skip) rows = rows.slice(skip)
+        if (take != null) rows = rows.slice(0, take)
+
+        if (!select) return rows
+
+        return rows.map((entry) => {
+          const result: Record<string, unknown> = {}
+          for (const key of Object.keys(select)) {
+            if (key === "voucher") {
+              const voucherSelect = (select.voucher as { select?: Record<string, boolean> })
+                ?.select
+              const voucher = state.vouchers.find((v) => v.id === entry.voucherId)!
+              if (!voucherSelect) {
+                result.voucher = voucher
+              } else {
+                const row: Record<string, unknown> = {}
+                for (const vk of Object.keys(voucherSelect)) {
+                  row[vk] = voucher[vk as keyof VoucherRow]
+                }
+                result.voucher = row
+              }
+            } else if (key === "lines") {
+              const lineSelect = (select.lines as { select?: Record<string, boolean> })?.select
+              const lines = state.journalEntryLines.filter(
+                (l) => l.journalEntryId === entry.id
+              )
+              result.lines = lines.map((line) => {
+                if (!lineSelect) return line
+                const row: Record<string, unknown> = {}
+                for (const lk of Object.keys(lineSelect)) {
+                  row[lk] = line[lk as keyof JournalEntryLineRow]
+                }
+                return row
+              })
+            } else if (key === "reversedBy") {
+              const reversedBy =
+                state.journalEntries.find(
+                  (j) => j.reversalOfJournalEntryId === entry.id
+                ) ?? null
+              if (!reversedBy) {
+                result.reversedBy = null
+              } else {
+                const relSelect = (select.reversedBy as { select?: Record<string, unknown> })
+                  ?.select
+                const row: Record<string, unknown> = { id: reversedBy.id }
+                if (relSelect?.voucher) {
+                  const vs = (relSelect.voucher as { select?: Record<string, boolean> }).select
+                  const voucher = state.vouchers.find((v) => v.id === reversedBy.voucherId)!
+                  const vr: Record<string, unknown> = {}
+                  if (vs) {
+                    for (const vk of Object.keys(vs)) {
+                      vr[vk] = voucher[vk as keyof VoucherRow]
+                    }
+                  }
+                  row.voucher = vr
+                }
+                result.reversedBy = row
+              }
+            } else {
+              result[key] = entry[key as keyof JournalEntryRow]
+            }
+          }
+          return result
+        })
+      },
+      count: async ({
+        where,
+      }: {
+        where?: {
+          branchId?: string
+          periodId?: string
+          date?: { gte?: Date; lte?: Date }
+          voucher?: { refType?: { in: string[] } }
+        }
+      }) => {
+        let rows = state.journalEntries
+        if (where) {
+          rows = rows.filter((entry) => {
+            if (where.branchId && entry.branchId !== where.branchId) return false
+            if (where.periodId && entry.periodId !== where.periodId) return false
+            if (where.date) {
+              if (where.date.gte && entry.date.getTime() < where.date.gte.getTime()) {
+                return false
+              }
+              if (where.date.lte && entry.date.getTime() > where.date.lte.getTime()) {
+                return false
+              }
+            }
+            if (where.voucher?.refType?.in) {
+              const voucher = state.vouchers.find((v) => v.id === entry.voucherId)
+              if (!voucher || !where.voucher.refType.in.includes(voucher.refType)) {
+                return false
+              }
+            }
+            return true
+          })
+        }
+        return rows.length
       },
       create: async ({
         data,
@@ -659,6 +969,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
           date: Date
           branchId: string
           periodId: string
+          reversalOfJournalEntryId?: string | null
           lines: {
             create: {
               lineNo: number
@@ -678,6 +989,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
           periodId: data.periodId,
           postedAt: new Date(),
           createdAt: new Date(),
+          reversalOfJournalEntryId: data.reversalOfJournalEntryId ?? null,
         }
         state.journalEntries.push(entry)
         for (const line of data.lines.create) {

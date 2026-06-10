@@ -9,6 +9,7 @@ export type CreateJournalForVoucherInput = {
   branchId: string
   periodId: string
   lines: JournalLineDraft[]
+  reversalOfJournalEntryId?: string | null
 }
 
 /** Posted journals are immutable — no update helpers are exported. */
@@ -113,6 +114,7 @@ export async function createJournalForVoucher(
       date: input.date,
       branchId: input.branchId,
       periodId: input.periodId,
+      reversalOfJournalEntryId: input.reversalOfJournalEntryId ?? null,
       lines: {
         create: input.lines.map((line, index) => ({
           lineNo: index + 1,

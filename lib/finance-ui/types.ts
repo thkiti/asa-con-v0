@@ -111,3 +111,76 @@ export type VoucherDetail = {
 export type VoucherDetailResult = {
   voucher: VoucherDetail
 }
+
+export type ManualJournalLineInput = {
+  accountCode: string
+  debit: string | number
+  credit: string | number
+  memo?: string | null
+}
+
+export type PostedVoucherResult = {
+  voucherId: string
+  voucherNo: string
+  journalEntryId: string
+  alreadyPosted: boolean
+}
+
+export type JournalListRow = {
+  id: string
+  voucherId: string
+  voucherNo: string
+  refType: string
+  date: string
+  branchId: string
+  periodId: string
+  description: string | null
+  totalDebit: string
+  totalCredit: string
+  reversalOfJournalEntryId: string | null
+  isReversal: boolean
+  isReversed: boolean
+  reversedByJournalId: string | null
+  reversedByVoucherNo: string | null
+}
+
+export type JournalListResult = {
+  journals: JournalListRow[]
+  total: number
+}
+
+export type JournalInquiryLine = {
+  id: string
+  lineNo: number
+  accountCode: string
+  accountName: string
+  debit: string
+  credit: string
+  memo: string | null
+}
+
+export type JournalInquiryResult = {
+  id: string
+  voucherId: string
+  voucherNo: string
+  refType: string
+  refId: string
+  refNo: string | null
+  description: string | null
+  date: string
+  branchId: string
+  periodId: string
+  postedAt: string
+  reversalOfJournalEntryId: string | null
+  isReversal: boolean
+  isReversed: boolean
+  reverses: {
+    id: string
+    voucherNo: string
+  } | null
+  reversedBy: {
+    id: string
+    voucherNo: string
+  } | null
+  lines: JournalInquiryLine[]
+}

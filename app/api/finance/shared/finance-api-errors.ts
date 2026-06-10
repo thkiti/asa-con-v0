@@ -26,6 +26,7 @@ function statusForCode(code: string): number {
     code === "CLOSE_EVIDENCE_NOT_FOUND" ||
     code === "REOPEN_REQUEST_NOT_FOUND" ||
     code === "ACCOUNT_NOT_FOUND" ||
+    code === "JOURNAL_NOT_FOUND" ||
     code === "NOT_FOUND"
   ) {
     return 404
@@ -41,7 +42,9 @@ function statusForCode(code: string): number {
     code === "REOPEN_APPROVAL_REQUIRED" ||
     code === "REOPEN_REQUEST_PENDING" ||
     code === "REOPEN_REQUEST_NOT_PENDING" ||
-    code === "REOPEN_PERIOD_STATE_CHANGED"
+    code === "REOPEN_PERIOD_STATE_CHANGED" ||
+    code === "JOURNAL_ALREADY_REVERSED" ||
+    code === "PERIOD_ALREADY_HARD_CLOSED"
   ) {
     return 409
   }
@@ -103,14 +106,7 @@ export function financeErrorResponse(
   }
 
   if (err instanceof FinancePostingError) {
-    const status =
-      err.code === "PERIOD_NOT_FOUND" || err.code === "CLOSE_EVIDENCE_NOT_FOUND"
-        ? 404
-        : err.code === "FORBIDDEN"
-          ? 403
-          : err.code === "PERIOD_ALREADY_HARD_CLOSED"
-            ? 409
-            : 400
+    const status = statusForCode(err.code)
     return NextResponse.json(
       { error: err.message, code: err.code },
       { status }

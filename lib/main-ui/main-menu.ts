@@ -171,7 +171,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "/finance",
           "Periods, reconciliation, vouchers"
         ),
-        planned("journal", "Journal"),
+        available(
+          "manual-journal",
+          "Manual Journal",
+          "/finance/journal-entries",
+          "Post balanced GL journals and reversals"
+        ),
         available(
           "chart-of-accounts",
           "Chart of Accounts",

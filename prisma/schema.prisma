@@ -717,9 +717,17 @@ model JournalEntry {
   postedAt  DateTime @default(now())
   createdAt DateTime @default(now())
 
-  voucher Voucher          @relation(fields: [voucherId], references: [id])
-  period  AccountingPeriod @relation(fields: [periodId], references: [id])
-  lines   JournalEntryLine[]
+  /// Set on reversal journals only — points to the original posted journal.
+  reversalOfJournalEntryId String? @unique
+
+  voucher  Voucher          @relation(fields: [voucherId], references: [id])
+  period   AccountingPeriod @relation(fields: [periodId], references: [id])
+  lines    JournalEntryLine[]
+  reverses JournalEntry?    @relation("JournalReversal", fields: [reversalOfJournalEntryId], references: [id])
+  reversedBy JournalEntry?  @relation("JournalReversal")
+
+  @@index([branchId, periodId, date])
+  @@index([date])
 }
 
 model JournalEntryLine {

@@ -176,6 +176,45 @@ describe("financeErrorResponse", () => {
     })
   })
 
+  it("maps FinancePostingError JOURNAL_NOT_FOUND to 404", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError("Journal entry not found", "JOURNAL_NOT_FOUND"),
+      "test"
+    )
+    expect(res.status).toBe(404)
+    await expect(res.json()).resolves.toEqual({
+      error: "Journal entry not found",
+      code: "JOURNAL_NOT_FOUND",
+    })
+  })
+
+  it("maps FinancePostingError JOURNAL_ALREADY_REVERSED to 409", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError(
+        "Journal entry has already been reversed",
+        "JOURNAL_ALREADY_REVERSED"
+      ),
+      "test"
+    )
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({
+      error: "Journal entry has already been reversed",
+      code: "JOURNAL_ALREADY_REVERSED",
+    })
+  })
+
+  it("maps FinancePostingError PERIOD_CLOSED to 400", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError("period closed", "PERIOD_CLOSED"),
+      "test"
+    )
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "period closed",
+      code: "PERIOD_CLOSED",
+    })
+  })
+
   it("maps other FinancePostingError codes to 400", async () => {
     const res = financeErrorResponse(
       new FinancePostingError("Period is not open for posting", "PERIOD_NOT_OPEN"),

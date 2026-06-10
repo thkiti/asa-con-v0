@@ -20,20 +20,26 @@ export {
   type JournalLineCodeDraft,
   type JournalLineDraft,
   type OperationalVoucherInput,
+  type PostJournalReversalInput,
+  type PostManualJournalVoucherInput,
   type PostRefundVoucherInput,
   type PostSaleVoucherInput,
   type PostStockDocumentVoucherInput,
   type PostedVoucherResult,
+  type ManualJournalLineInput,
 } from "./posting-types"
 export { bootstrapPeriodIfMissing } from "./period-setup"
 export { closeAccountingPeriod, reopenAccountingPeriod } from "./period-close"
 export {
   ensureOpenPeriod,
+  postJournalReversal,
+  postManualJournalVoucher,
   postOperationalVoucher,
   postRefundVoucher,
   postSaleVoucher,
   postStockDocumentVoucher,
   resolveAccountIds,
+  resolveManualJournalLines,
 } from "./posting"
 export {
   assertBalanced,
@@ -310,3 +316,19 @@ export {
   checkOperationalAccountCodes,
   operationalCodesWarnings,
 } from "./gl-account-operational-check"
+export { listJournalEntries } from "./journal-list"
+export type {
+  JournalListFilter,
+  JournalListResult,
+  JournalListRow,
+} from "./journal-list"
+export { getJournalInquiryById } from "./journal-inquiry"
+export type { JournalInquiryLine, JournalInquiryResult } from "./journal-inquiry"
+export {
+  loadJournalEntryWithLines,
+  loadJournalLineage,
+} from "./journal-lineage"
+export type {
+  JournalLineageNode,
+  JournalLineageResult,
+} from "./journal-lineage"

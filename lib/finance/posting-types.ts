@@ -5,6 +5,8 @@ export const FINANCE_REF_TYPES = {
   POS_SALE: "POS_SALE",
   POS_REFUND: "POS_REFUND",
   STOCK_DOC_POST: "STOCK_DOC_POST",
+  MANUAL_JOURNAL: "MANUAL_JOURNAL",
+  MANUAL_JOURNAL_REVERSAL: "MANUAL_JOURNAL_REVERSAL",
 } as const
 
 export type FinanceRefType =
@@ -79,4 +81,28 @@ export type PostRefundVoucherInput = {
     createdAt: Date
   }
   paymentMethod: PaymentMethod
+}
+
+export type ManualJournalLineInput = {
+  accountCode: string
+  debit: Prisma.Decimal | number | string
+  credit: Prisma.Decimal | number | string
+  memo?: string | null
+}
+
+export type PostManualJournalVoucherInput = {
+  tx: Prisma.TransactionClient
+  branchId: string
+  date: Date
+  description?: string | null
+  refNo?: string | null
+  idempotencyKey: string
+  lines: ManualJournalLineInput[]
+}
+
+export type PostJournalReversalInput = {
+  tx: Prisma.TransactionClient
+  journalEntryId: string
+  reversalDate: Date
+  reason: string
 }
