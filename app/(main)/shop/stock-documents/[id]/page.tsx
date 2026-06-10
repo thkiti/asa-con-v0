@@ -13,7 +13,13 @@ export default async function EditStockDocumentPage({ params, searchParams }: Pa
   const stockCountStaffMode = isStockCountStaffEntry(from)
 
   return (
-    <main className={stockCountStaffMode ? "p-2" : "p-8"}>
+    <main
+      className={
+        stockCountStaffMode
+          ? "flex h-dvh flex-col overflow-hidden p-2"
+          : "p-8"
+      }
+    >
       {!stockCountStaffMode ? (
         <>
           <Link
@@ -25,7 +31,11 @@ export default async function EditStockDocumentPage({ params, searchParams }: Pa
           <h1 className="mt-4 text-xl font-semibold">Edit stock document</h1>
         </>
       ) : null}
-      <div className={stockCountStaffMode ? "mt-0" : "mt-6"}>
+      <div
+        className={
+          stockCountStaffMode ? "flex min-h-0 flex-1 flex-col" : "mt-6"
+        }
+      >
         <StockDocumentEditorController
           mode="edit"
           documentId={id}

@@ -12,7 +12,6 @@ import type {
 import {
   STOCK_COUNT_STAFF_BACK_HREF,
 } from "@/lib/stock-ui/stock-count-staff-mode"
-import { StockDocumentCountStaffHeader } from "./StockDocumentCountStaffHeader"
 import { StockDocumentCountingSheet } from "./StockDocumentCountingSheet"
 import { StockDocumentEditorToolbarActions } from "./StockDocumentEditorToolbarActions"
 import { StockDocumentHeaderForm } from "./StockDocumentHeaderForm"
@@ -80,6 +79,7 @@ export function StockDocumentEditorView({
       onWorkflowAction={onWorkflowAction}
       backHref={stockCountStaffMode ? STOCK_COUNT_STAFF_BACK_HREF : undefined}
       backLabel={stockCountStaffMode ? "Back" : undefined}
+      staffCountControls={stockCountStaffMode}
     />
   )
 
@@ -87,7 +87,7 @@ export function StockDocumentEditorView({
     <div
       className={
         stockCountStaffMode
-          ? "stock-document-print-shell stock-count-staff-mode space-y-2"
+          ? "stock-document-print-shell stock-count-staff-mode flex min-h-0 flex-1 flex-col"
           : "stock-document-print-shell space-y-6"
       }
     >
@@ -107,39 +107,38 @@ export function StockDocumentEditorView({
       ) : null}
 
       {error ? (
-        <p className="no-print rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p
+          className={
+            stockCountStaffMode
+              ? "no-print mb-1 shrink-0 truncate rounded border border-red-200 bg-red-50 px-2 py-1 text-xs text-red-800"
+              : "no-print rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          }
+        >
           {error}
         </p>
       ) : null}
 
       {statusMessage ? (
-        <p className="no-print rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+        <p
+          className={
+            stockCountStaffMode
+              ? "no-print mb-1 shrink-0 truncate rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-800"
+              : "no-print rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+          }
+        >
           {statusMessage}
         </p>
       ) : null}
 
       {!loading ? (
         <>
-          {stockCountStaffMode && staffHeader ? (
-            <div className="no-print">
-              <StockDocumentCountStaffHeader
-                refNo={state.refNo}
-                branchCode={staffHeader.branchCode}
-                branchName={staffHeader.branchName}
-                staffCode={staffHeader.staffCode}
-                staffName={staffHeader.staffName}
-                documentDate={state.date}
-              />
-            </div>
-          ) : null}
-
           {!stockCountStaffMode ? (
             <div className="no-print">
               <StockDocumentHeaderForm state={state} onChange={onHeaderChange} />
             </div>
           ) : null}
 
-          <div className="no-print">
+          <div className={stockCountStaffMode ? "no-print flex min-h-0 flex-1 flex-col" : "no-print"}>
             {showCountingGrid ? (
               <StockDocumentCountingSheet
                 lines={state.lines}
@@ -148,6 +147,18 @@ export function StockDocumentEditorView({
                 onHookGroupChange={onHookGroupChange}
                 onLineChange={onLineChange}
                 toolbarActions={toolbarActions}
+                staffCountBanner={
+                  stockCountStaffMode && staffHeader
+                    ? {
+                        refNo: state.refNo,
+                        branchCode: staffHeader.branchCode,
+                        branchName: staffHeader.branchName,
+                        staffCode: staffHeader.staffCode,
+                        staffName: staffHeader.staffName,
+                        documentDate: state.date,
+                      }
+                    : null
+                }
               />
             ) : (
               <div className="space-y-4">

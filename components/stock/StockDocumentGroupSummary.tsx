@@ -10,6 +10,7 @@ import {
   countingSummaryGroupCellClass,
   countingSummaryHeadClass,
   countingSummaryPanelClass,
+  countingSummaryPanelStaffClass,
   countingSummaryScrollClass,
   countingSummaryTableHeadClass,
   countingSummaryTotalFooterClass,
@@ -18,10 +19,12 @@ import {
 
 export type StockDocumentGroupSummaryProps = {
   visibleRows: EditorLineRowVM[]
+  staffWorkspace?: boolean
 }
 
 export function StockDocumentGroupSummary({
   visibleRows,
+  staffWorkspace = false,
 }: StockDocumentGroupSummaryProps) {
   const summaryRows = useMemo(
     () => buildStockDocumentGroupSummary(visibleRows),
@@ -41,7 +44,11 @@ export function StockDocumentGroupSummary({
   const hasCountedLines = displayedRows.length > 0
 
   return (
-    <aside className={countingSummaryPanelClass}>
+    <aside
+      className={
+        staffWorkspace ? countingSummaryPanelStaffClass : countingSummaryPanelClass
+      }
+    >
       <div className={`${countingSummaryHeadClass} shrink-0`}>
         <h2 className="text-sm font-semibold text-zinc-950">
           สรุปตามกลุ่มสินค้า

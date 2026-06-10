@@ -1,4 +1,5 @@
 import {
+  buildStockCountStaffHeadingLine,
   filterEditorActionsForStockCountStaff,
   formatStockCountStaffDate,
   isStockCountStaffEntry,
@@ -13,6 +14,21 @@ describe("stock-count-staff-mode", () => {
     expect(isStockCountStaffEntry("shop")).toBe(true)
     expect(isStockCountStaffEntry(" count ")).toBe(false)
     expect(isStockCountStaffEntry(undefined)).toBe(false)
+  })
+
+  it("builds one-line staff heading with metadata separators", () => {
+    expect(
+      buildStockCountStaffHeadingLine({
+        refNo: "ADJ-SH001-202606-0001",
+        branchCode: "SH001",
+        branchName: "Chidlom",
+        staffCode: "103",
+        staffName: "Somsak Kamnuch",
+        documentDate: "2026-06-10",
+      })
+    ).toBe(
+      "ตรวจนับสต๊อก — ADJ-SH001-202606-0001 | SH001 • Chidlom | 103 • Somsak Kamnuch | 2026.06.10"
+    )
   })
 
   it("formats document date for staff heading", () => {

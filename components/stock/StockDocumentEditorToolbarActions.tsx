@@ -13,6 +13,8 @@ export type StockDocumentEditorToolbarActionsProps = {
   onWorkflowAction: (actionId: StockDocumentActionId) => void
   backHref?: string
   backLabel?: string
+  /** Staff count header: slightly softer button corners. */
+  staffCountControls?: boolean
 }
 
 function actionBusyLabel(actionId: StockDocumentActionId): string {
@@ -32,9 +34,13 @@ function actionBusyLabel(actionId: StockDocumentActionId): string {
   }
 }
 
-function actionButtonClass(action: StockDocumentActionVM): string {
-  const base =
-    "rounded px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+function actionButtonClass(
+  action: StockDocumentActionVM,
+  staffCountControls: boolean
+): string {
+  const base = `${
+    staffCountControls ? "rounded-md" : "rounded"
+  } px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`
   if (action.destructive) {
     return `${base} border border-red-300 bg-white text-red-800 hover:bg-red-50`
   }
@@ -52,6 +58,7 @@ export function StockDocumentEditorToolbarActions({
   onWorkflowAction,
   backHref = "/shop/stock-documents",
   backLabel = "Back to list",
+  staffCountControls = false,
 }: StockDocumentEditorToolbarActionsProps) {
   const visibleActions = actions.filter((action) => action.visible)
   const busy = saving || actionBusy !== null
@@ -71,7 +78,7 @@ export function StockDocumentEditorToolbarActions({
           <button
             key={action.id}
             type="button"
-            className={actionButtonClass(action)}
+            className={actionButtonClass(action, staffCountControls)}
             disabled={!action.enabled || busy}
             onClick={() => onWorkflowAction(action.id)}
           >
@@ -81,7 +88,9 @@ export function StockDocumentEditorToolbarActions({
       })}
       <Link
         href={backHref}
-        className="rounded border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+        className={`${
+          staffCountControls ? "rounded-md" : "rounded"
+        } border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100`}
       >
         {backLabel}
       </Link>

@@ -5,16 +5,19 @@ type StockDocumentHookTabsProps = {
   activeHookGroup: CountingHookGroup
   countedByGroup: Partial<Record<CountingHookGroup, number>>
   onChange: (hookGroup: CountingHookGroup) => void
+  /** Staff header row: letter-only tabs, single line. */
+  compact?: boolean
 }
 
 export function StockDocumentHookTabs({
   activeHookGroup,
   countedByGroup,
   onChange,
+  compact = false,
 }: StockDocumentHookTabsProps) {
   return (
     <div
-      className="flex flex-wrap gap-2"
+      className={compact ? "flex flex-nowrap gap-1" : "flex flex-wrap gap-2"}
       role="tablist"
       aria-label="กลุ่มตะขอ"
     >
@@ -28,7 +31,9 @@ export function StockDocumentHookTabs({
             type="button"
             role="tab"
             aria-selected={active}
-            className={`rounded border px-3 py-1.5 text-sm font-semibold ${
+            className={`rounded border font-semibold ${
+              compact ? "px-2 py-0.5 text-xs" : "px-3 py-1.5 text-sm"
+            } ${
               active
                 ? "border-zinc-900 bg-zinc-900 text-white"
                 : "border-zinc-400 bg-white text-zinc-950 hover:bg-zinc-50"
@@ -36,16 +41,18 @@ export function StockDocumentHookTabs({
             onClick={() => onChange(group)}
           >
             {group}
-            <span
-              className={
-                active
-                  ? "ml-1 text-xs font-medium text-white/90"
-                  : "ml-1 text-xs font-medium text-zinc-700"
-              }
-            >
-              {COUNTING_HOOK_GROUP_LABELS_TH[group]}
-            </span>
-            {counted > 0 ? (
+            {!compact ? (
+              <span
+                className={
+                  active
+                    ? "ml-1 text-xs font-medium text-white/90"
+                    : "ml-1 text-xs font-medium text-zinc-700"
+                }
+              >
+                {COUNTING_HOOK_GROUP_LABELS_TH[group]}
+              </span>
+            ) : null}
+            {!compact && counted > 0 ? (
               <span
                 className={
                   active

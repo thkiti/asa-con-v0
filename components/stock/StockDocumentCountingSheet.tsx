@@ -5,9 +5,20 @@ import {
   sumStockDocumentGroupSummaryRows,
 } from "@/lib/stock-ui/build-counting-group-summary"
 import type { EditorLineRowVM } from "@/lib/stock-ui/editor-types"
+import {
+  buildStockCountStaffHeadingLine,
+  type StockCountStaffHeadingFields,
+} from "@/lib/stock-ui/stock-count-staff-mode"
 import { StockDocumentCountingBlocks } from "./StockDocumentCountingBlocks"
 import { StockDocumentGroupSummary } from "./StockDocumentGroupSummary"
 import { COUNTING_SHEET_ROOT_ATTR } from "./counting-qty-input"
+import {
+  stockCountHeaderBoxClass,
+  stockCountHeaderControlsRowClass,
+  stockCountHeaderIdentityRowClass,
+  stockCountWorkspaceBoxClass,
+  stockCountWorkspaceGridClass,
+} from "./counting-sheet-styles"
 import { StockDocumentHookTabs } from "./StockDocumentHookTabs"
 
 export type StockDocumentCountingSheetProps = {
@@ -17,6 +28,8 @@ export type StockDocumentCountingSheetProps = {
   onHookGroupChange: (hookGroup: CountingHookGroup) => void
   onLineChange: (key: string, patch: Partial<EditorLineRowVM>) => void
   toolbarActions?: ReactNode
+  /** Staff count mode: 2-row header box + full-height workspace box. */
+  staffCountBanner?: StockCountStaffHeadingFields | null
 }
 
 export function StockDocumentCountingSheet({
@@ -26,7 +39,10 @@ export function StockDocumentCountingSheet({
   onHookGroupChange,
   onLineChange,
   toolbarActions,
+  staffCountBanner = null,
 }: StockDocumentCountingSheetProps) {
+  const staffCountMode = staffCountBanner !== null
+
   const countedByGroup = useMemo(() => {
     const counts: Partial<Record<CountingHookGroup, number>> = {}
     for (const line of lines) {
@@ -52,11 +68,70 @@ export function StockDocumentCountingSheet({
 
   const statusLine = useMemo(() => {
     const base = `${visibleRows.length} รายการ กลุ่ม ${activeHookGroup}`
+    if (staffCountMode) {
+      return base
+    }
     if (countedSummary.items > 0 || countedSummary.totalQty !== 0) {
       return `${base} | Items: ${countedSummary.items} | Qty: ${countedSummary.totalQty}`
     }
     return base
-  }, [activeHookGroup, countedSummary.items, countedSummary.totalQty, visibleRows.length])
+  }, [
+    activeHookGroup,
+    countedSummary.items,
+    countedSummary.totalQty,
+    staffCountMode,
+    visibleRows.length,
+  ])
+
+  const identityLine = staffCountBanner
+    ? buildStockCountStaffHeadingLine(staffCountBanner)
+    : null
+
+  if (staffCountMode && staffCountBanner) {
+    return (
+      <section
+        className="stock-count-staff-sheet flex min-h-0 flex-1 flex-col gap-3"
+        {...{ [COUNTING_SHEET_ROOT_ATTR]: "true" }}
+      >
+        <div className={stockCountHeaderBoxClass}>
+          <p className={stockCountHeaderIdentityRowClass}>{identityLine}</p>
+          <div className={stockCountHeaderControlsRowClass}>
+            <div className="shrink-0">
+              <StockDocumentHookTabs
+                activeHookGroup={activeHookGroup}
+                countedByGroup={countedByGroup}
+                onChange={onHookGroupChange}
+                compact
+              />
+            </div>
+            <span className="shrink-0 whitespace-nowrap text-xs font-medium text-zinc-800">
+              {statusLine}
+            </span>
+            <div className="shrink-0">{toolbarActions}</div>
+          </div>
+        </div>
+
+        <div className={stockCountWorkspaceBoxClass}>
+          <div className={stockCountWorkspaceGridClass}>
+            <div className="min-h-0 lg:col-span-3">
+              <StockDocumentCountingBlocks
+                lines={lines}
+                activeHookGroup={activeHookGroup}
+                readOnly={readOnly}
+                onLineChange={onLineChange}
+              />
+            </div>
+            <div className="min-h-0 lg:col-span-1">
+              <StockDocumentGroupSummary
+                visibleRows={visibleRows}
+                staffWorkspace
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section

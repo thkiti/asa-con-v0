@@ -28,7 +28,9 @@ describe("EditStockDocumentPage", () => {
 
     expect(html).not.toContain("Edit stock document")
     expect(html).not.toContain("Stock documents")
-    expect(html).toContain('class="p-2"')
+    expect(html).toContain("h-dvh")
+    expect(html).toContain("overflow-hidden")
+    expect(html).toContain("p-2")
     expect(html).toContain("Loading document")
   })
 

@@ -338,20 +338,43 @@ describe("StockDocumentEditorView", () => {
       />
     )
 
-    expect(html).toContain("ตรวจนับสต๊อก - REF NO. ADJ-SH001-202606-0001")
-    expect(html).toContain("SH001 • Chidlom")
-    expect(html).toContain("103 • Somsak Kamnuch")
-    expect(html).toContain("2026.06.10")
+    const identityLine =
+      "ตรวจนับสต๊อก — ADJ-SH001-202606-0001 | SH001 • Chidlom | 103 • Somsak Kamnuch | 2026.06.10"
+    expect(html).toContain(identityLine)
+    expect(html).toContain("stock-count-header-box")
+    expect(html).toContain("stock-count-header-box__identity")
+    expect(html).toContain("stock-count-header-box__controls")
+    expect(html).toContain("stock-count-workspace-box")
+    expect(html).toContain("stock-count-staff-sheet")
+    expect(html).toContain("gap-3")
+    expect(html).toContain("max-h-[4.5rem]")
+    expect(html).toContain("flex-nowrap")
+    expect(html).toContain("overflow-y-auto")
+    expect(html).not.toContain("stock-count-metadata-label")
+    expect(html).not.toContain("stock-count-toolbar-block")
     expect(html).not.toContain("Document header")
     expect(html).not.toContain("Confirm")
     expect(html).not.toContain("Post")
     expect(html).not.toMatch(/>Print</)
-    expect(html).toContain(">Save<")
-    expect(html).toContain(">Submit<")
-    expect(html).toContain('href="/shop"')
-    expect(html).toContain(">Back<")
     expect(html).not.toContain("Back to list")
+    expect(html).not.toContain("ตรวจนับสต็อก — รายชิ้น")
     expect(html).toContain("stock-count-staff-mode")
+    const identityRow = html.match(
+      /stock-count-header-box__identity[^>]*>[\s\S]*?<\/p>/
+    )?.[0]
+    expect(identityRow).toBeDefined()
+    expect(identityRow).toContain(identityLine)
+    expect(identityRow).not.toContain("Save</button>")
+    const controlsRow = html.match(
+      /stock-count-header-box__controls[\s\S]*?href="\/shop"[^>]*>Back<\/a>/
+    )?.[0]
+    expect(controlsRow).toBeDefined()
+    expect(controlsRow).toContain('role="tablist"')
+    expect(controlsRow).toContain("Save</button>")
+    expect(controlsRow).toContain("Submit</button>")
+    expect(controlsRow).toContain("rounded-md")
+    expect(controlsRow).toContain("1 รายการ กลุ่ม K")
+    expect(controlsRow).not.toContain("Items:")
   })
 
   it("renders sparse lines table for submitted adjustment", () => {

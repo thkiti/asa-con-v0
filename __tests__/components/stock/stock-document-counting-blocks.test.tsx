@@ -67,6 +67,9 @@ describe("StockDocumentCountingBlock", () => {
     expect(html).toContain(">Hook</th>")
     expect(html).toContain("รหัส")
     expect(html).toContain("จำนวน")
+    expect(html).toContain("sticky")
+    expect(html).toContain("top-0")
+    expect(html).toContain("bg-zinc-100")
   })
 
   it("does not render product name as visible table cell text", () => {
