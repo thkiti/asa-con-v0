@@ -192,6 +192,35 @@ describe("PosReceiptPanel product detail popup", () => {
     expect(popup?.textContent).toContain("0101002")
     expect(popup?.textContent).toContain("No image")
     expect(popup?.querySelector("img")).toBeNull()
+    expect(
+      popup?.querySelector('[data-testid="pos-cart-product-detail-no-image"]')
+    ).not.toBeNull()
+  })
+
+  it("desktop: shows No image placeholder when catalog image fails to load", () => {
+    mockMatchMedia(false)
+    const { container } = renderPanel([cartLineWithImage])
+    const row = container.querySelector('[data-testid="pos-cart-row"]')
+
+    act(() => {
+      row!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))
+    })
+
+    const img = container.querySelector(
+      '[data-testid="pos-cart-product-detail-popup"] img'
+    )
+    expect(img).not.toBeNull()
+
+    act(() => {
+      img!.dispatchEvent(new Event("error", { bubbles: true }))
+    })
+
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-no-image"]')
+    ).not.toBeNull()
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-popup"] img')
+    ).toBeNull()
   })
 
   it("tablet: opens modal popup on row tap and closes on backdrop tap", () => {

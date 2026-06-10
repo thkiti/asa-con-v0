@@ -140,15 +140,30 @@ function isAllowedCloudProductBlob(
   return isCatalogProductImageExtension(ext)
 }
 
-export async function listExistingProductCloudImages(
+export type ProductCloudImageBlob = {
+  pathname: string
+  url: string
+}
+
+export async function listExistingProductCloudImageBlobs(
   productCode: string
-): Promise<string[]> {
+): Promise<ProductCloudImageBlob[]> {
   const safeCode = assertSafeProductCode(productCode)
   const prefix = `${CLOUD_PRODUCT_PREFIX}/${safeCode}`
   const { blobs } = await list(blobListOptions(prefix))
   return blobs
-    .map((blob) => blob.pathname)
-    .filter((pathname) => isAllowedCloudProductBlob(pathname, safeCode))
+    .filter((blob) => isAllowedCloudProductBlob(blob.pathname, safeCode))
+    .map((blob) => ({
+      pathname: blob.pathname,
+      url: String(blob.url ?? "").trim(),
+    }))
+}
+
+export async function listExistingProductCloudImages(
+  productCode: string
+): Promise<string[]> {
+  const entries = await listExistingProductCloudImageBlobs(productCode)
+  return entries.map((entry) => entry.pathname)
 }
 
 export async function uploadProductImageToBlob(

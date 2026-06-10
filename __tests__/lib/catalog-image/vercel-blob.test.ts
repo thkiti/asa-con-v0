@@ -1,6 +1,7 @@
 import path from "path"
 import {
   getProductCloudPath,
+  listExistingProductCloudImageBlobs,
   listExistingProductCloudImages,
   uploadProductImageToBlob,
   uploadProductImagesToBlob,
@@ -88,6 +89,24 @@ describe("vercel-blob", () => {
       prefix: "products/0101015",
       token: "test-blob-token",
     })
+  })
+
+  it("listExistingProductCloudImageBlobs returns pathname and url", async () => {
+    mockList.mockResolvedValue({
+      blobs: [
+        {
+          pathname: "products/0101001.png",
+          url: "https://blob.example/products/0101001.png",
+        },
+      ],
+    })
+
+    await expect(listExistingProductCloudImageBlobs("0101001")).resolves.toEqual([
+      {
+        pathname: "products/0101001.png",
+        url: "https://blob.example/products/0101001.png",
+      },
+    ])
   })
 
   it("uses OIDC auth for list when token is absent", async () => {

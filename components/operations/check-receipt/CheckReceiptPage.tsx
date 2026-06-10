@@ -20,7 +20,10 @@ import {
 } from "@/lib/theme/theme-classes"
 
 const CHECK_RECEIPT_HEADER_GRID =
-  "grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_120px_110px] sm:items-center"
+  "grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_7.5rem_6.5rem] sm:gap-x-2.5 sm:items-center"
+
+const CHECK_RECEIPT_PERIOD_SELECT_CLASS =
+  "compact-theme-select min-w-0 flex-1 pl-2 pr-7 text-center text-sm"
 
 const CHECK_RECEIPT_YEAR_OPTIONS = Array.from(
   { length: 101 },
@@ -134,7 +137,7 @@ export function CheckReceiptPage({ user }: CheckReceiptPageProps) {
               <select
                 value={year}
                 onChange={(event) => setYear(Number(event.target.value))}
-                className="compact-theme-select min-w-0 flex-1 px-2 text-center text-sm"
+                className={CHECK_RECEIPT_PERIOD_SELECT_CLASS}
                 disabled={loading || !branchId}
                 aria-label="Year"
                 data-testid="check-receipt-year"
@@ -151,7 +154,7 @@ export function CheckReceiptPage({ user }: CheckReceiptPageProps) {
               <select
                 value={month}
                 onChange={(event) => setMonth(Number(event.target.value))}
-                className="compact-theme-select min-w-0 flex-1 px-2 text-center text-sm"
+                className={CHECK_RECEIPT_PERIOD_SELECT_CLASS}
                 disabled={loading || !branchId}
                 aria-label="Month"
                 data-testid="check-receipt-month"

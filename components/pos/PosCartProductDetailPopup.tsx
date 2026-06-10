@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import type { PosCartLine } from "@/lib/pos/cart"
 
 type PosCartProductDetailPopupProps = {
@@ -10,20 +11,34 @@ type PosCartProductDetailPopupProps = {
 }
 
 function PopupContent({ line }: { line: PosCartLine }) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [line.productId, line.catalogImageUrl])
+
+  const showImage = Boolean(line.catalogImageUrl) && !imageFailed
+
   return (
     <div
       className="flex w-52 flex-col gap-2 rounded-lg border border-zinc-300 bg-white p-2 text-zinc-900 shadow-lg"
       data-testid="pos-cart-product-detail-popup"
     >
       <div className="flex h-36 items-center justify-center rounded border border-zinc-200 bg-zinc-50 p-1">
-        {line.catalogImageUrl ? (
+        {showImage ? (
           <img
-            src={line.catalogImageUrl}
+            src={line.catalogImageUrl!}
             alt={line.name}
             className="max-h-full max-w-full object-contain"
+            onError={() => setImageFailed(true)}
           />
         ) : (
-          <span className="text-center text-xs text-zinc-500">No image</span>
+          <span
+            className="text-center text-xs text-zinc-500"
+            data-testid="pos-cart-product-detail-no-image"
+          >
+            No image
+          </span>
         )}
       </div>
       <div className="min-w-0 space-y-1">
