@@ -135,7 +135,7 @@ describe("PosReceiptPanel product detail popup", () => {
     })
   })
 
-  it("desktop: shows popup on row hover with image, name, and code", () => {
+  it("desktop: shows popup on row hover with image only", () => {
     mockMatchMedia(false)
     const { container } = renderPanel([cartLineWithImage])
     const row = container.querySelector('[data-testid="pos-cart-row"]')
@@ -147,8 +147,8 @@ describe("PosReceiptPanel product detail popup", () => {
 
     const popup = container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
     expect(popup).not.toBeNull()
-    expect(popup?.textContent).toContain("Widget A")
-    expect(popup?.textContent).toContain("0101001")
+    expect(popup?.textContent).not.toContain("Widget A")
+    expect(popup?.textContent).not.toContain("0101001")
     expect(popup?.querySelector("img")?.getAttribute("src")).toBe(
       "https://blob.example/products/0101001.png"
     )
@@ -177,7 +177,7 @@ describe("PosReceiptPanel product detail popup", () => {
     ).toBeNull()
   })
 
-  it("desktop: shows name and code without image when catalogImageUrl is null", () => {
+  it("desktop: shows No image placeholder when catalogImageUrl is null", () => {
     mockMatchMedia(false)
     const { container } = renderPanel([cartLineWithoutImage])
     const row = container.querySelector('[data-testid="pos-cart-row"]')
@@ -188,9 +188,7 @@ describe("PosReceiptPanel product detail popup", () => {
 
     const popup = container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
     expect(popup).not.toBeNull()
-    expect(popup?.textContent).toContain("Widget B")
-    expect(popup?.textContent).toContain("0101002")
-    expect(popup?.textContent).toContain("No image")
+    expect(popup?.textContent).toBe("No image")
     expect(popup?.querySelector("img")).toBeNull()
     expect(
       popup?.querySelector('[data-testid="pos-cart-product-detail-no-image"]')
