@@ -59,6 +59,13 @@ jest.mock("@/lib/pos-ui/payment-evidence-upload-client", () => ({
   uploadPaymentEvidenceSlipInBackground: jest.fn(),
 }))
 
+jest.mock("@/lib/pos-ui/stock-count-client", () => ({
+  openStockCountDraft: jest.fn(async () => ({
+    id: "doc-adj-1",
+    refNo: "ADJ-SH001-202606-0001",
+  })),
+}))
+
 jest.mock("@/lib/pos-ui/pos-thermal-layouts-client", () => {
   const { DEFAULT_THERMAL_LAYOUTS } = require("@/lib/thermal/layout-defaults")
   const { resolveThermalLayout } = require("@/lib/thermal/layout")
@@ -382,7 +389,7 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("navigates STOCK COUNT to stock documents list", async () => {
+  it("navigates STOCK COUNT to stock count editor draft", async () => {
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
@@ -394,7 +401,8 @@ describe("PosTerminalPage", () => {
     act(() => {
       stockBtn!.click()
     })
-    expect(push).toHaveBeenCalledWith("/shop/stock-documents")
+    await flushPromises()
+    expect(push).toHaveBeenCalledWith("/shop/stock-documents/doc-adj-1")
 
     act(() => root.unmount())
   })

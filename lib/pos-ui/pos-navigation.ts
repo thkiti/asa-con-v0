@@ -14,5 +14,10 @@ export function stockDocumentNewHref(
   return `/shop/stock-documents/new?${params.toString()}`
 }
 
-/** STOCK COUNT navigates to the stock document list. */
+/** Legacy list href — prefer get-or-create + stockCountEditorHref for STOCK COUNT. */
 export const POS_STOCK_COUNT_HREF = POS_STOCK_DOCUMENTS_HREF
+
+export function stockCountEditorHref(documentId: string): string {
+  const id = String(documentId ?? "").trim()
+  return `/shop/stock-documents/${encodeURIComponent(id)}`
+}

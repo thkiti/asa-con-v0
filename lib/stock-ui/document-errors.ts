@@ -23,6 +23,8 @@ const MESSAGE_BY_CODE: Record<string, string> = {
   [DocumentErrorCodes.INVALID_PRODUCT]: "Each line must include a product.",
   [DocumentErrorCodes.INVALID_TRANSITION]:
     "This workflow step is not allowed.",
+  [DocumentErrorCodes.STOCK_COUNT_ALREADY_SUBMITTED]:
+    "Stock count for this shop and month is already submitted.",
   [StockUiErrorCodes.UNAUTHENTICATED]: "Please sign in again.",
   [StockUiErrorCodes.FORBIDDEN]: "You do not have permission for this action.",
   [StockUiErrorCodes.BRANCH_ACCESS_DENIED]:

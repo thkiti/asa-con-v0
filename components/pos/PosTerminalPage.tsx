@@ -28,8 +28,9 @@ import {
 } from "@/lib/pos-ui/print-read-report"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import {
-  POS_STOCK_COUNT_HREF,
+  stockCountEditorHref,
 } from "@/lib/pos-ui/pos-navigation"
+import { openStockCountDraft } from "@/lib/pos-ui/stock-count-client"
 import { openPosReceiptPrint } from "@/lib/pos-ui/pos-receipt-print"
 import { openPosRefundReceiptPrint } from "@/lib/pos-ui/pos-refund-receipt-print"
 import { fetchPosReceiptNoPreview } from "@/lib/pos-ui/pos-receipt-preview-client"
@@ -106,6 +107,22 @@ export function PosTerminalPage() {
   )
   const [evidencePendingOpen, setEvidencePendingOpen] = useState(false)
   const [evidenceQrModalOpen, setEvidenceQrModalOpen] = useState(false)
+  const [stockCountPending, setStockCountPending] = useState(false)
+
+  const openStockCount = useCallback(async () => {
+    if (stockCountPending) return
+    setStockCountPending(true)
+    try {
+      const doc = await openStockCountDraft()
+      router.push(stockCountEditorHref(doc.id))
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to open stock count"
+      window.alert(message)
+    } finally {
+      setStockCountPending(false)
+    }
+  }, [router, stockCountPending])
 
   const refreshPendingEvidence = useCallback(async () => {
     const result = await fetchPendingPaymentEvidence()
@@ -462,7 +479,7 @@ export function PosTerminalPage() {
 
       if (kind === "wire-nav") {
         if (id === "stock-count") {
-          router.push(POS_STOCK_COUNT_HREF)
+          void openStockCount()
         }
         return
       }
@@ -534,7 +551,7 @@ export function PosTerminalPage() {
         }
       }
     },
-    [barcode, onLogout, openCheckout, openRefund, readReport, router, submitBarcode]
+    [barcode, onLogout, openCheckout, openRefund, openStockCount, readReport, submitBarcode]
   )
 
   if (loading || !session) {
