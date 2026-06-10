@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { stockCountStaffActionClass } from "./counting-sheet-styles"
 import type { StockDocumentEditorStateVM } from "@/lib/stock-ui/editor-types"
 import type {
   StockDocumentActionId,
@@ -38,6 +39,10 @@ function actionButtonClass(
   action: StockDocumentActionVM,
   staffCountControls: boolean
 ): string {
+  if (staffCountControls && !action.destructive) {
+    return stockCountStaffActionClass
+  }
+
   const base = `${
     staffCountControls ? "rounded-md" : "rounded"
   } px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`
@@ -88,9 +93,11 @@ export function StockDocumentEditorToolbarActions({
       })}
       <Link
         href={backHref}
-        className={`${
-          staffCountControls ? "rounded-md" : "rounded"
-        } border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100`}
+        className={
+          staffCountControls
+            ? stockCountStaffActionClass
+            : "rounded border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+        }
       >
         {backLabel}
       </Link>

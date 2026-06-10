@@ -64,6 +64,10 @@ export const stockCountHeaderIdentityRowClass =
 export const stockCountHeaderControlsRowClass =
   "stock-count-header-box__controls flex h-8 flex-nowrap items-center justify-between gap-3 overflow-hidden"
 
+/** Staff count mode — unified Save / Submit / Back action group. */
+export const stockCountStaffActionClass =
+  "stock-count-staff-action rounded-md border border-zinc-900 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white focus-visible:outline focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-zinc-900"
+
 /** Staff count mode — primary workspace; 12px below header via mt-3 on parent flex. */
 export const stockCountWorkspaceBoxClass =
   "stock-count-workspace-box min-h-0 flex-1 overflow-y-auto rounded border border-zinc-300 bg-white p-2"
