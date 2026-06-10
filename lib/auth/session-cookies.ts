@@ -1,4 +1,5 @@
 import type { Role } from "@/generated/prisma/client"
+import { isPosShopBranchCode } from "@/lib/pos/pos-shop-session"
 import { canAccessRoute, roleLandingPath } from "@/lib/permissions"
 
 import {
@@ -107,5 +108,13 @@ export function resolveSafeReturnTo(returnTo: unknown, role: Role): string | nul
 }
 
 export function defaultRedirectForRole(role: Role): string {
+  return roleLandingPath(role)
+}
+
+/** Post-login default when no safe returnTo — HO_ADMIN shop branch enters Full POS. */
+export function defaultRedirectAfterLogin(role: Role, branchCode: string): string {
+  if (role === "HO_ADMIN" && isPosShopBranchCode(branchCode)) {
+    return "/shop"
+  }
   return roleLandingPath(role)
 }

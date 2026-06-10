@@ -6,7 +6,7 @@ import { canStaffUseBranch } from "@/lib/staff/canStaffUseBranch"
 
 import { DEV_PERIOD_ADMIN_STAFF_CODE } from "./period-admin-staff"
 import {
-  defaultRedirectForRole,
+  defaultRedirectAfterLogin,
   resolveSafeReturnTo,
 } from "./session-cookies"
 import type { SessionUser } from "./types"
@@ -162,7 +162,9 @@ export async function credentialLogin(
   }
 
   const safeReturnTo = resolveSafeReturnTo(input.returnTo, staff.role as Role)
-  const redirectTo = safeReturnTo ?? defaultRedirectForRole(staff.role as Role)
+  const redirectTo =
+    safeReturnTo ??
+    defaultRedirectAfterLogin(staff.role as Role, loginBranch.code)
 
   return { sessionUser, redirectTo }
 }

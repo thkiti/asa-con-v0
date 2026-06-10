@@ -47,6 +47,7 @@ export {
   clearSessionCookies,
   createSessionUser,
   defaultRedirectForRole,
+  defaultRedirectAfterLogin,
   resolveSafeReturnTo,
   setSessionCookies,
 } from "./session-cookies"

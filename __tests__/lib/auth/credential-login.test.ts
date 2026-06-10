@@ -111,7 +111,7 @@ describe("credentialLogin", () => {
       branchCode: "SH001",
       branchName: "Shop 1",
     })
-    expect(result.redirectTo).toBe("/main")
+    expect(result.redirectTo).toBe("/shop")
   })
 
   it("rejects wrong password with generic invalid credentials", async () => {
@@ -221,6 +221,7 @@ describe("credentialLogin", () => {
     expect(result.sessionUser.branchId).toBe("branch-sh-1")
     expect(result.sessionUser.branchCode).toBe("SH001")
     expect(result.sessionUser.branchName).toBe("Shop 1")
+    expect(result.redirectTo).toBe("/shop")
   })
 
   it("rejects replacer on inactive shop branch", async () => {

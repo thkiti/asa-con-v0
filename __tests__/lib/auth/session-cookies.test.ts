@@ -1,6 +1,7 @@
 import {
   clearSessionCookies,
   createSessionUser,
+  defaultRedirectAfterLogin,
   defaultRedirectForRole,
   resolveSafeReturnTo,
   SESSION_TTL_SECONDS,
@@ -24,6 +25,17 @@ describe("session cookie helpers", () => {
   it("defaults redirect by role landing path", () => {
     expect(defaultRedirectForRole("SH_STAFF")).toBe("/shop")
     expect(defaultRedirectForRole("HO_ADMIN")).toBe("/main")
+  })
+
+  it("defaultRedirectAfterLogin sends HO_ADMIN shop branch to Full POS", () => {
+    expect(defaultRedirectAfterLogin("HO_ADMIN", "SH001")).toBe("/shop")
+    expect(defaultRedirectAfterLogin("HO_ADMIN", "HO999")).toBe("/main")
+  })
+
+  it("defaultRedirectAfterLogin leaves SH_STAFF and HO_FINANCE unchanged", () => {
+    expect(defaultRedirectAfterLogin("SH_STAFF", "SH001")).toBe("/shop")
+    expect(defaultRedirectAfterLogin("HO_FINANCE", "HO999")).toBe("/main")
+    expect(defaultRedirectAfterLogin("HO_FINANCE", "SH001")).toBe("/main")
   })
 
   it("allows returnTo paths the role can access", () => {
