@@ -7,6 +7,8 @@ Clean-base modular monolith for ASA inventory and POS.
 
 Master Database covers Branch, Staff, and Product / ReferenceStock maintenance at `/master/*` (no schema, import, stock, or finance posting changes). Finance phases 22B (audit export), 22A (timeline), and 21B (reopen approval) remain documented under `docs/27–28`.
 
+**2026 migration:** [docs/2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md](./docs/2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md) documents the legacy Excel import and gradual cutover plan — operational start 2026-01-01, monthly catch-up, parallel run (target Oct–Dec 2026), and cutover gates.
+
 ## Docs
 
 Start with [docs/00_README.md](./docs/00_README.md).
@@ -22,6 +24,7 @@ Start with [docs/00_README.md](./docs/00_README.md).
 - Close evidence: [docs/23_FINANCE_CLOSE_EVIDENCE.md](./docs/23_FINANCE_CLOSE_EVIDENCE.md) — Phase 20D immutable HARD-close audit record and review UI
 - Close evidence export/print: [docs/24_FINANCE_CLOSE_EVIDENCE_EXPORT.md](./docs/24_FINANCE_CLOSE_EVIDENCE_EXPORT.md) — Phase 20E browser CSV pack and audit print from stored evidence
 - Master Database: [docs/30_MASTER_DATABASE.md](./docs/30_MASTER_DATABASE.md) — HO_ADMIN Branch / Staff / Product–Reference CRUD
+- 2026 migration: [docs/2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md](./docs/2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md) — legacy Excel import, monthly catch-up, parallel run, cutover gates
 
 ## Setup
 

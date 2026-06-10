@@ -37,6 +37,7 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 31. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 32. [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) — **POS Complete gate (P1–P4)** + thermal 80mm scope (memory doc)
 33. [RECEIPT_SETUP.md](./RECEIPT_SETUP.md) — current receipt layout / tax ID rules (pre-unify)
+34. [2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md](./2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md) — legacy Excel migration, gradual import, parallel run, cutover gates
 
 ## Phase status
 
@@ -69,3 +70,4 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 23B-0 | Stock document workflow foundation (CANCELLED, status writer, policy, guards) | Done |
 | MD | Master Database — Branch / Staff / Product–Reference CRUD (`/master/*`, HO_ADMIN only) | Done |
 | POS | **POS Complete roadmap (P1–P4)** — posting validation, thermal print, READ_Z, repair review | **In progress** — see [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) |
+| MIG | 2026 legacy Excel migration and parallel run (Phases A–G) | **Planning** — see [2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md](./2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md) |
