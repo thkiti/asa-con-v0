@@ -137,7 +137,7 @@ describe("saveStockDocumentEditor", () => {
 
     expect(mockedSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        lines: [{ productId: "prod-1", qty: 4 }],
+        lines: [{ productId: "prod-1", qty: 4, reviewPostingDelta: 4 }],
       })
     )
   })

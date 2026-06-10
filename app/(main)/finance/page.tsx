@@ -5,9 +5,25 @@ export default function Page() {
     <main className="p-8">
       <h1 className="text-xl font-semibold">Finance</h1>
       <p className="mt-2 text-zinc-600">
-        Read-only reconciliation views for operational vs GL totals.
+        Reconciliation, periods, chart of accounts, and GL reporting.
       </p>
       <ul className="mt-6 space-y-3">
+        <li>
+          <Link
+            href="/finance/accounts"
+            className="text-zinc-900 underline hover:text-zinc-600"
+          >
+            Chart of accounts
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/finance/accounts/import"
+            className="text-zinc-900 underline hover:text-zinc-600"
+          >
+            Import chart of accounts (CSV)
+          </Link>
+        </li>
         <li>
           <Link
             href="/finance/reconciliation"

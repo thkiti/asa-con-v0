@@ -6,6 +6,7 @@ import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { ReopenRequestError } from "@/lib/finance/reopen-request-errors"
 import { ReconciliationError } from "@/lib/finance/reconciliation-errors"
 import { ReconciliationSnapshotError } from "@/lib/finance/reconciliation-snapshot-errors"
+import { GlAccountImportError } from "@/lib/finance/gl-account-import-errors"
 import { VoucherReadError } from "@/lib/finance/voucher-read-errors"
 import { InvalidDateRangeError, ReportError } from "@/lib/reporting/report-errors"
 
@@ -51,6 +52,13 @@ export function financeErrorResponse(
   err: unknown,
   logLabel: string
 ): NextResponse {
+  if (err instanceof GlAccountImportError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: statusForCode(err.code) }
+    )
+  }
+
   if (err instanceof VoucherReadError) {
     return NextResponse.json(
       { error: err.message, code: err.code },

@@ -402,7 +402,7 @@ describe("PosTerminalPage", () => {
       stockBtn!.click()
     })
     await flushPromises()
-    expect(push).toHaveBeenCalledWith("/shop/stock-documents/doc-adj-1")
+    expect(push).toHaveBeenCalledWith("/shop/stock-documents/doc-adj-1?from=shop")
 
     act(() => root.unmount())
   })

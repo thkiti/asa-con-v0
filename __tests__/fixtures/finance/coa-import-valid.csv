@@ -1,0 +1,5 @@
+accountCode,accountName,accountType,normalBalance,parentAccountCode,isActive
+1000,Current Assets,ASSET,DEBIT,,true
+1100,Cash on hand,ASSET,DEBIT,1000,true
+4000,Sales Revenue,REVENUE,CREDIT,,true
+3900,Retained Earnings,EQUITY,CREDIT,,true
