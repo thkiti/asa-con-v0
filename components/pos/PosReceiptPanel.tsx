@@ -8,9 +8,7 @@ import {
   formatStaffDisplay,
 } from "@/lib/pos-ui/pos-session-display"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
-import { useRef, useState, type ReactNode } from "react"
-
-const TOUCH_MOUSE_SUPPRESS_MS = 400
+import { useState, type ReactNode } from "react"
 
 type PosReceiptPanelProps = {
   session: PosTerminalSession
@@ -24,18 +22,18 @@ type PosReceiptPanelProps = {
   overlay?: ReactNode
 }
 
-type DetailPopupState = {
-  line: PosCartLine
-  anchorTop: number
-  variant: "anchored" | "modal"
-}
-
 function formatMoney(value: string | number): string {
   const n = typeof value === "string" ? Number(value) : value
   return n.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function formatUnitPriceCompact(unitPrice: string): string {
+  const n = Number(unitPrice)
+  if (!Number.isFinite(n)) return unitPrice
+  return Number.isInteger(n) ? String(n) : n.toFixed(2)
 }
 
 export function PosReceiptPanel({
@@ -45,90 +43,20 @@ export function PosReceiptPanel({
   lookupError,
   onIncrementQty,
   onDecrementQty,
-  onRemoveLine,
+  onRemoveLine: _onRemoveLine,
   onClearCart,
   overlay,
 }: PosReceiptPanelProps) {
-  const panelRef = useRef<HTMLDivElement>(null)
-  const lastTouchAtRef = useRef(0)
-  const [detailPopup, setDetailPopup] = useState<DetailPopupState | null>(null)
+  const [previewLine, setPreviewLine] = useState<PosCartLine | null>(null)
   const total = cartTotal(lines)
 
-  function openDetailPopup(
-    line: PosCartLine,
-    rowEl: HTMLElement,
-    variant: DetailPopupState["variant"]
-  ): void {
-    const panel = panelRef.current
-    if (!panel) return
-    const panelRect = panel.getBoundingClientRect()
-    const rowRect = rowEl.getBoundingClientRect()
-    setDetailPopup({
-      line,
-      anchorTop: rowRect.top - panelRect.top,
-      variant,
-    })
-  }
-
-  function closeDetailPopup(): void {
-    setDetailPopup(null)
-  }
-
-  function handleRowMouseOver(
-    line: PosCartLine,
-    event: React.MouseEvent<HTMLLIElement>
-  ): void {
-    if (Date.now() - lastTouchAtRef.current < TOUCH_MOUSE_SUPPRESS_MS) return
-
-    const panel = panelRef.current
-    if (!panel) return
-    const panelRect = panel.getBoundingClientRect()
-    const rowRect = event.currentTarget.getBoundingClientRect()
-
-    setDetailPopup((current) => {
-      if (current?.variant === "modal") return current
-      return {
-        line,
-        anchorTop: rowRect.top - panelRect.top,
-        variant: "anchored",
-      }
-    })
-  }
-
-  function handleRowMouseOut(): void {
-    setDetailPopup((current) =>
-      current?.variant === "anchored" ? null : current
-    )
-  }
-
-  function handleRowPointerUp(
-    line: PosCartLine,
-    event: React.PointerEvent<HTMLLIElement>
-  ): void {
-    if (event.pointerType !== "touch") return
-    if ((event.target as HTMLElement).closest("button")) return
-    lastTouchAtRef.current = Date.now()
-    openDetailPopup(line, event.currentTarget, "modal")
-  }
-
   return (
-    <div
-      ref={panelRef}
-      className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white"
-    >
-      {detailPopup?.variant === "modal" ? (
+    <div className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white">
+      {previewLine ? (
         <PosCartProductDetailPopup
-          line={detailPopup.line}
+          line={previewLine}
           variant="modal"
-          onClose={closeDetailPopup}
-        />
-      ) : null}
-
-      {detailPopup?.variant === "anchored" ? (
-        <PosCartProductDetailPopup
-          line={detailPopup.line}
-          variant="anchored"
-          anchorTop={detailPopup.anchorTop}
+          onClose={() => setPreviewLine(null)}
         />
       ) : null}
 
@@ -180,37 +108,32 @@ export function PosReceiptPanel({
                   key={line.productId}
                   data-testid="pos-cart-row"
                   className="grid grid-cols-[1fr_88px_80px] items-center gap-1 rounded bg-white/10 px-1 py-1.5 text-xs"
-                  onMouseOver={(event) => handleRowMouseOver(line, event)}
-                  onMouseOut={handleRowMouseOut}
-                  onPointerUp={(event) => handleRowPointerUp(line, event)}
                 >
                   <div className="min-w-0">
                     <div className="truncate font-medium">{line.name}</div>
                     <div
-                      data-testid="pos-cart-product-code"
-                      className="font-mono text-[10px] text-white/75"
+                      className="flex items-baseline gap-2 font-mono text-[10px] text-white/90"
+                      data-testid="pos-cart-row-meta"
                     >
-                      {line.code}
+                      <button
+                        type="button"
+                        data-testid="pos-cart-product-code-preview-trigger"
+                        className="cursor-pointer underline decoration-white/40 underline-offset-2 hover:text-white hover:decoration-white"
+                        onClick={() => setPreviewLine(line)}
+                        aria-label={`Preview image for ${line.code}`}
+                      >
+                        {line.code}
+                      </button>
+                      <span data-testid="pos-cart-row-qty-price">
+                        {line.qty}x{formatUnitPriceCompact(line.unitPrice)}
+                      </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onRemoveLine(line.productId)
-                      }}
-                      className="mt-0.5 cursor-pointer text-[10px] text-white/80 underline-offset-2 hover:underline"
-                    >
-                      Remove
-                    </button>
                   </div>
                   <div className="flex items-center justify-center gap-1">
                     <button
                       type="button"
                       aria-label={`Decrease qty for ${line.name}`}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onDecrementQty(line.productId)
-                      }}
+                      onClick={() => onDecrementQty(line.productId)}
                       className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
                     >
                       −
@@ -221,10 +144,7 @@ export function PosReceiptPanel({
                     <button
                       type="button"
                       aria-label={`Increase qty for ${line.name}`}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onIncrementQty(line.productId)
-                      }}
+                      onClick={() => onIncrementQty(line.productId)}
                       className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-white/50 bg-white/15 text-sm font-bold hover:bg-white/25"
                     >
                       +
