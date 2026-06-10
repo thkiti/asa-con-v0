@@ -7,9 +7,10 @@ import {
   formatReceiptDisplay,
   formatStaffDisplay,
 } from "@/lib/pos-ui/pos-session-display"
-import { isTouchPrimaryDevice } from "@/lib/pos-ui/use-touch-primary"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import { useRef, useState, type ReactNode } from "react"
+
+const TOUCH_MOUSE_SUPPRESS_MS = 400
 
 type PosReceiptPanelProps = {
   session: PosTerminalSession
@@ -26,6 +27,7 @@ type PosReceiptPanelProps = {
 type DetailPopupState = {
   line: PosCartLine
   anchorTop: number
+  variant: "anchored" | "modal"
 }
 
 function formatMoney(value: string | number): string {
@@ -48,11 +50,15 @@ export function PosReceiptPanel({
   overlay,
 }: PosReceiptPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
-  const touchPrimary = isTouchPrimaryDevice()
+  const lastTouchAtRef = useRef(0)
   const [detailPopup, setDetailPopup] = useState<DetailPopupState | null>(null)
   const total = cartTotal(lines)
 
-  function openDetailPopup(line: PosCartLine, rowEl: HTMLElement): void {
+  function openDetailPopup(
+    line: PosCartLine,
+    rowEl: HTMLElement,
+    variant: DetailPopupState["variant"]
+  ): void {
     const panel = panelRef.current
     if (!panel) return
     const panelRect = panel.getBoundingClientRect()
@@ -60,6 +66,7 @@ export function PosReceiptPanel({
     setDetailPopup({
       line,
       anchorTop: rowRect.top - panelRect.top,
+      variant,
     })
   }
 
@@ -67,13 +74,41 @@ export function PosReceiptPanel({
     setDetailPopup(null)
   }
 
-  function handleRowClick(
+  function handleRowMouseOver(
     line: PosCartLine,
     event: React.MouseEvent<HTMLLIElement>
   ): void {
-    if (!touchPrimary) return
+    if (Date.now() - lastTouchAtRef.current < TOUCH_MOUSE_SUPPRESS_MS) return
+
+    const panel = panelRef.current
+    if (!panel) return
+    const panelRect = panel.getBoundingClientRect()
+    const rowRect = event.currentTarget.getBoundingClientRect()
+
+    setDetailPopup((current) => {
+      if (current?.variant === "modal") return current
+      return {
+        line,
+        anchorTop: rowRect.top - panelRect.top,
+        variant: "anchored",
+      }
+    })
+  }
+
+  function handleRowMouseOut(): void {
+    setDetailPopup((current) =>
+      current?.variant === "anchored" ? null : current
+    )
+  }
+
+  function handleRowPointerUp(
+    line: PosCartLine,
+    event: React.PointerEvent<HTMLLIElement>
+  ): void {
+    if (event.pointerType !== "touch") return
     if ((event.target as HTMLElement).closest("button")) return
-    openDetailPopup(line, event.currentTarget)
+    lastTouchAtRef.current = Date.now()
+    openDetailPopup(line, event.currentTarget, "modal")
   }
 
   return (
@@ -81,7 +116,7 @@ export function PosReceiptPanel({
       ref={panelRef}
       className="relative flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-orange-800 bg-orange-600 text-white"
     >
-      {detailPopup && touchPrimary ? (
+      {detailPopup?.variant === "modal" ? (
         <PosCartProductDetailPopup
           line={detailPopup.line}
           variant="modal"
@@ -89,7 +124,7 @@ export function PosReceiptPanel({
         />
       ) : null}
 
-      {detailPopup && !touchPrimary ? (
+      {detailPopup?.variant === "anchored" ? (
         <PosCartProductDetailPopup
           line={detailPopup.line}
           variant="anchored"
@@ -145,13 +180,9 @@ export function PosReceiptPanel({
                   key={line.productId}
                   data-testid="pos-cart-row"
                   className="grid grid-cols-[1fr_88px_80px] items-center gap-1 rounded bg-white/10 px-1 py-1.5 text-xs"
-                  onMouseOver={
-                    touchPrimary
-                      ? undefined
-                      : (event) => openDetailPopup(line, event.currentTarget)
-                  }
-                  onMouseOut={touchPrimary ? undefined : closeDetailPopup}
-                  onClick={(event) => handleRowClick(line, event)}
+                  onMouseOver={(event) => handleRowMouseOver(line, event)}
+                  onMouseOut={handleRowMouseOut}
+                  onPointerUp={(event) => handleRowPointerUp(line, event)}
                 >
                   <div className="min-w-0">
                     <div className="truncate font-medium">{line.name}</div>

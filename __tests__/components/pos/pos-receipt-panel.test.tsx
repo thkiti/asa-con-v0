@@ -11,6 +11,19 @@ import type { PosTerminalSession } from "@/lib/pos-ui/types"
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
 
+if (typeof globalThis.PointerEvent === "undefined") {
+  class PointerEventPolyfill extends MouseEvent {
+    readonly pointerType: string
+
+    constructor(type: string, params: MouseEventInit & { pointerType?: string } = {}) {
+      super(type, params)
+      this.pointerType = params.pointerType ?? ""
+    }
+  }
+  globalThis.PointerEvent =
+    PointerEventPolyfill as unknown as typeof globalThis.PointerEvent
+}
+
 const session: PosTerminalSession = {
   userId: "u1",
   staffId: "103",
@@ -227,7 +240,9 @@ describe("PosReceiptPanel product detail popup", () => {
     const row = container.querySelector('[data-testid="pos-cart-row"]')
 
     act(() => {
-      row!.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+      row!.dispatchEvent(
+        new PointerEvent("pointerup", { bubbles: true, pointerType: "touch" })
+      )
     })
 
     expect(
@@ -244,6 +259,39 @@ describe("PosReceiptPanel product detail popup", () => {
 
     expect(
       container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    ).toBeNull()
+  })
+
+  it("hybrid: mouse hover opens anchored popup when pointer is coarse", () => {
+    mockMatchMedia(true)
+    const { container } = renderPanel([cartLineWithImage])
+    const row = container.querySelector('[data-testid="pos-cart-row"]')
+
+    act(() => {
+      row!.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }))
+    })
+
+    expect(
+      container.querySelector('[data-testid="pos-cart-product-detail-popup"]')
+    ).not.toBeNull()
+    expect(
+      container.querySelector('[data-testid="pos-cart-detail-backdrop"]')
+    ).toBeNull()
+  })
+
+  it("mouse pointerup does not open modal popup", () => {
+    mockMatchMedia(false)
+    const { container } = renderPanel([cartLineWithImage])
+    const row = container.querySelector('[data-testid="pos-cart-row"]')
+
+    act(() => {
+      row!.dispatchEvent(
+        new PointerEvent("pointerup", { bubbles: true, pointerType: "mouse" })
+      )
+    })
+
+    expect(
+      container.querySelector('[data-testid="pos-cart-detail-backdrop"]')
     ).toBeNull()
   })
 
