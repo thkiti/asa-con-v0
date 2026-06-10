@@ -12,8 +12,10 @@ describe("pos-ui/pos-navigation", () => {
     )
   })
 
-  it("builds stock count editor href", () => {
-    expect(stockCountEditorHref("doc-adj-1")).toBe("/shop/stock-documents/doc-adj-1")
+  it("builds stock count editor href with staff entry query", () => {
+    expect(stockCountEditorHref("doc-adj-1")).toBe(
+      "/shop/stock-documents/doc-adj-1?from=shop"
+    )
   })
 
   it("keeps legacy list href constant", () => {

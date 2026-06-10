@@ -7,6 +7,8 @@ export type ShopSessionVM = {
   staffId: string
   name: string
   branchId: string
+  branchCode: string
+  branchName: string
 }
 
 type SessionResponse = {
@@ -31,5 +33,9 @@ export async function fetchShopSession(): Promise<ShopSessionVM> {
       StockUiErrorCodes.BRANCH_ACCESS_DENIED
     )
   }
-  return body.user
+  return {
+    ...body.user,
+    branchCode: body.user.branchCode?.trim() ?? "",
+    branchName: body.user.branchName?.trim() ?? "",
+  }
 }

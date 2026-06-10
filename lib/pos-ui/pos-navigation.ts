@@ -1,3 +1,4 @@
+import { STOCK_COUNT_STAFF_FROM } from "@/lib/stock-ui/stock-count-staff-mode"
 import type { DocType } from "@/lib/stock-ui/types"
 
 export const POS_RETURN_FROM = "shop"
@@ -19,5 +20,6 @@ export const POS_STOCK_COUNT_HREF = POS_STOCK_DOCUMENTS_HREF
 
 export function stockCountEditorHref(documentId: string): string {
   const id = String(documentId ?? "").trim()
-  return `/shop/stock-documents/${encodeURIComponent(id)}`
+  const params = new URLSearchParams({ from: STOCK_COUNT_STAFF_FROM })
+  return `/shop/stock-documents/${encodeURIComponent(id)}?${params.toString()}`
 }

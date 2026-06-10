@@ -11,6 +11,8 @@ export type StockDocumentEditorToolbarActionsProps = {
   saving: boolean
   actionBusy: StockDocumentActionId | null
   onWorkflowAction: (actionId: StockDocumentActionId) => void
+  backHref?: string
+  backLabel?: string
 }
 
 function actionBusyLabel(actionId: StockDocumentActionId): string {
@@ -48,6 +50,8 @@ export function StockDocumentEditorToolbarActions({
   saving,
   actionBusy,
   onWorkflowAction,
+  backHref = "/shop/stock-documents",
+  backLabel = "Back to list",
 }: StockDocumentEditorToolbarActionsProps) {
   const visibleActions = actions.filter((action) => action.visible)
   const busy = saving || actionBusy !== null
@@ -76,10 +80,10 @@ export function StockDocumentEditorToolbarActions({
         )
       })}
       <Link
-        href="/shop/stock-documents"
+        href={backHref}
         className="rounded border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
       >
-        Back to list
+        {backLabel}
       </Link>
     </div>
   )

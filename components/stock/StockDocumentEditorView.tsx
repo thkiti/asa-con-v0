@@ -9,6 +9,10 @@ import type {
   StockDocumentActionVM,
   StockDocumentDetailVM,
 } from "@/lib/stock-ui/types"
+import {
+  STOCK_COUNT_STAFF_BACK_HREF,
+} from "@/lib/stock-ui/stock-count-staff-mode"
+import { StockDocumentCountStaffHeader } from "./StockDocumentCountStaffHeader"
 import { StockDocumentCountingSheet } from "./StockDocumentCountingSheet"
 import { StockDocumentEditorToolbarActions } from "./StockDocumentEditorToolbarActions"
 import { StockDocumentHeaderForm } from "./StockDocumentHeaderForm"
@@ -35,6 +39,13 @@ type StockDocumentEditorViewProps = {
   onRemoveLine: (key: string) => void
   onLineChange: (key: string, patch: Partial<EditorLineRowVM>) => void
   onWorkflowAction: (actionId: StockDocumentActionId) => void
+  stockCountStaffMode?: boolean
+  staffHeader?: {
+    branchCode: string
+    branchName: string
+    staffCode: string
+    staffName: string
+  } | null
 }
 
 export function StockDocumentEditorView({
@@ -54,8 +65,11 @@ export function StockDocumentEditorView({
   onRemoveLine,
   onLineChange,
   onWorkflowAction,
+  stockCountStaffMode = false,
+  staffHeader = null,
 }: StockDocumentEditorViewProps) {
   const showCountingGrid = countingMode && isCountingEditorMode(state)
+  const showPrintSnapshot = detailSnapshot && !stockCountStaffMode
 
   const toolbarActions = (
     <StockDocumentEditorToolbarActions
@@ -64,12 +78,20 @@ export function StockDocumentEditorView({
       saving={saving}
       actionBusy={actionBusy}
       onWorkflowAction={onWorkflowAction}
+      backHref={stockCountStaffMode ? STOCK_COUNT_STAFF_BACK_HREF : undefined}
+      backLabel={stockCountStaffMode ? "Back" : undefined}
     />
   )
 
   return (
-    <div className="stock-document-print-shell space-y-6">
-      {detailSnapshot ? (
+    <div
+      className={
+        stockCountStaffMode
+          ? "stock-document-print-shell stock-count-staff-mode space-y-2"
+          : "stock-document-print-shell space-y-6"
+      }
+    >
+      {showPrintSnapshot ? (
         <>
           <StockDocumentPrintHeader detail={detailSnapshot} />
           <StockDocumentPrintLinesTable detail={detailSnapshot} />
@@ -98,9 +120,24 @@ export function StockDocumentEditorView({
 
       {!loading ? (
         <>
-          <div className="no-print">
-            <StockDocumentHeaderForm state={state} onChange={onHeaderChange} />
-          </div>
+          {stockCountStaffMode && staffHeader ? (
+            <div className="no-print">
+              <StockDocumentCountStaffHeader
+                refNo={state.refNo}
+                branchCode={staffHeader.branchCode}
+                branchName={staffHeader.branchName}
+                staffCode={staffHeader.staffCode}
+                staffName={staffHeader.staffName}
+                documentDate={state.date}
+              />
+            </div>
+          ) : null}
+
+          {!stockCountStaffMode ? (
+            <div className="no-print">
+              <StockDocumentHeaderForm state={state} onChange={onHeaderChange} />
+            </div>
+          ) : null}
 
           <div className="no-print">
             {showCountingGrid ? (

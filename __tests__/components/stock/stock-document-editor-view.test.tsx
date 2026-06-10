@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { StockDocumentEditorView } from "@/components/stock/StockDocumentEditorView"
 import { getEditorWorkflowActions } from "@/lib/stock-ui/document-permissions"
+import { filterEditorActionsForStockCountStaff } from "@/lib/stock-ui/stock-count-staff-mode"
 import type { StockDocumentEditorStateVM } from "@/lib/stock-ui/editor-types"
 import type { StockDocumentDetailVM } from "@/lib/stock-ui/types"
 
@@ -277,6 +278,80 @@ describe("StockDocumentEditorView", () => {
     expect(toolbarSection).toBeDefined()
     expect(toolbarSection).toContain('role="tablist"')
     expect(toolbarSection).toContain(">Save<")
+  })
+
+  it("renders stock count staff mode with compact heading and limited toolbar", () => {
+    const adjustmentDraft: StockDocumentEditorStateVM = {
+      ...draftState,
+      docType: "ADJUSTMENT",
+      refNo: "ADJ-SH001-202606-0001",
+      date: "2026-06-10",
+      lines: [
+        {
+          key: "K-1",
+          rowKey: "K-1",
+          productId: "prod-k",
+          productCode: "0101001",
+          productName: "Home key",
+          displayCode: "#K1",
+          hookGroup: "K",
+          hookNo: 1,
+          hookLabel: "K.1",
+          qty: "3",
+          endingQty: "",
+          reviewPostingDelta: "",
+        },
+      ],
+    }
+
+    const baseActions = getEditorWorkflowActions(
+      { role: "SH_STAFF", docType: "ADJUSTMENT", status: "DRAFT" },
+      { hasDocumentId: true }
+    )
+    const staffActions = filterEditorActionsForStockCountStaff(baseActions)
+
+    const html = renderToStaticMarkup(
+      <StockDocumentEditorView
+        state={adjustmentDraft}
+        detailSnapshot={null}
+        loading={false}
+        saving={false}
+        actionBusy={null}
+        actions={staffActions}
+        error={null}
+        statusMessage={null}
+        countingMode
+        activeHookGroup="K"
+        onHookGroupChange={() => {}}
+        onHeaderChange={() => {}}
+        onAddLine={() => {}}
+        onRemoveLine={() => {}}
+        onLineChange={() => {}}
+        onWorkflowAction={() => {}}
+        stockCountStaffMode
+        staffHeader={{
+          branchCode: "SH001",
+          branchName: "Chidlom",
+          staffCode: "103",
+          staffName: "Somsak Kamnuch",
+        }}
+      />
+    )
+
+    expect(html).toContain("ตรวจนับสต๊อก - REF NO. ADJ-SH001-202606-0001")
+    expect(html).toContain("SH001 • Chidlom")
+    expect(html).toContain("103 • Somsak Kamnuch")
+    expect(html).toContain("2026.06.10")
+    expect(html).not.toContain("Document header")
+    expect(html).not.toContain("Confirm")
+    expect(html).not.toContain("Post")
+    expect(html).not.toMatch(/>Print</)
+    expect(html).toContain(">Save<")
+    expect(html).toContain(">Submit<")
+    expect(html).toContain('href="/shop"')
+    expect(html).toContain(">Back<")
+    expect(html).not.toContain("Back to list")
+    expect(html).toContain("stock-count-staff-mode")
   })
 
   it("renders sparse lines table for submitted adjustment", () => {

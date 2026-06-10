@@ -9,6 +9,7 @@ import {
 } from "@/lib/stock-ui/counting-editor-load"
 import { toStockDocumentUiError } from "@/lib/stock-ui/document-errors"
 import { getEditorWorkflowActions } from "@/lib/stock-ui/document-permissions"
+import { filterEditorActionsForStockCountStaff } from "@/lib/stock-ui/stock-count-staff-mode"
 import {
   addEditorLine,
   applyCountingSaveToEditorState,
@@ -48,6 +49,7 @@ type CreateProps = {
 type EditProps = {
   mode: "edit"
   documentId: string
+  stockCountStaffMode?: boolean
 }
 
 export type StockDocumentEditorControllerProps = CreateProps | EditProps
@@ -84,7 +86,16 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [staffId, setStaffId] = useState<string | null>(null)
+  const [staffHeader, setStaffHeader] = useState<{
+    branchCode: string
+    branchName: string
+    staffCode: string
+    staffName: string
+  } | null>(null)
   const [activeHookGroup, setActiveHookGroup] = useState<CountingHookGroup>("K")
+
+  const stockCountStaffMode =
+    props.mode === "edit" ? Boolean(props.stockCountStaffMode) : false
 
   const applyDetail = useCallback((detail: StockDocumentDetailVM) => {
     setDetailSnapshot(detail)
@@ -93,11 +104,15 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
 
   const actions: StockDocumentActionVM[] = useMemo(() => {
     if (!state || !role) return []
-    return getEditorWorkflowActions(
+    const base = getEditorWorkflowActions(
       { role, docType: state.docType, status: state.status },
       { hasDocumentId: Boolean(state.documentId) }
     )
-  }, [role, state])
+    if (stockCountStaffMode) {
+      return filterEditorActionsForStockCountStaff(base)
+    }
+    return base
+  }, [role, state, stockCountStaffMode])
 
   const countingMode = state ? isCountingEditorMode(state) : false
 
@@ -132,6 +147,12 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
         if (cancelled) return
         setStaffId(session.staffId)
         setRole(session.role)
+        setStaffHeader({
+          branchCode: session.branchCode,
+          branchName: session.branchName,
+          staffCode: session.staffId,
+          staffName: session.name,
+        })
 
         if (props.mode === "create") {
           if (!isShopDocType(props.docType)) {
@@ -343,6 +364,8 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
       onRemoveLine={handleRemoveLine}
       onLineChange={handleLineChange}
       onWorkflowAction={(id) => void handleWorkflowAction(id)}
+      stockCountStaffMode={stockCountStaffMode}
+      staffHeader={staffHeader}
     />
   )
 }
