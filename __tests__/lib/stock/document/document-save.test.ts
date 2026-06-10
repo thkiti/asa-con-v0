@@ -185,6 +185,27 @@ describe("saveDocument", () => {
     expect(getDocument().status).toBe("DRAFT")
   })
 
+  it("persists reviewPostingDelta on ADJUSTMENT opening-count lines", async () => {
+    const { tx, getDocument } = createDocumentMockTx()
+
+    const saved = await saveDocument({
+      docType: "ADJUSTMENT",
+      date: "2026-06-10",
+      branchId: "branch-shop",
+      fromLocId: "branch-shop",
+      lines: [{ productId: "p1", qty: 100, reviewPostingDelta: 100 }],
+      tx,
+    })
+
+    expect(saved.lines).toHaveLength(1)
+    expect(saved.lines[0]).toMatchObject({
+      productId: "p1",
+      qty: 100,
+      reviewPostingDelta: 100,
+    })
+    expect(getDocument().lines[0]?.reviewPostingDelta).toBe(100)
+  })
+
   it("rejects invalid HO↔HO transfer route", async () => {
     const { tx } = createDocumentMockTx(undefined, [
       { id: "ho-1", type: "HO", isActive: true, deleted: false },

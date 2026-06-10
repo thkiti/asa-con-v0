@@ -247,13 +247,15 @@ export function editorStateToSavePayload(
     : state.lines.filter((line) => line.productId.trim() || line.qty.trim())
 
   const lines = sourceLines.map((line) => {
+    const qty = Number(line.qty.trim() || 0)
     const base = {
       productId: line.productId.trim(),
-      qty: Number(line.qty.trim() || 0),
+      qty,
     }
 
     if (isCountingEditorMode(state)) {
-      return base
+      // Opening-count / counting sheet: qty is absolute count; delta equals qty on zero baseline.
+      return { ...base, reviewPostingDelta: qty }
     }
 
     return {

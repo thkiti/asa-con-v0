@@ -230,7 +230,64 @@ describe("editor-draft-state", () => {
     )
 
     const payload = editorStateToSavePayload(state, "staff-1")
-    expect(payload.lines).toEqual([{ productId: "prod-1", qty: 5 }])
+    expect(payload.lines).toEqual([
+      { productId: "prod-1", qty: 5, reviewPostingDelta: 5 },
+    ])
+  })
+
+  it("editorStateToSavePayload sets reviewPostingDelta = qty for opening-count ADJUSTMENT (G1)", () => {
+    const state = hydrateCountingEditorState(
+      {
+        documentId: "doc-1",
+        refNo: "ADJ-1",
+        docType: "ADJUSTMENT",
+        status: "DRAFT",
+        date: "2026-06-10",
+        branchId: "branch-shop",
+        fromLocId: "branch-shop",
+        toLocId: "",
+      },
+      {
+        rows: [
+          {
+            rowKey: "K-1",
+            sourceType: "REFERENCE",
+            referenceStockId: "ref-1",
+            productId: "prod-1",
+            productCode: "0101001",
+            productName: "Key",
+            hookGroup: "K",
+            hookNo: 1,
+            hookLabel: "K.1",
+            supplierCode: "#K1",
+            displayCode: "#K1",
+            displayName: "Key",
+            productGroup: null,
+            groupCode: null,
+            sortKey: "x",
+            qty: "100",
+            endingQty: "",
+            reviewPostingDelta: "",
+            isOrphan: false,
+          },
+        ],
+        orphans: [],
+      }
+    )
+
+    const payload = editorStateToSavePayload(state, "staff-1")
+    expect(payload.lines).toEqual([
+      { productId: "prod-1", qty: 100, reviewPostingDelta: 100 },
+    ])
+  })
+
+  it("editorStateToSavePayload does not set reviewPostingDelta for non-counting PERFORMANCE", () => {
+    const state = detailToEditorState(sampleDetail)
+    const payload = editorStateToSavePayload(state, "staff-1")
+    expect(payload.lines[0]).toEqual(
+      expect.objectContaining({ productId: "prod-1", qty: 3 })
+    )
+    expect(payload.lines[0]?.reviewPostingDelta).toBeNull()
   })
 
   it("applyCountingSaveToEditorState keeps master lines after save", () => {

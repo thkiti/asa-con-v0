@@ -106,6 +106,39 @@ describe("postDocument", () => {
     expect(result.ledger.receive.applied).toBe(0)
   })
 
+  it("posts ADJUSTMENT opening-count lines (qty = reviewPostingDelta) via receiveStock", async () => {
+    const initial = doc({
+      docType: "ADJUSTMENT",
+      status: "CONFIRMED",
+      fromLocId: "branch-from",
+      lines: [
+        {
+          id: "l1",
+          documentId: "doc-1",
+          productId: "p1",
+          qty: 100,
+          endingQty: null,
+          reviewPostingDelta: 100,
+        },
+      ],
+    })
+    const { tx, state } = createPostingMockTx(initial)
+    ;(prisma.$transaction as jest.Mock).mockImplementation(
+      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
+    )
+
+    const result = await postDocument({
+      documentId: "doc-1",
+      postedByStaffId: "staff-1",
+    })
+
+    expect(result.document.status).toBe("POSTED")
+    expect(result.ledger.receive.applied).toBe(1)
+    expect(result.ledger.issue.applied).toBe(0)
+    expect(state.transactions).toHaveLength(1)
+    expect(state.transactions[0].qtyIn).toBe(100)
+  })
+
   it("posts ADJ mixed deltas with both receive and issue", async () => {
     const initial = doc({
       docType: "ADJUSTMENT",

@@ -37,8 +37,8 @@ function kLine(
 }
 
 describe("23F-3d counting sheet regression", () => {
-  describe("save payload contract (unchanged)", () => {
-    it("editorStateToSavePayload omits zero-qty counting lines", () => {
+  describe("save payload contract", () => {
+    it("editorStateToSavePayload omits zero-qty counting lines and sets reviewPostingDelta = qty", () => {
       const payload = editorStateToSavePayload(
         {
           documentId: "doc-1",
@@ -59,7 +59,9 @@ describe("23F-3d counting sheet regression", () => {
         "staff-1"
       )
 
-      expect(payload.lines).toEqual([{ productId: "prod-1", qty: 3 }])
+      expect(payload.lines).toEqual([
+        { productId: "prod-1", qty: 3, reviewPostingDelta: 3 },
+      ])
       expect(payload.lines.every((line) => !("endingQty" in line))).toBe(true)
     })
   })
