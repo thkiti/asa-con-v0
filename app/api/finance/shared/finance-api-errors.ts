@@ -90,7 +90,7 @@ export function financeErrorResponse(
   if (err instanceof ReportError) {
     return NextResponse.json(
       { error: err.message, code: err.code },
-      { status: 400 }
+      { status: statusForCode(err.code) }
     )
   }
 

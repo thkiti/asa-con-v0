@@ -159,6 +159,40 @@ export type JournalInquiryLine = {
   memo: string | null
 }
 
+export type GeneralLedgerTransaction = {
+  journalEntryId: string
+  journalDate: string
+  entryNo: string
+  description: string | null
+  lineMemo: string | null
+  debit: string
+  credit: string
+  runningBalance: string
+}
+
+export type GeneralLedgerAccount = {
+  accountCode: string
+  accountName: string
+  accountType: string
+  openingDebit: string
+  openingCredit: string
+  openingBalance: string
+  transactions: GeneralLedgerTransaction[]
+  closingBalance: string
+}
+
+export type GeneralLedgerResult = {
+  filter: {
+    branchId: string
+    periodKey?: string
+    from?: string
+    to?: string
+    accountCode?: string
+    accountCodes?: string[]
+  }
+  accounts: GeneralLedgerAccount[]
+}
+
 export type TrialBalanceRow = {
   accountCode: string
   accountName: string

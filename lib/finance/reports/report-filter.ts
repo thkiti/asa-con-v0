@@ -1,24 +1,28 @@
 import { ReportError } from "@/lib/reporting/report-errors"
-import { normalizeDateRange } from "@/lib/reporting/date-range"
+import { normalizeDateRange, type NormalizedDateRange } from "@/lib/reporting/date-range"
+import type { GeneralLedgerFilter } from "./general-ledger-types"
 import type { TrialBalanceFilter } from "./trial-balance-types"
 
 const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
 
-export type ReportFilterParams = {
-  get(name: string): string | null
+export type FinanceReportScope = {
+  branchId: string
+  periodKey?: string
+  from?: string
+  to?: string
 }
 
-export function parseHideZeroBalances(value: string | null | undefined): boolean {
-  const raw = String(value ?? "").trim().toLowerCase()
-  return raw === "true" || raw === "1" || raw === "yes"
+export type ResolvedReportDateRange = {
+  from: string
+  to: string
+  range: NormalizedDateRange
 }
 
-export function parseTrialBalanceFilter(params: ReportFilterParams): TrialBalanceFilter {
+function parseFinanceReportScope(params: ReportFilterParams): FinanceReportScope {
   const branchId = params.get("branchId")?.trim() ?? ""
   const periodKey = params.get("periodKey")?.trim() || undefined
   const from = params.get("from")?.trim() || undefined
   const to = params.get("to")?.trim() || undefined
-  const hideZeroBalances = parseHideZeroBalances(params.get("hideZeroBalances"))
 
   if (!branchId) {
     throw new ReportError("branchId is required", "EMPTY_FILTER")
@@ -45,7 +49,7 @@ export function parseTrialBalanceFilter(params: ReportFilterParams): TrialBalanc
     if (!PERIOD_KEY_PATTERN.test(periodKey!)) {
       throw new ReportError("periodKey must be YYYY-MM", "INVALID_FILTER")
     }
-    return { branchId, periodKey, hideZeroBalances }
+    return { branchId, periodKey }
   }
 
   if (!from || !to) {
@@ -53,6 +57,77 @@ export function parseTrialBalanceFilter(params: ReportFilterParams): TrialBalanc
   }
 
   normalizeDateRange({ from, to })
+  return { branchId, from, to }
+}
 
-  return { branchId, from, to, hideZeroBalances }
+export function periodKeyToReportDateRange(periodKey: string): ResolvedReportDateRange {
+  if (!PERIOD_KEY_PATTERN.test(periodKey)) {
+    throw new ReportError("periodKey must be YYYY-MM", "INVALID_FILTER")
+  }
+  const [yearStr, monthStr] = periodKey.split("-")
+  const year = Number(yearStr)
+  const month = Number(monthStr)
+  if (!year || month < 1 || month > 12) {
+    throw new ReportError("periodKey must be YYYY-MM", "INVALID_FILTER")
+  }
+  const lastDay = new Date(year, month, 0).getDate()
+  const mm = String(month).padStart(2, "0")
+  const from = `${yearStr}-${mm}-01`
+  const to = `${yearStr}-${mm}-${String(lastDay).padStart(2, "0")}`
+  const range = normalizeDateRange({ from, to })
+  return { from, to, range }
+}
+
+export function resolveReportDateRange(
+  scope: FinanceReportScope
+): ResolvedReportDateRange {
+  if (scope.periodKey) {
+    return periodKeyToReportDateRange(scope.periodKey)
+  }
+  const from = scope.from!
+  const to = scope.to!
+  const range = normalizeDateRange({ from, to })
+  return { from, to, range }
+}
+
+function parseAccountCodes(params: ReportFilterParams): string[] | undefined {
+  const single = params.get("accountCode")?.trim()
+  const repeated = (params.getAll?.("accountCodes") ?? []).flatMap((value) =>
+    value
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+  )
+  const codes = [
+    ...(single ? [single] : []),
+    ...repeated,
+  ]
+  if (codes.length === 0) return undefined
+  return [...new Set(codes)]
+}
+
+export type ReportFilterParams = {
+  get(name: string): string | null
+  getAll?(name: string): string[]
+}
+
+export function parseHideZeroBalances(value: string | null | undefined): boolean {
+  const raw = String(value ?? "").trim().toLowerCase()
+  return raw === "true" || raw === "1" || raw === "yes"
+}
+
+export function parseTrialBalanceFilter(params: ReportFilterParams): TrialBalanceFilter {
+  const scope = parseFinanceReportScope(params)
+  const hideZeroBalances = parseHideZeroBalances(params.get("hideZeroBalances"))
+  return { ...scope, hideZeroBalances }
+}
+
+export function parseGeneralLedgerFilter(params: ReportFilterParams): GeneralLedgerFilter {
+  const scope = parseFinanceReportScope(params)
+  const accountCodes = parseAccountCodes(params)
+  return {
+    ...scope,
+    accountCode: accountCodes?.length === 1 ? accountCodes[0] : undefined,
+    accountCodes: accountCodes && accountCodes.length > 1 ? accountCodes : undefined,
+  }
 }

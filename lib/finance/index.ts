@@ -333,8 +333,20 @@ export {
   isTrialBalanceBalanced,
   trialBalanceDifference,
 } from "./reports/balance-helpers"
-export { parseTrialBalanceFilter } from "./reports/report-filter"
+export {
+  parseGeneralLedgerFilter,
+  parseTrialBalanceFilter,
+  periodKeyToReportDateRange,
+  resolveReportDateRange,
+} from "./reports/report-filter"
+export { getGeneralLedger } from "./reports/general-ledger"
 export { getTrialBalance } from "./reports/trial-balance"
+export type {
+  GeneralLedgerAccount,
+  GeneralLedgerFilter,
+  GeneralLedgerResult,
+  GeneralLedgerTransaction,
+} from "./reports/general-ledger-types"
 export type {
   TrialBalanceFilter,
   TrialBalanceResult,

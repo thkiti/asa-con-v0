@@ -208,7 +208,9 @@ export function createFinanceMockTx(branchId = "branch-1") {
           deleted?: boolean
           isActive?: boolean
         }
-        orderBy?: Array<{ accountType?: "asc" | "desc"; code?: "asc" | "desc" }>
+        orderBy?:
+          | Array<{ accountType?: "asc" | "desc"; code?: "asc" | "desc" }>
+          | { accountType?: "asc" | "desc"; code?: "asc" | "desc" }
       }) => {
         let rows = state.glAccounts.filter((a) => {
           if (where?.deleted !== undefined && a.deleted !== where.deleted) return false
@@ -216,9 +218,14 @@ export function createFinanceMockTx(branchId = "branch-1") {
           if (where?.code?.in && !where.code.in.includes(a.code)) return false
           return true
         })
-        if (orderBy?.length) {
+        const orderRules = Array.isArray(orderBy)
+          ? orderBy
+          : orderBy
+            ? [orderBy]
+            : []
+        if (orderRules.length) {
           rows = [...rows].sort((a, b) => {
-            for (const ob of orderBy) {
+            for (const ob of orderRules) {
               if (ob.accountType) {
                 const diff = a.accountType.localeCompare(b.accountType)
                 if (diff !== 0) return ob.accountType === "desc" ? -diff : diff
@@ -851,6 +858,9 @@ export function createFinanceMockTx(branchId = "branch-1") {
             if (where.date.gte && entry.date.getTime() < where.date.gte.getTime()) {
               return false
             }
+            if (where.date.lt && entry.date.getTime() >= where.date.lt.getTime()) {
+              return false
+            }
             if (where.date.lte && entry.date.getTime() > where.date.lte.getTime()) {
               return false
             }
@@ -1027,19 +1037,25 @@ export function createFinanceMockTx(branchId = "branch-1") {
     journalEntryLine: {
       findMany: async ({
         where,
+        select,
       }: {
         where?: {
-          glAccountId?: { in: string[] }
+          glAccountId?: string | { in: string[] }
           journalEntry?: {
             branchId?: string
             periodId?: string
-            date?: { gte?: Date; lt?: Date }
+            date?: { gte?: Date; lt?: Date; lte?: Date }
           }
         }
+        select?: Record<string, unknown>
       }) => {
-        return state.journalEntryLines.filter((line) => {
-          if (where?.glAccountId?.in && !where.glAccountId.in.includes(line.glAccountId)) {
-            return false
+        const lines = state.journalEntryLines.filter((line) => {
+          if (where?.glAccountId) {
+            if (typeof where.glAccountId === "string") {
+              if (line.glAccountId !== where.glAccountId) return false
+            } else if (!where.glAccountId.in.includes(line.glAccountId)) {
+              return false
+            }
           }
           if (where?.journalEntry) {
             const entry = state.journalEntries.find((j) => j.id === line.journalEntryId)
@@ -1057,12 +1073,54 @@ export function createFinanceMockTx(branchId = "branch-1") {
               return false
             }
             if (where.journalEntry.date) {
-              const { gte, lt } = where.journalEntry.date
+              const { gte, lt, lte } = where.journalEntry.date
               if (gte && entry.date.getTime() < gte.getTime()) return false
               if (lt && entry.date.getTime() >= lt.getTime()) return false
+              if (lte && entry.date.getTime() > lte.getTime()) return false
             }
           }
           return true
+        })
+
+        if (!select) return lines
+
+        return lines.map((line) => {
+          const entry = state.journalEntries.find((j) => j.id === line.journalEntryId)!
+          const voucher = state.vouchers.find((v) => v.id === entry.voucherId)
+          const result: Record<string, unknown> = {}
+          for (const key of Object.keys(select)) {
+            if (key === "journalEntry") {
+              const entrySelect = (select.journalEntry as { select?: Record<string, unknown> })
+                ?.select
+              const entryRow: Record<string, unknown> = {}
+              if (entrySelect) {
+                for (const ek of Object.keys(entrySelect)) {
+                  if (ek === "voucher") {
+                    const voucherSelect = (
+                      entrySelect.voucher as { select?: Record<string, boolean> }
+                    )?.select
+                    if (voucher && voucherSelect) {
+                      const voucherRow: Record<string, unknown> = {}
+                      for (const vk of Object.keys(voucherSelect)) {
+                        voucherRow[vk] = voucher[vk as keyof VoucherRow]
+                      }
+                      entryRow.voucher = voucherRow
+                    } else {
+                      entryRow.voucher = voucher
+                    }
+                  } else {
+                    entryRow[ek] = entry[ek as keyof JournalEntryRow]
+                  }
+                }
+              } else {
+                Object.assign(entryRow, entry)
+              }
+              result.journalEntry = entryRow
+            } else {
+              result[key] = line[key as keyof JournalEntryLineRow]
+            }
+          }
+          return result
         })
       },
     },

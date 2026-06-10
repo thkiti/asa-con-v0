@@ -178,6 +178,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "GL trial balance integrity report"
         ),
         available(
+          "general-ledger",
+          "General Ledger",
+          "/finance/reports/general-ledger",
+          "Account ledger with opening, activity, and closing balances"
+        ),
+        available(
           "manual-journal",
           "Manual Journal",
           "/finance/journal-entries",
