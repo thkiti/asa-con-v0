@@ -1,6 +1,7 @@
 import { ReportError } from "@/lib/reporting/report-errors"
 import { normalizeDateRange, type NormalizedDateRange } from "@/lib/reporting/date-range"
 import type { GeneralLedgerFilter } from "./general-ledger-types"
+import type { ProfitLossFilter } from "./profit-loss-types"
 import type { TrialBalanceFilter } from "./trial-balance-types"
 
 const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
@@ -130,4 +131,8 @@ export function parseGeneralLedgerFilter(params: ReportFilterParams): GeneralLed
     accountCode: accountCodes?.length === 1 ? accountCodes[0] : undefined,
     accountCodes: accountCodes && accountCodes.length > 1 ? accountCodes : undefined,
   }
+}
+
+export function parseProfitLossFilter(params: ReportFilterParams): ProfitLossFilter {
+  return parseFinanceReportScope(params)
 }

@@ -335,12 +335,19 @@ export {
 } from "./reports/balance-helpers"
 export {
   parseGeneralLedgerFilter,
+  parseProfitLossFilter,
   parseTrialBalanceFilter,
   periodKeyToReportDateRange,
   resolveReportDateRange,
 } from "./reports/report-filter"
 export { getGeneralLedger } from "./reports/general-ledger"
+export { getProfitLoss } from "./reports/profit-loss"
 export { getTrialBalance } from "./reports/trial-balance"
+export type {
+  ProfitLossFilter,
+  ProfitLossResult,
+  ProfitLossRow,
+} from "./reports/profit-loss-types"
 export type {
   GeneralLedgerAccount,
   GeneralLedgerFilter,

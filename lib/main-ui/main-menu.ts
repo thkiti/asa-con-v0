@@ -184,6 +184,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "Account ledger with opening, activity, and closing balances"
         ),
         available(
+          "profit-loss",
+          "Profit & Loss",
+          "/finance/reports/profit-loss",
+          "Period income statement from revenue and expense activity"
+        ),
+        available(
           "manual-journal",
           "Manual Journal",
           "/finance/journal-entries",

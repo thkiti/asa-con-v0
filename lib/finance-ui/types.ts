@@ -193,6 +193,26 @@ export type GeneralLedgerResult = {
   accounts: GeneralLedgerAccount[]
 }
 
+export type ProfitLossRow = {
+  accountCode: string
+  accountName: string
+  amount: string
+}
+
+export type ProfitLossResult = {
+  filter: {
+    branchId: string
+    periodKey?: string
+    from?: string
+    to?: string
+  }
+  revenue: ProfitLossRow[]
+  expenses: ProfitLossRow[]
+  totalRevenue: string
+  totalExpense: string
+  netIncome: string
+}
+
 export type TrialBalanceRow = {
   accountCode: string
   accountName: string

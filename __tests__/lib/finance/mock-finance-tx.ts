@@ -205,6 +205,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
       }: {
         where?: {
           code?: { in: string[] }
+          accountType?: { in: string[] }
           deleted?: boolean
           isActive?: boolean
         }
@@ -216,6 +217,12 @@ export function createFinanceMockTx(branchId = "branch-1") {
           if (where?.deleted !== undefined && a.deleted !== where.deleted) return false
           if (where?.isActive !== undefined && a.isActive !== where.isActive) return false
           if (where?.code?.in && !where.code.in.includes(a.code)) return false
+          if (
+            where?.accountType?.in &&
+            !where.accountType.in.includes(a.accountType)
+          ) {
+            return false
+          }
           return true
         })
         const orderRules = Array.isArray(orderBy)
