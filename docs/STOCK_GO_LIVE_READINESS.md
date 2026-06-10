@@ -110,11 +110,11 @@ Introduce `OPENING` (or equivalent) in `DocType`, with posting rules and UI para
 | 1. DocType / schema | **Pass** | `ADJUSTMENT` exists; header + audit fields present; **no `note` field** on `StockDocument` |
 | 2. Workflow | **Pass** | `DRAFT → SUBMIT → CONFIRM → POST` allowed; POST also allowed from `SUBMITTED` |
 | 3. Validation rules | **Pass with procedure** | Zero/empty handling correct; negative qty blocked in counting save path; ADJ allows negative via API |
-| 4. Counting sheet / input | **Partial** | ADJUSTMENT draft counting sheet works for entry/save; **does not set `reviewPostingDelta`** |
+| 4. Counting sheet / input | **Pass** (post-G1) | Counting save sets `reviewPostingDelta = qty`; staff entry routing still missing (§4B) |
 | 5. Posting / ledger | **Pass (if delta present)** | Positive `reviewPostingDelta` → `receiveStock`; POSTED immutable; balance via stock summary |
 | 6. Audit clarity | **Pass with procedure** | `refNo` + timestamps + external count sheet sufficient if naming discipline applied; **refNo not staff-editable** |
-| 7. Gaps | **1 blocker** | Counting sheet → POST path broken without `reviewPostingDelta` wiring |
-| 8. Recommendation | **GAP** | Small code fix required before dry run — not OPENING type, not schema |
+| 7. Gaps | **G1 resolved** | Remaining gaps: staff POS entry, refNo, draft reuse (§4B) |
+| 8. Recommendation | **GO** (post-G1) | ADJUSTMENT posting path unblocked; staff UX gaps remain |
 
 ### Findings by area
 
@@ -178,7 +178,7 @@ Source: `lib/stock-ui/document-permissions.ts` (`canShopPost`). Workflow API rou
 | Product order / grouping | Input list from `GET /api/stock-document/input-list`; hook tabs K/C/M/O/S; rows sorted by `hookNo` for display (`sort-counting-rows-by-hook.ts` — display only) |
 | Zero rows visible, not persisted | **Yes** — merge shows full list; `editorStateToSavePayload` omits `qty ≤ 0` lines |
 | Empty product rows ignored | **Yes** — counting save requires `productId` and `qty > 0` |
-| Save payload for counting | **Only `{ productId, qty }`** — explicitly omits `endingQty` and `reviewPostingDelta` (regression test in `stock-document-counting-regression.test.tsx`) |
+| Save payload for counting | **`{ productId, qty, reviewPostingDelta: qty }`** — fixed in commit `426ae77` (G1) |
 
 #### 5. Posting / ledger
 
@@ -205,7 +205,7 @@ Source: `lib/stock-ui/document-permissions.ts` (`canShopPost`). Workflow API rou
 
 | ID | Gap | Classification | Detail |
 |----|-----|----------------|--------|
-| G1 | Counting sheet Save does not populate `reviewPostingDelta`; POST requires it and ledger ignores `qty` for ADJUSTMENT | **BLOCKER** | Dry run through `/shop/stock-documents` counting UI will fail at POST with `MISSING_ADJ_DELTA` (or post zero movement if validation were bypassed) |
+| G1 | Counting sheet Save did not populate `reviewPostingDelta` | **Resolved** | Fixed `426ae77` — `reviewPostingDelta = qty` on counting save |
 | G2 | `refNo` auto-generated and not editable on save | **SHOULD FIX BEFORE FULL LOAD** | Proposed `OPENING-…` convention cannot be applied by staff; external mapping required until ref assignment exists |
 | G3 | No `StockDocument.note` for count-sheet reference text | **PROCEDURE ONLY** | Keep paper/PDF count sheets + manual `documentId`/`refNo` index until field added |
 | G4 | ADJUSTMENT allows negative `reviewPostingDelta` at server | **PROCEDURE ONLY** | Opening procedure forbids negative; counting save drops negative `qty` but API could send negative delta |
@@ -215,23 +215,171 @@ Source: `lib/stock-ui/document-permissions.ts` (`canShopPost`). Workflow API rou
 
 ### Recommendation
 
-**GAP — code change required before dry run**
+**GO** (as of commit `426ae77`)
 
-ADJUSTMENT is the **correct vehicle** for beginning stock (schema, workflow, and ledger are sufficient **when `reviewPostingDelta` is set**). The **counting sheet UI path** — the intended shop entry mode for ADJUSTMENT — does not complete the Save → POST contract today.
-
-**Minimum fix (not implemented in this step):** When saving ADJUSTMENT from counting mode on a zero-stock baseline, persist `reviewPostingDelta` equal to entered count (or compute delta from system on-hand vs count). Legacy `asa-con` used a `cal-adj` step; v0 has no equivalent (`cal-adj` route absent).
-
-**Not required for dry run:** `OPENING` doc type, schema migration, UI redesign, or stock posting lock.
+ADJUSTMENT is the correct vehicle for beginning stock. G1 is resolved. Remaining work is **staff entry UX and draft lifecycle** (§4B), not schema or OPENING doc type.
 
 ### Next action
 
 | # | Action | Owner |
 |---|--------|-------|
-| 1 | Implement **G1 fix** (counting qty → `reviewPostingDelta` for opening/counting save, or restore cal-adj step) — smallest change only | Dev |
-| 2 | Re-run Step 1 audit spot-check after G1 fix | Dev |
-| 3 | Execute **§6 Dry Run** (10–20 SKUs, one branch) | Operations |
-| 4 | Decide whether G2 (`refNo` assignment) needs a small UI/API affordance before full load | Ops + Dev |
-| 5 | Update §9A and Option A/B recommendations after dry run | Ops |
+| 1 | Implement §4B staff-entry plan (get-or-create, POS route, refNo) | Dev |
+| 2 | Execute **§6 Dry Run** (10–20 SKUs, one branch) | Operations |
+| 3 | Decide G2 (`refNo` / `DocumentCounter`) before full load | Ops + Dev |
+| 4 | Update §9A after dry run | Ops |
+
+---
+
+## 4B. Stock Count Staff Entry Audit
+
+**Audit date:** 2026-06-10  
+**Scope:** Compare legacy `asa-con` stock-count staff workflow with `asa-con-v0`; plan only — no implementation  
+**Verdict:** **YES WITH SMALL CHANGES** — ADJUSTMENT `StockDocument` is the right backend; POS → direct counting draft needs targeted wiring
+
+### Legacy behavior found (`asa-con`)
+
+| Topic | Finding | Source |
+|-------|---------|--------|
+| POS entry | **Yes** — `full-pos` keypad **STOCK COUNT** → `openStockCount()` → `openStockDocument("ADJUSTMENT")` | `app/full-pos/page.tsx` |
+| API | `POST /api/stock-document/get-or-create` with `{ docType, branchId, staffId }` | `get-or-create/route.ts` |
+| Draft reuse | **One DRAFT per shop/month** — not per staff | `adjustmentDraftWhere(branchId, explicitPeriod)` |
+| Reuse key | `docType=ADJUSTMENT`, `fromLocId=branchId`, `status=DRAFT`, plus `periodMonth` match (or legacy `periodMonth null` + `date` in month) | Same file |
+| Create if missing | New doc with `generateRunningRef`, `date` = today (or last day of period for HO override), `periodMonth` from date | Same file |
+| Reopen draft | **Yes** — `findFirst` existing DRAFT returns same `id`; router pushes `/stock-document/{id}` | `full-pos/page.tsx` |
+| refNo format | **`ADJ-{BRANCHCODE}-{YYYYMM}-{running}`** e.g. `ADJ-SH001-202606-0001` (4-digit running via `DocumentCounter`) | `lib/generateRef.ts` |
+| Display ref | Staff may see shortened ref; full form includes running suffix | `scripts/delete-stock-document-by-ref.ts` examples |
+| Calendar gate | Shop staff: STOCK COUNT enabled only **last 5 days of month** (HO bypass) | `isStockCountOpen()` in `full-pos/page.tsx` |
+| After SUBMIT | Shop **read-only** — banner: ดูได้อย่างเดียว แก้ไม่ได้; ADJ SUBMITTED leaves shop hub (HO queue only) | `StockDocumentPage.tsx`, `hubLoaders.ts` |
+| Staff edit after SUBMIT | **No** for `SH_STAFF` on ADJ; HO uses `saveReview` on SUBMITTED+ | `docs/11_stock-document-adj-ui-and-post.md` |
+| cal-adj | **HO only**, `SUBMITTED` status — computes `reviewPostingDelta` from END/COUNT/snapshot (month-end variance), **not** opening-count qty=delta | `cal-adj/route.ts`, `adjMonthAutomation` |
+| Counting UI | END \| CNT \| VAR \| ADJ columns; horizontal blocks; full-height layout; no generic header form for shop count | `StockDocumentPage.tsx`, `docs/11_stock-document-adj-ui-and-post.md` |
+| Date on reopen | Existing draft returned **unchanged** — get-or-create does not update `date` on hit | `get-or-create/route.ts` |
+
+### Current v0 behavior
+
+| Topic | Finding | Source |
+|-------|---------|--------|
+| POS / shop entry | **STOCK COUNT** on POS keypad (`/shop` → `PosTerminalPage`) navigates to **`/shop/stock-documents` list** — not counting screen | `lib/pos-ui/pos-navigation.ts`, `PosTerminalPage.tsx` |
+| No get-or-create | **No** `get-or-create` API; `DocumentCounter` in schema **unused** | grep across `asa-con-v0` |
+| Create path | List → **New ADJUSTMENT** → `/shop/stock-documents/new?type=ADJUSTMENT` → new draft every time unless staff picks existing row | `StockDocumentListView.tsx`, `new/page.tsx` |
+| Draft discovery | `listStockDocuments` supports `branchId`, `docType`, `status`, `periodMonth` filters — **no dedicated “open my count draft”** helper | `document-list.ts`, list API |
+| refNo today | **`ADJUSTMENT-{timestamp}-{random}`** on first save — not `ADJ-SH001-202606-…` | `document-save.ts` `draftRefNo()` |
+| refNo on update | **Unchanged** after create (good) | `document-save.ts` — update path omits `refNo` |
+| Date on save | **Updates every save** — `date` and `periodMonth` rewritten from editor header (`periodMonthFromDate(docDate)`) | `document-save.ts` headerData on update |
+| Editor date default | **Today** (`createDraftEditorState`) — staff can change date input | `editor-draft-state.ts` |
+| Header form | **Always shown** for drafts (`StockDocumentHeaderForm` — type, status, ref, date, from/to loc) | `StockDocumentEditorView.tsx` |
+| Counting sheet | ADJUSTMENT DRAFT uses counting sheet; horizontal blocks exist (`countingShoeScrollClass`, `chunkCountingRows`); group summary panel on right | `StockDocumentCountingSheet.tsx`, `counting-sheet-styles.ts` |
+| Toolbar actions | **Save, Submit, Confirm, Cancel, Post, Print, Back to list** — not SAVE/SUBMIT/BACK only | `document-permissions.ts`, `StockDocumentEditorToolbarActions.tsx` |
+| Session fields | **`staffId`, `name`, `branchId`, `branchCode`, `branchName`, `role`** available server-side and via shop session fetch | `lib/auth/types.ts`, `StockDocumentEditorController` |
+| staffId on document | `createdByStaffId` set on first save only — **not** used for draft lookup | `document-save.ts` |
+| G1 posting path | Counting save sets **`reviewPostingDelta = qty`** (opening baseline) | `editor-draft-state.ts` (commit `426ae77`) |
+| After SUBMIT | Document becomes `readOnly`; counting sheet disabled — **consistent with legacy** | `detailToEditorState`, `isCountingEditorMode` |
+| POS route name | v0 POS lives at **`/shop`** (legacy: `/full-pos`) | `app/(main)/shop/page.tsx` |
+
+### Recommended workflow (target)
+
+```
+/shop (POS)
+  → STOCK COUNT
+  → POST get-or-create ADJUSTMENT (branch + current periodMonth)
+  → redirect /shop/stock-documents/{id}?mode=count (or dedicated /shop/stock-count)
+  → counting sheet only (no header form)
+  → compact heading:
+     ตรวจนับสต๊อก - REF NO. {refNo} / {branchCode} • {branchName} / {staffId} • {staffName} / {YYYY.MM.DD}
+  → SAVE | SUBMIT | BACK (top-right)
+  → BACK returns to /shop
+```
+
+| Rule | Recommendation |
+|------|----------------|
+| Draft reuse | Find existing **DRAFT** before create (legacy-aligned) |
+| After SUBMIT | get-or-create must **not** return SUBMITTED doc; create **new** draft only when no DRAFT exists for period (or block with message) |
+| Opening vs month-end | **Opening load:** staff or HO may POST after confirm (§6 dry run). **Month-end count (later):** SUBMIT-only for shop matches legacy; HO cal-adj/post out of scope here |
+| Date immutability | On **existing DRAFT**, save must **not** change `date` / `periodMonth` (fix `document-save.ts` update path for count mode) |
+| Location | Set `branchId` + `fromLocId = session.branchId` at create (already default in counting header) |
+
+### Draft reuse rule (recommendation)
+
+**Recommend option A: one shared Stock Count draft per branch + periodMonth**
+
+| Key field | Include? | Reason |
+|-----------|----------|--------|
+| `docType = ADJUSTMENT` | **Yes** | Stock count vehicle |
+| `fromLocId = branchId` | **Yes** | Legacy lookup key; ledger branch |
+| `status = DRAFT` | **Yes** | Only reopen editable draft |
+| `periodMonth` | **Yes** | Current `YYYY-MM` (v0) or `YYYYMM` (legacy) — **normalize one format** |
+| `branchId` | **Yes** (secondary) | v0 header field; include in query for safety |
+| `createdByStaffId` / `staffId` | **No** | Legacy does not split by staff; shared count per shop |
+| Per staff/month (B) | **No** | Would duplicate counts and confuse reconciliation |
+| Per location/month (C) | **Defer** | v0 shop ADJ uses single `fromLocId = shop branch`; multi-location shops need explicit policy later |
+
+Legacy OR clause for `periodMonth null` + `date` in month should be ported if old rows exist; greenfield v0 can require `periodMonth` on create.
+
+### refNo recommendation
+
+| | Legacy | v0 today | Recommend |
+|--|--------|----------|-----------|
+| Format | `ADJ-SH001-202606-0001` | `ADJUSTMENT-1738…-abc` | Port **`generateRunningRef`** pattern using existing `DocumentCounter` model |
+| Prefix | `ADJ` | `ADJUSTMENT` string | **`ADJ`** for parity and compact heading |
+| Period | `YYYYMM` in ref | `periodMonth` `YYYY-MM` in DB | Align ref period segment to **`YYYYMM`**; keep DB `periodMonth` as `YYYY-MM` |
+| Running | Per branch+period counter | Random | **Required** before staff training — avoids unreadable refs and supports audit |
+| Staff-editable ref | No | No | Keep auto-assign at create only (G2) |
+
+Example heading ref segment: `ADJ-SH001-202606` may display **without running suffix**; store full `ADJ-SH001-202606-0001` in DB.
+
+### UI recommendation
+
+| Requirement | Current | Feasibility |
+|-------------|---------|-------------|
+| Hide document header form | Header always rendered | **Easy** — `staffCountMode` prop/skip `StockDocumentHeaderForm` |
+| Compact heading line | Title inside counting sheet only | **Easy** — new banner component using session + `detail.refNo` |
+| Paper-like full screen | Page wrapped in `p-8` + list links; counting sheet in bordered section | **Medium** — dedicated route with `h-screen`, reduced padding, hide print snapshot on draft |
+| Horizontal overflow only | Blocks use `overflow-x-auto`; vertical chunking by 22 rows | **Mostly there** — tune full-height grid; legacy used full viewport height |
+| SAVE / SUBMIT / BACK top-right | Toolbar in counting sheet header via `toolbarActions`; includes extra buttons | **Easy** — filter `getEditorWorkflowActions` for staff count mode |
+| Fixed product positions | Input-list order + hook tabs K/C/M/O/S | **Already stable** — same merge order as paper sheet |
+
+### Risks
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Duplicate DRAFT creation | High | Server-side get-or-create in **one transaction** (legacy pattern) |
+| Wrong branch | High | Bind to `session.branchId`; SH_STAFF list already pinned |
+| Wrong staff attribution | Medium | Show staff in heading; `createdByStaffId` on first create only |
+| SUBMITTED doc reopened | High | get-or-create query **`status: DRAFT` only** |
+| refNo collision | Medium | Use `DocumentCounter` upsert (legacy) |
+| Date / periodMonth changes on save | High | Freeze `date` on DRAFT update in count mode |
+| Staff picks wrong doc from list | Medium | Remove list from happy path; POS goes direct |
+| Month boundary (23:59 last day) | Medium | `periodMonth` from **create date**, not each save; document timezone policy |
+| Location missing | Low for shop | Default `fromLocId = branchId` at create |
+| Opening count vs month-end cal-adj | Medium | Do **not** port cal-adj for opening; G1 qty=delta suffices on zero baseline |
+| Multiple ADJ DRAFTs already in DB | Medium | One-time cleanup + unique partial index (future) or get-or-create picks newest DRAFT |
+
+### Implementation order
+
+| # | Item | Class | Notes |
+|---|------|-------|-------|
+| 1 | `POST /api/stock-document/get-or-create` (or `lib/stock/document/get-or-create.ts` + thin route) | **REQUIRED BEFORE DRY RUN** | Legacy port: find DRAFT ADJ by branch+period; else create with frozen `date` |
+| 2 | `generateRunningRef` using `DocumentCounter` | **REQUIRED BEFORE DRY RUN** | Replace `draftRefNo()` for ADJUSTMENT create path |
+| 3 | POS STOCK COUNT → get-or-create → redirect to draft editor | **REQUIRED BEFORE DRY RUN** | Replace list navigation in `pos-navigation.ts` / `PosTerminalPage` |
+| 4 | Freeze `date`/`periodMonth` on update for count drafts | **REQUIRED BEFORE DRY RUN** | Prevents created date drift |
+| 5 | Staff count mode: hide header, compact heading, SAVE/SUBMIT/BACK | **SHOULD FIX BEFORE STAFF TRAINING** | Minimal UI flags on existing editor |
+| 6 | BACK → `/shop` (not list) when entered from POS | **SHOULD FIX BEFORE STAFF TRAINING** | `from=pos` query param |
+| 7 | Full-viewport counting layout polish | **SHOULD FIX BEFORE STAFF TRAINING** | CSS only |
+| 8 | Month-end calendar gate (last 5 days) | **NICE TO HAVE** | Legacy parity for EOM count, not opening load |
+| 9 | HO cal-adj / END-CNT-ADJ grid | **NICE TO HAVE** | Month-end variance; separate from opening stock |
+| 10 | `note` / evidence field | **NICE TO HAVE** | G3 — external sheets suffice for dry run |
+
+### GO / GAP conclusion
+
+| Question | Answer |
+|----------|--------|
+| Can we use existing ADJUSTMENT `StockDocument`? | **Yes** — schema, workflow, counting sheet, G1 posting path |
+| Can we implement FULL POS → STOCK COUNT → direct counting draft? | **YES WITH SMALL CHANGES** |
+| Blockers | No schema change; need get-or-create + refNo + POS route + date freeze + staff UI mode |
+| OPENING doc type required? | **No** |
+| cal-adj required for opening dry run? | **No** (qty = `reviewPostingDelta` on zero stock) |
+
+**Overall:** **YES WITH SMALL CHANGES**
 
 ---
 
@@ -324,8 +472,9 @@ Suggested comparison cadence: daily for the first 1–2 weeks, then weekly until
 
 | Field | Status |
 |-------|--------|
-| Beginning Stock Method | **ADJUSTMENT** (preferred) — blocked on G1 until counting → `reviewPostingDelta` wiring |
-| Step 1 Audit | **Complete** (2026-06-10) — verdict **GAP** |
+| Beginning Stock Method | **ADJUSTMENT** (preferred) |
+| Step 1 Audit (§4A) | **Complete** — G1 **resolved** (`426ae77`) |
+| Step 1b Audit (§4B) | **Complete** (2026-06-10) — staff entry **YES WITH SMALL CHANGES** |
 | Dry Run Completed | Pending |
 | Opening Balances Loaded | Pending |
 | Verification Passed | Pending |
@@ -370,7 +519,8 @@ Step 1 audit (§4A) decided **ADJUSTMENT is the preferred vehicle**; **OPENING d
 
 | Decision | Options / status |
 |----------|------------------|
-| G1 fix approach | (a) Set `reviewPostingDelta = qty` on counting save when system stock is zero; (b) compute delta vs on-hand; (c) explicit cal-adj step before POST |
+| G1 fix | **Done** — `reviewPostingDelta = qty` on counting save (`426ae77`) |
+| Staff entry (§4B) | get-or-create + legacy refNo + POS direct route + staff count UI mode |
 | Opening stock vehicle | **ADJUSTMENT** — confirmed unless dry run proves otherwise |
 | Staff UI | Small hint for opening `refNo`/procedure? Optional after G1; **refNo edit** may be needed before full load (G2) |
 | Parallel run scope | Which branches/locations and SKU depth (full vs sample) for daily comparison? |
