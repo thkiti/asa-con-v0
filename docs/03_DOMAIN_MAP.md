@@ -27,7 +27,10 @@ SYSTEM
 | Area | Route | Module |
 |------|-------|--------|
 | Home | `/` | — |
-| Finance | `/finance` | `lib/finance/` |
+| HO Control Center | `/main` | `lib/main-ui/` |
+| Finance Hub (canonical) | `/main/finance` | `lib/main-ui/main-menu.ts` |
+| Finance (redirect) | `/finance` → `/main/finance` | — |
+| Finance features | `/finance/*` (reports, journals, accounts, reconciliation, periods) | `lib/finance/`, `lib/finance-ui/` |
 | Finance reconciliation | `/finance/reconciliation` | `lib/finance-ui/`, `lib/finance/reconciliation.ts` |
 | Finance reconciliation snapshots | `/finance/reconciliation/snapshots`, `/finance/reconciliation/snapshots/[id]` | `lib/finance-ui/`, `lib/finance/reconciliation-snapshot.ts` |
 | Finance reconciliation (inventory) | `/finance/reconciliation/inventory` | `lib/finance-ui/` |

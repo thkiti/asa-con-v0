@@ -44,6 +44,14 @@ export const mainMenuProfileClass = `mt-3 w-full text-sm ${themeMenuSummary}`
 
 export const mainMenuIntroClass = `mt-6 w-full text-sm ${themeMuted}`
 
+/** Group heading above a hub card grid (finance section groups). */
+export const mainMenuGroupHeadingClass =
+  "text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+
+export const mainMenuGroupSectionClass = "space-y-3"
+
+export const mainMenuGroupedGridsClass = "mt-4 space-y-8"
+
 export const mainMenuDescriptionLinkClass = `underline hover:text-foreground ${themeMuted}`
 
 export const mainMenuLogoutButtonClass = `${themeBtnSecondary} shrink-0`

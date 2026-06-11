@@ -62,10 +62,31 @@ describe("getMainMenuSections", () => {
 })
 
 describe("getMainMenuSectionDetail", () => {
-  it("includes Finance hub for HO_ADMIN finance section", () => {
+  it("includes grouped Finance hub for HO_ADMIN finance section", () => {
     const detail = getMainMenuSectionDetail("HO_ADMIN", "finance")
     expect(detail?.label).toBe("FINANCE")
-    expect(findItem("HO_ADMIN", "finance")?.href).toBe("/finance")
+    expect(detail?.description).toContain("Reports")
+    expect(detail?.description).toContain("period management")
+    expect(detail?.itemGroups?.map((g) => g.key)).toEqual([
+      "reports",
+      "operations",
+      "reconciliation",
+      "period-management",
+      "planned",
+    ])
+    expect(findItem("HO_ADMIN", "finance")).toBeUndefined()
+    expect(findItem("HO_ADMIN", "trial-balance")?.href).toBe(
+      "/finance/reports/trial-balance"
+    )
+    expect(findItem("HO_ADMIN", "chart-of-accounts-import")?.href).toBe(
+      "/finance/accounts/import"
+    )
+    expect(findItem("HO_ADMIN", "reconciliation-dashboard")?.href).toBe(
+      "/finance/reconciliation"
+    )
+    expect(findItem("HO_ADMIN", "accounting-periods")?.href).toBe(
+      "/finance/periods"
+    )
   })
 
   it("includes administration master links for HO_ADMIN", () => {

@@ -21,7 +21,7 @@ describe("MainMenuGrid", () => {
             key: "short",
             label: "Finance",
             hint: "Periods",
-            href: "/finance",
+            href: "/main/finance",
             status: "available",
           },
           {

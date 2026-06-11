@@ -6,13 +6,15 @@ import type { MainMenuCardItem } from "@/lib/main-ui/main-menu-card-types"
 import { mainMenuPageClass } from "@/lib/main-ui/main-menu-layout"
 import { MainMenuDescription } from "./MainMenuDescription"
 import { MainMenuGrid } from "./MainMenuGrid"
+import { MainMenuGroupedGrids, type MainMenuCardGroup } from "./MainMenuGroupedGrids"
 import { MainMenuHeader } from "./MainMenuHeader"
 
 export type MainMenuHubPageProps = {
   user: SessionUserApi
   title: string
   description: ReactNode
-  items: readonly MainMenuCardItem[]
+  items?: readonly MainMenuCardItem[]
+  itemGroups?: readonly MainMenuCardGroup[]
   gridAriaLabel: string
   backHref?: string
   backLabel?: string
@@ -22,7 +24,8 @@ export function MainMenuHubPage({
   user,
   title,
   description,
-  items,
+  items = [],
+  itemGroups,
   gridAriaLabel,
   backHref,
   backLabel,
@@ -36,7 +39,11 @@ export function MainMenuHubPage({
         backLabel={backLabel}
       />
       <MainMenuDescription>{description}</MainMenuDescription>
-      <MainMenuGrid items={items} ariaLabel={gridAriaLabel} />
+      {itemGroups && itemGroups.length > 0 ? (
+        <MainMenuGroupedGrids groups={itemGroups} />
+      ) : (
+        <MainMenuGrid items={items} ariaLabel={gridAriaLabel} />
+      )}
     </main>
   )
 }

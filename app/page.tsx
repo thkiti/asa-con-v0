@@ -1,7 +1,7 @@
 import Link from "next/link"
 
 const areas = [
-  { href: "/finance", label: "Finance" },
+  { href: "/main", label: "Main Menu" },
   { href: "/admin", label: "Admin" },
   { href: "/operations", label: "Operations" },
   { href: "/shop", label: "Shop" },

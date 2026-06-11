@@ -26,8 +26,16 @@ export type MainMenuSection = {
   href: string
 }
 
+export type MainMenuSectionItemGroup = {
+  key: string
+  label: string
+  items: MainMenuItem[]
+}
+
 export type MainMenuSectionDetail = MainMenuSection & {
   items: MainMenuItem[]
+  /** When set, hub renders labeled card grids instead of one flat grid. */
+  itemGroups?: MainMenuSectionItemGroup[]
 }
 
 export type MainMenuGroup = {
@@ -55,7 +63,7 @@ const SECTION_META: Record<
   finance: {
     label: "FINANCE",
     description:
-      "Journal, Chart of Accounts, Transfer List, Receivable, Reports",
+      "Reports, operations, reconciliation, and period management",
   },
   operations: {
     label: "OPERATIONS",
@@ -83,6 +91,130 @@ function available(
 
 function planned(key: string, label: string, hint?: string): MainMenuItem {
   return { key, label, hint, status: "planned" }
+}
+
+function buildFinanceItemGroups(role: Role): MainMenuSectionItemGroup[] {
+  if (!canAccessMenu(role, "finance")) return []
+
+  return [
+    {
+      key: "reports",
+      label: "Reports",
+      items: [
+        available(
+          "trial-balance",
+          "Trial Balance",
+          "/finance/reports/trial-balance",
+          "GL trial balance integrity report"
+        ),
+        available(
+          "general-ledger",
+          "General Ledger",
+          "/finance/reports/general-ledger",
+          "Account ledger with opening, activity, and closing balances"
+        ),
+        available(
+          "profit-loss",
+          "Profit & Loss",
+          "/finance/reports/profit-loss",
+          "Period income statement from revenue and expense activity"
+        ),
+        available(
+          "balance-sheet",
+          "Balance Sheet",
+          "/finance/reports/balance-sheet",
+          "Assets, liabilities, and equity from posted journal activity"
+        ),
+        available(
+          "retained-earnings",
+          "Retained Earnings",
+          "/finance/reports/retained-earnings",
+          "Posted account 301 plus net income — economic equity before close"
+        ),
+      ],
+    },
+    {
+      key: "operations",
+      label: "Operations",
+      items: [
+        available(
+          "manual-journal",
+          "Manual Journal",
+          "/finance/journal-entries",
+          "Post balanced GL journals and reversals"
+        ),
+        available(
+          "chart-of-accounts",
+          "Chart of Accounts",
+          "/finance/accounts",
+          "Browse, export, and import GL accounts"
+        ),
+        available(
+          "chart-of-accounts-import",
+          "Import Chart of Accounts",
+          "/finance/accounts/import",
+          "CSV preview and apply for GL account updates"
+        ),
+      ],
+    },
+    {
+      key: "reconciliation",
+      label: "Reconciliation",
+      items: [
+        available(
+          "reconciliation-dashboard",
+          "Reconciliation Dashboard",
+          "/finance/reconciliation",
+          "Operational vs GL variance overview"
+        ),
+        available(
+          "reconciliation-inventory",
+          "Inventory Reconciliation",
+          "/finance/reconciliation/inventory",
+          "Stock ledger vs inventory GL"
+        ),
+        available(
+          "reconciliation-sales",
+          "Sales Reconciliation",
+          "/finance/reconciliation/sales",
+          "POS sales vs revenue and tender accounts"
+        ),
+        available(
+          "reconciliation-refunds",
+          "Refund Reconciliation",
+          "/finance/reconciliation/refunds",
+          "Refund activity vs GL reversals"
+        ),
+        available(
+          "reconciliation-snapshots",
+          "Reconciliation Snapshots",
+          "/finance/reconciliation/snapshots",
+          "Frozen reconciliation history and compare"
+        ),
+      ],
+    },
+    {
+      key: "period-management",
+      label: "Period Management",
+      items: [
+        available(
+          "accounting-periods",
+          "Accounting Periods",
+          "/finance/periods",
+          "Period lifecycle, close evidence, and reopen workflow"
+        ),
+      ],
+    },
+    {
+      key: "planned",
+      label: "Planned",
+      items: [
+        planned("transfer-list", "Transfer List"),
+        planned("receivable", "Receivable"),
+        planned("reports", "Reports"),
+      ],
+    },
+  ]
 }
 
 function sectionHref(key: MainMenuSectionKey): string {
@@ -163,60 +295,7 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
       ]
 
     case "finance":
-      if (!canAccessMenu(role, "finance")) return []
-      return [
-        available(
-          "finance",
-          "Finance",
-          "/finance",
-          "Periods, reconciliation, vouchers"
-        ),
-        available(
-          "trial-balance",
-          "Trial Balance",
-          "/finance/reports/trial-balance",
-          "GL trial balance integrity report"
-        ),
-        available(
-          "general-ledger",
-          "General Ledger",
-          "/finance/reports/general-ledger",
-          "Account ledger with opening, activity, and closing balances"
-        ),
-        available(
-          "profit-loss",
-          "Profit & Loss",
-          "/finance/reports/profit-loss",
-          "Period income statement from revenue and expense activity"
-        ),
-        available(
-          "balance-sheet",
-          "Balance Sheet",
-          "/finance/reports/balance-sheet",
-          "Assets, liabilities, and equity from posted journal activity"
-        ),
-        available(
-          "retained-earnings",
-          "Retained Earnings",
-          "/finance/reports/retained-earnings",
-          "Posted account 301 plus net income — economic equity before close"
-        ),
-        available(
-          "manual-journal",
-          "Manual Journal",
-          "/finance/journal-entries",
-          "Post balanced GL journals and reversals"
-        ),
-        available(
-          "chart-of-accounts",
-          "Chart of Accounts",
-          "/finance/accounts",
-          "Browse, export, and import GL accounts"
-        ),
-        planned("transfer-list", "Transfer List"),
-        planned("receivable", "Receivable"),
-        planned("reports", "Reports"),
-      ]
+      return buildFinanceItemGroups(role).flatMap((group) => group.items)
 
     case "operations":
       if (!canAccessMenu(role, "operations")) return []
@@ -316,9 +395,14 @@ export function getMainMenuSectionDetail(
     return null
   }
 
+  const itemGroups = key === "finance" ? buildFinanceItemGroups(role) : undefined
+
   return {
     ...toSection(key),
-    items: buildSectionItems(role, key),
+    items: itemGroups
+      ? itemGroups.flatMap((group) => group.items)
+      : buildSectionItems(role, key),
+    ...(itemGroups && itemGroups.length > 0 ? { itemGroups } : {}),
   }
 }
 

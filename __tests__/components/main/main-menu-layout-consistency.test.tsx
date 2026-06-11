@@ -15,6 +15,8 @@ import {
   mainMenuCardTitleClass,
   mainMenuCardTitleSlotClass,
   mainMenuGridClass,
+  mainMenuGroupedGridsClass,
+  mainMenuGroupHeadingClass,
   mainMenuHeaderClass,
   mainMenuIntroClass,
   mainMenuPageClass,
@@ -114,6 +116,15 @@ describe("main menu layout consistency", () => {
       expect(page.html).not.toContain("min-h-[5.5rem]")
       expect(page.html).not.toContain("themeMenuAppCard")
     }
+  })
+
+  it("uses grouped finance hub without breaking card primitives", () => {
+    const financeHtml = pages.find((page) => page.name === "/main/finance")!.html
+    expect(financeHtml).toContain(mainMenuGroupedGridsClass)
+    expect(financeHtml).toContain(mainMenuGroupHeadingClass)
+    expect(financeHtml).toContain("Reports")
+    expect(financeHtml).toContain(mainMenuGridClass)
+    expect(financeHtml).toContain(mainMenuCardClass)
   })
 
   it("renders every scoped hub page through MainMenuHubPage", () => {

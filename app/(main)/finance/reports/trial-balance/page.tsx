@@ -4,7 +4,7 @@ import { TrialBalancePage } from "@/components/finance/TrialBalancePage"
 export default function Page() {
   return (
     <main className="p-8">
-      <Link href="/finance" className="text-sm text-zinc-600 underline print:hidden">
+      <Link href="/main/finance" className="text-sm text-zinc-600 underline print:hidden">
         ← Finance
       </Link>
       <h1 className="mt-4 text-xl font-semibold">Trial Balance</h1>

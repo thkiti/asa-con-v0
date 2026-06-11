@@ -4,7 +4,7 @@ import { SalesReconciliationView } from "@/components/finance/SalesReconciliatio
 export default function SalesReconciliationPage() {
   return (
     <main className="p-8">
-      <Link href="/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
+      <Link href="/main/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Finance
       </Link>
       <h1 className="mt-4 text-xl font-semibold">Sales reconciliation</h1>

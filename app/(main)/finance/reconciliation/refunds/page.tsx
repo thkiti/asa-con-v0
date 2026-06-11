@@ -4,7 +4,7 @@ import { RefundsReconciliationView } from "@/components/finance/RefundsReconcili
 export default function RefundsReconciliationPage() {
   return (
     <main className="p-8">
-      <Link href="/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
+      <Link href="/main/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Finance
       </Link>
       <h1 className="mt-4 text-xl font-semibold">Refund reconciliation</h1>
