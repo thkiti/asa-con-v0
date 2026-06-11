@@ -233,7 +233,17 @@ describe("close gate enforcement guarantees", () => {
       mockFindSnapshots.mockResolvedValue({ latest: null, prior: null })
 
       const checklist = await buildCloseReadinessChecklistForPeriod(
-        { reconciliationSnapshot: {}, branch: { findFirst: jest.fn() } } as never,
+        {
+          reconciliationSnapshot: {},
+          branch: { findFirst: jest.fn() },
+          accountingPeriod: {
+            findUnique: jest.fn(async () => ({ id: "period-1" })),
+          },
+          glAccount: { findMany: jest.fn(async () => []) },
+          journalEntryLine: { findMany: jest.fn(async () => []) },
+          voucher: { findMany: jest.fn(async () => []) },
+          journalEntry: { findMany: jest.fn(async () => []) },
+        } as never,
         {
           id: "period-1",
           branchId,

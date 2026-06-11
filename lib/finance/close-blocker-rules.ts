@@ -7,12 +7,15 @@ import type {
   SnapshotDashboardRow,
 } from "./reconciliation-snapshot-types"
 
+import type { CloseChecklistClosingEntryContext } from "./close-checklist-types"
+
 export type CloseBlockerEvaluationContext = {
   period: CloseChecklistPeriodInput
   latestSnapshot: ReconciliationSnapshotHeader | null
   priorSnapshot: ReconciliationSnapshotHeader | null
   issueSummary: CloseChecklistIssueSummary
   dashboardRows: SnapshotDashboardRow[]
+  closingEntry: CloseChecklistClosingEntryContext | null
   nowIso: string
   staleSnapshotThresholdDays: number
   metrics: {
@@ -54,6 +57,10 @@ export type CloseBlockerRuleId =
   | "audit-evidence-export-ready"
   | "audit-evidence-export-not-recorded"
   | "period-hard-closed-snapshot-after-close"
+  | "closing-entry-missing"
+  | "closing-entry-present"
+  | "closing-entry-not-required"
+  | "closing-entry-stale"
 
 export type CloseBlockerRuleDefinition = {
   id: CloseBlockerRuleId
@@ -72,6 +79,10 @@ export const CLOSE_BLOCKER_RULES: CloseBlockerRuleDefinition[] = [
   { id: "snapshot-missing-inventory-domain", group: "snapshot_evidence", severity: "BLOCKED", order: 23 },
   { id: "snapshot-missing-revenue-domain", group: "snapshot_evidence", severity: "BLOCKED", order: 24 },
   { id: "period-hard-closed-snapshot-after-close", group: "posting_lock", severity: "BLOCKED", order: 25 },
+  { id: "closing-entry-missing", group: "posting_lock", severity: "BLOCKED", order: 26 },
+  { id: "closing-entry-stale", group: "posting_lock", severity: "WARNING", order: 27 },
+  { id: "closing-entry-present", group: "posting_lock", severity: "PASS", order: 54 },
+  { id: "closing-entry-not-required", group: "posting_lock", severity: "PASS", order: 55 },
   { id: "posting-lock-soft-closed", group: "posting_lock", severity: "WARNING", order: 30 },
   { id: "snapshot-stale", group: "snapshot_evidence", severity: "WARNING", order: 31 },
   { id: "snapshot-compare-drift", group: "snapshot_evidence", severity: "WARNING", order: 32 },

@@ -20,6 +20,7 @@ export {
   type JournalLineCodeDraft,
   type JournalLineDraft,
   type OperationalVoucherInput,
+  type PostClosingEntryVoucherInput,
   type PostJournalReversalInput,
   type PostManualJournalVoucherInput,
   type PostRefundVoucherInput,
@@ -32,6 +33,7 @@ export { bootstrapPeriodIfMissing } from "./period-setup"
 export { closeAccountingPeriod, reopenAccountingPeriod } from "./period-close"
 export {
   ensureOpenPeriod,
+  postClosingEntryVoucher,
   postJournalReversal,
   postManualJournalVoucher,
   postOperationalVoucher,
@@ -353,6 +355,30 @@ export {
 } from "./reports/retained-earnings"
 export { getGeneralLedger } from "./reports/general-ledger"
 export { getProfitLoss } from "./reports/profit-loss"
+export { buildClosingEntryLines } from "./closing-entry"
+export type {
+  BuildClosingEntryLinesInput,
+  BuildClosingEntryLinesResult,
+  ClosingEntryLine,
+  ClosingEntryStatus,
+  PostClosingEntryResult,
+  PreviewClosingEntryResult,
+} from "./closing-entry-types"
+export {
+  postClosingEntry,
+  previewClosingEntry,
+} from "./closing-entry-post"
+export type {
+  ClosingEntryPreviewPrisma,
+  PostClosingEntryInput,
+  PreviewClosingEntryInput,
+} from "./closing-entry-post"
+export {
+  allocateClosingEntryRefId,
+  closingEntryNetIncomesMatch,
+  getActiveClosingEntry,
+  listClosingEntriesForPeriod,
+} from "./closing-entry-status"
 export { getTrialBalance } from "./reports/trial-balance"
 export type {
   BalanceSheetFilter,

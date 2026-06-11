@@ -7,6 +7,7 @@ export const FINANCE_REF_TYPES = {
   STOCK_DOC_POST: "STOCK_DOC_POST",
   MANUAL_JOURNAL: "MANUAL_JOURNAL",
   MANUAL_JOURNAL_REVERSAL: "MANUAL_JOURNAL_REVERSAL",
+  PERIOD_CLOSING_ENTRY: "PERIOD_CLOSING_ENTRY",
 } as const
 
 export type FinanceRefType =
@@ -105,4 +106,15 @@ export type PostJournalReversalInput = {
   journalEntryId: string
   reversalDate: Date
   reason: string
+}
+
+export type PostClosingEntryVoucherInput = {
+  tx: Prisma.TransactionClient
+  branchId: string
+  periodId: string
+  periodKey: string
+  date: Date
+  refId: string
+  lines: ManualJournalLineInput[]
+  description?: string | null
 }

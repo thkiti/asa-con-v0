@@ -14,7 +14,7 @@ describe("close-blocker-rules", () => {
     const blocked = CLOSE_BLOCKER_RULES.filter((rule) => rule.severity === "BLOCKED")
     const sorted = sortCloseBlockerRuleIds(blocked.map((rule) => rule.id))
     expect(sorted[0]).toBe("reconciliation-missing-gl-issues")
-    expect(sorted.at(-1)).toBe("period-hard-closed-snapshot-after-close")
+    expect(sorted.at(-1)).toBe("closing-entry-missing")
   })
 
   it("returns rule metadata by id", () => {
@@ -46,6 +46,7 @@ describe("evaluateCloseBlockerRules", () => {
         errorSeverityCount: 0,
       },
       dashboardRows: [],
+      closingEntry: null,
       nowIso: "2026-05-28T00:00:00.000Z",
       staleSnapshotThresholdDays: 7,
       metrics: { issueCount: 0, varianceCount: 0, matchedCount: 0 },
@@ -125,6 +126,7 @@ describe("evaluateCloseBlockerRules", () => {
           },
         },
       ],
+      closingEntry: null,
       nowIso: "2026-05-28T00:00:00.000Z",
       staleSnapshotThresholdDays: 7,
       metrics: { issueCount: 1, varianceCount: 1, matchedCount: 2 },

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import type { CloseReadinessResult } from "@/lib/finance-ui/close-readiness"
+import { buildClosingEntryPath } from "@/lib/finance-ui/closing-entry"
 import { fetchCloseReadiness } from "@/lib/finance-ui/period-fetchers"
 import { CloseChecklistPanel } from "./CloseChecklistPanel"
 import { CloseReadinessEvidenceActions } from "./CloseReadinessEvidenceActions"
@@ -92,6 +93,12 @@ export function CloseReadinessPage({ periodId }: CloseReadinessPageProps) {
           >
             {refreshing ? "Refreshing…" : "Refresh checklist"}
           </button>
+          <Link
+            href={buildClosingEntryPath(periodId)}
+            className="rounded border border-zinc-300 px-3 py-2 text-sm hover:bg-white"
+          >
+            Closing entry
+          </Link>
           <Link
             href="/finance/periods"
             className="rounded border border-zinc-300 px-3 py-2 text-sm hover:bg-white"

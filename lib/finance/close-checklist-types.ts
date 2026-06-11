@@ -68,11 +68,20 @@ export type CloseChecklistMetrics = {
   compareDriftDetected: boolean
 }
 
+export type CloseChecklistClosingEntryContext = {
+  isRequired: boolean
+  currentNetIncome: string
+  activeEntry: {
+    netIncome: string
+  } | null
+}
+
 export type CloseChecklistInput = {
   period: CloseChecklistPeriodInput
   latestSnapshot: ReconciliationSnapshotHeader | null
   priorSnapshot?: ReconciliationSnapshotHeader | null
   snapshotPayload?: ReconciliationSnapshotPayloadV1 | null
+  closingEntry?: CloseChecklistClosingEntryContext | null
   now?: string
   staleSnapshotThresholdDays?: number
 }

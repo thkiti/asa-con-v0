@@ -44,7 +44,8 @@ function statusForCode(code: string): number {
     code === "REOPEN_REQUEST_NOT_PENDING" ||
     code === "REOPEN_PERIOD_STATE_CHANGED" ||
     code === "JOURNAL_ALREADY_REVERSED" ||
-    code === "PERIOD_ALREADY_HARD_CLOSED"
+    code === "PERIOD_ALREADY_HARD_CLOSED" ||
+    code === "CLOSING_ENTRY_REOPEN_BLOCKED"
   ) {
     return 409
   }

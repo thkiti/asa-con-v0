@@ -6,6 +6,7 @@ import { createCloseEvidenceForHardClose, type PeriodCloseActorInput } from "./c
 import { buildCloseReadinessWithSnapshotsForPeriod } from "./close-readiness"
 import { createReopenEvidence } from "./reopen-evidence"
 import type { ReopenEvidenceApprovalSnapshot } from "./reopen-evidence-types"
+import { getActiveClosingEntry } from "./closing-entry-status"
 import { FinancePostingError } from "./posting-errors"
 
 type PeriodCloseInput = {
@@ -181,6 +182,14 @@ export async function reopenAccountingPeriod(
   }
 
   if (period.status === AccountingPeriodStatus.SOFT_CLOSED) {
+    const activeClosingEntry = await getActiveClosingEntry(tx, period.id)
+    if (activeClosingEntry) {
+      throw new FinancePostingError(
+        "Reverse the period closing entry before reopening to OPEN",
+        "CLOSING_ENTRY_REOPEN_BLOCKED"
+      )
+    }
+
     await createReopenEvidence(tx, {
       period: {
         id: period.id,

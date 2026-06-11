@@ -25,6 +25,18 @@ function buildPrisma(period: unknown) {
       create: jest.fn(),
       update: jest.fn(),
     },
+    glAccount: {
+      findMany: jest.fn(async () => []),
+    },
+    journalEntryLine: {
+      findMany: jest.fn(async () => []),
+    },
+    voucher: {
+      findMany: jest.fn(async () => []),
+    },
+    journalEntry: {
+      findMany: jest.fn(async () => []),
+    },
     branch: { findFirst: jest.fn() },
   }
 }

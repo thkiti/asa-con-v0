@@ -16,6 +16,7 @@ import {
   type JournalLineDraft,
   type ManualJournalLineInput,
   type OperationalVoucherInput,
+  type PostClosingEntryVoucherInput,
   type PostJournalReversalInput,
   type PostManualJournalVoucherInput,
   type PostRefundVoucherInput,
@@ -268,6 +269,32 @@ function assertBalancedJournal(lines: JournalLineDraft[]): void {
     }
     throw err
   }
+}
+
+export async function postClosingEntryVoucher(
+  input: PostClosingEntryVoucherInput
+): Promise<PostedVoucherResult> {
+  if (!input.tx) {
+    throw new FinancePostingError(
+      "postClosingEntryVoucher requires caller transaction (tx)",
+      "MISSING_TX"
+    )
+  }
+
+  const lines = await resolveManualJournalLines(input.tx, input.lines)
+  assertNonZeroLines(lines)
+  assertBalancedJournal(lines)
+
+  return postOperationalVoucher({
+    tx: input.tx,
+    branchId: input.branchId,
+    date: input.date,
+    refType: FINANCE_REF_TYPES.PERIOD_CLOSING_ENTRY,
+    refId: input.refId,
+    refNo: `CE-${input.periodKey}`,
+    description: input.description,
+    lines,
+  })
 }
 
 export async function postManualJournalVoucher(

@@ -203,6 +203,21 @@ describe("financeErrorResponse", () => {
     })
   })
 
+  it("maps FinancePostingError CLOSING_ENTRY_REOPEN_BLOCKED to 409", async () => {
+    const res = financeErrorResponse(
+      new FinancePostingError(
+        "Reverse the period closing entry before reopening to OPEN",
+        "CLOSING_ENTRY_REOPEN_BLOCKED"
+      ),
+      "test"
+    )
+    expect(res.status).toBe(409)
+    await expect(res.json()).resolves.toEqual({
+      error: "Reverse the period closing entry before reopening to OPEN",
+      code: "CLOSING_ENTRY_REOPEN_BLOCKED",
+    })
+  })
+
   it("maps FinancePostingError PERIOD_CLOSED to 400", async () => {
     const res = financeErrorResponse(
       new FinancePostingError("period closed", "PERIOD_CLOSED"),

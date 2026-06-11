@@ -1,4 +1,5 @@
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
+import { closingEntryNetIncomesMatch } from "./closing-entry-status"
 import { classifyPeriodStatus } from "./close-policy"
 import {
   CLOSE_BLOCKER_THRESHOLDS,
@@ -480,6 +481,60 @@ export function evaluateCloseBlockerRules(
     )
   )
 
+  if (context.closingEntry) {
+    const { closingEntry } = context
+    if (!closingEntry.isRequired) {
+      items.push(
+        makeChecklistItem(
+          "closing-entry-not-required",
+          "Closing entry not required",
+          "No revenue or expense activity in this period; a closing entry is not required.",
+          periodRefs(period)
+        )
+      )
+    } else if (!closingEntry.activeEntry) {
+      items.push(
+        makeChecklistItem(
+          "closing-entry-missing",
+          "Closing entry not posted",
+          "Revenue or expense activity exists but no active period closing entry was found.",
+          periodRefs(period)
+        )
+      )
+    } else if (
+      !closingEntryNetIncomesMatch(
+        closingEntry.currentNetIncome,
+        closingEntry.activeEntry.netIncome
+      )
+    ) {
+      items.push(
+        makeChecklistItem(
+          "closing-entry-stale",
+          "Closing entry may be stale",
+          `Current net income (${closingEntry.currentNetIncome}) differs from the posted closing entry (${closingEntry.activeEntry.netIncome}). Reverse and re-post before hard close.`,
+          periodRefs(period)
+        )
+      )
+      items.push(
+        makeChecklistItem(
+          "closing-entry-present",
+          "Active closing entry posted",
+          "An active period closing entry exists for this accounting period.",
+          periodRefs(period)
+        )
+      )
+    } else {
+      items.push(
+        makeChecklistItem(
+          "closing-entry-present",
+          "Closing entry posted",
+          "An active period closing entry matches current period net income.",
+          periodRefs(period)
+        )
+      )
+    }
+  }
+
   return items
 }
 
@@ -540,6 +595,7 @@ export function buildCloseChecklist(
       priorSnapshot: input.priorSnapshot ?? null,
       issueSummary,
       dashboardRows,
+      closingEntry: input.closingEntry ?? null,
       nowIso,
       staleSnapshotThresholdDays,
       metrics: {

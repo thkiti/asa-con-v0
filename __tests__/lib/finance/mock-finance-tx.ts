@@ -596,6 +596,81 @@ export function createFinanceMockTx(branchId = "branch-1") {
         }
         return voucher
       },
+      findMany: async ({
+        where,
+        orderBy,
+        include,
+      }: {
+        where?: {
+          periodId?: string
+          refType?: string
+        }
+        orderBy?: { createdAt?: "asc" | "desc" }
+        include?: {
+          journalEntry?: {
+            include?: {
+              reversedBy?: { select: { id: boolean } }
+              lines?: {
+                orderBy?: { lineNo: "asc" | "desc" }
+                include?: { glAccount?: { select: { code: boolean } } }
+              }
+            }
+          }
+        }
+      }) => {
+        let rows = state.vouchers.filter((voucher) => {
+          if (where?.periodId && voucher.periodId !== where.periodId) return false
+          if (where?.refType && voucher.refType !== where.refType) return false
+          return true
+        })
+
+        if (orderBy?.createdAt === "asc") {
+          rows = [...rows].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        } else if (orderBy?.createdAt === "desc") {
+          rows = [...rows].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        }
+
+        return rows.map((voucher) => {
+          if (!include?.journalEntry) {
+            return voucher
+          }
+
+          const journalEntry =
+            state.journalEntries.find((entry) => entry.voucherId === voucher.id) ?? null
+          if (!journalEntry) {
+            return { ...voucher, journalEntry: null }
+          }
+
+          const reversedBy =
+            state.journalEntries.find(
+              (entry) => entry.reversalOfJournalEntryId === journalEntry.id
+            ) ?? null
+
+          let lines = state.journalEntryLines.filter(
+            (line) => line.journalEntryId === journalEntry.id
+          )
+          if (include.journalEntry.include?.lines?.orderBy?.lineNo === "asc") {
+            lines = [...lines].sort((a, b) => a.lineNo - b.lineNo)
+          }
+
+          const mappedLines = lines.map((line) => {
+            const account = state.glAccounts.find((a) => a.id === line.glAccountId)!
+            return {
+              ...line,
+              glAccount: { code: account.code },
+            }
+          })
+
+          return {
+            ...voucher,
+            journalEntry: {
+              ...journalEntry,
+              reversedBy: reversedBy ? { id: reversedBy.id } : null,
+              lines: mappedLines,
+            },
+          }
+        })
+      },
       create: async ({
         data,
       }: {

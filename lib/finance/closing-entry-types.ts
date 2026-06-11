@@ -1,3 +1,5 @@
+import type { AccountingPeriodStatus } from "@/generated/prisma/client"
+
 export const CLOSING_ENTRY_LINE_REASONS = {
   CLOSE_REVENUE: "CLOSE_REVENUE",
   CLOSE_EXPENSE: "CLOSE_EXPENSE",
@@ -39,4 +41,38 @@ export type BuildClosingEntryLinesResult = {
   isBalanced: boolean
   isRequired: boolean
   retainedEarningsAccountCode: string
+}
+
+export type ClosingEntryStatus = {
+  voucherId: string
+  voucherNo: string
+  journalEntryId: string
+  refId: string
+  netIncome: string
+  lineCount: number
+  postedAt: string
+  isActive: boolean
+  isReversed: boolean
+  reversedByJournalId: string | null
+}
+
+export type PostClosingEntryResult = {
+  posted: boolean
+  reason?: "NOT_REQUIRED"
+  voucherId?: string
+  voucherNo?: string
+  journalEntryId?: string
+  netIncome: string
+  lineCount: number
+  alreadyPosted: boolean
+}
+
+export type PreviewClosingEntryResult = {
+  periodKey: string
+  branchId: string
+  periodId: string
+  periodStatus: AccountingPeriodStatus
+  simulation: BuildClosingEntryLinesResult
+  activeEntry: ClosingEntryStatus | null
+  canPost: boolean
 }

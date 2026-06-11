@@ -1,5 +1,9 @@
 ﻿import type { AccountingPeriodStatus, PrismaClient } from "@/generated/prisma/client"
+import { buildClosingEntryLines } from "./closing-entry"
+import { getActiveClosingEntry } from "./closing-entry-status"
 import { buildCloseChecklist, toCloseChecklistSnapshotRef } from "./close-checklist"
+import type { CloseChecklistClosingEntryContext } from "./close-checklist-types"
+import { getProfitLoss } from "./reports/profit-loss"
 import type {
   CloseChecklistResult,
   CloseChecklistSnapshotRef,
@@ -9,15 +13,11 @@ import { findSnapshotsForPeriod } from "./reconciliation-snapshot"
 import type { ReconciliationSnapshotPayloadV1 } from "./reconciliation-snapshot-types"
 import type { BranchLookupPrisma } from "./resolve-branch-id"
 
-export type CloseReadinessPrisma = Pick<
-  PrismaClient,
-  "accountingPeriod" | "reconciliationSnapshot"
-> &
-  BranchLookupPrisma
+export type CloseReadinessPrisma = CloseReadinessChecklistPrisma
 
 export type CloseReadinessChecklistPrisma = Pick<
   PrismaClient,
-  "reconciliationSnapshot"
+  "reconciliationSnapshot" | "glAccount" | "journalEntryLine" | "accountingPeriod" | "voucher" | "journalEntry"
 > &
   BranchLookupPrisma
 
@@ -39,6 +39,40 @@ export type CloseReadinessWithSnapshots = {
   snapshotPayload: ReconciliationSnapshotPayloadV1 | null
 }
 
+async function loadClosingEntryChecklistContext(
+  prisma: CloseReadinessChecklistPrisma,
+  period: CloseReadinessPeriodInput
+): Promise<CloseChecklistClosingEntryContext> {
+  const profitLoss = await getProfitLoss(prisma, {
+    branchId: period.branchId,
+    periodKey: period.periodKey,
+  })
+
+  const simulation = buildClosingEntryLines({
+    periodKey: period.periodKey,
+    revenue: profitLoss.revenue.map((row) => ({
+      accountCode: row.accountCode,
+      accountName: row.accountName,
+      signedAmount: row.amount,
+    })),
+    expenses: profitLoss.expenses.map((row) => ({
+      accountCode: row.accountCode,
+      accountName: row.accountName,
+      signedAmount: row.amount,
+    })),
+  })
+
+  const activeEntry = await getActiveClosingEntry(prisma, period.id)
+
+  return {
+    isRequired: simulation.isRequired,
+    currentNetIncome: profitLoss.netIncome,
+    activeEntry: activeEntry
+      ? { netIncome: activeEntry.netIncome }
+      : null,
+  }
+}
+
 export async function buildCloseReadinessWithSnapshotsForPeriod(
   prisma: CloseReadinessChecklistPrisma,
   period: CloseReadinessPeriodInput
@@ -47,6 +81,8 @@ export async function buildCloseReadinessWithSnapshotsForPeriod(
     branchId: period.branchId,
     periodKey: period.periodKey,
   })
+
+  const closingEntry = await loadClosingEntryChecklistContext(prisma, period)
 
   const checklist = buildCloseChecklist({
     period: {
@@ -59,6 +95,7 @@ export async function buildCloseReadinessWithSnapshotsForPeriod(
     latestSnapshot: snapshots.latest,
     priorSnapshot: snapshots.prior,
     snapshotPayload: snapshots.latest?.payload ?? null,
+    closingEntry,
   })
 
   return {
