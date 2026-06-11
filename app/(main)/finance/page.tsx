@@ -34,6 +34,14 @@ export default function Page() {
         </li>
         <li>
           <Link
+            href="/finance/reports/balance-sheet"
+            className="text-zinc-900 underline hover:text-zinc-600"
+          >
+            Balance sheet
+          </Link>
+        </li>
+        <li>
+          <Link
             href="/finance/journal-entries"
             className="text-zinc-900 underline hover:text-zinc-600"
           >

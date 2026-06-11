@@ -237,6 +237,39 @@ export type TrialBalanceResult = {
   isBalanced: boolean
 }
 
+export type BalanceSheetRow = {
+  accountCode: string
+  accountName: string
+  amount: string
+}
+
+export type BalanceSheetResult = {
+  filter: {
+    branchId: string
+    periodKey?: string
+    from?: string
+    to?: string
+    hideZeroBalances?: boolean
+  }
+  period: {
+    branchId: string
+    periodKey?: string
+    periodId?: string
+    periodStatus?: string
+    from?: string
+    to?: string
+  }
+  assets: BalanceSheetRow[]
+  liabilities: BalanceSheetRow[]
+  equity: BalanceSheetRow[]
+  totalAssets: string
+  totalLiabilities: string
+  totalEquity: string
+  totalLiabilitiesAndEquity: string
+  balanceDifference: string
+  isBalanced: boolean
+}
+
 export type JournalInquiryResult = {
   id: string
   voucherId: string

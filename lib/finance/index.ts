@@ -332,17 +332,27 @@ export {
   signedBalanceForAccountType,
   isTrialBalanceBalanced,
   trialBalanceDifference,
+  isBalanceSheetBalanced,
+  balanceSheetDifference,
 } from "./reports/balance-helpers"
 export {
+  parseBalanceSheetFilter,
   parseGeneralLedgerFilter,
   parseProfitLossFilter,
   parseTrialBalanceFilter,
   periodKeyToReportDateRange,
   resolveReportDateRange,
 } from "./reports/report-filter"
+export { getBalanceSheet } from "./reports/balance-sheet"
 export { getGeneralLedger } from "./reports/general-ledger"
 export { getProfitLoss } from "./reports/profit-loss"
 export { getTrialBalance } from "./reports/trial-balance"
+export type {
+  BalanceSheetFilter,
+  BalanceSheetPeriodMeta,
+  BalanceSheetResult,
+  BalanceSheetRow,
+} from "./reports/balance-sheet-types"
 export type {
   ProfitLossFilter,
   ProfitLossResult,

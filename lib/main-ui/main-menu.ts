@@ -190,6 +190,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "Period income statement from revenue and expense activity"
         ),
         available(
+          "balance-sheet",
+          "Balance Sheet",
+          "/finance/reports/balance-sheet",
+          "Assets, liabilities, and equity from posted journal activity"
+        ),
+        available(
           "manual-journal",
           "Manual Journal",
           "/finance/journal-entries",

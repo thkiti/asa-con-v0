@@ -34,3 +34,20 @@ export function trialBalanceDifference(
 ): Prisma.Decimal {
   return roundMoney(totalDebits.minus(totalCredits))
 }
+
+export function isBalanceSheetBalanced(
+  totalAssets: Prisma.Decimal,
+  totalLiabilities: Prisma.Decimal,
+  totalEquity: Prisma.Decimal
+): boolean {
+  return roundMoney(totalAssets).equals(
+    roundMoney(totalLiabilities.plus(totalEquity))
+  )
+}
+
+export function balanceSheetDifference(
+  totalAssets: Prisma.Decimal,
+  totalLiabilitiesAndEquity: Prisma.Decimal
+): Prisma.Decimal {
+  return roundMoney(totalAssets.minus(totalLiabilitiesAndEquity))
+}

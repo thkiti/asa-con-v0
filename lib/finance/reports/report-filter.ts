@@ -1,6 +1,7 @@
 import { ReportError } from "@/lib/reporting/report-errors"
 import { normalizeDateRange, type NormalizedDateRange } from "@/lib/reporting/date-range"
 import type { GeneralLedgerFilter } from "./general-ledger-types"
+import type { BalanceSheetFilter } from "./balance-sheet-types"
 import type { ProfitLossFilter } from "./profit-loss-types"
 import type { TrialBalanceFilter } from "./trial-balance-types"
 
@@ -135,4 +136,10 @@ export function parseGeneralLedgerFilter(params: ReportFilterParams): GeneralLed
 
 export function parseProfitLossFilter(params: ReportFilterParams): ProfitLossFilter {
   return parseFinanceReportScope(params)
+}
+
+export function parseBalanceSheetFilter(params: ReportFilterParams): BalanceSheetFilter {
+  const scope = parseFinanceReportScope(params)
+  const hideZeroBalances = parseHideZeroBalances(params.get("hideZeroBalances"))
+  return { ...scope, hideZeroBalances }
 }
