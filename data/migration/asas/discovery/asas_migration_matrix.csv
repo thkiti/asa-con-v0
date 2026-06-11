@@ -1,0 +1,8 @@
+target,availability,primary_source,confidence,notes
+Chart of Accounts,Available,FinReport TB,HIGH,197 accounts
+Opening Journal,Available,FinReport TB + close,HIGH,Balanced after P&L→301
+Inventory qty,Available,Ending sheet,HIGH,30 lines
+Inventory value,Partial,GL 13xx / Cost12,MEDIUM,SetPrice empty on ending
+Branches,Available,Shop Detail,HIGH,27 shops
+AR/AP subledger,Partial,TB controls,MEDIUM,No aging files
+Tax Dec 2025,Available,Sales/Purchase Tax2512,HIGH,Correct period

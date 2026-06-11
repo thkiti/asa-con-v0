@@ -1,0 +1,7 @@
+entity,measure,candidateValue,glTarget,difference,differencePercent,status
+ASAD,stock_candidate_value,438604.93,2007766.55,1569161.62,78.15,WARNING
+ASAS,stock_candidate_value,0.00,2268125.31,2268125.31,100.00,WARNING
+COMBINED_WRONG_POOL,stock_candidate_value,438604.93,2007766.55,1569161.62,78.15,FAIL
+ASAD,gl_inventory,2007766.55,2007766.55,0.00,0.00,PASS
+ASAS,gl_inventory,2268125.31,2268125.31,0.00,0.00,PASS
+GROUP,gl_inventory_sum,4275891.86,4275891.86,0.00,0.00,PASS

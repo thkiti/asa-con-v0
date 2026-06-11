@@ -1,0 +1,198 @@
+entity,sourceCode,sourceName,accountType,normalBalance,isActive,migrationStatus,confidence,notes
+ASAS,1001,เงินสดในเครื่องเก็บเงิน,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1011,เงินสดย่อย,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1021,เงินฝากธนาคาร,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1031,เงินสดระหว่างทาง,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1041,เงินลงทุนระยะสั้น,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1051,ตั๋วเงินรับ,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1101,ลูกหนี้การค้า - ห้างสรรพสินค้า,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1111,ลูกหนี้การค้า - แฟรนไชส์,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1121,ลูกหนี้การค้า - อื่น,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1141,ค่าเผื่อหนี้สงสัยจะสูญ - ห้างสรรพสินค้า,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,1142,ค่าเผื่อหนี้สงสัยจะสูญ - แฟรนไชส์,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,1143,ค่าเผื่อหนี้สงสัยจะสูญ - อื่น,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,1131,ลูกหนี้การค้า - บริษัทที่เกี่ยวข้องกัน,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1161,เงินให้กู้ยืมระยะสั้นแก่บุคคลหรือกิจการที่เกี่ยวข้องกัน,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1301,เครื่องจักรและอุปกรณ์,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1302,ลูกกุญแจ,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1303,วัสดุรองเท้า,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1304,แม่กุญแจ,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1305,เบ็ดเตล็ด,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1306,วัสดุสิ้นเปลือง,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1307,แบตเตอรี่,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1311,สินค้าระหว่างทาง,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1312,ค่าภาษีอากรขาเข้า,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1313,ค่าระวาง ค่าขนส่ง,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1314,ค่าประกันภัย,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1315,ค่าใช้จ่ายอื่น ๆ ในการออกของ,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1321,ชิ้นส่วนและอะไหล่,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1351,วัสดุและอุปกรณ์,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1391,สำรองค่าเผื่อสินค้าล้าสมัย,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,1401,ดอกเบี้ยรับค้างรับ - อื่น,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1402,ดอกเบี้ยรับค้างรับ - บริษัทที่เกี่ยวข้องกัน,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1411,ค่าเช่าจ่ายล่วงหน้า,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1421,ค่าเบี้ยประกันภัยจ่ายล่วงหน้า,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1431,ค่าใช้จ่ายล่วงหน้าอื่น ๆ,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1441,เงินมัดจำลูกหนี้อื่น,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1451,ค่าภาษีเงินได้จ่ายล่วงหน้า,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1452,ภาษีซื้อ,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,1453,ภาษีมูลค่าเพิ่มขอคืน,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1461,เงินเดือนเบิกล่วงหน้า,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,1471,ค่าเดินทางเบิกล่วงหน้า,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2001,เงินลงทุนในบริษัทร่วม บริษัทย่อย และการร่วมค้า,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2101,เงินลงทุนระยะยาวอื่น,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2111,เงินให้กู้ยืมระยะยาวแก่บุคคลหรือกิจการที่เกี่ยวข้องกัน,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2201,ที่ดิน,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2202,อาคารชุด,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2211,เครื่องจักรและอุปกรณ์ในการดำเนินงาน,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,2212,เครื่องตกแต่งในการดำเนินงาน,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,2221,เครื่องใช้และอุปกรณ์สำนักงาน,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,2222,เครื่องตกแต่งสำนักงาน,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2223,รถยนต์,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2231,สิ่งปรับปรุงสินทรัพย์-สำนักงานใหญ่,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,2232,สิ่งปรับปรุงสินทรัพย์-สาขา,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,2235,เครื่องจักรและอุปกรณ์ร้านที่ให้เช่าเครื่องจักร,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,2236,สิ่งปรับปรุงสินทรัพย์ร้านที่ให้เช่าเครื่องจักร,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,2240,เครื่องจักรและอุปกรณ์ระหว่างทาง,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,2251,ค่าเสื่อมราคาสะสม - อาคาร,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2261,ค่าเสื่อมราคาสะสม - เครื่องจักรและอุปกรณ์ในการดำเนินงาน,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2262,ค่าเสื่อมราคาสะสม - เครื่องตกแต่งในการดำเนินงาน,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2271,ค่าเสื่อมราคาสะสม - เครื่องใช้และอุปกรณ์สำนักงาน,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2272,ค่าเสื่อมราคาสะสม - เครื่องตกแต่งสำนักงาน,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2273,ค่าเสื่อมราคาสะสม - รถยนต์,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2281,ค่าเสื่อมราคาสะสม - สิ่งปรับปรุงสินทรัพย์ - สำนักงานใหญ่,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2282,ค่าเสื่อมราคาสะสม - สิ่งปรับปรุงสินทรัพย์ - สาขา,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2285,ค่าเสื่อมราคาสะสม - เครื่องจักรและอุปกรณ์ร้านที่ให้เช่าเครื่องจักร,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,2286,ค่าเสื่อมราคาสะสม - สิ่งปรับปรุงสินทรัพย์ร้านที่ให้เช่าเครื่องจักร,ASSET,CREDIT,true,REVIEW_REQUIRED,LOW,Contra-asset; v0 ASSET=DEBIT validator conflict
+ASAS,3001,เงินประกันและเงินมัดจำ,ASSET,DEBIT,true,MIGRATE,HIGH,Non-zero
+ASAS,3101,สิทธิการเช่า,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,3201,ดอกเบี้ยรอการตัดบัญชี,ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,3301,ภาษีเงินได้ถูกหักภาษี ณ. ที่จ่าย (รอขอคืนจากกรมสรรพากร),ASSET,DEBIT,true,MIGRATE,HIGH,Zero
+ASAS,4001,เงินกู้ยืมระยะสั้นจากสถาบันการเงิน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4002,ตั๋วเงินจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4101,เจ้าหนี้การค้า,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4151,เจ้าหนี้บริษัทที่เกี่ยวข้องกัน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4201,เงินกู้ยืมระยะยาวที่ถึงกำหนดชำระภายในหนึ่งปี,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4202,เงินกู้ยืมระยะสั้นจากบุคคลหรือกิจการที่เกี่ยวข้องกัน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4301,เงินปันผลค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4401,ภาษีเงินได้นิติบุคคลค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4501,เงินเดือนค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4502,เงินสะสมพนักงาน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4511,รายได้รับล่วงหน้า,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4521,ค่าเช่าค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4531,ค่าเบี้ยประกันภัยค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4541,ค่าโทรศัพท์ ค่าโทรสาร ค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4551,ค่าตรวจสอบบัญชีค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4561,ค่าใช้จ่ายอื่น ๆ ค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4571,ดอกเบี้ยจ่ายค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4581,ดอกเบี้ยจ่ายค้างจ่ายบริษัทที่เกี่ยวข้องกัน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4582,ค่าใช้จ่ายค้างจ่ายบริษัทที่เกี่ยวข้องกัน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4601,ภาษีขาย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4602,ภาษีมูลค่าเพิ่มค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4611,ภาษีเงินได้พนักงาน หัก ณ.ที่จ่ายค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4612,ภาษีเงินได้ หัก ณ.ที่จ่ายค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4613,ภาษีเงินได้นิติบุคคลค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4621,ภาษีอากรอื่น ๆ ค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4631,ประกันสังคมค้างจ่าย,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4701,เงินกู้ยืมระยะยาวจากบุคคลหรือกิจการที่เกี่ยวข้องกัน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4801,เจ้าหนี้ตามสัญญาเช่าทางการเงิน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,4901,ภาระผูกพันผลประโยชน์พนักงาน,LIABILITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,4911,ประมาณการหนี้สินระยะยาว,LIABILITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,5000,รายได้รวมภาษีมูลค่าเพิ่ม,REVENUE,CREDIT,true,STRUCTURAL_ONLY,LOW,TB section row
+ASAS,5001,รายได้จากการขาย,REVENUE,CREDIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,5002,รายได้จากการให้เช่าเครื่องจักรและอุปกรณ์,REVENUE,CREDIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,5003,รายได้จากค่าบริการอื่น ๆ,REVENUE,CREDIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,5101,สินค้ารับคืนและส่วนลด,REVENUE,CREDIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6001,ต้นทุนขาย-เครื่องจักรและอุปกรณ์,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6002,ต้นทุนขาย-ลูกกุญแจ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6003,ต้นทุนขาย-วัสดุรองเท้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6004,ต้นทุนขาย-แม่กุญแจ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6005,ต้นทุนขาย-เบ็ดเตล็ด,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6006,ต้นทุนขาย-วัสดุสิ้นเปลือง,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6021,ต้นทุนขาย-ชิ้นส่วนและอะไหล่,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6031,ต้นทุนขาย-ชิ้นส่วนและอะไหล่,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6051,ซื้อวัสดุและอุปกรณ์,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6052,สินค้าส่งคืนและส่วนลด,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6061,ค่าแรง,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6091,ค่าเผื่อสินค้าล้าสมัย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6101,ค่าเช่าและค่าบริการ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6111,ค่าไฟ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6121,ค่าภาษีโรงเรือน - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6131,ค่าประกันภัย - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6141,ค่าโทรศัพท์ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6151,ค่าใช้จ่ายทางการเงิน - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6161,ค่าใช้จ่ายอื่น ๆ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6171,ค่าใช้จ่ายร้านที่ให้เช่าเครื่องจักร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6201,เงินเดือน และค่าจ้าง,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6211,ผลตอบแทนจากยอดขาย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6221,เงินที่จ่ายสมทบเข้าประกันสังคม,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6231,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับพนักงานขาย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6241,ค่าฝึกอบรมพนักงานขาย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6251,ผลประโยชน์พนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6261,ค่าพาหนะ ค่าใช้จ่ายในการเดินทาง และค่าที่พัก - พนักงานขาย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6301,ค่าโฆษณาและส่งเสริมการขาย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6401,ค่าเสื่อมราคา - เครื่องจักรและอุปกรณ์ในการดำเนินงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6402,ค่าเสื่อมราคา - เครื่องตกแต่งในการดำเนินงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6411,ค่าเสื่อมราคา - สิ่งปรับปรุงสินทรัพย์ - สาขา,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6412,ค่าเสื่อมราคา - ร้านที่ให้เช่าเครื่องจักร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6421,ค่าตัดจำหน่าย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6501,ค่าวัสดุใช้สิ้นเปลือง,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6502,ค่าซ่อมแซมรักษา,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6503,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับการขาย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6510,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับการให้เช่าเครื่องจักร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6601,เงินเดือน และค่าจ้าง,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6621,เงินที่จ่ายสมทบเข้าประกันสังคม,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6631,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับพนักงานสำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6641,ค่าฝึกอบรมพนักงานสำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6651,ผลประโยชน์พนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6661,ค่าพาหนะ ค่าใช้จ่ายในการเดินทาง และค่าที่พัก - พนักงานสำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6701,ค่าใช้จ่ายเกี่ยวกับรถยนต์,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6702,ค่าซ่อมแซมรถยนต์,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6703,ค่าเช่ารถยนต์,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6801,ค่าเช่าและค่าบริการ - สำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6811,ค่าไฟ - สำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6821,ค่าประปา - สำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6831,ค่าไปรษณียากร - สำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6841,ค่าโทรศัพท์ โทรสาร - สำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6851,ค่าซ่อมแซมและรักษา - สำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6901,ค่าวัสดุใช้ในสำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6911,ค่าใช้จ่ายเกี่ยวกับคอมพิวเตอร์,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6921,ค่าเบี้ยประกันภัย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6931,ค่าส่งเสริมการขาย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6941,ค่าธรรมเนียมธนาคาร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6951,ค่ารับรอง,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6961,ค่าภาษีธุรกิจเฉพาะ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6962,ค่าภาษีอากรอื่น ๆ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,6971,ค่าการกุศลสาธารณะ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6972,รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,6981,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับบริหาร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,7001,ค่าเสื่อมราคา - อาคาร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,7011,ค่าเสื่อมราคา - เครื่องใช้และอุปกรณ์สำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,7012,ค่าเสื่อมราคา - เครื่องตกแต่งในสำนักงาน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,7013,ค่าเสื่อมราคา - รถยนต์,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,7021,ค่าเสื่อมราคา - สิ่งปรับปรุงสินทรัพย์ - สำนักงานใหญ่,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,7031,ค่าตัดจำหน่าย,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8001,ค่าเบี้ยประชุมกรรมการ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8011,ค่าสอบบัญชี,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,8021,ค่าที่ปรึกษา,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,8031,ค่าใช้จ่ายอื่นๆ เกี่ยวกับการจัดตั้งบริษัท,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8101,ดอกเบี้ยรับจากธนาคาร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,LOW,Expense with credit closing balance
+ASAS,8111,ดอกเบี้ยรับจากบริษัทที่เกี่ยวข้องกัน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8121,ดอกเบี้ยรับจากกรรมการ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,LOW,Expense with credit closing balance
+ASAS,8131,รายได้อื่น ๆ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,LOW,Expense with credit closing balance
+ASAS,8201,ดอกเบี้ยจ่ายแก่ธนาคาร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8211,ดอกเบี้ยจ่ายแก่บริษัทที่เกี่ยวข้องกัน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8212,ดอกเบี้ยจ่ายอื่น ๆ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8401,กำไรหรือ(ขาดทุน)จากการแลกเปลี่ยนเงินตราต่างประเทศ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8402,กำไรหรือ(ขาดทุน)จากการจำหน่ายสินทรัพย์ถาวร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8403,กำไรหรือ(ขาดทุน)จากการจำหน่ายเงินลงทุน,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8501,หนี้สูญ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,8601,รายได้หรือค่าใช้จ่ายที่ไม่เกี่ยวกับการบริหาร,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Non-zero
+ASAS,8701,เงินปันผลรับ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,9001,ค่าภาษีเงินได้นิติบุคคล,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,9101,รายการพิเศษ,EXPENSE,DEBIT,true,EXCLUDE_OPENING,HIGH,Zero
+ASAS,1,ทุนหุ้นสามัญ,EQUITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,101,สำรองตามกฎหมาย,EQUITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,201,กำไร(ขาดทุน)ที่ยังไม่เกิดขึ้นจากการปรับมูลค่า,EQUITY,CREDIT,true,MIGRATE,HIGH,Zero
+ASAS,301,กำไร (ขาดทุน) สะสม,EQUITY,CREDIT,true,MIGRATE,HIGH,Non-zero
+ASAS,401,กำไร (ขาดทุน) สุทธิ,EQUITY,CREDIT,true,MIGRATE,HIGH,Zero

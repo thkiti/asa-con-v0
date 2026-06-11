@@ -270,6 +270,43 @@ export type BalanceSheetResult = {
   isBalanced: boolean
 }
 
+export type RetainedEarningsWarning = {
+  code: string
+  message: string
+}
+
+export type RetainedEarningsResult = {
+  filter: {
+    branchId: string
+    periodKey?: string
+    from?: string
+    to?: string
+  }
+  period: {
+    branchId: string
+    periodKey?: string
+    periodId?: string
+    periodStatus?: string
+    from?: string
+    to?: string
+  }
+  retainedEarningsAccounts: BalanceSheetRow[]
+  otherEquityAccounts: BalanceSheetRow[]
+  postedRetainedEarnings: string
+  otherEquityTotal: string
+  postedTotalEquity: string
+  currentNetIncome: string
+  adjustedRetainedEarnings: string
+  adjustedTotalEquity: string
+  totalAssets: string
+  totalLiabilities: string
+  balanceSheetDifference: string
+  unclosedEarningsGap: string
+  isUnclosedEarningsExplained: boolean
+  isEconomicallyBalanced: boolean
+  warnings: RetainedEarningsWarning[]
+}
+
 export type JournalInquiryResult = {
   id: string
   voucherId: string

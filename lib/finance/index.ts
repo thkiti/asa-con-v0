@@ -339,11 +339,18 @@ export {
   parseBalanceSheetFilter,
   parseGeneralLedgerFilter,
   parseProfitLossFilter,
+  parseRetainedEarningsFilter,
   parseTrialBalanceFilter,
   periodKeyToReportDateRange,
   resolveReportDateRange,
 } from "./reports/report-filter"
 export { getBalanceSheet } from "./reports/balance-sheet"
+export {
+  classifyEquityAccounts,
+  getRetainedEarnings,
+  isRetainedEarningsAccountCode,
+  RETAINED_EARNINGS_ACCOUNT_CODE,
+} from "./reports/retained-earnings"
 export { getGeneralLedger } from "./reports/general-ledger"
 export { getProfitLoss } from "./reports/profit-loss"
 export { getTrialBalance } from "./reports/trial-balance"
@@ -353,6 +360,12 @@ export type {
   BalanceSheetResult,
   BalanceSheetRow,
 } from "./reports/balance-sheet-types"
+export type {
+  RetainedEarningsFilter,
+  RetainedEarningsResult,
+  RetainedEarningsWarning,
+  RetainedEarningsWarningCode,
+} from "./reports/retained-earnings-types"
 export type {
   ProfitLossFilter,
   ProfitLossResult,

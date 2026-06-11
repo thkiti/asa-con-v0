@@ -1,0 +1,108 @@
+{
+  "coa": {
+    "total": 197,
+    "byType": {
+      "ASSET": 69,
+      "LIABILITY": 30,
+      "EQUITY": 5,
+      "REVENUE": 5,
+      "EXPENSE": 88
+    },
+    "byConfidence": {
+      "HIGH": 175,
+      "MEDIUM": 0,
+      "LOW": 22
+    },
+    "reviewRequired": 19,
+    "excludeOpening": 87
+  },
+  "opening": {
+    "lines": 26,
+    "originalTbDebit": 8295763.669999999,
+    "originalTbCredit": 8295763.669999998,
+    "plDebit": 3285482.79,
+    "plCredit": 4044950.879999999,
+    "netProfit": 759468.0899999989,
+    "openingDebit": 5010280.88,
+    "openingCredit": 5010280.88,
+    "balanced": true
+  },
+  "branches": {
+    "total": 13,
+    "ho": 1,
+    "shops": 12
+  },
+  "stock": {
+    "products": 73,
+    "totalQty": 110172,
+    "valuedLines": 16,
+    "valuedSum": 438604.92999999993,
+    "glTarget": 2007766.55,
+    "coveragePct": 21.85
+  },
+  "reconciliation": [
+    {
+      "checkName": "Trial Balance Debit",
+      "legacyValue": 8295763.669999999,
+      "transformedValue": 8295763.669999999,
+      "difference": 0,
+      "status": "PASS"
+    },
+    {
+      "checkName": "Trial Balance Credit",
+      "legacyValue": 8295763.669999998,
+      "transformedValue": 8295763.669999998,
+      "difference": 0,
+      "status": "PASS"
+    },
+    {
+      "checkName": "Opening Journal Debit",
+      "legacyValue": 5010280.88,
+      "transformedValue": 5010280.88,
+      "difference": 0,
+      "status": "PASS"
+    },
+    {
+      "checkName": "Opening Journal Credit",
+      "legacyValue": 5010280.88,
+      "transformedValue": 5010280.88,
+      "difference": 0,
+      "status": "PASS"
+    },
+    {
+      "checkName": "Balance Sheet Assets",
+      "legacyValue": 4457414.42,
+      "transformedValue": 4457414.42,
+      "difference": 0,
+      "status": "PASS"
+    },
+    {
+      "checkName": "Balance Sheet Liabilities + Equity",
+      "legacyValue": 4457414.42,
+      "transformedValue": 4457414.42,
+      "difference": 0,
+      "status": "PASS"
+    },
+    {
+      "checkName": "Inventory GL (TB 13xx)",
+      "legacyValue": 2007766.55,
+      "transformedValue": 438604.92999999993,
+      "difference": 1569161.62,
+      "status": "WARNING"
+    },
+    {
+      "checkName": "Net Profit 2025",
+      "legacyValue": 759468.09,
+      "transformedValue": 759468.0899999989,
+      "difference": 1.0477378964424133e-9,
+      "status": "PASS"
+    },
+    {
+      "checkName": "Retained Earnings Adjusted (301)",
+      "legacyValue": 1936769.0699999998,
+      "transformedValue": 1936769.0699999998,
+      "difference": 0,
+      "status": "PASS"
+    }
+  ]
+}

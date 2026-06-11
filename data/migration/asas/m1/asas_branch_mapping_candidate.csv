@@ -1,0 +1,28 @@
+legacyShopCode,legacyShopName,legacyAddress1,proposedBranchType,proposedBranchCode,confidence,notes
+0,สำนักงานใหญ่,216/17 ชั้น 8  อาคารชุดแอลพีเอ็นทาวเวอร์  ถนนนางลิ้นจี่,HO,HO,HIGH,สำนักงานใหญ่
+1,เซ็นทรัล(ชิดลม),1027 ถนนเพลินจิต แขวงลุมพินี,SHOP,SHOP-001,MEDIUM,Retail branch
+2,เซ็นทรัล(หัวหมาก),2001 ถนนรามคำแหง แขวงหัวหมาก,SHOP,SHOP-002,MEDIUM,Retail branch
+3,เซ็นทรัล(เวิล์ดเทรด),4 ถนนราชดำริ แขวงปทุมวัน,SHOP,SHOP-003,MEDIUM,Retail branch
+4,เซ็นทรัล(บางนา),1090 หมู่ที่ 12 ถนนบางนา-ตราด แขวงบางนา,SHOP,SHOP-004,MEDIUM,Retail branch
+5,เซ็นทรัล(วังบูรพา),677-681 ถนนจักรเพชร แขวงวังบูรพาภิรมย์,SHOP,SHOP-005,MEDIUM,Retail branch
+6,เซ็นทรัลพัฒนา(พระราม 3),79 ชั้นB เลขที่ B1-01 ถนนสาธุประดิษฐ์ แขวงช่องนนทรี,SHOP,SHOP-006,MEDIUM,Retail branch
+7,เซ็นทรัลพัฒนา(ปิ่นเกล้า),7/222 (บางส่วน) ถนนบรมราชชนนี แขวงอรุณอัมรินทร์,SHOP,SHOP-007,MEDIUM,Retail branch
+8,บิ๊กซี (สุขสวัสดิ์),94 หมู่ที่ 18 ต.บางพึ่ง ,SHOP,SHOP-008,MEDIUM,Retail branch
+9,เซ็นทรัลพัฒนา(ปิ่นเกล้า 2),7/222 (บางส่วน) ชั้น B ถนนบรมราชชนนี แขวงอรุณอัมรินทร์,SHOP,SHOP-009,MEDIUM,Retail branch
+10,เซ็นทรัลพัฒนา(ลาดพร้าว),1697 ถนนพหลโยธิน แขวงลาดยาว ,SHOP,SHOP-010,MEDIUM,Retail branch
+11,บิ๊กซี (บางนา),111 ถนนบางนา-ตราด แขวงบางนา,SHOP,SHOP-011,MEDIUM,Retail branch
+12,เซ็นทรัลพัฒนา(บางนา),1091 หมู่ที่ 12 ถนนบางนา-ตราด แขวงบางนา,SHOP,SHOP-012,MEDIUM,Retail branch
+13,เซ็นทรัล(ลาดพร้าว),1691 ถนนพหลโยธิน แขวงลาดยาว,SHOP,SHOP-013,MEDIUM,Retail branch
+14,เซ็นทรัลพัฒนา(เชียงใหม่),2 ถนนมหิดล ตำบลหายยา,SHOP,SHOP-014,MEDIUM,Retail branch
+15,เซ็นทรัลพัฒนา(พระราม 2),128 หมู่ที่ 6 ถนนพระรามที่ 2 แขวงแสมดำ,SHOP,SHOP-015,MEDIUM,Retail branch
+16,เซ็นทรัล(รังสิต),161 หมู่ที่ 2 ถนนพหลโยธิน ตำบลประชาธิปัตย์,SHOP,SHOP-016,MEDIUM,Retail branch
+17,บิ๊กซี-ราชดำริ,"89/36, 97/11 ถนนราชดำริห์ แขวงลุมพินี",SHOP,SHOP-017,MEDIUM,Retail branch
+19,เซ็นทรัลพัฒนา(พระราม 3/2),79 ชั้น3 พื้นที่ส่วนกลาง ถนนสาธุประดิษฐ์ แขวงช่องนนทรี,SHOP,SHOP-019,MEDIUM,Retail branch
+20,บิ๊คซี(ดาวคะนอง),1050 ถนนสมเด็จพระเจ้าตากสิน แขวงบุคคโล,SHOP,SHOP-020,MEDIUM,Retail branch
+21,เทสโก โลตัส (พระราม 1),831 ถ.พระราม 1 แขวงวังใหม่,SHOP,SHOP-021,MEDIUM,Retail branch
+22,เซ็นทรัล(สีลม),306 ถ.สีลม แขวงสุริยวงศ์ ,SHOP,SHOP-022,MEDIUM,Retail branch
+23,เซ็นทรัล(พระราม 3),79/3 ถนนสาธุประดิษฐ์ แขวงช่องนนทรี,SHOP,SHOP-023,MEDIUM,Retail branch
+24,เซ็นทรัล(เวิล์ดเทรด),"4 ,4/1-2,4/4 อาคารศูนย์การค้าเซ็นทรัลเวิลด์ ห้องเลขที่ B1-09 ชั้นที่ B1 ถนนราชดำริห์",SHOP,SHOP-024,MEDIUM,Retail branch
+25,เซ็นทรัล(พระราม 9),เคจี 04  ชั้น จี  เลขที่ 9/9  ถนนพระราม 9  แขวงห้วยขวาง,SHOP,SHOP-025,MEDIUM,Retail branch
+26,เซ็นทรัลพัฒนา-อีสต์ วิลล์,"ห้องเลขที่ RMUG106 เลขที่ 69,69/1,69/2  ถนนประดิษฐ์มนูธรรม",SHOP,SHOP-026,MEDIUM,Retail branch
+27,เซ็นทรัล-อีสต์ วิลล์,ห้องเลขที่ CEV-02-SA-101 เลขที่ 69/3  ถนนประดิษฐ์มนูธรรม,SHOP,SHOP-027,MEDIUM,Retail branch

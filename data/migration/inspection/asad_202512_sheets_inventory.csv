@@ -1,0 +1,7 @@
+sheet_name,row_count,col_count,visibility,detected_sections
+Trial Balance,1424,31,visible,"GL trial balance (account code, debit, credit)"
+Working Paper,1484,35,visible,Cross-check TB + P&L + BS columns
+Profit Loss,1265,38,visible,P&L statement (summary lines)
+Profit Loss Compare,1298,27,visible,P&L month/YTD comparison
+Balance Sheet,1259,38,visible,"Balance sheet (summary lines, 2568 vs 2567)"
+งบแสดงการเปลี่ยนแปลงส่วน,1283,37,visible,Statement of changes in equity

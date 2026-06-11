@@ -1,0 +1,6 @@
+source,sheet,role,notes,count,confidence
+ASAS_Inventory202512.xls,Ending,PRIMARY,Dec 2568 closing qty,30,HIGH
+ASAS_Inventory202512.xls,Product Group,PRIMARY,Product master,,HIGH
+ASAS_Inventory202512.xls,Cost (ด.12),SECONDARY,Dec movement with unit cost,1711 rows,MEDIUM
+ASAS_Inventory202512.xls,SetPrice,VALIDATION,Partial unit cost,0 matches on ending,LOW
+FinReport-202512.xls,TB 13xx,VALIDATION,GL inventory 2268125.31,4 accounts,HIGH

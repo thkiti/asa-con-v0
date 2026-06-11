@@ -1,0 +1,8 @@
+file,sheet,role,notes,metric,confidence
+FinReport-202512.xls,Trial Balance,PRIMARY,Closing TB 31/12/2025,197 accounts,HIGH
+FinReport-202512.xls,BS/P&L,VALIDATION,Summary statements,,HIGH
+DataPostManual. - ปี68.xls,Data,SECONDARY,GL lines ~58K,58414,HIGH
+GJ-202512-No.1/2/3.xls,General Journal,SECONDARY,Dec journals,3 files,MEDIUM
+BCJ/BSJ-202512.xls,Bank Journal,SECONDARY,Bank activity,2 files,MEDIUM
+Sales Tax2512.xlsx,VAT sales,VALIDATION,Dec 2025 tax,,HIGH
+Purchase Tax2512.xlsx,VAT purchase,VALIDATION,Dec 2025 tax,,HIGH

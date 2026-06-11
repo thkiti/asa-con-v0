@@ -1,0 +1,26 @@
+category,scope,score_pct,verdict
+Finance,ASAD,98,GO WITH CONDITIONS
+Finance,ASAS,96,GO WITH CONDITIONS
+Finance,Combined,0,NOT READY — separate entities
+Inventory qty,ASAD,90,GO WITH CONDITIONS
+Inventory qty,ASAS,85,GO WITH CONDITIONS
+Inventory qty,Combined,0,NOT READY — do not merge pools
+Inventory valuation,ASAD,35,NOT READY
+Inventory valuation,ASAS,25,NOT READY
+Inventory valuation,Combined,0,NOT READY — ASAS does not fill ASAD gap
+Products,ASAD,90,GO WITH CONDITIONS
+Products,ASAS,88,GO WITH CONDITIONS
+Branches,ASAD,88,GO
+Branches,ASAS,90,GO
+AR,ASAD,60,GO WITH CONDITIONS
+AR,ASAS,65,GO WITH CONDITIONS
+AP,ASAD,70,GO WITH CONDITIONS
+AP,ASAS,72,GO WITH CONDITIONS
+Tax,ASAD,20,NOT READY
+Tax,ASAS,75,GO WITH CONDITIONS
+Overall,ASAD,78,GO WITH CONDITIONS
+Overall,ASAS,82,GO WITH CONDITIONS
+Overall,Combined,0,NOT READY — migrate separately
+Inventory valuation (M1.5),ASAD,88,GO WITH CONDITIONS — Stock-2025 + GL 1311
+Inventory valuation (M1.5),ASAS,95,GO WITH CONDITIONS — Stock-2025 grand total matches GL
+Inventory valuation (M1.5),Combined,0,NOT READY — separate entities

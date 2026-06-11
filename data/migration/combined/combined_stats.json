@@ -1,0 +1,24 @@
+{
+  "asas": {
+    "company": "บริษัท อาสา เซอร์วิส (ประเทศไทย) จำกัด",
+    "accounts": 197,
+    "openingLines": 41,
+    "openingBalanced": true,
+    "netProfit": 23494.960000008345,
+    "glInventory": 2268125.31,
+    "stockLines": 30,
+    "stockVal": 0,
+    "shops": 27
+  },
+  "asad": {
+    "glInventory": 2007766.55,
+    "stockVal": 438604.93,
+    "stockLines": 73
+  },
+  "combined": {
+    "overlapDistinct": 28,
+    "overlapAsadOnly": 43,
+    "asasFillsAsadGap": false,
+    "combinedStockVal": 438604.92999999993
+  }
+}

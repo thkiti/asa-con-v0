@@ -1,0 +1,13 @@
+migration_target,availability,primary_source,confidence,notes
+Chart of Accounts,Available,FinReport Trial Balance,High,197 accounts; type mapping required
+Customers,Partial,ASAD_Inventory Customer Detail,Low,Only 3 rows; AR names in SJ/vouchers
+Suppliers,Available,ASAD_Inventory Supplier Detail,Medium,27 suppliers; AP control in TB only
+Products,Available,ASAD_Inventory Product Group/Detail,High,"3676 groups, 995 SKUs"
+Inventory (qty),Available,ASAD_Inventory Ending,High,188 non-header product groups with Dec 2568 qty
+Inventory (value),Partial,FinReport TB 13xx + SetPrice,Medium,GL value 2.0M; Detail Inventory sheet stale
+AR,Partial,FinReport TB 1121/1131,Medium,Control balances only; no open-item subledger
+AP,Partial,FinReport TB 4101+,Medium,Control balances only
+Opening Journal,Available,FinReport TB + close transform,High,Balanced after P&L roll to RE 301
+Tax (VAT),Partial,Sales/Purchase Tax2604,Low,April 2026 only; not Dec 2025 closing
+Employees,Available,ASAD_Inventory Employee Detail,Medium,30 staff; may need HR confirmation
+Branches/Shops,Available,ASAD_Inventory Shop Detail,High,183 shop/branch rows

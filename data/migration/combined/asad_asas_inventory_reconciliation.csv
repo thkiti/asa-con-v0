@@ -1,0 +1,9 @@
+checkName,valueA,valueB,difference,status
+ASAD inventory GL,2007766.55,2007766.55,0.00,PASS
+ASAD stock candidate value,438604.93,2007766.55,1569161.62,WARNING
+ASAS inventory GL,2268125.31,2268125.31,0.00,PASS
+ASAS stock candidate value,0.00,2268125.31,2268125.31,WARNING
+ASAS fills ASAD gap?,0.00,1569161.62,1569161.62,FAIL
+Combined stock explains ASAD GL?,438604.93,2007766.55,1569161.62,FAIL
+Product overlap count,28.00,30.00,0.00,PASS
+Separate legal entities,2.00,2.00,0.00,PASS

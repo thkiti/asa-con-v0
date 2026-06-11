@@ -3,6 +3,7 @@ import { normalizeDateRange, type NormalizedDateRange } from "@/lib/reporting/da
 import type { GeneralLedgerFilter } from "./general-ledger-types"
 import type { BalanceSheetFilter } from "./balance-sheet-types"
 import type { ProfitLossFilter } from "./profit-loss-types"
+import type { RetainedEarningsFilter } from "./retained-earnings-types"
 import type { TrialBalanceFilter } from "./trial-balance-types"
 
 const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
@@ -142,4 +143,10 @@ export function parseBalanceSheetFilter(params: ReportFilterParams): BalanceShee
   const scope = parseFinanceReportScope(params)
   const hideZeroBalances = parseHideZeroBalances(params.get("hideZeroBalances"))
   return { ...scope, hideZeroBalances }
+}
+
+export function parseRetainedEarningsFilter(
+  params: ReportFilterParams
+): RetainedEarningsFilter {
+  return parseFinanceReportScope(params)
 }

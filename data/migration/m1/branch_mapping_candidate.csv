@@ -1,0 +1,14 @@
+legacyShopCode,legacyShopName,legacyAddress1,proposedBranchType,proposedBranchCode,confidence,notes
+0,สำนักงานใหญ่,216/17 ชั้น 8  อาคารชุดแอลพีเอ็นทาวเวอร์  ถนนนางลิ้นจี่,HO,HO,HIGH,สำนักงานใหญ่
+1,เซ็นทรัล(ชิดลม),1027 ถนนเพลินจิต แขวงลุมพินี,SHOP,SHOP-001,MEDIUM,Franchise/branch location
+2,เซ็นทรัล(หัวหมาก),2001 ถนนรามคำแหง แขวงหัวหมาก,SHOP,SHOP-002,MEDIUM,Franchise/branch location
+3,เซ็นทรัล(เวิล์ดเทรด),4 ถนนราชดำริ แขวงปทุมวัน,SHOP,SHOP-003,MEDIUM,Franchise/branch location
+4,เซ็นทรัล(บางนา),1090 หมู่ที่ 12 ถนนบางนา-ตราด แขวงบางนา,SHOP,SHOP-004,MEDIUM,Franchise/branch location
+5,เซ็นทรัล(วังบูรพา),677-681 ถนนจักรเพชร แขวงวังบูรพาภิรมย์,SHOP,SHOP-005,MEDIUM,Franchise/branch location
+6,เซ็นทรัลพัฒนา(พระราม 3),79 ชั้นB เลขที่ B1-01 ถนนสาธุประดิษฐ์ แขวงช่องนนทรี,SHOP,SHOP-006,MEDIUM,Franchise/branch location
+7,เซ็นทรัลพัฒนา(ปิ่นเกล้า),7/222 (บางส่วน) ถนนบรมราชชนนี แขวงอรุณอัมรินทร์,SHOP,SHOP-007,MEDIUM,Franchise/branch location
+8,บิ๊กซี-สุขสวัสดิ์,,SHOP,SHOP-008,MEDIUM,Franchise/branch location
+9,เซ็นทรัลพัฒนา-ปิ่นเกล้า 2,,SHOP,SHOP-009,MEDIUM,Franchise/branch location
+10,เซ็นทรัลพัฒนา-ลาดพร้าว,,SHOP,SHOP-010,MEDIUM,Franchise/branch location
+11,บิ๊กซี-บางนา,,SHOP,SHOP-011,MEDIUM,Franchise/branch location
+12,เซ็นทรัลพัฒนา-บางนา,,SHOP,SHOP-012,MEDIUM,Franchise/branch location

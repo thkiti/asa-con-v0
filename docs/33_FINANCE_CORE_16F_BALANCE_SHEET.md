@@ -3,7 +3,7 @@
 **Status:** Done  
 **Scope:** Read-only financial statement layer from posted journal data.
 
-Balance Sheet read-only statement layer implemented. **Retained Earnings** and **Closing Entry** deferred to **16G** / **16H**.
+Balance Sheet read-only statement layer implemented. **Retained Earnings** analysis is **16G**; **Closing Entry** deferred to **16H**.
 
 ---
 
@@ -77,7 +77,7 @@ When revenue/expense activity exists without a closing entry to equity, the shee
 | 16D | General ledger |
 | 16E | Profit & loss |
 | **16F** | **Balance sheet** |
-| 16G | Retained earnings (planned) |
+| 16G | Retained earnings (done — see 34_FINANCE_CORE_16G_RETAINED_EARNINGS.md) |
 | 16H | Closing entry (planned) |
 
 ---

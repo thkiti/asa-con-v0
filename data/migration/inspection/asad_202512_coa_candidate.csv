@@ -1,0 +1,198 @@
+account_code,account_name,inferred_type,inferred_group,parent_note
+1001,เงินสดในเครื่องเก็บเงิน,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1011,เงินสดย่อย,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1021,เงินฝากธนาคาร,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1031,เงินสดระหว่างทาง,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1041,เงินลงทุนระยะสั้น,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1051,ตั๋วเงินรับ,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1101,ลูกหนี้การค้า - ห้างสรรพสินค้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1111,ลูกหนี้การค้า - แฟรนไชส์,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1121,ลูกหนี้การค้า - อื่น,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1141,ค่าเผื่อหนี้สงสัยจะสูญ - ห้างสรรพสินค้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1142,ค่าเผื่อหนี้สงสัยจะสูญ - แฟรนไชส์,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1143,ค่าเผื่อหนี้สงสัยจะสูญ - อื่น,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1131,ลูกหนี้การค้า - บริษัทที่เกี่ยวข้องกัน,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1161,เงินให้กู้ยืมระยะสั้นแก่บุคคลหรือกิจการที่เกี่ยวข้องกัน,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1301,เครื่องจักรและอุปกรณ์,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1302,ลูกกุญแจ,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1303,วัสดุรองเท้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1304,แม่กุญแจ,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1305,เบ็ดเตล็ด,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1306,วัสดุสิ้นเปลือง,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1307,แบตเตอรี่,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1311,สินค้าระหว่างทาง,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1312,ค่าภาษีอากรขาเข้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1313,ค่าระวาง ค่าขนส่ง,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1314,ค่าประกันภัย,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1315,ค่าใช้จ่ายอื่น ๆ ในการออกของ,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1321,ชิ้นส่วนและอะไหล่,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1351,วัสดุและอุปกรณ์,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1391,สำรองค่าเผื่อสินค้าล้าสมัย,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1401,ดอกเบี้ยรับค้างรับ - อื่น,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1402,ดอกเบี้ยรับค้างรับ - บริษัทที่เกี่ยวข้องกัน,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1411,ค่าเช่าจ่ายล่วงหน้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1421,ค่าเบี้ยประกันภัยจ่ายล่วงหน้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1431,ค่าใช้จ่ายล่วงหน้าอื่น ๆ,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1441,เงินมัดจำลูกหนี้อื่น,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1451,ค่าภาษีเงินได้จ่ายล่วงหน้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1452,ภาษีซื้อ,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1453,ภาษีมูลค่าเพิ่มขอคืน,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1461,เงินเดือนเบิกล่วงหน้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+1471,ค่าเดินทางเบิกล่วงหน้า,ASSET,CURRENT_ASSET,from TB row order; no explicit parent id
+2001,เงินลงทุนในบริษัทร่วม บริษัทย่อย และการร่วมค้า,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2101,เงินลงทุนระยะยาวอื่น,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2111,เงินให้กู้ยืมระยะยาวแก่บุคคลหรือกิจการที่เกี่ยวข้องกัน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2201,ที่ดิน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2202,อาคารชุด,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2211,เครื่องจักรและอุปกรณ์ในการดำเนินงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2212,เครื่องตกแต่งในการดำเนินงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2221,เครื่องใช้และอุปกรณ์สำนักงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2222,เครื่องตกแต่งสำนักงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2223,รถยนต์,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2231,สิ่งปรับปรุงสินทรัพย์-สำนักงานใหญ่,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2232,สิ่งปรับปรุงสินทรัพย์-สาขา,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2235,เครื่องจักรและอุปกรณ์ร้านที่ให้เช่าเครื่องจักร,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2236,สิ่งปรับปรุงสินทรัพย์ร้านที่ให้เช่าเครื่องจักร,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2240,เครื่องจักรและอุปกรณ์ระหว่างทาง,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2251,ค่าเสื่อมราคาสะสม - อาคาร,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2261,ค่าเสื่อมราคาสะสม - เครื่องจักรและอุปกรณ์ในการดำเนินงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2262,ค่าเสื่อมราคาสะสม - เครื่องตกแต่งในการดำเนินงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2271,ค่าเสื่อมราคาสะสม - เครื่องใช้และอุปกรณ์สำนักงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2272,ค่าเสื่อมราคาสะสม - เครื่องตกแต่งสำนักงาน,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2273,ค่าเสื่อมราคาสะสม - รถยนต์,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2281,ค่าเสื่อมราคาสะสม - สิ่งปรับปรุงสินทรัพย์ - สำนักงานใหญ่,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2282,ค่าเสื่อมราคาสะสม - สิ่งปรับปรุงสินทรัพย์ - สาขา,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2285,ค่าเสื่อมราคาสะสม - เครื่องจักรและอุปกรณ์ร้านที่ให้เช่าเครื่องจักร,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+2286,ค่าเสื่อมราคาสะสม - สิ่งปรับปรุงสินทรัพย์ร้านที่ให้เช่าเครื่องจักร,ASSET,NON_CURRENT_ASSET,from TB row order; no explicit parent id
+3001,เงินประกันและเงินมัดจำ,ASSET,OTHER_ASSET,from TB row order; no explicit parent id
+3101,สิทธิการเช่า,ASSET,OTHER_ASSET,from TB row order; no explicit parent id
+3201,ดอกเบี้ยรอการตัดบัญชี,ASSET,OTHER_ASSET,from TB row order; no explicit parent id
+3301,ภาษีเงินได้ถูกหักภาษี ณ. ที่จ่าย (รอขอคืนจากกรมสรรพากร),ASSET,OTHER_ASSET,from TB row order; no explicit parent id
+4001,เงินกู้ยืมระยะสั้นจากสถาบันการเงิน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4002,ตั๋วเงินจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4101,เจ้าหนี้การค้า,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4151,เจ้าหนี้บริษัทที่เกี่ยวข้องกัน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4201,เงินกู้ยืมระยะยาวที่ถึงกำหนดชำระภายในหนึ่งปี,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4202,เงินกู้ยืมระยะสั้นจากบุคคลหรือกิจการที่เกี่ยวข้องกัน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4301,เงินปันผลค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4401,ภาษีเงินได้นิติบุคคลค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4501,เงินเดือนค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4502,เงินสะสมพนักงาน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4511,รายได้รับล่วงหน้า,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4521,ค่าเช่าค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4531,ค่าเบี้ยประกันภัยค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4541,ค่าโทรศัพท์ ค่าโทรสาร ค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4551,ค่าตรวจสอบบัญชีค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4561,ค่าใช้จ่ายอื่น ๆ ค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4571,ดอกเบี้ยจ่ายค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4581,ดอกเบี้ยจ่ายค้างจ่ายบริษัทที่เกี่ยวข้องกัน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4582,ค่าใช้จ่ายค้างจ่ายบริษัทที่เกี่ยวข้องกัน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4601,ภาษีขาย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4602,ภาษีมูลค่าเพิ่มค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4611,ภาษีเงินได้พนักงาน หัก ณ.ที่จ่ายค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4612,ภาษีเงินได้ หัก ณ.ที่จ่ายค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4613,ภาษีเงินได้นิติบุคคลค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4621,ภาษีอากรอื่น ๆ ค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4631,ประกันสังคมค้างจ่าย,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4701,เงินกู้ยืมระยะยาวจากบุคคลหรือกิจการที่เกี่ยวข้องกัน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4801,เจ้าหนี้ตามสัญญาเช่าทางการเงิน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4901,ภาระผูกพันผลประโยชน์พนักงาน,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+4911,ประมาณการหนี้สินระยะยาว,LIABILITY,LIABILITY,from TB row order; no explicit parent id
+5000,รายได้รวมภาษีมูลค่าเพิ่ม,REVENUE,REVENUE,from TB row order; no explicit parent id
+5001,รายได้จากการขาย,REVENUE,REVENUE,from TB row order; no explicit parent id
+5002,รายได้จากการให้เช่าเครื่องจักรและอุปกรณ์,REVENUE,REVENUE,from TB row order; no explicit parent id
+5003,รายได้จากค่าบริการอื่น ๆ,REVENUE,REVENUE,from TB row order; no explicit parent id
+5101,สินค้ารับคืนและส่วนลด,REVENUE,REVENUE,from TB row order; no explicit parent id
+6001,ต้นทุนขาย-เครื่องจักรและอุปกรณ์,EXPENSE,COGS,from TB row order; no explicit parent id
+6002,ต้นทุนขาย-ลูกกุญแจ,EXPENSE,COGS,from TB row order; no explicit parent id
+6003,ต้นทุนขาย-วัสดุรองเท้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6004,ต้นทุนขาย-แม่กุญแจ,EXPENSE,COGS,from TB row order; no explicit parent id
+6005,ต้นทุนขาย-เบ็ดเตล็ด,EXPENSE,COGS,from TB row order; no explicit parent id
+6006,ต้นทุนขาย-วัสดุสิ้นเปลือง,EXPENSE,COGS,from TB row order; no explicit parent id
+6021,ต้นทุนขาย-ชิ้นส่วนและอะไหล่,EXPENSE,COGS,from TB row order; no explicit parent id
+6031,ต้นทุนขาย-ชิ้นส่วนและอะไหล่,EXPENSE,COGS,from TB row order; no explicit parent id
+6051,ซื้อวัสดุและอุปกรณ์,EXPENSE,COGS,from TB row order; no explicit parent id
+6052,สินค้าส่งคืนและส่วนลด,EXPENSE,COGS,from TB row order; no explicit parent id
+6061,ค่าแรง,EXPENSE,COGS,from TB row order; no explicit parent id
+6091,ค่าเผื่อสินค้าล้าสมัย,EXPENSE,COGS,from TB row order; no explicit parent id
+6101,ค่าเช่าและค่าบริการ - ร้านที่จำหน่ายสินค้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6111,ค่าไฟ - ร้านที่จำหน่ายสินค้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6121,ค่าภาษีโรงเรือน - ร้านที่จำหน่ายสินค้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6131,ค่าประกันภัย - ร้านที่จำหน่ายสินค้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6141,ค่าโทรศัพท์ - ร้านที่จำหน่ายสินค้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6151,ค่าใช้จ่ายทางการเงิน - ร้านที่จำหน่ายสินค้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6161,ค่าใช้จ่ายอื่น ๆ - ร้านที่จำหน่ายสินค้า,EXPENSE,COGS,from TB row order; no explicit parent id
+6171,ค่าใช้จ่ายร้านที่ให้เช่าเครื่องจักร,EXPENSE,COGS,from TB row order; no explicit parent id
+6201,เงินเดือน และค่าจ้าง,EXPENSE,COGS,from TB row order; no explicit parent id
+6211,ผลตอบแทนจากยอดขาย,EXPENSE,COGS,from TB row order; no explicit parent id
+6221,เงินที่จ่ายสมทบเข้าประกันสังคม,EXPENSE,COGS,from TB row order; no explicit parent id
+6231,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับพนักงานขาย,EXPENSE,COGS,from TB row order; no explicit parent id
+6241,ค่าฝึกอบรมพนักงานขาย,EXPENSE,COGS,from TB row order; no explicit parent id
+6251,ผลประโยชน์พนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6261,ค่าพาหนะ ค่าใช้จ่ายในการเดินทาง และค่าที่พัก - พนักงานขาย,EXPENSE,COGS,from TB row order; no explicit parent id
+6301,ค่าโฆษณาและส่งเสริมการขาย,EXPENSE,COGS,from TB row order; no explicit parent id
+6401,ค่าเสื่อมราคา - เครื่องจักรและอุปกรณ์ในการดำเนินงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6402,ค่าเสื่อมราคา - เครื่องตกแต่งในการดำเนินงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6411,ค่าเสื่อมราคา - สิ่งปรับปรุงสินทรัพย์ - สาขา,EXPENSE,COGS,from TB row order; no explicit parent id
+6412,ค่าเสื่อมราคา - ร้านที่ให้เช่าเครื่องจักร,EXPENSE,COGS,from TB row order; no explicit parent id
+6421,ค่าตัดจำหน่าย,EXPENSE,COGS,from TB row order; no explicit parent id
+6501,ค่าวัสดุใช้สิ้นเปลือง,EXPENSE,COGS,from TB row order; no explicit parent id
+6502,ค่าซ่อมแซมรักษา,EXPENSE,COGS,from TB row order; no explicit parent id
+6503,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับการขาย,EXPENSE,COGS,from TB row order; no explicit parent id
+6510,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับการให้เช่าเครื่องจักร,EXPENSE,COGS,from TB row order; no explicit parent id
+6601,เงินเดือน และค่าจ้าง,EXPENSE,COGS,from TB row order; no explicit parent id
+6621,เงินที่จ่ายสมทบเข้าประกันสังคม,EXPENSE,COGS,from TB row order; no explicit parent id
+6631,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับพนักงานสำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6641,ค่าฝึกอบรมพนักงานสำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6651,ผลประโยชน์พนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6661,ค่าพาหนะ ค่าใช้จ่ายในการเดินทาง และค่าที่พัก - พนักงานสำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6701,ค่าใช้จ่ายเกี่ยวกับรถยนต์,EXPENSE,COGS,from TB row order; no explicit parent id
+6702,ค่าซ่อมแซมรถยนต์,EXPENSE,COGS,from TB row order; no explicit parent id
+6703,ค่าเช่ารถยนต์,EXPENSE,COGS,from TB row order; no explicit parent id
+6801,ค่าเช่าและค่าบริการ - สำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6811,ค่าไฟ - สำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6821,ค่าประปา - สำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6831,ค่าไปรษณียากร - สำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6841,ค่าโทรศัพท์ โทรสาร - สำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6851,ค่าซ่อมแซมและรักษา - สำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6901,ค่าวัสดุใช้ในสำนักงาน,EXPENSE,COGS,from TB row order; no explicit parent id
+6911,ค่าใช้จ่ายเกี่ยวกับคอมพิวเตอร์,EXPENSE,COGS,from TB row order; no explicit parent id
+6921,ค่าเบี้ยประกันภัย,EXPENSE,COGS,from TB row order; no explicit parent id
+6931,ค่าส่งเสริมการขาย,EXPENSE,COGS,from TB row order; no explicit parent id
+6941,ค่าธรรมเนียมธนาคาร,EXPENSE,COGS,from TB row order; no explicit parent id
+6951,ค่ารับรอง,EXPENSE,COGS,from TB row order; no explicit parent id
+6961,ค่าภาษีธุรกิจเฉพาะ,EXPENSE,COGS,from TB row order; no explicit parent id
+6962,ค่าภาษีอากรอื่น ๆ,EXPENSE,COGS,from TB row order; no explicit parent id
+6971,ค่าการกุศลสาธารณะ,EXPENSE,COGS,from TB row order; no explicit parent id
+6972,รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา,EXPENSE,COGS,from TB row order; no explicit parent id
+6981,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับบริหาร,EXPENSE,COGS,from TB row order; no explicit parent id
+7001,ค่าเสื่อมราคา - อาคาร,EXPENSE,SELLING_EXPENSE,from TB row order; no explicit parent id
+7011,ค่าเสื่อมราคา - เครื่องใช้และอุปกรณ์สำนักงาน,EXPENSE,SELLING_EXPENSE,from TB row order; no explicit parent id
+7012,ค่าเสื่อมราคา - เครื่องตกแต่งในสำนักงาน,EXPENSE,SELLING_EXPENSE,from TB row order; no explicit parent id
+7013,ค่าเสื่อมราคา - รถยนต์,EXPENSE,SELLING_EXPENSE,from TB row order; no explicit parent id
+7021,ค่าเสื่อมราคา - สิ่งปรับปรุงสินทรัพย์ - สำนักงานใหญ่,EXPENSE,SELLING_EXPENSE,from TB row order; no explicit parent id
+7031,ค่าตัดจำหน่าย,EXPENSE,SELLING_EXPENSE,from TB row order; no explicit parent id
+8001,ค่าเบี้ยประชุมกรรมการ,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8011,ค่าสอบบัญชี,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8021,ค่าที่ปรึกษา,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8031,ค่าใช้จ่ายอื่นๆ เกี่ยวกับการจัดตั้งบริษัท,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8101,ดอกเบี้ยรับจากธนาคาร,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8111,ดอกเบี้ยรับจากบริษัทที่เกี่ยวข้องกัน,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8121,ดอกเบี้ยรับจากกรรมการ,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8131,รายได้อื่น ๆ,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8201,ดอกเบี้ยจ่ายแก่ธนาคาร,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8211,ดอกเบี้ยจ่ายแก่บริษัทที่เกี่ยวข้องกัน,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8212,ดอกเบี้ยจ่ายอื่น ๆ,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8401,กำไรหรือ(ขาดทุน)จากการแลกเปลี่ยนเงินตราต่างประเทศ,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8402,กำไรหรือ(ขาดทุน)จากการจำหน่ายสินทรัพย์ถาวร,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8403,กำไรหรือ(ขาดทุน)จากการปิดร้านที่จำหน่ายสินค้า,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8501,หนี้สูญ,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8601,รายได้หรือค่าใช้จ่ายที่ไม่เกี่ยวกับการบริหาร,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+8701,เงินปันผลรับ,EXPENSE,ADMIN_EXPENSE,from TB row order; no explicit parent id
+9001,ค่าภาษีเงินได้นิติบุคคล,EXPENSE,TAX_SPECIAL,from TB row order; no explicit parent id
+9101,รายการพิเศษ,EXPENSE,TAX_SPECIAL,from TB row order; no explicit parent id
+1,ทุนหุ้นสามัญ,EQUITY,EQUITY,from TB row order; no explicit parent id
+101,สำรองตามกฎหมาย,EQUITY,EQUITY,from TB row order; no explicit parent id
+201,สำรองอื่น,EQUITY,EQUITY,from TB row order; no explicit parent id
+301,กำไร (ขาดทุน) สะสม,EQUITY,EQUITY,from TB row order; no explicit parent id
+401,กำไร (ขาดทุน) สุทธิ,EQUITY,EQUITY,from TB row order; no explicit parent id

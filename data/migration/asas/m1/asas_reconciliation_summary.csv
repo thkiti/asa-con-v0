@@ -1,0 +1,5 @@
+checkName,legacyValue,transformedValue,difference,status
+Trial Balance balanced,40640308.66,40640308.66,0.00,PASS
+Opening Journal balanced,22281061.82,22281061.82,0.00,PASS
+Net Profit,23494.96,23494.96,-0.00,PASS
+Inventory GL,2268125.31,0.00,2268125.31,WARNING

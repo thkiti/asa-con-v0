@@ -1,0 +1,31 @@
+productCode,productName,qty,unit,unitCost,inventoryValue,sourceSheet,excludeFromImport,importReadiness,confidence,effectiveDate
+1019018,กุญแจบ้าน(เล็ก)ธรรมดาของใน,1236,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1019025,กุญแจบ้าน(ใหญ่)ธรรมดาของใน,2046,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1029017,กุญแจบ้านบิทของในแบบที่ 1,25,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1029024,กุญแจบ้านบิทของในแบบที่ 2,135,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1039016,กุญแจบ้านครอสของใน,19,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1049015,กุญแจบ้านพิเศษของใน,229,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1059014,กุญแจบ้าน(ตัด/นิเคิล)พิเศษของในแบบที่ 1,28,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1059021,กุญแจบ้าน(ตัด/นิเคิล)พิเศษของในแบบที่ 2,185,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+31029018,กุญแจรถตัดเลเซอร์ของในแบบมีสติ๊กเกอร์,4,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+31039024,กุญแจตัดเลเซอร์ของในแบบเจาะรู,17,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+41010082,"HONDA, TOYOTA 2,3,4 BUTTON",3,ดอก,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+51030031,LUXE TOPLIFT # XL,327,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+51030041,"LUXE TOPLIFT # M,L",55,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+51030061,"BI-COMPONENT # M,L (16,17)",16,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+55030021,TPU DIAMANTINE HALF SOLE #3,312,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+55040011,TPU DIAMOND HALF SOLE # 3,352,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+55040021,TPU BELLA HALF SOLE # 3,32,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+55070019,TPU WAVE HALF SOLE # 3,13,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+61070059,TPU CHIC MIRROR HEEL #3,7,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+61110011,OCEAN HEEL,1,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+65030011,TPU LIGHT HALF SOLE # 5,209,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+65030028,TPU BALLERINA HALE SOLE # 5,125,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+65050019,TPU MIRROR HALF SOLE # 5,19,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+65150011,GALAXY HALF SOLE # H,60,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+65160011,OCEAN HALF SOLE # H,61,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+65180013,STARS HALF SOLE,27,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+70030037,LEATHER INNERSOLE,13,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+80010012,แผ่นรองพื้นรองเท้า,13,คู่,,,ASAS_Inventory202512.xls/Ending,false,NEEDS_COST,MEDIUM,2026-01-01
+1302,ยอดรวมลูกกุญแจ,3927,,,,ASAS_Inventory202512.xls/Ending,true,SUBTOTAL_EXCLUDE,LOW,2026-01-01
+1303,ยอดรวมวัสดุรองเท้า,1642,,,,ASAS_Inventory202512.xls/Ending,true,SUBTOTAL_EXCLUDE,LOW,2026-01-01

@@ -1,0 +1,10 @@
+checkName,legacyValue,transformedValue,difference,status
+Trial Balance Debit,8295763.67,8295763.67,0.00,PASS
+Trial Balance Credit,8295763.67,8295763.67,0.00,PASS
+Opening Journal Debit,5010280.88,5010280.88,0.00,PASS
+Opening Journal Credit,5010280.88,5010280.88,0.00,PASS
+Balance Sheet Assets,4457414.42,4457414.42,0.00,PASS
+Balance Sheet Liabilities + Equity,4457414.42,4457414.42,0.00,PASS
+Inventory GL (TB 13xx),2007766.55,438604.93,1569161.62,WARNING
+Net Profit 2025,759468.09,759468.09,0.00,PASS
+Retained Earnings Adjusted (301),1936769.07,1936769.07,0.00,PASS

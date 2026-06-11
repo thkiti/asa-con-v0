@@ -1,0 +1,24 @@
+file,type,size_bytes,category,module,purpose,sheet_count,sheets_preview,confidence
+ASAS-Asset202512.xlsx,.xlsx,188322,REPORT DATA,Finance,Fixed asset register,2,Registration Asset; ขายสินทรัพย์ให้คุณภาสกร จินดาวง,HIGH
+ASASForm-Voucher(Payment).xlsx,.xlsx,12422340,REFERENCE DATA,Finance,Voucher print templates,78,Payment(2); Payment (ค่าเช่า)คุณสุพัฒน์; Payment ค่าเช่า(LPN) (2); Payment ค่าเช่า(LPN); Payment (กรมสรรพากร); Paymentปันผล (คุณสุพัฒน์),HIGH
+ASASForm-Voucher(Receipt).xls,.xls,2406400,REFERENCE DATA,Finance,Voucher print templates,37,โอนระหว่างบัญชี; Received (2); Received (5); Received (25); Received (เอก); Received (โบว์),HIGH
+ASAS_Inventory202512.xls,.xls,3622400,MASTER DATA,Inventory,Stock master + Dec 2568 ending,25,Data In; Data Out; Data Inventory; Cost (ด.11); Cost (ด.12); Usages Total,HIGH
+BCJ-202512.xls,.xls,439808,TRANSACTION DATA,Finance,Bank journal Dec 2025,2,Bank Journal; Bank Reconciliation,HIGH
+BSJ-202512.xls,.xls,322560,TRANSACTION DATA,Finance,Bank journal Dec 2025,2,Bank Journal; Bank Reconciliation,HIGH
+DataPostManual. - ปี68.xls,.xls,6940160,TRANSACTION DATA,Finance,GL transaction dump,2,Data; 1461-ปี67,HIGH
+FinReport-202512.xls,.xls,517632,REPORT DATA,Finance,Year-end TB/BS/P&L,6,Trial Balance; Working Paper; Profit Loss; Profit Loss Compare; Balance Sheet; งบการเปลี่ยนแปลงส่วน,HIGH
+GJ-202512-No.1.xls,.xls,971776,TRANSACTION DATA,Finance,General journal Dec 2025,1,General Journal,HIGH
+GJ-202512-No.2.xls,.xls,389632,TRANSACTION DATA,Finance,General journal Dec 2025,1,General Journal,HIGH
+GJ-202512-No.3.xls,.xls,144896,TRANSACTION DATA,Finance,General journal Dec 2025,1,General Journal,HIGH
+Purchase Tax2512.xlsx,.xlsx,38262,REPORT DATA,Tax,VAT Dec 2512,2,VAT-IN; VAT-IN (2),HIGH
+Sales Tax2512.xlsx,.xlsx,2201622,REPORT DATA,Tax,VAT Dec 2512,12,001-CDS; 006-CPN; 010-CPN; 012-CPN; 024-CPN; 025-CPN,HIGH
+Sales00-2512.xlsx,.xlsx,394760,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,000-Off; Usages; Data Outล; DAYSALE(Sort By Date); Product Detail; Product Group,HIGH
+Sales01-2512.xlsx,.xlsx,30868899,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,001-CDS; Usages; Data Out; DAYSALE(Sort By Date); Product Group; Product Detail,HIGH
+Sales06-2512.xlsx,.xlsx,481073,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,006-CPN; Usages; Data Out; DAYSALE(Sort By Date); Product Group; Product Detail,HIGH
+Sales10-2512.xlsx,.xlsx,444897,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,010-CPN; Data Out; Usages; DAYSALE(Sort By Date); Product Detail; Product Group,HIGH
+Sales12-2512.xlsx,.xlsx,472952,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,012-CPN; Usages; Data Out; DAYSALE(Sort By Date); Product Detail; Product Group,HIGH
+Sales24-2512.xlsx,.xlsx,405499,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,024-CPN; Usages; Data Out; DAYSALE(Sort By Date); Product Detail; Product Group,HIGH
+Sales25-2512.xlsx,.xlsx,418283,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,025-CPN; Usages; Data Out; DAYSALE(Sort By Date); Product Detail; Product Group,HIGH
+Sales26-2512.xlsx,.xlsx,424152,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,026-CPN; Usages; Product Detail; Data Out; DAYSALE(Sort By Date); Product Group,HIGH
+Sales28-2512.xlsx,.xlsx,425295,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,028-CPN; Usages; Data Out; DAYSALE(Sort By Date); Product Detail; Product Group,HIGH
+Sales30-2512.xlsx,.xlsx,460039,TRANSACTION DATA,Sales/POS,Per-shop sales Dec 2512,8,030-CPN; Usages; Data Out; DAYSALE(Sort By Date); Product Detail; Product Group,HIGH

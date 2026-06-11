@@ -1,0 +1,11 @@
+source,sheet_or_scope,role,notes,count,confidence
+ASAD_Inventory202512.xls,Ending,PRIMARY,Dec 2568 closing qty by product group,188,High
+ASAD_Inventory202512.xls,Product Group,PRIMARY,Product group master + sell price,3676,High
+ASAD_Inventory202512.xls,Product Detail,PRIMARY,SKU-level variants,995,High
+ASAD_Inventory202512.xls,Shop Detail,PRIMARY,Branch / shop master,183,High
+ASAD_Inventory202512.xls,Supplier Detail,PRIMARY,Supplier master,27,Medium
+ASAD_Inventory202512.xls,Customer Detail,PRIMARY,Customer master (limited rows),3,Low
+ASAD_Inventory202512.xls,Employee Detail,PRIMARY,Staff master,30,Medium
+ASAD_Inventory202512.xls,Detail Inventory,VALIDATION,Stale header date 31/12/2551 — do not use,112,Low
+Stockcard2025/,per-product xlsx,VALIDATION,Movement audit per product group,100,Medium
+FinReport-202512.xls,TB 13xx accounts,VALIDATION,"GL inventory value 2,007,766.55",5,High

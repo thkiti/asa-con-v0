@@ -196,6 +196,12 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "Assets, liabilities, and equity from posted journal activity"
         ),
         available(
+          "retained-earnings",
+          "Retained Earnings",
+          "/finance/reports/retained-earnings",
+          "Posted account 301 plus net income — economic equity before close"
+        ),
+        available(
           "manual-journal",
           "Manual Journal",
           "/finance/journal-entries",

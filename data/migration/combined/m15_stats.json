@@ -1,0 +1,23 @@
+{
+  "asad": {
+    "productRows": 69,
+    "subtotalRows": 4,
+    "recoveredProducts": 1585382.3040837485,
+    "recoveredSubtotals": 1585382.2899999998,
+    "recoveredWith1311": 2008974.2799999998,
+    "grandTotal": 1585382.28
+  },
+  "asas": {
+    "productRows": 61,
+    "subtotalRows": 4,
+    "recoveredSubtotals": 2268125.31,
+    "grandTotal": 2268125.31,
+    "cost12LinkPct": 76.78362573099416
+  },
+  "readiness": {
+    "asadInventoryValuationBefore": 35,
+    "asasInventoryValuationBefore": 25,
+    "asadInventoryValuationAfter": 88,
+    "asasInventoryValuationAfter": 95
+  }
+}

@@ -1,0 +1,8 @@
+file,sheet,role,notes,row_or_account_count,total_debit,total_credit,confidence
+FinReport-202512.xls,Trial Balance,PRIMARY,Closing TB 31/12/2025,197,8295763.67,8295763.67,High
+FinReport-202512.xls,Balance Sheet / P&L,VALIDATION,Summary statements,,,,Medium
+AsadData68.xls,Data,SECONDARY,Full GL lines incl. year-end close,60047,,,High
+GJ-202512-no.1.xls,General Journal,SECONDARY,Dec 2025 operational GJ,,,,Medium
+GJ-202512_No.2.xls,General Journal,SECONDARY,Dec 2025 close + revenue lines,,,,High
+SJ000-202512.xls,Sales Journal,SECONDARY,Sales journal HO Dec 2025,,,,Low
+SJ001-202512.xls,Sales Journal,SECONDARY,Sales journal HO Dec 2025,,,,Low

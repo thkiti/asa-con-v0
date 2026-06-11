@@ -1,0 +1,74 @@
+productCode,productName,qty,unit,unitCost,inventoryValue,sourceSheet,effectiveDate
+1301,ยอดรวมเครื่องจักรและอุปกรณ์,9,,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1302,ยอดรวมลูกกุญแจ,23595,,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1303,ยอดรวมวัสดุรองเท้า,31474,,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1304,ยอดรวมแม่กุญแจ,8,,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1019018,กุญแจบ้าน(เล็ก)ธรรมดาของใน,6182,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1019025,กุญแจบ้าน(ใหญ่)ธรรมดาของใน,7563,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1029017,กุญแจบ้านบิทของในแบบที่ 1,5,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1029024,กุญแจบ้านบิทของในแบบที่ 2,472,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1039016,กุญแจบ้านครอสของใน,97,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1049015,กุญแจบ้านพิเศษของใน,681,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1059014,กุญแจบ้าน(ตัด/นิเคิล)พิเศษของในแบบที่ 1,361,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+1059021,กุญแจบ้าน(ตัด/นิเคิล)พิเศษของในแบบที่ 2,866,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+11019015,กุญแจรถแบบธรรมดาของใน,1291,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+12019014,กุญแจมอเตอร์ไซค์แบบธรรมดาของใน,1810,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+21019012,กุญแจรถหัวยางของในแบบธรรมดาแบบที่ 1,226,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+21019029,กุญแจรถหัวยางของในแบบธรรมดาแบบที่ 2,884,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+21029011,กุญแจรถหัวยางของในมีสติ๊กเกอร์,715,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+21039010,กุญแจรถพิเศษแบบอื่น ๆ,410,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+22019011,กุญแจมอเตอร์ไซค์หัวยางของในแบบธรรมดา,789,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+22029010,กุญแจมอเตอร์ไซค์หัวยางของในแบบมีสติ๊กเกอร์,440,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+31019019,กุญแจรถตัดเลเซอร์ของในแบบธรรมดา,268,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+31029018,กุญแจรถตัดเลเซอร์ของในแบบมีสติ๊กเกอร์,139,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+31039017,กุญแจตัดเลเซอร์ของในแบบดัดแปลง,19,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+31039024,กุญแจตัดเลเซอร์ของในแบบเจาะรู,211,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+36019014,กุญแจ Immobilizer แบบธรรมดา,39,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+41010082,"HONDA, TOYOTA 2,3,4 BUTTON",127,ดอก,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+51010010,CREPINA # 25,19,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+51010027,CREPINA # 21,390,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+51010041,CREPINA # 18,374,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+51010058,CREPINA # 122,317,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+51010065,CREPINA # 116,2715,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+51030031,LUXE TOPLIFT # XL,4632,คู่,9.47,43865.04,ASAD_Inventory202512.xls/Ending,2026-01-01
+51030041,"LUXE TOPLIFT # M,L",1007,คู่,8.32,8378.24,ASAD_Inventory202512.xls/Ending,2026-01-01
+51030051,BI-COMPONENT # XL (20),523,คู่,11.8,6171.4,ASAD_Inventory202512.xls/Ending,2026-01-01
+51030061,"BI-COMPONENT # M,L (16,17)",2681,คู่,10.87,29142.47,ASAD_Inventory202512.xls/Ending,2026-01-01
+55010016,ATILA HALF SOLE BLACK # H,92,คู่,33.76,3105.92,ASAD_Inventory202512.xls/Ending,2026-01-01
+55020053,NATURAL SOLE,336,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+55030014,TPU RING HALE # 3,10,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+55030021,TPU DIAMANTINE HALF SOLE #3,1960,,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+55040011,TPU DIAMOND HALF SOLE # 3,3613,คู่,42.56,153769.28,ASAD_Inventory202512.xls/Ending,2026-01-01
+55040021,TPU BELLA HALF SOLE # 3,85,คู่,42.56,3617.6,ASAD_Inventory202512.xls/Ending,2026-01-01
+55070019,TPU WAVE HALF SOLE # 3,7,คู่,25.33,177.31,ASAD_Inventory202512.xls/Ending,2026-01-01
+55080011,GALAXY HALF SOLE # F,17,คู่,26.2,445.4,ASAD_Inventory202512.xls/Ending,2026-01-01
+55990011, CONTI CORSO # D,110,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+61010024,LOGO HEEL # 70,416,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+61040014,"LEATHER HEEL # 00,# 8",542,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+61070059,TPU CHIC MIRROR HEEL #3,54,คู่,81.06,4377.24,ASAD_Inventory202512.xls/Ending,2026-01-01
+61100011,GALAXY HEEL,408,คู่,29.35,11974.8,ASAD_Inventory202512.xls/Ending,2026-01-01
+61110011,OCEAN HEEL,779,คู่,35.12,27358.48,ASAD_Inventory202512.xls/Ending,2026-01-01
+61120011,TPU HEEL BLACK # 2,21,คู่,53.73,1128.33,ASAD_Inventory202512.xls/Ending,2026-01-01
+65010013,LOGO SOLE # 5,1712,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+65030011,TPU LIGHT HALF SOLE # 5,3037,คู่,28.78,87404.86,ASAD_Inventory202512.xls/Ending,2026-01-01
+65030028,TPU BALLERINA HALE SOLE # 5,1161,คู่,38.3,44466.3,ASAD_Inventory202512.xls/Ending,2026-01-01
+65050019,TPU MIRROR HALF SOLE # 5,261,คู่,50.66,13222.26,ASAD_Inventory202512.xls/Ending,2026-01-01
+65100011,VIBRAM LONG SOLE # 45/46,81,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+65120062,PIRA,451,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+65150011,GALAXY HALF SOLE # H,1135,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+65160011,OCEAN HALF SOLE # H,1199,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+65170011,TPU HALF SOLE BLACK # 3,40,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+65180013,STARS HALF SOLE,1200,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+70030037,LEATHER INNERSOLE,21,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+80010012,แผ่นรองพื้นรองเท้า,50,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+91010032,เครื่องตัดกุญแจธรรมดา - Delta Semi Auto,3,เครื่อง,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+91050038,เครื่องซ่อมรองเท้า-Finisher,1,เครื่อง,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+91050045,เครื่องอัดพื้นรองเท้า-Sole Press,2,เครื่อง,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+91050120,เครื่องเย็บรองเท้า-Patching Machine,3,เครื่อง,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+92020030,PUSHBUTTON LOCK-UNICAN HEAVY DUTY,2,อัน,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+92020047,STILE LOCK-UNICAN NARROW WITH DIRVE ASSEMBLY,2,อัน,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+92020080,กุญแจลูกบิด Electronic สีนิกเกิ้ลด้าน,1,อัน,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+92020090,กุญแจ Deadbolt Electronic สีนิกเกิ้ลด้าน,1,อัน,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+92020100,กุญแจดิจิตอลสำหรับกระจกบานเปลือย,1,อัน,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+92020110,กุญแจก้านโยก Electronic สีนิกเกิ้ลด้าน,1,อัน,,,ASAD_Inventory202512.xls/Ending,2026-01-01
+99999999,ส้นและพื้นรองเท้าไม่มีบาร์โค้ด,18,คู่,,,ASAD_Inventory202512.xls/Ending,2026-01-01
