@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { SalesReconciliationView } from "@/components/finance/SalesReconciliationView"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function SalesReconciliationPage() {
   return (
@@ -7,7 +8,7 @@ export default function SalesReconciliationPage() {
       <Link href="/main/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Finance
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Sales reconciliation</h1>
+      <EntityContextPageHeading title="Sales reconciliation" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-zinc-600">
         Compare operational revenue and tender totals against GL balances.
       </p>

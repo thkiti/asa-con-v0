@@ -12,5 +12,5 @@ export default async function MasterBranchPage() {
     redirect("/unauthorized")
   }
 
-  return <BranchPage />
+  return <BranchPage documentEntityCode={session.documentEntityCode} />
 }

@@ -10,12 +10,17 @@ import { formatMoney } from "@/lib/pricing-ui/format-money"
 import { themeBtnPrimary, themeMuted } from "@/lib/theme/theme-classes"
 import { GroupSellingPriceModal } from "./GroupSellingPriceModal"
 import { PricingPageShell } from "./PricingPageShell"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 
 function digitsOnly(code: unknown): string {
   return String(code ?? "").replace(/\D/g, "")
 }
 
-export function SellingPricePage() {
+export function SellingPricePage({
+  documentEntityCode,
+}: {
+  documentEntityCode: DocumentEntityCode
+}) {
   const [products, setProducts] = useState<ProductWithActiveSellingPrice[]>([])
   const [codePrefix, setCodePrefix] = useState("")
   const [loading, setLoading] = useState(true)
@@ -77,6 +82,7 @@ export function SellingPricePage() {
   return (
     <PricingPageShell
       title="Selling Price"
+      documentEntityCode={documentEntityCode}
       description="Global retail price for all shops. Set by item or by reference group. Each save creates a new effective-dated row."
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { GeneralLedgerPage } from "@/components/finance/GeneralLedgerPage"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function Page() {
   return (
@@ -7,7 +8,7 @@ export default function Page() {
       <Link href="/main/finance" className="text-sm text-zinc-600 underline print:hidden">
         ← Finance
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">General Ledger</h1>
+      <EntityContextPageHeading title="General Ledger" className="mt-4 text-xl font-semibold" />
       <div className="mt-6">
         <GeneralLedgerPage />
       </div>

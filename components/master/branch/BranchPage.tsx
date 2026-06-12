@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { MasterPageShell } from "@/components/master/MasterPageShell"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
 import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
@@ -40,7 +41,7 @@ function isBootstrapBranch(code: string): boolean {
   return BOOTSTRAP_CODES.has(code)
 }
 
-export function BranchPage() {
+export function BranchPage({ documentEntityCode }: { documentEntityCode: DocumentEntityCode }) {
   const [mode, setMode] = useState<"active" | "trash">("active")
   const [search, setSearch] = useState("")
   const [appliedSearch, setAppliedSearch] = useState("")
@@ -166,6 +167,7 @@ export function BranchPage() {
   return (
     <MasterPageShell
       title="Branch"
+      documentEntityCode={documentEntityCode}
       description="Branch codes, names, HO/SH type, and active status. Address, phone, and tax ID are edited in the branch form."
     >
       <div className={masterPageLayout}>

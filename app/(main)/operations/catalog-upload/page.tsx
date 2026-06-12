@@ -1,10 +1,10 @@
 import Link from "next/link"
 import { CatalogUploadController } from "@/components/catalog-upload/CatalogUploadController"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 import {
   themeLinkMuted,
   themeMuted,
   themePage,
-  themePageTitle,
 } from "@/lib/theme/theme-classes"
 
 export default function CatalogUploadPage() {
@@ -14,7 +14,10 @@ export default function CatalogUploadPage() {
         <Link href="/main/operations" className={`text-sm ${themeLinkMuted}`}>
           ← Operations
         </Link>
-        <h1 className={`mt-3 ${themePageTitle}`}>Export Image To Cloud</h1>
+        <EntityContextPageHeading
+          title="Export Image To Cloud"
+          className="mt-3 text-2xl font-semibold tracking-tight"
+        />
         <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>
           Scan the standard catalog product images folder, verify product codes,
           and review files before cloud upload.

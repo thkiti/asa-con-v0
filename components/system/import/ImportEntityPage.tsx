@@ -33,12 +33,17 @@ import { ArchiveStatusPanel } from "./ArchiveStatusPanel"
 import { ImportReportSummary } from "./ImportReportSummary"
 import { StaffImportNotices } from "./StaffImportNotices"
 import { SystemImportShell } from "./SystemImportShell"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 
 type ImportEntityPageProps = {
   entity: ImportEntityKey
+  documentEntityCode: DocumentEntityCode
 }
 
-export function ImportEntityPage({ entity }: ImportEntityPageProps) {
+export function ImportEntityPage({
+  entity,
+  documentEntityCode,
+}: ImportEntityPageProps) {
   const router = useRouter()
   const config = useMemo(() => getImportEntityConfig(entity), [entity])
 
@@ -168,6 +173,7 @@ export function ImportEntityPage({ entity }: ImportEntityPageProps) {
   return (
     <SystemImportShell
       title={config.title}
+      documentEntityCode={documentEntityCode}
       onLogout={onLogout}
       logoutPending={logoutPending}
     >

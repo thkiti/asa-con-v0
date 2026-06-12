@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { MasterPageShell } from "@/components/master/MasterPageShell"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
 import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
@@ -41,7 +42,11 @@ const ROLE_OPTIONS = [
   "SH_STAFF",
 ] as const
 
-export function StaffPage() {
+type StaffPageProps = {
+  documentEntityCode: DocumentEntityCode
+}
+
+export function StaffPage({ documentEntityCode }: StaffPageProps) {
   const [mode, setMode] = useState<"active" | "trash">("active")
   const [search, setSearch] = useState("")
   const [appliedSearch, setAppliedSearch] = useState("")
@@ -213,6 +218,7 @@ export function StaffPage() {
   return (
     <MasterPageShell
       title="Staff"
+      documentEntityCode={documentEntityCode}
       description="Staff accounts, roles, and branch assignment. Passwords are stored as hashes only."
     >
       <div className={masterPageLayout}>

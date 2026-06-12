@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { MasterPageShell } from "@/components/master/MasterPageShell"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
 import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
@@ -48,7 +49,11 @@ function referenceIdFromRow(row: ProductReferenceListItem): string | null {
   return row.hasReference ? row.rowId : null
 }
 
-export function ProductReferencePage() {
+export function ProductReferencePage({
+  documentEntityCode,
+}: {
+  documentEntityCode: DocumentEntityCode
+}) {
   const [mode, setMode] = useState<"active" | "trash">("active")
   const [productCode, setProductCode] = useState("")
   const [productName, setProductName] = useState("")
@@ -237,6 +242,7 @@ export function ProductReferencePage() {
   return (
     <MasterPageShell
       title="Product & Reference Stock"
+      documentEntityCode={documentEntityCode}
       description="Maintain product names, types, and hook reference links. Does not change stock balances or posting rules."
     >
       <div className={masterPageLayout}>

@@ -8,5 +8,5 @@ export default async function PricingHubPage() {
   if (!session) redirect("/login")
   if (!canAccessMasterDatabase(session.role)) redirect("/unauthorized")
 
-  return <PricingHubView />
+  return <PricingHubView documentEntityCode={session.documentEntityCode} />
 }

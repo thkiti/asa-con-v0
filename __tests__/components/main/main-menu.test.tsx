@@ -98,19 +98,16 @@ describe("MainMenuView", () => {
     expect(html).toContain("HO999")
   })
 
-  it("renders active entity label ASAS", () => {
+  it("renders entity prefix in main menu title", () => {
     const html = renderToStaticMarkup(<MainMenuView user={hoAdmin} />)
-    expect(html).toContain('data-testid="session-entity-label"')
-    expect(html).toContain("ASAS")
+    expect(html).toContain('data-testid="main-menu-title"')
+    expect(html).toContain("ASAS • MAIN MENU")
   })
 
-  it("renders session entity toggle for HO999 HO_FINANCE", () => {
+  it("does not render post-login entity switching controls", () => {
     const html = renderToStaticMarkup(<MainMenuView user={hoFinance} />)
-    expect(html).toContain('data-testid="session-entity-toggle"')
-  })
-
-  it("does not render session entity toggle for HO_OPERATIONS", () => {
-    const html = renderToStaticMarkup(<MainMenuView user={hoOperations} />)
     expect(html).not.toContain('data-testid="session-entity-toggle"')
+    expect(html).not.toContain('data-testid="session-entity-control"')
+    expect(html).not.toContain('data-testid="session-entity-label"')
   })
 })

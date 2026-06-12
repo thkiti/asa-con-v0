@@ -83,7 +83,6 @@ export function PeriodAuditTimelinePage({ periodId }: PeriodAuditTimelinePagePro
           Close evidence
         </Link>
       ) : null}
-      <h1 className="no-print mt-4 text-xl font-semibold">Period audit timeline</h1>
       <p className="no-print mt-2 text-sm text-zinc-600">
         Read-only chronological view of period lifecycle, close evidence, reopen workflow,
         and reopen execution.

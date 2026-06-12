@@ -12,5 +12,5 @@ export default async function MasterStaffPage() {
     redirect("/unauthorized")
   }
 
-  return <StaffPage />
+  return <StaffPage documentEntityCode={session.documentEntityCode} />
 }

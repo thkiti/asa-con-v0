@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { StockDocumentListController } from "@/components/stock/StockDocumentListController"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function ShopStockDocumentsPage() {
   return (
@@ -7,7 +8,7 @@ export default function ShopStockDocumentsPage() {
       <Link href="/shop" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Shop
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Stock documents</h1>
+      <EntityContextPageHeading title="Stock Document" />
       <p className="mt-2 text-zinc-600">
         Shop transfer, performance, and adjustment documents.
       </p>

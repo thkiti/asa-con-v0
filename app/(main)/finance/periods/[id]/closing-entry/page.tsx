@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ClosingEntryPage } from "@/components/finance/ClosingEntryPage"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -13,7 +14,7 @@ export default async function FinancePeriodClosingEntryPage({ params }: PageProp
       <Link href="/finance/periods" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Accounting periods
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Closing entry</h1>
+      <EntityContextPageHeading title="Closing entry" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-sm text-zinc-600">
         Preview and post the period closing entry while the accounting period is open.
       </p>

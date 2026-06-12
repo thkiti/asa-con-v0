@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { JournalEntryInquiryView } from "@/components/finance/JournalEntryInquiryView"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -13,7 +14,7 @@ export default async function Page({ params }: PageProps) {
       <Link href="/finance/journal-entries" className="text-sm text-zinc-600 underline">
         ← Manual journals
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Journal inquiry</h1>
+      <EntityContextPageHeading title="Journal inquiry" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-zinc-600">
         Voucher, journal lines, reversal lineage, and reversal status.
       </p>

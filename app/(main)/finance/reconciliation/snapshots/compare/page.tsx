@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ReconciliationSnapshotCompareClient } from "@/components/finance/ReconciliationSnapshotCompareView"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   searchParams: Promise<{ left?: string; right?: string }>
@@ -18,7 +19,7 @@ export default async function FinanceReconciliationSnapshotComparePage({
       >
         ← Snapshots
       </Link>
-      <h1 className="no-print mt-4 text-xl font-semibold">Compare snapshots</h1>
+      <EntityContextPageHeading title="Compare snapshots" className="no-print mt-4 text-xl font-semibold" />
       <p className="no-print mt-2 text-sm text-zinc-600">
         Side-by-side diff of two frozen captures — payload data only, computed in
         the browser.

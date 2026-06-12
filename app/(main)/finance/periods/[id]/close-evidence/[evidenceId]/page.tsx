@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CloseEvidencePage } from "@/components/finance/CloseEvidencePage"
 import { buildCloseEvidenceHistoryPath } from "@/lib/finance-ui/close-evidence"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   params: Promise<{ id: string; evidenceId: string }>
@@ -23,7 +24,7 @@ export default async function FinancePeriodCloseEvidenceByIdPage({ params }: Pag
       >
         Close history
       </Link>
-      <h1 className="no-print mt-4 text-xl font-semibold">Close evidence record</h1>
+      <EntityContextPageHeading title="Close evidence record" className="no-print mt-4 text-xl font-semibold" />
       <p className="no-print mt-2 text-sm text-zinc-600">
         Immutable audit record for a specific HARD close event. Export and print use this loaded
         row only.

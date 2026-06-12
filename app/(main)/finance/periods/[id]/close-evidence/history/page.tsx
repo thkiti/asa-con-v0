@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CloseEvidenceHistoryPage } from "@/components/finance/CloseEvidenceHistoryPage"
 import { buildCloseEvidencePath } from "@/lib/finance-ui/close-evidence"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -23,7 +24,7 @@ export default async function FinancePeriodCloseEvidenceHistoryPage({ params }: 
       >
         Latest close evidence
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Close evidence history</h1>
+      <EntityContextPageHeading title="Close evidence history" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-sm text-zinc-600">
         All immutable HARD close records for this period, newest first.
       </p>

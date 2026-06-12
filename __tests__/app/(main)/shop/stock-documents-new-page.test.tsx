@@ -30,7 +30,7 @@ describe("NewStockDocumentPage", () => {
       searchParams: Promise.resolve({ type: "PERFORMANCE" }),
     })
     const html = renderToStaticMarkup(element)
-    expect(html).toContain("New stock document")
+    expect(html).toContain("ASAS • PERFORMANCE")
     expect(html).toContain("Loading document")
   })
 })

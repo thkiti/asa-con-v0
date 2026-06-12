@@ -8,5 +8,5 @@ export default async function SellingPriceRoutePage() {
   if (!session) redirect("/login")
   if (!canAccessMasterDatabase(session.role)) redirect("/unauthorized")
 
-  return <SellingPricePage />
+  return <SellingPricePage documentEntityCode={session.documentEntityCode} />
 }

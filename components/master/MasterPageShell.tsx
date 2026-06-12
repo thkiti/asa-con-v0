@@ -1,6 +1,10 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import {
+  formatEntityContextTitleOrDefault,
+  type DocumentEntityCode,
+} from "@/lib/legal-entity"
+import {
   themeLinkMuted,
   themeMuted,
   themePage,
@@ -9,6 +13,7 @@ import {
 
 type MasterPageShellProps = {
   title: string
+  documentEntityCode?: DocumentEntityCode
   description?: string
   backHref?: string
   backLabel?: string
@@ -17,11 +22,17 @@ type MasterPageShellProps = {
 
 export function MasterPageShell({
   title,
+  documentEntityCode,
   description,
   backHref = "/master",
   backLabel = "← ADMINISTRATION",
   children,
 }: MasterPageShellProps) {
+  const displayTitle = formatEntityContextTitleOrDefault(
+    documentEntityCode,
+    title
+  )
+
   return (
     <main className={`mx-auto max-w-6xl p-6 ${themePage}`}>
       <header className="border-b border-border pb-4">
@@ -30,7 +41,12 @@ export function MasterPageShell({
             {backLabel}
           </Link>
         ) : null}
-        <h1 className={`mt-3 ${themePageTitle}`}>{title}</h1>
+        <h1
+          className={`mt-3 ${themePageTitle}`}
+          data-testid="entity-context-page-title"
+        >
+          {displayTitle}
+        </h1>
         {description ? (
           <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>{description}</p>
         ) : null}

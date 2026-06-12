@@ -41,7 +41,7 @@ describe("EditStockDocumentPage", () => {
     })
     const html = renderToStaticMarkup(element)
 
-    expect(html).toContain("Edit stock document")
+    expect(html).toContain("ASAS • STOCK DOCUMENT")
     expect(html).toContain("Stock documents")
     expect(html).toContain('class="p-8"')
   })

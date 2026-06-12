@@ -1,5 +1,14 @@
+import { redirect } from "next/navigation"
 import { ImportEntityPage } from "@/components/system/import/ImportEntityPage"
+import { getSession } from "@/lib/auth"
 
-export default function SystemImportProductPage() {
-  return <ImportEntityPage entity="product" />
+export default async function SystemImportProductPage() {
+  const session = await getSession()
+  if (!session) {
+    redirect("/login")
+  }
+
+  return (
+    <ImportEntityPage entity="product" documentEntityCode={session.documentEntityCode} />
+  )
 }

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ManualJournalEntryPage } from "@/components/finance/ManualJournalEntryPage"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function Page() {
   return (
@@ -7,7 +8,7 @@ export default function Page() {
       <Link href="/finance/journal-entries" className="text-sm text-zinc-600 underline">
         ← Manual journals
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">New manual journal</h1>
+      <EntityContextPageHeading title="New manual journal" className="mt-4 text-xl font-semibold" />
       <div className="mt-6">
         <ManualJournalEntryPage />
       </div>

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ReconciliationSnapshotDetailClient } from "@/components/finance/ReconciliationSnapshotDetailView"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -18,7 +19,7 @@ export default async function FinanceReconciliationSnapshotDetailPage({
       >
         ← Snapshots
       </Link>
-      <h1 className="no-print mt-4 text-xl font-semibold">Snapshot detail</h1>
+      <EntityContextPageHeading title="Snapshot detail" className="no-print mt-4 text-xl font-semibold" />
       <p className="no-print mt-2 text-sm text-zinc-600">
         Immutable frozen capture — dashboard rows and transaction issues from
         payload only.

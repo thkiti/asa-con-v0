@@ -6,6 +6,7 @@ import { CheckReceiptReceiptTable } from "@/components/operations/check-receipt/
 import { CompactControlRow } from "@/components/shop-ui/CompactControlRow"
 import { CompactFieldBox } from "@/components/shop-ui/CompactFieldBox"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { formatEntityContextTitle } from "@/lib/legal-entity"
 import type { CheckReceiptResult } from "@/lib/operations/check-receipt-types"
 import { fetchCheckReceipt } from "@/lib/operations-ui/check-receipt-client"
 import { pickDefaultShopBranchId } from "@/lib/shop/shop-branch-display"
@@ -97,7 +98,12 @@ export function CheckReceiptPage({ user }: CheckReceiptPageProps) {
         <Link href="/main/operations" className={`text-sm ${themeLinkMuted}`}>
           ← Operations
         </Link>
-        <h1 className={`mt-3 ${themePageTitle}`}>Check Receipt</h1>
+        <h1
+          className={`mt-3 ${themePageTitle}`}
+          data-testid="entity-context-page-title"
+        >
+          {formatEntityContextTitle(user.documentEntityCode, "Check Receipt")}
+        </h1>
         <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>
           Review receipts by shop and month. Hover bank-transfer rows to preview
           uploaded slips.

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ReopenEvidencePage } from "@/components/finance/ReopenEvidencePage"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -16,7 +17,7 @@ export default async function FinancePeriodReopenEvidencePage({ params }: PagePr
       >
         ← Accounting periods
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Reopen evidence</h1>
+      <EntityContextPageHeading title="Reopen evidence" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-sm text-zinc-600">
         Audited reopen events with actor snapshot, reason, and status transition.
       </p>

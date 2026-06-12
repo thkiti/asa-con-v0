@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ReconciliationSnapshotsPage } from "@/components/finance/ReconciliationSnapshotsPage"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   searchParams: Promise<{ branchId?: string }>
@@ -18,7 +19,7 @@ export default async function FinanceReconciliationSnapshotsPage({
       >
         ← Reconciliation
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Reconciliation snapshots</h1>
+      <EntityContextPageHeading title="Reconciliation snapshots" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-zinc-600">
         Read-only frozen captures of reconciliation dashboard and transaction
         issues. Notes are visible on each snapshot detail page.

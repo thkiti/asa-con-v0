@@ -1,7 +1,6 @@
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
 import { mainMenuProfileClass } from "@/lib/main-ui/main-menu-layout"
 import { themeMuted } from "@/lib/theme/theme-classes"
-import { SessionEntityControl } from "./SessionEntityControl"
 
 type MainMenuUserCardProps = {
   user: SessionUserApi
@@ -24,7 +23,6 @@ export function MainMenuUserCard({ user }: MainMenuUserCardProps) {
           </span>
         ) : null}
       </p>
-      <SessionEntityControl user={user} />
     </section>
   )
 }

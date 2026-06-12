@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { CloseReadinessPage } from "@/components/finance/CloseReadinessPage"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -15,7 +16,7 @@ export default async function FinancePeriodCloseReadinessPage({
       <Link href="/finance/periods" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Accounting periods
       </Link>
-      <h1 className="mt-4 text-xl font-semibold">Close readiness</h1>
+      <EntityContextPageHeading title="Close readiness" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-sm text-zinc-600">
         Is this accounting period safe to close? Review reconciliation evidence,
         frozen snapshots, posting lock state, and audit artifacts.

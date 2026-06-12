@@ -174,7 +174,9 @@ describe("System Import UI", () => {
   })
 
   it("dashboard renders Thai system import description", () => {
-    const html = renderToStaticMarkup(<ImportDashboard />)
+    const html = renderToStaticMarkup(
+      <ImportDashboard documentEntityCode="AS" />
+    )
     expect(html).toContain(SYSTEM_IMPORT_DESCRIPTION)
   })
 
@@ -240,7 +242,9 @@ describe("System Import UI", () => {
   })
 
   it("entity page disables Apply before successful dry-run", () => {
-    const html = renderToStaticMarkup(<ImportEntityPage entity="branch" />)
+    const html = renderToStaticMarkup(
+      <ImportEntityPage entity="branch" documentEntityCode="AS" />
+    )
     expect(html).toContain("ต้อง Dry Run สำเร็จก่อน (ไม่มี errors) จึงจะ Apply ได้")
     expect(html).toMatch(/disabled=""[\s\S]*>Apply<\/button>/)
   })
@@ -299,7 +303,9 @@ describe("System Import UI", () => {
   })
 
   it("staff page shows bootstrap mapping copy in Thai", () => {
-    const html = renderToStaticMarkup(<ImportEntityPage entity="staff" />)
+    const html = renderToStaticMarkup(
+      <ImportEntityPage entity="staff" documentEntityCode="AS" />
+    )
     expect(html).toContain("staffId 001 → สำนักงานใหญ่ HO999")
     expect(html).toContain("staffId 001 → ผู้ดูแลระบบ")
     expect(html).toContain("พนักงานอื่น → สาขา SH999")
@@ -323,7 +329,9 @@ describe("System Import UI", () => {
   })
 
   it("dashboard renders Logout control", () => {
-    const html = renderToStaticMarkup(<ImportDashboard />)
+    const html = renderToStaticMarkup(
+      <ImportDashboard documentEntityCode="AS" />
+    )
     expect(html).toContain("Logout")
   })
 })

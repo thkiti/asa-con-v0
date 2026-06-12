@@ -1,5 +1,9 @@
 import Link from "next/link"
 import {
+  formatEntityContextTitleOrDefault,
+  type DocumentEntityCode,
+} from "@/lib/legal-entity"
+import {
   mainMenuCardHintClass,
   mainMenuCardTitleClass,
 } from "@/lib/main-ui/main-menu-layout"
@@ -31,7 +35,16 @@ const PRICING_ENTRIES = [
   },
 ] as const
 
-export function PricingHubView() {
+type PricingHubViewProps = {
+  documentEntityCode: DocumentEntityCode
+}
+
+export function PricingHubView({ documentEntityCode }: PricingHubViewProps) {
+  const displayTitle = formatEntityContextTitleOrDefault(
+    documentEntityCode,
+    "Pricing"
+  )
+
   return (
     <main className={`mx-auto max-w-5xl p-6 ${themePage}`}>
       <header className="border-b border-border pb-4">
@@ -41,7 +54,12 @@ export function PricingHubView() {
         >
           ← ADMINISTRATION
         </Link>
-        <h1 className={`mt-3 ${themePageTitle}`}>Pricing</h1>
+        <h1
+          className={`mt-3 ${themePageTitle}`}
+          data-testid="entity-context-page-title"
+        >
+          {displayTitle}
+        </h1>
         <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>
           Transfer policy, retail selling prices, and future promotion pricing.
         </p>
@@ -50,21 +68,22 @@ export function PricingHubView() {
       <nav className="mt-6 grid gap-3 sm:grid-cols-2" aria-label="Pricing maintenance">
         {PRICING_ENTRIES.map((entry) =>
           entry.available ? (
-            <Link key={entry.title} href={entry.href} className={themeMenuCard}>
+            <Link
+              key={entry.href}
+              href={entry.href}
+              className={`${themeMenuCard} block p-4`}
+            >
               <span className={mainMenuCardTitleClass}>{entry.title}</span>
-              <span className={mainMenuCardHintClass}>{entry.hint}</span>
+              <span className={`mt-1 block ${mainMenuCardHintClass}`}>{entry.hint}</span>
             </Link>
           ) : (
             <div
               key={entry.title}
-              className={`${themeMenuCard} cursor-not-allowed opacity-70`}
-              aria-disabled="true"
+              className={`${themeMenuCard} block cursor-not-allowed p-4 opacity-60`}
+              aria-disabled
             >
-              <span className={mainMenuCardTitleClass}>
-                {entry.title}{" "}
-                <span className="text-xs font-normal text-amber-700">(Planned)</span>
-              </span>
-              <span className={mainMenuCardHintClass}>{entry.hint}</span>
+              <span className={mainMenuCardTitleClass}>{entry.title}</span>
+              <span className={`mt-1 block ${mainMenuCardHintClass}`}>{entry.hint}</span>
             </div>
           )
         )}

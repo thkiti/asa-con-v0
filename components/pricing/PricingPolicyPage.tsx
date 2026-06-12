@@ -8,6 +8,7 @@ import {
 } from "@/lib/pricing-ui/fetchers"
 import { themeBtnPrimary, themeMuted } from "@/lib/theme/theme-classes"
 import { PricingPageShell } from "./PricingPageShell"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import { PricingPolicyCreateModal } from "./PricingPolicyCreateModal"
 
 function formatDate(iso: string): string {
@@ -20,7 +21,11 @@ function markupDisplay(decimal: string): string {
   return `${(n * 100).toFixed(2)}%`
 }
 
-export function PricingPolicyPage() {
+export function PricingPolicyPage({
+  documentEntityCode,
+}: {
+  documentEntityCode: DocumentEntityCode
+}) {
   const [items, setItems] = useState<PricingPolicyRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +63,7 @@ export function PricingPolicyPage() {
   return (
     <PricingPageShell
       title="Pricing Policy"
+      documentEntityCode={documentEntityCode}
       description="HO → SHOP transfer pricing: markup % then rounding. Active row has no end date."
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">

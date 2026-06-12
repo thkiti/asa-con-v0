@@ -7,6 +7,10 @@ export {
   type DocumentEntityCode,
 } from "./constants"
 export {
+  formatEntityContextTitle,
+  formatEntityContextTitleOrDefault,
+} from "./context-title"
+export {
   DocumentEntityError,
   assertDocumentEntityChangeAllowed,
   canChooseDocumentEntity,

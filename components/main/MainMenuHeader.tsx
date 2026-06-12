@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback, useState } from "react"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { formatEntityContextTitle } from "@/lib/legal-entity"
 import {
   mainMenuBackLinkClass,
   mainMenuBackLinkSlotClass,
@@ -63,7 +64,7 @@ export function MainMenuHeader({
           )}
         </div>
         <h1 className={mainMenuTitleClass} data-testid="main-menu-title">
-          {title}
+          {formatEntityContextTitle(user.documentEntityCode, title)}
         </h1>
         <MainMenuUserCard user={user} />
       </div>

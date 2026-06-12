@@ -22,6 +22,7 @@ import { canEnableApplyFromResult } from "@/lib/system-ui/import-state"
 import { ApplyConfirmDialog } from "./ApplyConfirmDialog"
 import { EntityImportCard } from "./EntityImportCard"
 import { SystemImportShell } from "./SystemImportShell"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 
 function latestReportForEntity(
   reports: ImportReportListItemView[],
@@ -30,7 +31,11 @@ function latestReportForEntity(
   return reports.find((item) => item.entity === entity) ?? null
 }
 
-export function ImportDashboard() {
+export function ImportDashboard({
+  documentEntityCode,
+}: {
+  documentEntityCode: DocumentEntityCode
+}) {
   const router = useRouter()
   const [status, setStatus] = useState<ImportStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -145,7 +150,12 @@ export function ImportDashboard() {
   const actionsBusy = loading || logoutPending
 
   return (
-    <SystemImportShell title="System Import Console" onLogout={onLogout} logoutPending={logoutPending}>
+    <SystemImportShell
+      title="System Import Console"
+      documentEntityCode={documentEntityCode}
+      onLogout={onLogout}
+      logoutPending={logoutPending}
+    >
       {loading ? <p className="text-sm text-zinc-600">กำลังโหลดสถานะ…</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 

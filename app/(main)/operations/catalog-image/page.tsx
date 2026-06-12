@@ -1,10 +1,10 @@
 import Link from "next/link"
 import { CatalogImageController } from "@/components/catalog-image/CatalogImageController"
+import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 import {
   themeLinkMuted,
   themeMuted,
   themePage,
-  themePageTitle,
 } from "@/lib/theme/theme-classes"
 
 export default function CatalogImagePage() {
@@ -14,7 +14,10 @@ export default function CatalogImagePage() {
         <Link href="/main/operations" className={`text-sm ${themeLinkMuted}`}>
           ← Operations
         </Link>
-        <h1 className={`mt-3 ${themePageTitle}`}>Catalog Image</h1>
+        <EntityContextPageHeading
+          title="Catalog Image"
+          className="mt-3 text-2xl font-semibold tracking-tight"
+        />
         <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>
           Open a catalog PDF, adjust crop, assign product codes, and save PNGs to
           the standard catalog product images folder.

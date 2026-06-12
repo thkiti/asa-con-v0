@@ -1,10 +1,15 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
+import {
+  formatEntityContextTitleOrDefault,
+  type DocumentEntityCode,
+} from "@/lib/legal-entity"
 import { SYSTEM_IMPORT_DESCRIPTION } from "@/lib/system-ui/import-entity-config"
 import { importButtonSecondaryClass } from "@/lib/system-ui/import-button-styles"
 
 type SystemImportShellProps = {
   title: string
+  documentEntityCode?: DocumentEntityCode
   backHref?: string
   backLabel?: string
   onLogout?: () => void
@@ -14,12 +19,18 @@ type SystemImportShellProps = {
 
 export function SystemImportShell({
   title,
+  documentEntityCode,
   backHref,
   backLabel = "← System Import",
   onLogout,
   logoutPending = false,
   children,
 }: SystemImportShellProps) {
+  const displayTitle = formatEntityContextTitleOrDefault(
+    documentEntityCode,
+    title
+  )
+
   return (
     <main className="p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -29,7 +40,12 @@ export function SystemImportShell({
               {backLabel}
             </Link>
           ) : null}
-          <h1 className="mt-4 text-xl font-semibold">{title}</h1>
+          <h1
+            className="mt-4 text-xl font-semibold"
+            data-testid="entity-context-page-title"
+          >
+            {displayTitle}
+          </h1>
           <p className="mt-2 max-w-3xl text-sm text-zinc-600">{SYSTEM_IMPORT_DESCRIPTION}</p>
         </div>
         {onLogout ? (
