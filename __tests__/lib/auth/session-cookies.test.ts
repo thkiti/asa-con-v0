@@ -11,6 +11,7 @@ import {
   BRANCH_CODE_COOKIE,
   BRANCH_ID_COOKIE,
   BRANCH_NAME_COOKIE,
+  DOCUMENT_ENTITY_CODE_COOKIE,
   ROLE_COOKIE,
   SESSION_COOKIE,
   SESSION_EXPIRES_COOKIE,
@@ -82,6 +83,7 @@ describe("session cookie helpers", () => {
       branchId: "branch-sh",
       branchCode: "SH001",
       branchName: "Shop Branch",
+      documentEntityCode: "AS",
     })
 
     setSessionCookies(cookieStore, user)
@@ -99,6 +101,7 @@ describe("session cookie helpers", () => {
       branchId: "branch-sh",
       branchCode: "SH001",
       branchName: "Shop Branch",
+      documentEntityCode: "AS",
     })
     expect(payload.sessionExpiresAt).toBe(String(now + SESSION_TTL_SECONDS * 1000))
     expect(options.get(SESSION_COOKIE)).toEqual(
@@ -119,6 +122,7 @@ describe("session cookie helpers", () => {
       [BRANCH_ID_COOKIE, "b"],
       [BRANCH_CODE_COOKIE, "c"],
       [BRANCH_NAME_COOKIE, "bn"],
+      [DOCUMENT_ENTITY_CODE_COOKIE, "AS"],
       [SESSION_EXPIRES_COOKIE, "9999999999999"],
     ])
 

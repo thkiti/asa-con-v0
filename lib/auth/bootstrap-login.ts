@@ -84,6 +84,10 @@ export async function bootstrapLogin(input: {
     staffId: staff.staffId,
     name: staff.name,
     branchId: staff.branch.id,
+    userId: staff.id,
+    branchCode: staff.branch.code,
+    branchName: staff.branch.name,
+    documentEntityCode: "AS",
   })
 
   const safeReturnTo = resolveSafeReturnTo(input.returnTo, staff.role as Role)

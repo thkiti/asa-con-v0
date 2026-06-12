@@ -20,6 +20,7 @@ const hoAdmin: SessionUserApi = {
   branchId: "b1",
   branchCode: "HO999",
   branchName: "Head Office",
+  documentEntityCode: "AS",
 }
 
 const hoFinance: SessionUserApi = {
@@ -30,6 +31,7 @@ const hoFinance: SessionUserApi = {
   branchId: "b1",
   branchCode: "HO999",
   branchName: "Head Office",
+  documentEntityCode: "AS",
 }
 
 const hoOperations: SessionUserApi = {
@@ -40,6 +42,7 @@ const hoOperations: SessionUserApi = {
   branchId: "b1",
   branchCode: "HO999",
   branchName: "Head Office",
+  documentEntityCode: "AS",
 }
 
 describe("MainMenuView", () => {
@@ -93,5 +96,21 @@ describe("MainMenuView", () => {
     expect(html).toContain("Admin User")
     expect(html).toContain("HO_ADMIN")
     expect(html).toContain("HO999")
+  })
+
+  it("renders active entity label ASAS", () => {
+    const html = renderToStaticMarkup(<MainMenuView user={hoAdmin} />)
+    expect(html).toContain('data-testid="session-entity-label"')
+    expect(html).toContain("ASAS")
+  })
+
+  it("renders session entity toggle for HO999 HO_FINANCE", () => {
+    const html = renderToStaticMarkup(<MainMenuView user={hoFinance} />)
+    expect(html).toContain('data-testid="session-entity-toggle"')
+  })
+
+  it("does not render session entity toggle for HO_OPERATIONS", () => {
+    const html = renderToStaticMarkup(<MainMenuView user={hoOperations} />)
+    expect(html).not.toContain('data-testid="session-entity-toggle"')
   })
 })

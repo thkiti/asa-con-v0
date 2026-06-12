@@ -1,6 +1,7 @@
 import type { LoginBranchOption } from "./login-branch-options"
 import type { SessionUserApi } from "./session-user-api"
 import type { BranchPreview, StaffPreview } from "./login-preview"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 
 import { mapLoginErrorCode } from "./login-ui-messages"
 
@@ -9,6 +10,7 @@ export type LoginRequest = {
   password: string
   branchCode: string
   returnTo?: string
+  documentEntityCode?: DocumentEntityCode
 }
 
 export type LoginSuccessResponse = {
@@ -104,6 +106,7 @@ export async function postCredentialLogin(
       password: input.password,
       branchCode: input.branchCode,
       returnTo: input.returnTo || undefined,
+      documentEntityCode: input.documentEntityCode,
     }),
   })
 
@@ -121,4 +124,25 @@ export async function postCredentialLogin(
     redirectTo: payload.redirectTo,
     user: payload.user,
   }
+}
+
+export async function patchDocumentEntity(
+  documentEntityCode: DocumentEntityCode
+): Promise<SessionUserApi> {
+  const response = await fetch("/api/auth/document-entity", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ documentEntityCode }),
+  })
+
+  const payload = await parseAuthJson(response)
+  if (!response.ok) {
+    throwMappedError(payload, response)
+  }
+
+  if (!payload.user) {
+    throw new LoginRequestError("Failed to update document entity")
+  }
+
+  return payload.user
 }

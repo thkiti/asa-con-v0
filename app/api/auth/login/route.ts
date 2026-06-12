@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       password: String(body.password ?? ""),
       branchCode: String(body.branchCode ?? ""),
       returnTo: body.returnTo,
+      documentEntityCode: body.documentEntityCode,
     })
 
     setSessionCookies(await cookies(), result.sessionUser)

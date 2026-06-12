@@ -1,3 +1,4 @@
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import type { Role } from "@/lib/shared"
 
 /** Minimal authenticated user — no password, no ORM types in UI layer. */
@@ -10,6 +11,8 @@ export type SessionUser = {
   branchId: string
   branchCode: string
   branchName: string
+  /** Legal entity for newly created documents — working context only. */
+  documentEntityCode: DocumentEntityCode
 }
 
 export type SessionCookiePayload = {
@@ -21,5 +24,6 @@ export type SessionCookiePayload = {
   branchId: string | undefined
   branchCode: string | undefined
   branchName: string | undefined
+  documentEntityCode: string | undefined
   sessionExpiresAt: string | undefined
 }

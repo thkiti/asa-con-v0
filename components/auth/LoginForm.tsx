@@ -1,6 +1,7 @@
 "use client"
 
 import { LoginBranchSelect } from "@/components/auth/LoginBranchSelect"
+import { LoginEntityToggle } from "@/components/auth/LoginEntityToggle"
 import { LoginPreviewInput } from "@/components/auth/LoginPreviewInput"
 import { ThemeSelector } from "@/components/theme/ThemeSelector"
 import { isLoginBranchAllowed } from "@/lib/auth/login-branch-match"
@@ -16,6 +17,11 @@ import {
   postStaffPreview,
 } from "@/lib/auth/login-client"
 import type { BranchPreview, StaffPreview } from "@/lib/auth/login-preview"
+import {
+  canChooseDocumentEntity,
+  DEFAULT_DOCUMENT_ENTITY_CODE,
+  type DocumentEntityCode,
+} from "@/lib/legal-entity"
 import {
   themeBtnPrimary,
   themeCard,
@@ -58,6 +64,8 @@ export function LoginForm() {
   const [staffFieldError, setStaffFieldError] = useState<string | null>(null)
   const [branchFieldError, setBranchFieldError] = useState<string | null>(null)
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [documentEntityCode, setDocumentEntityCode] =
+    useState<DocumentEntityCode>(DEFAULT_DOCUMENT_ENTITY_CODE)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [pendingFocus, setPendingFocus] = useState<LoginFocusTarget | null>(
@@ -120,6 +128,12 @@ export function LoginForm() {
     branchMatched &&
     password.length > 0
 
+  const showEntityToggle =
+    staffPreview !== null &&
+    branchPreview !== null &&
+    branchMatched &&
+    canChooseDocumentEntity(staffPreview.role, branchPreview.branchCode)
+
   const resetAfterStaffChange = useCallback(() => {
     setStaffPreview(null)
     setBranchPreview(null)
@@ -127,6 +141,7 @@ export function LoginForm() {
     setBranchCode("")
     setPassword("")
     setShopBranches([])
+    setDocumentEntityCode(DEFAULT_DOCUMENT_ENTITY_CODE)
     setStaffFieldError(null)
     setBranchFieldError(null)
   }, [])
@@ -140,6 +155,7 @@ export function LoginForm() {
     setBranchCode("")
     setPassword("")
     setShopBranches([])
+    setDocumentEntityCode(DEFAULT_DOCUMENT_ENTITY_CODE)
     setBranchFieldError(null)
   }, [])
 
@@ -149,6 +165,7 @@ export function LoginForm() {
     setBranchPreview(null)
     setBranchMatched(false)
     setPassword("")
+    setDocumentEntityCode(DEFAULT_DOCUMENT_ENTITY_CODE)
   }, [])
 
   const clearPasswordFieldForRetry = useCallback(() => {
@@ -178,6 +195,7 @@ export function LoginForm() {
       setBranchMatched(false)
       setBranchCode("")
       setPassword("")
+      setDocumentEntityCode(DEFAULT_DOCUMENT_ENTITY_CODE)
       setBranchFieldError(null)
 
       if (shouldLoadShopBranches(preview)) {
@@ -319,6 +337,7 @@ export function LoginForm() {
         password,
         branchCode: branchPreview.branchCode,
         returnTo: returnTo || undefined,
+        documentEntityCode: showEntityToggle ? documentEntityCode : undefined,
       })
 
       router.push(result.redirectTo)
@@ -437,6 +456,14 @@ export function LoginForm() {
             }
             errorLabel={branchFieldError ?? undefined}
           />
+
+          {showEntityToggle ? (
+            <LoginEntityToggle
+              value={documentEntityCode}
+              onChange={setDocumentEntityCode}
+              disabled={loading}
+            />
+          ) : null}
 
           <label className="block text-sm" htmlFor="login-password">
             <span className="font-medium">รหัสผ่าน</span>

@@ -428,7 +428,37 @@ describe("LoginForm", () => {
       password: "secret",
       branchCode: "SH001",
       returnTo: undefined,
+      documentEntityCode: undefined,
     })
+  })
+
+  it("shows entity toggle for HO999 HO_ADMIN after branch match", async () => {
+    mockPostBranchPreview.mockResolvedValue({
+      branchId: "branch-ho",
+      branchCode: "HO999",
+      branchName: "Head Office",
+      branchType: "HO",
+    })
+
+    const { container } = renderLoginForm()
+
+    await runStaffEnter(container, "001")
+    await selectBranch(container, "HO999", true)
+
+    expect(
+      container.querySelector('[data-testid="login-entity-toggle"]')
+    ).not.toBeNull()
+  })
+
+  it("hides entity toggle for shop branch login", async () => {
+    const { container } = renderLoginForm()
+
+    await runStaffEnter(container, "001")
+    await selectBranch(container, "SH001", true)
+
+    expect(
+      container.querySelector('[data-testid="login-entity-toggle"]')
+    ).toBeNull()
   })
 
   it("HO_ADMIN dropdown offers HO home plus shop branches after preview", async () => {
@@ -506,6 +536,7 @@ describe("LoginForm", () => {
       password: "secret",
       branchCode: "SH001",
       returnTo: undefined,
+      documentEntityCode: undefined,
     })
   })
 
@@ -798,6 +829,7 @@ describe("LoginForm", () => {
       password: "secret",
       branchCode: "SH001",
       returnTo: undefined,
+      documentEntityCode: undefined,
     })
     expect(form).toBeTruthy()
   })

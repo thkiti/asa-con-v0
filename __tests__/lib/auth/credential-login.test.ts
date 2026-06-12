@@ -110,6 +110,7 @@ describe("credentialLogin", () => {
       branchId: "branch-sh-1",
       branchCode: "SH001",
       branchName: "Shop 1",
+      documentEntityCode: "AS",
     })
     expect(result.redirectTo).toBe("/shop")
   })
@@ -399,5 +400,41 @@ describe("credentialLogin", () => {
     })
 
     expect(result.sessionUser.staffId).toBe("001")
+  })
+
+  it("allows HO999 HO_FINANCE to login with AD entity", async () => {
+    jest
+      .mocked(prisma.staff.findUnique)
+      .mockResolvedValue(
+        (await activeStaffRecord({ role: "HO_FINANCE" })) as never
+      )
+    jest.mocked(prisma.branch.findUnique).mockResolvedValue(loginBranch() as never)
+
+    const result = await credentialLogin({
+      username: "001",
+      password: "1234",
+      branchCode: "HO999",
+      documentEntityCode: "AD",
+    })
+
+    expect(result.sessionUser.documentEntityCode).toBe("AD")
+  })
+
+  it("rejects AD entity for shop branch login", async () => {
+    jest
+      .mocked(prisma.staff.findUnique)
+      .mockResolvedValue((await activeStaffRecord()) as never)
+
+    await expect(
+      credentialLogin({
+        username: "001",
+        password: "1234",
+        branchCode: "SH001",
+        documentEntityCode: "AD",
+      })
+    ).rejects.toMatchObject({
+      code: "DOCUMENT_ENTITY_NOT_ALLOWED",
+      httpStatus: 403,
+    })
   })
 })

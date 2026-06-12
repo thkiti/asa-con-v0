@@ -104,6 +104,7 @@ describe("postCredentialLogin", () => {
         password: "1234",
         branchCode: "HO999",
         returnTo: "/shop",
+        documentEntityCode: undefined,
       }),
     })
     expect(result.redirectTo).toBe("/shop/stock-documents")

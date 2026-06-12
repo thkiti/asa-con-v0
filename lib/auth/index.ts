@@ -8,6 +8,7 @@ export {
   BRANCH_ID_COOKIE,
   BRANCH_CODE_COOKIE,
   BRANCH_NAME_COOKIE,
+  DOCUMENT_ENTITY_CODE_COOKIE,
   readSessionCookies,
   hasSessionCookies,
 } from "./cookies"

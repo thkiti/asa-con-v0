@@ -1,4 +1,8 @@
 import { cookies } from "next/headers"
+import {
+  DEFAULT_DOCUMENT_ENTITY_CODE,
+  parseDocumentEntityCode,
+} from "@/lib/legal-entity"
 import type { Role } from "@/lib/shared"
 import { readSessionCookies, isSessionValid } from "./cookies"
 import type { SessionUser } from "./types"
@@ -34,5 +38,8 @@ export async function getSession(): Promise<SessionUser | null> {
     branchId: payload.branchId?.trim() || "",
     branchCode: payload.branchCode?.trim() || "",
     branchName: payload.branchName?.trim() || "",
+    documentEntityCode:
+      parseDocumentEntityCode(payload.documentEntityCode) ??
+      DEFAULT_DOCUMENT_ENTITY_CODE,
   }
 }

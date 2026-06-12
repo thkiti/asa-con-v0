@@ -1,6 +1,10 @@
 import { randomUUID } from "crypto"
 
 import type { Role } from "@/generated/prisma/client"
+import {
+  DocumentEntityError,
+  resolveLoginDocumentEntityCode,
+} from "@/lib/legal-entity"
 import { prisma } from "@/lib/shared/prisma"
 import { canStaffUseBranch } from "@/lib/staff/canStaffUseBranch"
 
@@ -40,6 +44,7 @@ export type CredentialLoginInput = {
   password: string
   branchCode: string
   returnTo?: string
+  documentEntityCode?: string
 }
 
 export type CredentialLoginResult = {
@@ -150,6 +155,20 @@ export async function credentialLogin(
     rejectInvalidCredentials()
   }
 
+  let documentEntityCode
+  try {
+    documentEntityCode = resolveLoginDocumentEntityCode({
+      role: staff.role as Role,
+      branchCode: loginBranch.code,
+      requested: input.documentEntityCode,
+    })
+  } catch (err) {
+    if (err instanceof DocumentEntityError) {
+      throw new CredentialLoginError(err.message, err.code, err.httpStatus)
+    }
+    throw err
+  }
+
   const sessionUser: SessionUser = {
     sessionId: randomUUID(),
     userId: staff.id,
@@ -159,6 +178,7 @@ export async function credentialLogin(
     branchId: loginBranch.id,
     branchCode: loginBranch.code,
     branchName: loginBranch.name,
+    documentEntityCode,
   }
 
   const safeReturnTo = resolveSafeReturnTo(input.returnTo, staff.role as Role)

@@ -1,4 +1,5 @@
 import { POST as POSTBranchPreview } from "@/app/api/auth/branch-preview/route"
+import { PATCH as PATCHDocumentEntity } from "@/app/api/auth/document-entity/route"
 import { POST as POSTLogin } from "@/app/api/auth/login/route"
 import { POST as POSTLogout } from "@/app/api/auth/logout/route"
 import { POST as POSTStaffPreview } from "@/app/api/auth/staff-preview/route"
@@ -63,6 +64,7 @@ const sessionUser: SessionUser = {
   branchId: "branch-ho",
   branchCode: "HO999",
   branchName: "Head Office",
+  documentEntityCode: "AS",
 }
 
 const apiUser = {
@@ -73,6 +75,7 @@ const apiUser = {
   branchId: "branch-ho",
   branchCode: "HO999",
   branchName: "Head Office",
+  documentEntityCode: "AS",
 }
 
 describe("POST /api/auth/login", () => {
@@ -105,6 +108,7 @@ describe("POST /api/auth/login", () => {
       password: "1234",
       branchCode: "HO999",
       returnTo: "/shop",
+      documentEntityCode: undefined,
     })
     expect(mockCredentialLogin).not.toHaveBeenCalledWith(
       expect.objectContaining({ staffId: expect.anything() })
@@ -213,6 +217,7 @@ describe("POST /api/auth/login", () => {
       password: "",
       branchCode: "",
       returnTo: undefined,
+      documentEntityCode: undefined,
     })
     expect(mockSetSessionCookies).not.toHaveBeenCalled()
   })
@@ -357,5 +362,70 @@ describe("GET /api/auth/session", () => {
     const res = await GETSession()
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual({ user: null })
+  })
+})
+
+describe("PATCH /api/auth/document-entity", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockCookies.mockResolvedValue({ set: jest.fn(), delete: jest.fn() })
+  })
+
+  it("updates session entity for HO999 HO_FINANCE", async () => {
+    const cookieStore = { set: jest.fn(), delete: jest.fn() }
+    mockCookies.mockResolvedValue(cookieStore)
+    mockGetSession.mockResolvedValue({
+      ...sessionUser,
+      role: "HO_FINANCE",
+    })
+
+    const res = await PATCHDocumentEntity(
+      new Request("http://localhost/api/auth/document-entity", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentEntityCode: "AD" }),
+      })
+    )
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.user.documentEntityCode).toBe("AD")
+    expect(mockSetSessionCookies).toHaveBeenCalledWith(
+      cookieStore,
+      expect.objectContaining({ documentEntityCode: "AD" })
+    )
+  })
+
+  it("returns 401 when no session", async () => {
+    mockGetSession.mockResolvedValue(null)
+
+    const res = await PATCHDocumentEntity(
+      new Request("http://localhost/api/auth/document-entity", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentEntityCode: "AD" }),
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it("returns 403 for shop session", async () => {
+    mockGetSession.mockResolvedValue({
+      ...sessionUser,
+      role: "SH_STAFF",
+      branchCode: "SH001",
+    })
+
+    const res = await PATCHDocumentEntity(
+      new Request("http://localhost/api/auth/document-entity", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentEntityCode: "AD" }),
+      })
+    )
+
+    expect(res.status).toBe(403)
+    expect((await res.json()).code).toBe("DOCUMENT_ENTITY_NOT_ALLOWED")
   })
 })

@@ -6,6 +6,7 @@ import {
   BRANCH_CODE_COOKIE,
   BRANCH_ID_COOKIE,
   BRANCH_NAME_COOKIE,
+  DOCUMENT_ENTITY_CODE_COOKIE,
   ROLE_COOKIE,
   SESSION_COOKIE,
   SESSION_EXPIRES_COOKIE,
@@ -14,6 +15,7 @@ import {
   USER_ID_COOKIE,
 } from "./cookies"
 import type { SessionUser } from "./types"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity"
 
 type CookieStore = {
   set: (
@@ -52,6 +54,7 @@ export function setSessionCookies(
   cookies.set(BRANCH_ID_COOKIE, user.branchId, base)
   cookies.set(BRANCH_CODE_COOKIE, user.branchCode, base)
   cookies.set(BRANCH_NAME_COOKIE, user.branchName, base)
+  cookies.set(DOCUMENT_ENTITY_CODE_COOKIE, user.documentEntityCode, base)
   cookies.set(SESSION_EXPIRES_COOKIE, String(expiresAtMs), base)
 }
 
@@ -65,6 +68,7 @@ export function clearSessionCookies(cookies: CookieStore): void {
   cookies.delete({ name: BRANCH_ID_COOKIE, ...base })
   cookies.delete({ name: BRANCH_CODE_COOKIE, ...base })
   cookies.delete({ name: BRANCH_NAME_COOKIE, ...base })
+  cookies.delete({ name: DOCUMENT_ENTITY_CODE_COOKIE, ...base })
   cookies.delete({ name: SESSION_EXPIRES_COOKIE, ...base })
 }
 
@@ -77,6 +81,7 @@ export function createSessionUser(input: {
   userId?: string
   branchCode?: string
   branchName?: string
+  documentEntityCode?: SessionUser["documentEntityCode"]
 }): SessionUser {
   return {
     sessionId: input.sessionId,
@@ -87,6 +92,8 @@ export function createSessionUser(input: {
     branchId: input.branchId,
     branchCode: input.branchCode ?? "",
     branchName: input.branchName ?? "",
+    documentEntityCode:
+      input.documentEntityCode ?? DEFAULT_DOCUMENT_ENTITY_CODE,
   }
 }
 

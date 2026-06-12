@@ -37,6 +37,7 @@ const hoAdmin: SessionUserApi = {
   branchId: "b1",
   branchCode: "HO999",
   branchName: "Head Office",
+  documentEntityCode: "AS",
 }
 
 const FLEX_BEFORE_CSS = `

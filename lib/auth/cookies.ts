@@ -9,6 +9,7 @@ export const STAFF_NAME_COOKIE = "staffName"
 export const BRANCH_ID_COOKIE = "branchId"
 export const BRANCH_CODE_COOKIE = "branchCode"
 export const BRANCH_NAME_COOKIE = "branchName"
+export const DOCUMENT_ENTITY_CODE_COOKIE = "documentEntityCode"
 export const SESSION_EXPIRES_COOKIE = "sessionExpiresAt"
 
 type CookieReader = {
@@ -27,6 +28,7 @@ export function readSessionCookies(
     branchId: cookies.get(BRANCH_ID_COOKIE)?.value,
     branchCode: cookies.get(BRANCH_CODE_COOKIE)?.value,
     branchName: cookies.get(BRANCH_NAME_COOKIE)?.value,
+    documentEntityCode: cookies.get(DOCUMENT_ENTITY_CODE_COOKIE)?.value,
     sessionExpiresAt: cookies.get(SESSION_EXPIRES_COOKIE)?.value,
   }
 }

@@ -1,4 +1,5 @@
 import type { SessionUser } from "./types"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 
 /** Public session shape for API responses (no opaque session id). */
 export type SessionUserApi = {
@@ -9,6 +10,7 @@ export type SessionUserApi = {
   branchId: string
   branchCode: string
   branchName: string
+  documentEntityCode: DocumentEntityCode
 }
 
 export function toSessionUserApi(user: SessionUser): SessionUserApi {
@@ -20,5 +22,6 @@ export function toSessionUserApi(user: SessionUser): SessionUserApi {
     branchId: user.branchId,
     branchCode: user.branchCode,
     branchName: user.branchName,
+    documentEntityCode: user.documentEntityCode,
   }
 }
