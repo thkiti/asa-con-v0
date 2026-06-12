@@ -302,6 +302,7 @@ model StockDocument {
   status             DocStatus @default(DRAFT)
   date               DateTime
   branchId           String
+  legalEntityCode    String?
   periodMonth        String?
   fromLocId          String?
   toLocId            String?
@@ -317,8 +318,12 @@ model StockDocument {
   createdAt          DateTime  @default(now())
 
   branch       Branch              @relation(fields: [branchId], references: [id])
+  legalEntity  LegalEntity?        @relation(fields: [legalEntityCode], references: [code])
   lines        StockDocumentLine[]
   transactions StockTransaction[]
+
+  @@index([legalEntityCode, date])
+  @@index([legalEntityCode, docType, status])
 }
 
 model StockDocumentLine {
@@ -537,15 +542,29 @@ model GlAccount {
   journalEntryLines JournalEntryLine[]
 }
 
+model LegalEntity {
+  code    String  @id
+  name    String
+  address String?
+  taxId   String?
+
+  vouchers          Voucher[]
+  journalEntries    JournalEntry[]
+  accountingPeriods AccountingPeriod[]
+  stockDocuments    StockDocument[]
+}
+
 model AccountingPeriod {
-  id        String                 @id @default(uuid())
-  periodKey String
-  branchId  String
-  status    AccountingPeriodStatus @default(OPEN)
-  openedAt  DateTime               @default(now())
-  closedAt  DateTime?
+  id              String                 @id @default(uuid())
+  periodKey       String
+  branchId        String
+  legalEntityCode String?
+  status          AccountingPeriodStatus @default(OPEN)
+  openedAt        DateTime               @default(now())
+  closedAt        DateTime?
 
   branch         Branch          @relation(fields: [branchId], references: [id])
+  legalEntity    LegalEntity?    @relation(fields: [legalEntityCode], references: [code])
   vouchers       Voucher[]
   journalEntries JournalEntry[]
   closeEvidence  AccountingPeriodCloseEvidence[]
@@ -670,26 +689,30 @@ model AccountingPeriodReopenRequest {
 }
 
 model Voucher {
-  id          String        @id @default(uuid())
-  voucherNo   String   @unique
-  date        DateTime
-  status      VoucherStatus @default(DRAFT)
-  branchId    String
-  periodId    String
-  refType     String
-  refId       String
-  refNo       String?
-  description String?
-  postedAt    DateTime?
-  createdAt   DateTime      @default(now())
+  id              String        @id @default(uuid())
+  voucherNo       String        @unique
+  date            DateTime
+  status          VoucherStatus @default(DRAFT)
+  branchId        String
+  legalEntityCode String?
+  periodId        String
+  refType         String
+  refId           String
+  refNo           String?
+  description     String?
+  postedAt        DateTime?
+  createdAt       DateTime      @default(now())
 
   branch       Branch           @relation(fields: [branchId], references: [id])
+  legalEntity  LegalEntity?     @relation(fields: [legalEntityCode], references: [code])
   period       AccountingPeriod @relation(fields: [periodId], references: [id])
   lines        VoucherLine[]
   journalEntry JournalEntry?
 
   @@unique([refType, refId])
   @@index([branchId, date])
+  @@index([legalEntityCode, date])
+  @@index([legalEntityCode, branchId, date])
 }
 
 model VoucherLine {
@@ -709,25 +732,29 @@ model VoucherLine {
 }
 
 model JournalEntry {
-  id        String   @id @default(uuid())
-  voucherId String   @unique
-  date      DateTime
-  branchId  String
-  periodId  String
-  postedAt  DateTime @default(now())
-  createdAt DateTime @default(now())
+  id              String   @id @default(uuid())
+  voucherId       String   @unique
+  date            DateTime
+  branchId        String
+  legalEntityCode String?
+  periodId        String
+  postedAt        DateTime @default(now())
+  createdAt       DateTime @default(now())
 
   /// Set on reversal journals only — points to the original posted journal.
   reversalOfJournalEntryId String? @unique
 
-  voucher  Voucher          @relation(fields: [voucherId], references: [id])
-  period   AccountingPeriod @relation(fields: [periodId], references: [id])
-  lines    JournalEntryLine[]
-  reverses JournalEntry?    @relation("JournalReversal", fields: [reversalOfJournalEntryId], references: [id])
-  reversedBy JournalEntry?  @relation("JournalReversal")
+  voucher     Voucher          @relation(fields: [voucherId], references: [id])
+  legalEntity LegalEntity?     @relation(fields: [legalEntityCode], references: [code])
+  period      AccountingPeriod @relation(fields: [periodId], references: [id])
+  lines       JournalEntryLine[]
+  reverses    JournalEntry?    @relation("JournalReversal", fields: [reversalOfJournalEntryId], references: [id])
+  reversedBy  JournalEntry?    @relation("JournalReversal")
 
   @@index([branchId, periodId, date])
   @@index([date])
+  @@index([legalEntityCode, periodId, date])
+  @@index([legalEntityCode, date])
 }
 
 model JournalEntryLine {
