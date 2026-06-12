@@ -302,7 +302,7 @@ model StockDocument {
   status             DocStatus @default(DRAFT)
   date               DateTime
   branchId           String
-  legalEntityCode    String?
+  legalEntityCode    String
   periodMonth        String?
   fromLocId          String?
   toLocId            String?
@@ -318,7 +318,7 @@ model StockDocument {
   createdAt          DateTime  @default(now())
 
   branch       Branch              @relation(fields: [branchId], references: [id])
-  legalEntity  LegalEntity?        @relation(fields: [legalEntityCode], references: [code])
+  legalEntity  LegalEntity         @relation(fields: [legalEntityCode], references: [code])
   lines        StockDocumentLine[]
   transactions StockTransaction[]
 
@@ -558,20 +558,21 @@ model AccountingPeriod {
   id              String                 @id @default(uuid())
   periodKey       String
   branchId        String
-  legalEntityCode String?
+  legalEntityCode String
   status          AccountingPeriodStatus @default(OPEN)
   openedAt        DateTime               @default(now())
   closedAt        DateTime?
 
   branch         Branch          @relation(fields: [branchId], references: [id])
-  legalEntity    LegalEntity?    @relation(fields: [legalEntityCode], references: [code])
+  legalEntity    LegalEntity     @relation(fields: [legalEntityCode], references: [code])
   vouchers       Voucher[]
   journalEntries JournalEntry[]
   closeEvidence  AccountingPeriodCloseEvidence[]
   reopenEvidence AccountingPeriodReopenEvidence[]
   reopenRequests AccountingPeriodReopenRequest[]
 
-  @@unique([branchId, periodKey])
+  @@unique([legalEntityCode, periodKey])
+  @@index([branchId])
 }
 
 /// Immutable HARD-close audit record (Phase 20D/21A). Append-only — one row per successful HARD close.
@@ -694,7 +695,7 @@ model Voucher {
   date            DateTime
   status          VoucherStatus @default(DRAFT)
   branchId        String
-  legalEntityCode String?
+  legalEntityCode String
   periodId        String
   refType         String
   refId           String
@@ -704,7 +705,7 @@ model Voucher {
   createdAt       DateTime      @default(now())
 
   branch       Branch           @relation(fields: [branchId], references: [id])
-  legalEntity  LegalEntity?     @relation(fields: [legalEntityCode], references: [code])
+  legalEntity  LegalEntity      @relation(fields: [legalEntityCode], references: [code])
   period       AccountingPeriod @relation(fields: [periodId], references: [id])
   lines        VoucherLine[]
   journalEntry JournalEntry?
@@ -736,7 +737,7 @@ model JournalEntry {
   voucherId       String   @unique
   date            DateTime
   branchId        String
-  legalEntityCode String?
+  legalEntityCode String
   periodId        String
   postedAt        DateTime @default(now())
   createdAt       DateTime @default(now())
@@ -745,7 +746,7 @@ model JournalEntry {
   reversalOfJournalEntryId String? @unique
 
   voucher     Voucher          @relation(fields: [voucherId], references: [id])
-  legalEntity LegalEntity?     @relation(fields: [legalEntityCode], references: [code])
+  legalEntity LegalEntity      @relation(fields: [legalEntityCode], references: [code])
   period      AccountingPeriod @relation(fields: [periodId], references: [id])
   lines       JournalEntryLine[]
   reverses    JournalEntry?    @relation("JournalReversal", fields: [reversalOfJournalEntryId], references: [id])
