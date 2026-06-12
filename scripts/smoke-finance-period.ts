@@ -9,6 +9,7 @@ config({ path: ".env.local" })
 import { BranchType, ProductType, Role, AccountingPeriodStatus } from "../generated/prisma/client"
 import { prisma } from "../lib/shared/prisma"
 import { DEFAULT_ACCOUNT_CODES } from "../lib/finance/account-map"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "../lib/legal-entity/constants"
 import { GlAccountType } from "../generated/prisma/client"
 
 const BASE = process.env.SMOKE_BASE_URL ?? "http://localhost:3000"
@@ -29,7 +30,12 @@ function currentPeriodKey(): string {
 async function prepareSmokePeriod(branchId: string): Promise<string> {
   const periodKey = currentPeriodKey()
   const period = await prisma.accountingPeriod.findUnique({
-    where: { branchId_periodKey: { branchId, periodKey } },
+    where: {
+      legalEntityCode_periodKey: {
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
+        periodKey,
+      },
+    },
   })
   if (period && period.status !== AccountingPeriodStatus.OPEN) {
     await prisma.accountingPeriod.update({

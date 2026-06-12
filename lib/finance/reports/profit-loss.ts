@@ -3,6 +3,7 @@ import { GlAccountType, type PrismaClient } from "@/generated/prisma/client"
 import { addMoney, toMoney, ZERO } from "../decimal"
 import { signedBalanceForAccountType } from "./balance-helpers"
 import { resolveReportDateRange } from "./report-filter"
+import { accountingPeriodUniqueWhere } from "../period-lookup"
 import type {
   ProfitLossFilter,
   ProfitLossResult,
@@ -16,11 +17,10 @@ export type ProfitLossPrisma = Pick<
 
 async function resolvePeriodExists(
   prisma: ProfitLossPrisma,
-  branchId: string,
   periodKey: string
 ): Promise<boolean> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: { branchId_periodKey: { branchId, periodKey } },
+    where: accountingPeriodUniqueWhere({ periodKey }),
     select: { id: true },
   })
   return period != null
@@ -51,11 +51,7 @@ export async function getProfitLoss(
   filter: ProfitLossFilter
 ): Promise<ProfitLossResult> {
   if (filter.periodKey) {
-    const periodExists = await resolvePeriodExists(
-      prisma,
-      filter.branchId,
-      filter.periodKey
-    )
+    const periodExists = await resolvePeriodExists(prisma, filter.periodKey)
     if (!periodExists) {
       return {
         filter,

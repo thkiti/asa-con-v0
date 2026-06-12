@@ -22,6 +22,8 @@ import {
   type AccountingPeriodListRow,
 } from "@/lib/finance/period-list"
 import { bootstrapPeriodIfMissing } from "@/lib/finance/period-setup"
+import { accountingPeriodUniqueWhere } from "@/lib/finance/period-lookup"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { prisma } from "@/lib/shared/prisma"
 
 type PeriodAction = "SOFT_CLOSE" | "HARD_CLOSE" | "REOPEN"
@@ -36,13 +38,11 @@ function parsePeriodAction(value: unknown): PeriodAction | null {
 
 async function loadPeriodDto(
   db: typeof prisma,
-  branchId: string,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<AccountingPeriodListRow | null> {
   const row = await db.accountingPeriod.findUnique({
-    where: {
-      branchId_periodKey: { branchId, periodKey },
-    },
+    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
     include: {
       branch: {
         select: { name: true },
@@ -99,13 +99,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    requirePeriodAdminActor(await getSession())
+    const session = await getSession()
+    requirePeriodAdminActor(session)
+    const legalEntityCode = session!.documentEntityCode
 
     await prisma.$transaction(async (tx) => {
-      await bootstrapPeriodIfMissing(tx, { branchId, periodKey })
+      await bootstrapPeriodIfMissing(tx, { branchId, periodKey, legalEntityCode })
     })
 
-    const period = await loadPeriodDto(prisma, branchId, periodKey)
+    const period = await loadPeriodDto(prisma, periodKey, legalEntityCode)
     if (!period) {
       throw new Error(`Accounting period ${periodKey} missing after bootstrap`)
     }
@@ -149,7 +151,9 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    const actor = requirePeriodAdminActor(await getSession())
+    const session = await getSession()
+    const actor = requirePeriodAdminActor(session)
+    const legalEntityCode = session!.documentEntityCode
 
     async function resolvePeriodActor() {
       const staffId = await resolvePeriodAdminStaffId(prisma, actor.staffId, {
@@ -175,19 +179,23 @@ export async function PATCH(req: NextRequest) {
 
     await prisma.$transaction(async (tx) => {
       if (action === "SOFT_CLOSE") {
-        await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+        await closeAccountingPeriod(tx, {
+          branchId,
+          periodKey,
+          legalEntityCode,
+          mode: "SOFT",
+        })
       } else if (action === "HARD_CLOSE") {
         await closeAccountingPeriod(tx, {
           branchId,
           periodKey,
+          legalEntityCode,
           mode: "HARD",
           closedBy: periodActor!,
         })
       } else {
         const existing = await tx.accountingPeriod.findUnique({
-          where: {
-            branchId_periodKey: { branchId, periodKey },
-          },
+          where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
         })
         if (existing && existing.status !== "OPEN") {
           assertDirectReopenAllowed(existing.status)
@@ -195,13 +203,14 @@ export async function PATCH(req: NextRequest) {
         await reopenAccountingPeriod(tx, {
           branchId,
           periodKey,
+          legalEntityCode,
           reason,
           reopenedBy: periodActor!,
         })
       }
     })
 
-    const period = await loadPeriodDto(prisma, branchId, periodKey)
+    const period = await loadPeriodDto(prisma, periodKey, legalEntityCode)
     if (!period) {
       throw new Error(`Accounting period ${periodKey} not found after update`)
     }

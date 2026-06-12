@@ -21,6 +21,7 @@ type AccountingPeriodRow = {
   id: string
   periodKey: string
   branchId: string
+  legalEntityCode?: string
   status: AccountingPeriodStatus
   openedAt: Date
   closedAt: Date | null
@@ -42,6 +43,7 @@ type VoucherRow = {
   date: Date
   status: VoucherStatus
   branchId: string
+  legalEntityCode?: string
   periodId: string
   refType: string
   refId: string
@@ -66,6 +68,7 @@ type JournalEntryRow = {
   voucherId: string
   date: Date
   branchId: string
+  legalEntityCode?: string
   periodId: string
   postedAt: Date
   createdAt: Date
@@ -253,7 +256,10 @@ export function createFinanceMockTx(branchId = "branch-1") {
         where,
         include,
       }: {
-        where: { id?: string; branchId_periodKey?: { branchId: string; periodKey: string } }
+        where: {
+          id?: string
+          legalEntityCode_periodKey?: { legalEntityCode: string; periodKey: string }
+        }
         include?: {
           closeEvidence?: { orderBy?: { closedAt: "asc" | "desc" } }
           reopenEvidence?: { orderBy?: { reopenedAt: "asc" | "desc" } }
@@ -263,11 +269,13 @@ export function createFinanceMockTx(branchId = "branch-1") {
         let period: AccountingPeriodRow | null = null
         if (where.id) {
           period = state.accountingPeriods.find((p) => p.id === where.id) ?? null
-        } else if (where.branchId_periodKey) {
-          const { branchId: b, periodKey } = where.branchId_periodKey
+        } else if (where.legalEntityCode_periodKey) {
+          const { legalEntityCode, periodKey } = where.legalEntityCode_periodKey
           period =
             state.accountingPeriods.find(
-              (p) => p.branchId === b && p.periodKey === periodKey
+              (p) =>
+                (p.legalEntityCode ?? "AS") === legalEntityCode &&
+                p.periodKey === periodKey
             ) ?? null
         }
         if (!period || !include) {
@@ -347,12 +355,14 @@ export function createFinanceMockTx(branchId = "branch-1") {
         data: {
           branchId: string
           periodKey: string
+          legalEntityCode?: string
           status: AccountingPeriodStatus
         }
       }) => {
         const row: AccountingPeriodRow = {
           id: nextId("period"),
           branchId: data.branchId,
+          legalEntityCode: data.legalEntityCode ?? "AS",
           periodKey: data.periodKey,
           status: data.status,
           openedAt: new Date(),
@@ -577,21 +587,34 @@ export function createFinanceMockTx(branchId = "branch-1") {
       findUnique: async ({
         where,
         include,
+        select,
       }: {
         where: {
+          id?: string
           refType_refId?: { refType: string; refId: string }
         }
         include?: { journalEntry?: boolean }
+        select?: { legalEntityCode?: boolean }
       }) => {
-        if (!where.refType_refId) return null
-        const { refType, refId } = where.refType_refId
-        const voucher = state.vouchers.find(
-          (v) => v.refType === refType && v.refId === refId
-        )
+        let voucher: VoucherRow | null = null
+        if (where.id) {
+          voucher = state.vouchers.find((v) => v.id === where.id) ?? null
+        } else if (where.refType_refId) {
+          const { refType, refId } = where.refType_refId
+          voucher =
+            state.vouchers.find(
+              (v) => v.refType === refType && v.refId === refId
+            ) ?? null
+        }
         if (!voucher) return null
+        if (select?.legalEntityCode) {
+          return {
+            legalEntityCode: voucher.legalEntityCode ?? "AS",
+          }
+        }
         if (include?.journalEntry) {
           const journalEntry =
-            state.journalEntries.find((j) => j.voucherId === voucher.id) ?? null
+            state.journalEntries.find((j) => j.voucherId === voucher!.id) ?? null
           return { ...voucher, journalEntry }
         }
         return voucher
@@ -679,6 +702,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
           date: Date
           status: VoucherStatus
           branchId: string
+          legalEntityCode?: string
           periodId: string
           refType: string
           refId: string
@@ -702,12 +726,14 @@ export function createFinanceMockTx(branchId = "branch-1") {
             clientVersion: "test",
           })
         }
+        const period = state.accountingPeriods.find((p) => p.id === data.periodId)
         const voucher: VoucherRow = {
           id: nextId("voucher"),
           voucherNo: data.voucherNo,
           date: data.date,
           status: data.status,
           branchId: data.branchId,
+          legalEntityCode: data.legalEntityCode ?? period?.legalEntityCode ?? "AS",
           periodId: data.periodId,
           refType: data.refType,
           refId: data.refId,
@@ -1078,6 +1104,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
           voucherId: string
           date: Date
           branchId: string
+          legalEntityCode?: string
           periodId: string
           reversalOfJournalEntryId?: string | null
           lines: {
@@ -1091,11 +1118,13 @@ export function createFinanceMockTx(branchId = "branch-1") {
           }
         }
       }) => {
+        const voucher = state.vouchers.find((v) => v.id === data.voucherId)
         const entry: JournalEntryRow = {
           id: nextId("journal"),
           voucherId: data.voucherId,
           date: data.date,
           branchId: data.branchId,
+          legalEntityCode: data.legalEntityCode ?? voucher?.legalEntityCode ?? "AS",
           periodId: data.periodId,
           postedAt: new Date(),
           createdAt: new Date(),

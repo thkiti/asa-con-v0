@@ -1,11 +1,14 @@
 import type { Prisma } from "@/generated/prisma/client"
 import type { PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { FINANCE_REF_TYPES } from "./posting-types"
+import { accountingPeriodUniqueWhere } from "./period-lookup"
 import { addMoney, toMoney, ZERO } from "./decimal"
 
 export type JournalListFilter = {
   branchId?: string
   periodKey?: string
+  legalEntityCode?: DocumentEntityCode
   from?: Date | string
   to?: Date | string
   refType?: string
@@ -45,11 +48,11 @@ const MANUAL_REF_TYPES = [
 
 async function resolvePeriodId(
   prisma: JournalListPrisma,
-  branchId: string,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode?: DocumentEntityCode | null
 ): Promise<string | null> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: { branchId_periodKey: { branchId, periodKey } },
+    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
     select: { id: true },
   })
   return period?.id ?? null
@@ -97,7 +100,11 @@ export async function listJournalEntries(
 ): Promise<JournalListResult> {
   let periodId: string | null = null
   if (filter.branchId && filter.periodKey) {
-    periodId = await resolvePeriodId(prisma, filter.branchId, filter.periodKey)
+    periodId = await resolvePeriodId(
+      prisma,
+      filter.periodKey,
+      filter.legalEntityCode
+    )
     if (!periodId) {
       return { journals: [], total: 0 }
     }

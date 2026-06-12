@@ -8,6 +8,7 @@ import {
   trialBalanceDifference,
 } from "./balance-helpers"
 import type { TrialBalanceFilter, TrialBalanceResult, TrialBalanceRow } from "./trial-balance-types"
+import { accountingPeriodUniqueWhere } from "../period-lookup"
 
 export type TrialBalancePrisma = Pick<
   PrismaClient,
@@ -24,11 +25,10 @@ const ACCOUNT_TYPE_ORDER: Record<GlAccountType, number> = {
 
 async function resolvePeriodId(
   prisma: TrialBalancePrisma,
-  branchId: string,
   periodKey: string
 ): Promise<string | null> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: { branchId_periodKey: { branchId, periodKey } },
+    where: accountingPeriodUniqueWhere({ periodKey }),
     select: { id: true },
   })
   return period?.id ?? null
@@ -74,7 +74,7 @@ export async function getTrialBalance(
 ): Promise<TrialBalanceResult> {
   let periodId: string | null = null
   if (filter.periodKey) {
-    periodId = await resolvePeriodId(prisma, filter.branchId, filter.periodKey)
+    periodId = await resolvePeriodId(prisma, filter.periodKey)
     if (!periodId) {
       return {
         filter,

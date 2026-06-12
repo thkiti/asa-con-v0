@@ -60,6 +60,7 @@ export async function createVoucherWithLines(
         date: input.date,
         status: VoucherStatus.POSTED,
         branchId: input.branchId,
+        legalEntityCode: period.legalEntityCode,
         periodId: input.periodId,
         refType: input.refType,
         refId: input.refId,

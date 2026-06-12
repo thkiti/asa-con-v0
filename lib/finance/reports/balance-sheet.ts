@@ -13,6 +13,7 @@ import type {
 } from "./balance-sheet-types"
 import type { TrialBalanceRow } from "./trial-balance-types"
 import { getTrialBalance, type TrialBalancePrisma } from "./trial-balance"
+import { accountingPeriodUniqueWhere } from "../period-lookup"
 
 export type BalanceSheetPrisma = TrialBalancePrisma
 
@@ -40,12 +41,9 @@ async function resolvePeriodMeta(
   }
 
   const period = await prisma.accountingPeriod.findUnique({
-    where: {
-      branchId_periodKey: {
-        branchId: filter.branchId,
-        periodKey: filter.periodKey,
-      },
-    },
+    where: accountingPeriodUniqueWhere({
+      periodKey: filter.periodKey,
+    }),
     select: { id: true, status: true },
   })
 

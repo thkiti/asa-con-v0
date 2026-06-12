@@ -1,6 +1,8 @@
 import type { Prisma } from "@/generated/prisma/client"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { FinancePostingError } from "./posting-errors"
+import { accountingPeriodUniqueWhere } from "./period-lookup"
 
 export function formatPeriodKey(date: Date): string {
   const y = date.getFullYear()
@@ -11,17 +13,13 @@ export function formatPeriodKey(date: Date): string {
 export async function assertPostingPeriodOpen(
   tx: Prisma.TransactionClient,
   branchId: string,
-  postingDate: Date
+  postingDate: Date,
+  legalEntityCode?: DocumentEntityCode | null
 ): Promise<NonNullable<Awaited<ReturnType<typeof tx.accountingPeriod.findUnique>>>> {
   const periodKey = formatPeriodKey(postingDate)
 
   const period = await tx.accountingPeriod.findUnique({
-    where: {
-      branchId_periodKey: {
-        branchId,
-        periodKey,
-      },
-    },
+    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
   })
 
   if (!period) {

@@ -1,5 +1,6 @@
 ﻿import type { Prisma } from "@/generated/prisma/client"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { assertCloseReadiness } from "./close-gate"
 import { getHardCloseGatePolicy } from "./close-gate-policy"
 import { createCloseEvidenceForHardClose, type PeriodCloseActorInput } from "./close-evidence"
@@ -8,10 +9,12 @@ import { createReopenEvidence } from "./reopen-evidence"
 import type { ReopenEvidenceApprovalSnapshot } from "./reopen-evidence-types"
 import { getActiveClosingEntry } from "./closing-entry-status"
 import { FinancePostingError } from "./posting-errors"
+import { accountingPeriodUniqueWhere } from "./period-lookup"
 
 type PeriodCloseInput = {
   branchId: string
   periodKey: string
+  legalEntityCode?: DocumentEntityCode | null
   mode: "SOFT" | "HARD"
   closedBy?: PeriodCloseActorInput
 }
@@ -19,6 +22,7 @@ type PeriodCloseInput = {
 type PeriodReopenInput = {
   branchId: string
   periodKey: string
+  legalEntityCode?: DocumentEntityCode | null
   reason: string
   reopenedBy: PeriodCloseActorInput
   reopenRequestId?: string | null
@@ -27,15 +31,13 @@ type PeriodReopenInput = {
 
 async function findAccountingPeriod(
   tx: Prisma.TransactionClient,
-  input: { branchId: string; periodKey: string }
+  input: { branchId: string; periodKey: string; legalEntityCode?: DocumentEntityCode | null }
 ): Promise<NonNullable<Awaited<ReturnType<typeof tx.accountingPeriod.findUnique>>>> {
   const period = await tx.accountingPeriod.findUnique({
-    where: {
-      branchId_periodKey: {
-        branchId: input.branchId,
-        periodKey: input.periodKey,
-      },
-    },
+    where: accountingPeriodUniqueWhere({
+      periodKey: input.periodKey,
+      legalEntityCode: input.legalEntityCode,
+    }),
   })
 
   if (!period) {

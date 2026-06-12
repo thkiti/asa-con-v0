@@ -1,4 +1,5 @@
 import type { DocStatus, Prisma } from "@/generated/prisma/client"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import { prisma } from "@/lib/shared/prisma"
 import { DocumentError, DocumentErrorCodes } from "./document-errors"
 import type { StockDocumentWithLines } from "./document-types"
@@ -118,6 +119,7 @@ export async function getOrCreateStockCountDocument(
         status: "DRAFT",
         date: now,
         branchId,
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
         fromLocId: branchId,
         toLocId: null,
         periodMonth,

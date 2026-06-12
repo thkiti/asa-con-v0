@@ -108,11 +108,20 @@ export async function createJournalForVoucher(
 
   assertVoucherJournalLineParity(voucherLines, input.lines)
 
+  const voucher = await tx.voucher.findUnique({
+    where: { id: input.voucherId },
+    select: { legalEntityCode: true },
+  })
+  if (!voucher) {
+    throw new FinancePostingError("Voucher not found for journal", "VOUCHER_NOT_FOUND")
+  }
+
   const entry = await tx.journalEntry.create({
     data: {
       voucherId: input.voucherId,
       date: input.date,
       branchId: input.branchId,
+      legalEntityCode: voucher.legalEntityCode,
       periodId: input.periodId,
       reversalOfJournalEntryId: input.reversalOfJournalEntryId ?? null,
       lines: {

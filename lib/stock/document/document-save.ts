@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import { prisma } from "@/lib/shared/prisma"
 import { DocumentError, DocumentErrorCodes } from "./document-errors"
 import type { SaveDocumentInput, StockDocumentWithLines } from "./document-types"
@@ -134,6 +135,7 @@ export async function saveDocument(
         docType,
         status: "DRAFT",
         branchId,
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
         createdByStaffId: input.createdByStaffId ?? null,
         ...headerData,
         lines: {

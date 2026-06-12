@@ -7,6 +7,7 @@ import { BranchType, ProductType, GlAccountType, AccountingPeriodStatus } from "
 import { ensureDevPeriodAdminStaff } from "../lib/auth/period-admin-staff"
 import { prisma } from "../lib/shared/prisma"
 import { DEFAULT_ACCOUNT_CODES } from "../lib/finance/account-map"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "../lib/legal-entity/constants"
 import { FINANCE_REF_TYPES } from "../lib/finance/posting-types"
 import { setSellingPrice } from "../lib/pricing/selling-price"
 import { checkout } from "../lib/pos/checkout"
@@ -27,7 +28,12 @@ function currentPeriodKey(): string {
 async function prepareSmokePeriod(branchId: string): Promise<string> {
   const periodKey = currentPeriodKey()
   const period = await prisma.accountingPeriod.findUnique({
-    where: { branchId_periodKey: { branchId, periodKey } },
+    where: {
+      legalEntityCode_periodKey: {
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
+        periodKey,
+      },
+    },
   })
   if (period && period.status !== AccountingPeriodStatus.OPEN) {
     await prisma.accountingPeriod.update({
@@ -139,7 +145,12 @@ async function main() {
 
   await prisma.$transaction((tx) => bootstrapPeriodIfMissing(tx, { branchId, periodKey: PERIOD_KEY }))
   const openPeriod = await prisma.accountingPeriod.findUnique({
-    where: { branchId_periodKey: { branchId, periodKey: PERIOD_KEY } },
+    where: {
+      legalEntityCode_periodKey: {
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
+        periodKey: PERIOD_KEY,
+      },
+    },
   })
   record("A Period OPEN", openPeriod?.status === "OPEN", `status=${openPeriod?.status}`)
 
@@ -206,7 +217,14 @@ async function main() {
   }
 
   await prisma.$transaction((tx) => closeAccountingPeriod(tx, { branchId, periodKey: PERIOD_KEY, mode: "SOFT" }))
-  const soft = await prisma.accountingPeriod.findUnique({ where: { branchId_periodKey: { branchId, periodKey: PERIOD_KEY } } })
+  const soft = await prisma.accountingPeriod.findUnique({
+    where: {
+      legalEntityCode_periodKey: {
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
+        periodKey: PERIOD_KEY,
+      },
+    },
+  })
   record("B SOFT CLOSE", soft?.status === "SOFT_CLOSED" && Boolean(soft?.closedAt), `status=${soft?.status}`)
 
   const beforeSoft = await counts()
@@ -239,7 +257,14 @@ async function main() {
       reopenedBy: smokeReopenBy,
     })
   )
-  const reopened = await prisma.accountingPeriod.findUnique({ where: { branchId_periodKey: { branchId, periodKey: PERIOD_KEY } } })
+  const reopened = await prisma.accountingPeriod.findUnique({
+    where: {
+      legalEntityCode_periodKey: {
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
+        periodKey: PERIOD_KEY,
+      },
+    },
+  })
   record("D REOPEN", reopened?.status === "OPEN" && reopened?.closedAt === null, `status=${reopened?.status}`)
 
   const reopenCheckout = await tryCheckout(branchId, productId)
@@ -269,7 +294,14 @@ async function main() {
       closedBy: smokeClosedBy,
     })
   )
-  const hard = await prisma.accountingPeriod.findUnique({ where: { branchId_periodKey: { branchId, periodKey: PERIOD_KEY } } })
+  const hard = await prisma.accountingPeriod.findUnique({
+    where: {
+      legalEntityCode_periodKey: {
+        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
+        periodKey: PERIOD_KEY,
+      },
+    },
+  })
   record("E HARD CLOSE", hard?.status === "HARD_CLOSED", `status=${hard?.status}`)
 
   const beforeHard = await counts()

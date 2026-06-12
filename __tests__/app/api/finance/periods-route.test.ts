@@ -73,6 +73,7 @@ const authorizedSession = {
   staffId: "staff-1",
   name: "Finance User",
   branchId: "branch-1",
+  documentEntityCode: "AS" as const,
 }
 
 const openedAt = new Date("2026-05-01T00:00:00.000Z")
@@ -227,10 +228,11 @@ describe("POST finance/periods", () => {
     expect(mockBootstrap).toHaveBeenCalledWith(prisma, {
       branchId: "branch-1",
       periodKey: "2026-05",
+      legalEntityCode: "AS",
     })
     expect(mockFindUnique).toHaveBeenCalledWith({
       where: {
-        branchId_periodKey: { branchId: "branch-1", periodKey: "2026-05" },
+        legalEntityCode_periodKey: { legalEntityCode: "AS", periodKey: "2026-05" },
       },
       include: { branch: { select: { name: true } } },
     })
@@ -363,6 +365,7 @@ describe("PATCH finance/periods", () => {
     expect(mockClose).toHaveBeenCalledWith(prisma, {
       branchId: "branch-1",
       periodKey: "2026-05",
+      legalEntityCode: "AS",
       mode: "SOFT",
     })
   })
@@ -389,6 +392,7 @@ describe("PATCH finance/periods", () => {
     expect(mockClose).toHaveBeenCalledWith(prisma, {
       branchId: "branch-1",
       periodKey: "2026-05",
+      legalEntityCode: "AS",
       mode: "HARD",
       closedBy: {
         staffId: "staff-db-1",
@@ -474,6 +478,7 @@ describe("PATCH finance/periods", () => {
       expect(mockClose).toHaveBeenCalledWith(prisma, {
         branchId: "branch-1",
         periodKey: "2026-05",
+        legalEntityCode: "AS",
         mode: "HARD",
         closedBy: {
           staffId: "staff-db-1",
@@ -573,6 +578,7 @@ describe("PATCH finance/periods", () => {
       expect(mockClose).toHaveBeenCalledWith(prisma, {
         branchId: "branch-1",
         periodKey: "2026-05",
+        legalEntityCode: "AS",
         mode: "SOFT",
       })
     })
@@ -599,6 +605,7 @@ describe("PATCH finance/periods", () => {
       expect.objectContaining({
         branchId: "branch-1",
         periodKey: "2026-05",
+        legalEntityCode: "AS",
         reason: "Resume month-end",
         reopenedBy: expect.objectContaining({
           staffId: "staff-db-1",
