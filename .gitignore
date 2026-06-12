@@ -57,3 +57,10 @@ tmp/import-reports/
 /local/catalog-image/
 .vercel
 .env*
+
+# local backups
+*.dump
+
+# local working docs
+docs/migration/* - Copy.md
+docs/migration/MULTI_COMPANY_READINESS_AUDIT.md
