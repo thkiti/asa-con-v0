@@ -231,4 +231,64 @@ describe("StockDocumentCountingSheet", () => {
 
     expect(html).toContain("เลื่อนแนวนอนเพื่อดูรายการทั้งหมด")
   })
+
+  it("formats stored running refs on full-pos staff identity lines", () => {
+    const html = renderToStaticMarkup(
+      <StockDocumentCountingSheet
+        lines={lines}
+        activeHookGroup="K"
+        readOnly={false}
+        onHookGroupChange={() => {}}
+        onLineChange={() => {}}
+        staffPhaseTitle="ASAS • CNT"
+        staffOperationalPhase={{
+          docType: "ADJUSTMENT",
+          status: "DRAFT",
+          viewerEntityCode: "AS",
+        }}
+        staffCountBanner={{
+          refNo: "ADJ-SH001-202606-0001",
+          branchCode: "SH001",
+          branchName: "Chidlom",
+          staffCode: "103",
+          staffName: "Somsak Kamnuch",
+          documentDate: "2026-06-10",
+        }}
+      />
+    )
+
+    expect(html).toContain("ASAS • CNT")
+    expect(html).toContain("CNT-SH001-202606-0001")
+    expect(html).not.toContain("ADJ-SH001-202606-0001")
+  })
+
+  it("formats ORDER refs on full-pos staff identity lines", () => {
+    const html = renderToStaticMarkup(
+      <StockDocumentCountingSheet
+        lines={lines}
+        activeHookGroup="K"
+        readOnly={false}
+        onHookGroupChange={() => {}}
+        onLineChange={() => {}}
+        staffPhaseTitle="ASAS • ORD"
+        staffOperationalPhase={{
+          docType: "TRANSFER_OUT",
+          status: "DRAFT",
+          viewerEntityCode: "AS",
+        }}
+        staffCountBanner={{
+          refNo: "TRO-SH001-202606-0001",
+          branchCode: "SH001",
+          branchName: "Chidlom",
+          staffCode: "103",
+          staffName: "Somsak Kamnuch",
+          documentDate: "2026-06-10",
+        }}
+      />
+    )
+
+    expect(html).toContain("ASAS • ORD")
+    expect(html).toContain("ORD-SH001-202606-0001")
+    expect(html).not.toContain("TRO-SH001-202606-0001")
+  })
 })

@@ -9,6 +9,7 @@ import {
   mergeInputListWithSavedLines,
   type MergedCountingRowVM,
 } from "./merge-input-list-with-saved-lines"
+import type { DocType } from "./types"
 import type { StockDocumentDetailVM } from "./types"
 
 export type CountingEditorLoadResult = {
@@ -17,11 +18,12 @@ export type CountingEditorLoadResult = {
 }
 
 export async function loadCountingEditorStateForCreate(
-  branchId: string
+  branchId: string,
+  docType: DocType = "ADJUSTMENT"
 ): Promise<CountingEditorLoadResult> {
   const inputRows = await fetchStockInputList()
   const mergeResult = mergeInputListWithSavedLines(inputRows, [])
-  const header = countingEditorHeaderFromDraft("ADJUSTMENT", branchId)
+  const header = countingEditorHeaderFromDraft(docType, branchId)
 
   return {
     state: hydrateCountingEditorState(header, mergeResult),

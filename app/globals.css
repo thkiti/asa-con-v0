@@ -298,7 +298,8 @@ body {
   overflow: visible;
 }
 
-.receipt-setup-preview-slip {
+.receipt-setup-preview-slip,
+.receipt-setup-preview .thermal-slip {
   box-sizing: content-box;
   flex: 0 0 auto;
   width: var(--receipt-slip-ch-width, 30ch);
@@ -308,7 +309,7 @@ body {
   padding: 16px;
   border: 1px solid #ccc;
   border-radius: 6px;
-  background: #fff !important;
+  background: #f8f8f8 !important;
   color: #111 !important;
   overflow-x: visible;
   overflow-wrap: normal;

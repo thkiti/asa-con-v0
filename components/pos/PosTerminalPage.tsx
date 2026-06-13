@@ -30,7 +30,7 @@ import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import {
   stockCountEditorHref,
 } from "@/lib/pos-ui/pos-navigation"
-import { openStockCountDraft } from "@/lib/pos-ui/stock-count-client"
+import { openOrderDraft, openStockCountDraft } from "@/lib/pos-ui/stock-count-client"
 import { openPosReceiptPrint } from "@/lib/pos-ui/pos-receipt-print"
 import { openPosRefundReceiptPrint } from "@/lib/pos-ui/pos-refund-receipt-print"
 import { fetchPosReceiptNoPreview } from "@/lib/pos-ui/pos-receipt-preview-client"
@@ -43,6 +43,7 @@ import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-recei
 import { fetchPosProductLookup } from "@/lib/pos-ui/pos-product-lookup"
 import { resolvePosReceiptPanelNo } from "@/lib/pos-ui/pos-session-display"
 import { fetchSessionUser } from "@/lib/pos-ui/session-client"
+import { fetchStaffEvidenceStatus } from "@/lib/pos-ui/staff-evidence-client"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
 import {
@@ -69,6 +70,8 @@ export function PosTerminalPage() {
   const [readStaffGate, setReadStaffGate] = useState<null | "X" | "Z">(null)
   const [collectorOpen, setCollectorOpen] = useState(false)
   const [repairTicketOpen, setRepairTicketOpen] = useState(false)
+  const [staffEvidenceOpen, setStaffEvidenceOpen] = useState(false)
+  const [staffEvidenceComplete, setStaffEvidenceComplete] = useState(false)
   const [targetVsSalesOpen, setTargetVsSalesOpen] = useState(false)
   const [worktimeOpen, setWorktimeOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
@@ -108,6 +111,7 @@ export function PosTerminalPage() {
   const [evidencePendingOpen, setEvidencePendingOpen] = useState(false)
   const [evidenceQrModalOpen, setEvidenceQrModalOpen] = useState(false)
   const [stockCountPending, setStockCountPending] = useState(false)
+  const [orderPending, setOrderPending] = useState(false)
 
   const openStockCount = useCallback(async () => {
     if (stockCountPending) return
@@ -123,6 +127,30 @@ export function PosTerminalPage() {
       setStockCountPending(false)
     }
   }, [router, stockCountPending])
+
+  const openOrder = useCallback(async () => {
+    if (orderPending) return
+    setOrderPending(true)
+    try {
+      const doc = await openOrderDraft()
+      router.push(stockCountEditorHref(doc.id))
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to open order"
+      window.alert(message)
+    } finally {
+      setOrderPending(false)
+    }
+  }, [router, orderPending])
+
+  const refreshStaffEvidenceStatus = useCallback(async () => {
+    try {
+      const status = await fetchStaffEvidenceStatus()
+      setStaffEvidenceComplete(status.evidenceComplete)
+    } catch {
+      setStaffEvidenceComplete(false)
+    }
+  }, [])
 
   const refreshPendingEvidence = useCallback(async () => {
     const result = await fetchPendingPaymentEvidence()
@@ -169,6 +197,14 @@ export function PosTerminalPage() {
       } catch {
         if (!cancelled) setThermalLayouts(defaultResolvedThermalLayouts())
       }
+      if (!cancelled) {
+        try {
+          const status = await fetchStaffEvidenceStatus()
+          if (!cancelled) setStaffEvidenceComplete(status.evidenceComplete)
+        } catch {
+          if (!cancelled) setStaffEvidenceComplete(false)
+        }
+      }
       if (!cancelled) setLoading(false)
     })()
     return () => {
@@ -179,7 +215,8 @@ export function PosTerminalPage() {
   useEffect(() => {
     if (!session) return
     void refreshPendingEvidence()
-  }, [session, refreshPendingEvidence])
+    void refreshStaffEvidenceStatus()
+  }, [session, refreshPendingEvidence, refreshStaffEvidenceStatus])
 
   useEffect(() => {
     if (!session || isJestRuntime) return
@@ -481,6 +518,9 @@ export function PosTerminalPage() {
         if (id === "stock-count") {
           void openStockCount()
         }
+        if (id === "order") {
+          void openOrder()
+        }
         return
       }
 
@@ -502,6 +542,13 @@ export function PosTerminalPage() {
 
       if (kind === "wire-repair-ticket") {
         setRepairTicketOpen(true)
+        return
+      }
+
+      if (kind === "wire-staff-evidence") {
+        if (!staffEvidenceComplete) {
+          setStaffEvidenceOpen(true)
+        }
         return
       }
 
@@ -551,7 +598,17 @@ export function PosTerminalPage() {
         }
       }
     },
-    [barcode, onLogout, openCheckout, openRefund, openStockCount, readReport, submitBarcode]
+    [
+      barcode,
+      onLogout,
+      openCheckout,
+      openOrder,
+      openRefund,
+      openStockCount,
+      readReport,
+      staffEvidenceComplete,
+      submitBarcode,
+    ]
   )
 
   if (loading || !session) {
@@ -654,6 +711,14 @@ export function PosTerminalPage() {
       onCloseReadReport={() => setReadReport(null)}
       repairTicketOpen={repairTicketOpen}
       onCloseRepairTicket={() => setRepairTicketOpen(false)}
+      staffEvidenceOpen={staffEvidenceOpen}
+      onCloseStaffEvidence={() => setStaffEvidenceOpen(false)}
+      staffEvidenceComplete={staffEvidenceComplete}
+      onStaffEvidenceComplete={() => {
+        setStaffEvidenceComplete(true)
+        setStaffEvidenceOpen(false)
+        void refreshStaffEvidenceStatus()
+      }}
       thermalLayouts={thermalLayouts}
       keypadDisabled={
         logoutPending || lookupPending || checkoutPending || refundPending || refundLookupPending

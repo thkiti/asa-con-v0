@@ -35,6 +35,10 @@ describe("isApiBypassPath", () => {
     expect(isApiBypassPath("/api/stock-document/doc-1")).toBe(true)
   })
 
+  it("bypasses catalog-image product URL API", () => {
+    expect(isApiBypassPath("/api/catalog-image/product-url")).toBe(true)
+  })
+
   it("does not bypass unrelated API paths", () => {
     expect(isApiBypassPath("/api/stock")).toBe(false)
     expect(isApiBypassPath("/api/products")).toBe(false)

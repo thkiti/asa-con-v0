@@ -1,31 +1,44 @@
 import {
   formatDocStatusLabel,
-  formatDocTypeLabel,
   formatDocumentDate,
+  formatStaffFacingDocumentTitle,
+  formatStaffFacingDocumentNumber,
 } from "@/lib/stock-ui/format"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import type { StockDocumentDetailVM } from "@/lib/stock-ui/types"
 
 type StockDocumentPrintHeaderProps = {
   detail: StockDocumentDetailVM
+  viewerEntityCode?: DocumentEntityCode
 }
 
-export function StockDocumentPrintHeader({ detail }: StockDocumentPrintHeaderProps) {
+export function StockDocumentPrintHeader({
+  detail,
+  viewerEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE,
+}: StockDocumentPrintHeaderProps) {
+  const phaseTitle = formatStaffFacingDocumentTitle(
+    detail.docType,
+    detail.status,
+    viewerEntityCode
+  )
+  const displayRefNo = formatStaffFacingDocumentNumber(
+    detail.docType,
+    detail.status,
+    detail.refNo,
+    viewerEntityCode
+  )
+
   return (
     <header className="print-only print-break-inside-avoid mb-4 border-b border-zinc-300 pb-4">
-      <h2 className="text-base font-semibold text-zinc-900">Stock document</h2>
+      <h2 className="text-base font-semibold text-zinc-900">{phaseTitle}</h2>
       <p className="mt-1 text-xs text-zinc-600">
         Printed from saved document record. Operational and audit copy.
       </p>
       <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-xs text-zinc-500">Reference</dt>
-          <dd className="font-mono font-medium text-zinc-900">{detail.refNo}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-zinc-500">Type</dt>
-          <dd className="font-medium text-zinc-900">
-            {formatDocTypeLabel(detail.docType)}
-          </dd>
+          <dd className="font-mono font-medium text-zinc-900">{displayRefNo}</dd>
         </div>
         <div>
           <dt className="text-xs text-zinc-500">Status</dt>

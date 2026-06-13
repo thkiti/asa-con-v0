@@ -5,8 +5,9 @@ import {
   sumStockDocumentGroupSummaryRows,
 } from "@/lib/stock-ui/build-counting-group-summary"
 import type { EditorLineRowVM } from "@/lib/stock-ui/editor-types"
+import type { DeriveBusinessPhaseInput } from "@/lib/stock-ui/business-phase-title"
 import {
-  buildStockCountStaffHeadingLine,
+  buildStaffOperationalHeadingLine,
   type StockCountStaffHeadingFields,
 } from "@/lib/stock-ui/stock-count-staff-mode"
 import { StockDocumentCountingBlocks } from "./StockDocumentCountingBlocks"
@@ -30,6 +31,10 @@ export type StockDocumentCountingSheetProps = {
   toolbarActions?: ReactNode
   /** Staff count mode: 2-row header box + full-height workspace box. */
   staffCountBanner?: StockCountStaffHeadingFields | null
+  /** Phase context for business-facing ref formatting on the identity line. */
+  staffOperationalPhase?: DeriveBusinessPhaseInput | null
+  /** Business phase title shown in staff count mode, e.g. ASAS • CNT */
+  staffPhaseTitle?: string | null
 }
 
 export function StockDocumentCountingSheet({
@@ -40,6 +45,8 @@ export function StockDocumentCountingSheet({
   onLineChange,
   toolbarActions,
   staffCountBanner = null,
+  staffOperationalPhase = null,
+  staffPhaseTitle = null,
 }: StockDocumentCountingSheetProps) {
   const staffCountMode = staffCountBanner !== null
 
@@ -83,9 +90,10 @@ export function StockDocumentCountingSheet({
     visibleRows.length,
   ])
 
-  const identityLine = staffCountBanner
-    ? buildStockCountStaffHeadingLine(staffCountBanner)
-    : null
+  const identityLine =
+    staffCountBanner && staffOperationalPhase
+      ? buildStaffOperationalHeadingLine(staffCountBanner, staffOperationalPhase)
+      : null
 
   if (staffCountMode && staffCountBanner) {
     return (
@@ -94,6 +102,9 @@ export function StockDocumentCountingSheet({
         {...{ [COUNTING_SHEET_ROOT_ATTR]: "true" }}
       >
         <div className={stockCountHeaderBoxClass}>
+          {staffPhaseTitle ? (
+            <p className="text-sm font-semibold text-zinc-900">{staffPhaseTitle}</p>
+          ) : null}
           <p className={stockCountHeaderIdentityRowClass}>{identityLine}</p>
           <div className={stockCountHeaderControlsRowClass}>
             <div className="shrink-0">

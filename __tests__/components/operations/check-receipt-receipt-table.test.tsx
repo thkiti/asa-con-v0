@@ -42,6 +42,7 @@ describe("CheckReceiptReceiptTable", () => {
     expect(html).toContain("REC-002")
     expect(html).toContain("CASH")
     expect(html).toContain("BANK TRANSFER")
+    expect(html).toContain('data-testid="check-receipt-slip-trigger"')
     expect(html).not.toContain('data-testid="check-receipt-slip-preview"')
   })
 })

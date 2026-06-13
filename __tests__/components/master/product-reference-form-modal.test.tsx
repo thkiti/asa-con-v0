@@ -23,6 +23,23 @@ const rowWithRef = {
 }
 
 describe("ProductReferenceFormModal", () => {
+  it("renders create mode with empty editable product code", () => {
+    const html = renderToStaticMarkup(
+      <ProductReferenceFormModal
+        open
+        mode="create"
+        onClose={() => {}}
+        onSaveProduct={async () => {}}
+        onSaveAll={async () => {}}
+        onCreate={async () => {}}
+      />
+    )
+    expect(html).toContain("Add Product Reference")
+    expect(html).toContain("Reference Stock")
+    expect(html).toContain("Product")
+    expect(html).not.toContain("Trash Reference Link")
+  })
+
   it("renders Add Product Reference title when no reference", () => {
     const html = renderToStaticMarkup(
       <ProductReferenceFormModal

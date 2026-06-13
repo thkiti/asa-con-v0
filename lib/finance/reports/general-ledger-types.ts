@@ -5,18 +5,23 @@ export type GeneralLedgerFilter = {
   periodKey?: string
   from?: string
   to?: string
+  accountId?: string
+  accountIds?: string[]
   accountCode?: string
   accountCodes?: string[]
 }
 
 export type GeneralLedgerTransaction = {
   journalEntryId: string
+  journalLineId: string
   journalDate: string
   entryNo: string
+  sourceRef: string | null
   description: string | null
   lineMemo: string | null
   debit: string
   credit: string
+  signedMovement: string
   runningBalance: string
 }
 

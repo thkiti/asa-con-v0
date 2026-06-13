@@ -2,6 +2,8 @@ import { MasterDomainError } from "@/lib/master/errors"
 import { PricingDomainError } from "@/lib/pricing/pricing-errors"
 import { MasterDatabaseAuthError } from "@/lib/permissions/master"
 import { ThermalLayoutError } from "@/lib/thermal-layout/errors"
+import { CatalogImageError } from "@/lib/catalog-image/errors"
+import { PosLookupError } from "@/lib/pos/pos-errors"
 import { NextResponse } from "next/server"
 
 export function masterErrorResponse(err: unknown, logLabel: string): NextResponse {
@@ -29,6 +31,20 @@ export function masterErrorResponse(err: unknown, logLabel: string): NextRespons
   }
 
   if (err instanceof MasterDomainError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: err.httpStatus }
+    )
+  }
+
+  if (err instanceof PosLookupError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: err.httpStatus }
+    )
+  }
+
+  if (err instanceof CatalogImageError) {
     return NextResponse.json(
       { error: err.message, code: err.code },
       { status: err.httpStatus }

@@ -207,10 +207,15 @@ export function createFinanceMockTx(branchId = "branch-1") {
         orderBy,
       }: {
         where?: {
+          id?: { in: string[] }
           code?: { in: string[] }
           accountType?: { in: string[] }
           deleted?: boolean
           isActive?: boolean
+          OR?: Array<{
+            id?: { in: string[] }
+            code?: { in: string[] }
+          }>
         }
         orderBy?:
           | Array<{ accountType?: "asc" | "desc"; code?: "asc" | "desc" }>
@@ -219,7 +224,17 @@ export function createFinanceMockTx(branchId = "branch-1") {
         let rows = state.glAccounts.filter((a) => {
           if (where?.deleted !== undefined && a.deleted !== where.deleted) return false
           if (where?.isActive !== undefined && a.isActive !== where.isActive) return false
-          if (where?.code?.in && !where.code.in.includes(a.code)) return false
+          if (where?.OR?.length) {
+            const matchesOr = where.OR.some((clause) => {
+              if (clause.id?.in && clause.id.in.includes(a.id)) return true
+              if (clause.code?.in && clause.code.in.includes(a.code)) return true
+              return false
+            })
+            if (!matchesOr) return false
+          } else {
+            if (where?.id?.in && !where.id.in.includes(a.id)) return false
+            if (where?.code?.in && !where.code.in.includes(a.code)) return false
+          }
           if (where?.accountType) {
             const accountTypeFilter = where.accountType as
               | GlAccountType

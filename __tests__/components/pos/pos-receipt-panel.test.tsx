@@ -5,6 +5,7 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 import { PosReceiptPanel } from "@/components/pos/PosReceiptPanel"
+import { POS_CART_PANEL_FRAME_CLASS } from "@/lib/pos-ui/pos-panel-frame"
 import { decrementLineQty } from "@/lib/pos/cart"
 import type { PosCartLine } from "@/lib/pos/cart"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
@@ -43,6 +44,11 @@ describe("PosReceiptPanel", () => {
     expect(html).toContain("103 • Somsak Kamnuch")
     expect(html).not.toContain("Staff ID")
     expect(html).not.toContain("Staff name")
+    expect(html).toContain(POS_CART_PANEL_FRAME_CLASS)
+    expect(html).toContain("overflow-hidden")
+    expect(html).toContain("w-[380px]")
+    expect(html).toContain("bg-orange-600")
+    expect(html).not.toContain("border-orange-800")
   })
 
   it("shows allocated receipt number when provided", () => {

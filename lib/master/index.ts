@@ -26,6 +26,11 @@ export type {
   UpdateBranchInput,
 } from "./parse-branch-mutation"
 export { listStaff } from "./staff-list"
+export {
+  deleteMasterStaffEvidence,
+  getMasterStaffEvidenceDetail,
+  listStaffWithEvidence,
+} from "./staff-evidence"
 export { createStaff } from "./create-staff"
 export { updateStaff } from "./update-staff"
 export { deleteStaff } from "./delete-staff"
@@ -43,6 +48,7 @@ export type {
   UpdateStaffInput,
 } from "./parse-staff-mutation"
 export { listProductReference } from "./product-reference-list"
+export { createProductWithReference } from "./create-product-with-reference"
 export { createReferenceStock } from "./create-reference-stock"
 export { updateReferenceStock } from "./update-reference-stock"
 export { deleteReferenceStock } from "./delete-reference-stock"
@@ -63,6 +69,8 @@ export type {
 } from "./parse-product-reference-mutation"
 export { parsePatchProductBody } from "./parse-product-mutation"
 export type { PatchProductBody, UpdateProductInput } from "./parse-product-mutation"
+export { parseCreateProductWithReferenceBody } from "./parse-product-create-mutation"
+export type { CreateProductWithReferenceInput } from "./parse-product-create-mutation"
 export {
   parseBranchListQuery,
   parseProductReferenceListQuery,

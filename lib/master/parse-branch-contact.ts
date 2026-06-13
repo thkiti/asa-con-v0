@@ -1,4 +1,5 @@
 import { formatShopBranchCode } from "@/lib/import/validation/branch-code"
+import type { BranchListItem } from "./types"
 import { MasterDomainError } from "./errors"
 
 export function parseOptionalBranchContactField(
@@ -36,4 +37,16 @@ export function previewBranchCodeForTaxLabel(
     return formatShopBranchCode(trimmed)
   }
   return trimmed
+}
+
+/** Table column: company tax ID for HO branches only. */
+export function branchListTaxIdDisplay(row: Pick<BranchListItem, "type" | "taxId">): string {
+  return row.type === "HO" ? (row.taxId ?? "") : ""
+}
+
+/** Table column: machine / POS approval ID for shop branches only. */
+export function branchListMachineNoDisplay(
+  row: Pick<BranchListItem, "type" | "taxId">
+): string {
+  return row.type === "SH" ? (row.taxId ?? "") : ""
 }

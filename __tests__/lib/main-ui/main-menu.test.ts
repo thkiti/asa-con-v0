@@ -1,4 +1,4 @@
-﻿import {
+import {
   canAccessMainMenuSection,
   getMainMenuGroups,
   getMainMenuItems,
@@ -77,6 +77,9 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("HO_ADMIN", "finance")).toBeUndefined()
     expect(findItem("HO_ADMIN", "trial-balance")?.href).toBe(
       "/finance/reports/trial-balance"
+    )
+    expect(findItem("HO_ADMIN", "retained-earnings")?.href).toBe(
+      "/finance/reports/retained-earnings"
     )
     expect(findItem("HO_ADMIN", "changes-in-equity")?.href).toBe(
       "/finance/reports/changes-in-equity"

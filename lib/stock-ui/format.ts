@@ -1,4 +1,11 @@
 import type { DocStatus, DocType } from "@/generated/prisma/client"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import {
+  formatStockDocumentPhaseTitle,
+  formatBusinessDocumentNumber,
+  usesBusinessPhaseTitle,
+} from "./business-phase-title"
 import { SHOP_STOCK_DOC_TYPE_LABELS } from "./constants"
 
 const STATUS_LABELS: Record<DocStatus, string> = {
@@ -30,6 +37,33 @@ export function formatDocTypeLabel(docType: DocType): string {
     ]
   }
   return docType.replace(/_/g, " ")
+}
+
+/** Staff-facing title: business phase when mapped, else legacy type label. */
+export function formatStaffFacingDocumentTitle(
+  docType: DocType,
+  status: DocStatus,
+  viewerEntityCode: DocumentEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE
+): string {
+  if (usesBusinessPhaseTitle(docType)) {
+    return formatStockDocumentPhaseTitle({ docType, status, viewerEntityCode })
+  }
+  return formatDocTypeLabel(docType)
+}
+
+/** Staff-facing document number — phase prefix aligned with title vocabulary. */
+export function formatStaffFacingDocumentNumber(
+  docType: DocType,
+  status: DocStatus,
+  storedRefNo: string | null | undefined,
+  viewerEntityCode: DocumentEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE
+): string {
+  return formatBusinessDocumentNumber({
+    docType,
+    status,
+    viewerEntityCode,
+    storedRefNo,
+  })
 }
 
 export function formatDocStatusLabel(status: DocStatus): string {

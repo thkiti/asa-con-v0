@@ -3,18 +3,31 @@
 type SlipImageHoverPreviewProps = {
   imageUrl: string
   receiptNo: string
+  top: number
+  left: number
+  maxWidth: number
+  maxHeight: number
 }
 
 export function SlipImageHoverPreview({
   imageUrl,
   receiptNo,
+  top,
+  left,
+  maxWidth,
+  maxHeight,
 }: SlipImageHoverPreviewProps) {
   return (
     <div
-      className="pointer-events-none fixed inset-y-0 right-0 z-[9999] flex items-center justify-end p-4"
+      className="pointer-events-none fixed z-[9999]"
+      style={{ top, left }}
       data-testid="check-receipt-slip-preview"
+      role="tooltip"
     >
-      <div className="flex max-h-[85vh] max-w-[55vw] flex-col rounded-xl border border-border bg-card p-3 shadow-2xl">
+      <div
+        className="flex flex-col overflow-hidden rounded-xl border border-border bg-card p-3 shadow-2xl"
+        style={{ maxWidth, maxHeight }}
+      >
         <p className="mb-2 shrink-0 truncate text-center font-mono text-xs text-muted-foreground">
           {receiptNo}
         </p>
@@ -22,7 +35,8 @@ export function SlipImageHoverPreview({
           <img
             src={imageUrl}
             alt={`Bank transfer slip for ${receiptNo}`}
-            className="max-h-[calc(85vh-2.5rem)] max-w-full object-contain"
+            className="max-h-full max-w-full object-contain"
+            style={{ maxHeight: maxHeight - 40 }}
             loading="eager"
           />
         </div>

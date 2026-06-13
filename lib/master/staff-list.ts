@@ -9,24 +9,17 @@ export async function listStaff(
   db: StaffDb,
   query: StaffListQuery
 ): Promise<StaffListItem[]> {
-  const q = query.q.trim()
+  const staffId = query.staffId.trim()
+  const name = query.name.trim()
 
   const rows = await db.staff.findMany({
     where: {
       staffId: { not: DEV_PERIOD_ADMIN_STAFF_CODE },
       deleted: query.mode === "trash",
       ...(query.role ? { role: query.role } : {}),
-      ...(query.branchCode
-        ? { branch: { code: query.branchCode } }
-        : {}),
-      ...(q
-        ? {
-            OR: [
-              { staffId: { contains: q, mode: "insensitive" } },
-              { name: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
+      ...(query.branchCode ? { branch: { code: query.branchCode } } : {}),
+      ...(staffId ? { staffId: { contains: staffId, mode: "insensitive" } } : {}),
+      ...(name ? { name: { contains: name, mode: "insensitive" } } : {}),
     },
     include: {
       branch: {

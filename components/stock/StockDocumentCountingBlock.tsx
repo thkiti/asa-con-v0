@@ -1,3 +1,4 @@
+import { CatalogProductCodeHover } from "@/components/catalog-image/CatalogProductCodeHover"
 import { formatHookNumber } from "@/lib/stock-ui/counting-sheet-display"
 import type { CountingHookGroup } from "@/lib/stock-ui/counting-hook-groups"
 import type { EditorLineRowVM } from "@/lib/stock-ui/editor-types"
@@ -90,7 +91,11 @@ export function StockDocumentCountingBlock({
                   {formatHookNumber(line)}
                 </td>
               ) : null}
-              <td className={countingCellCodeClass}>{code}</td>
+              <td className={countingCellCodeClass}>
+                <CatalogProductCodeHover productCode={line.productCode}>
+                  {code}
+                </CatalogProductCodeHover>
+              </td>
               {showProductName ? (
                 <td
                   className={countingCellNameClass}

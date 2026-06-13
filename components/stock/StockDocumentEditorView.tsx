@@ -12,6 +12,9 @@ import type {
 import {
   STOCK_COUNT_STAFF_BACK_HREF,
 } from "@/lib/stock-ui/stock-count-staff-mode"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
+import { formatStaffFacingDocumentTitle } from "@/lib/stock-ui/format"
 import { StockDocumentCountingSheet } from "./StockDocumentCountingSheet"
 import { StockDocumentEditorToolbarActions } from "./StockDocumentEditorToolbarActions"
 import { StockDocumentHeaderForm } from "./StockDocumentHeaderForm"
@@ -31,6 +34,7 @@ type StockDocumentEditorViewProps = {
   error: string | null
   statusMessage: string | null
   countingMode: boolean
+  staffOperationalSheet?: boolean
   activeHookGroup: CountingHookGroup
   onHookGroupChange: (hookGroup: CountingHookGroup) => void
   onHeaderChange: (patch: Partial<StockDocumentEditorStateVM>) => void
@@ -45,6 +49,7 @@ type StockDocumentEditorViewProps = {
     staffCode: string
     staffName: string
   } | null
+  viewerEntityCode?: DocumentEntityCode
 }
 
 export function StockDocumentEditorView({
@@ -57,6 +62,7 @@ export function StockDocumentEditorView({
   error,
   statusMessage,
   countingMode,
+  staffOperationalSheet = false,
   activeHookGroup,
   onHookGroupChange,
   onHeaderChange,
@@ -66,9 +72,16 @@ export function StockDocumentEditorView({
   onWorkflowAction,
   stockCountStaffMode = false,
   staffHeader = null,
+  viewerEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE,
 }: StockDocumentEditorViewProps) {
-  const showCountingGrid = countingMode && isCountingEditorMode(state)
+  const showOperationalSheet =
+    staffOperationalSheet || (countingMode && isCountingEditorMode(state))
   const showPrintSnapshot = detailSnapshot && !stockCountStaffMode
+  const staffPhaseTitle = formatStaffFacingDocumentTitle(
+    state.docType,
+    state.status,
+    viewerEntityCode
+  )
 
   const toolbarActions = (
     <StockDocumentEditorToolbarActions
@@ -93,7 +106,10 @@ export function StockDocumentEditorView({
     >
       {showPrintSnapshot ? (
         <>
-          <StockDocumentPrintHeader detail={detailSnapshot} />
+          <StockDocumentPrintHeader
+            detail={detailSnapshot}
+            viewerEntityCode={viewerEntityCode}
+          />
           <StockDocumentPrintLinesTable detail={detailSnapshot} />
         </>
       ) : null}
@@ -134,12 +150,16 @@ export function StockDocumentEditorView({
         <>
           {!stockCountStaffMode ? (
             <div className="no-print">
-              <StockDocumentHeaderForm state={state} onChange={onHeaderChange} />
+              <StockDocumentHeaderForm
+                state={state}
+                onChange={onHeaderChange}
+                viewerEntityCode={viewerEntityCode}
+              />
             </div>
           ) : null}
 
           <div className={stockCountStaffMode ? "no-print flex min-h-0 flex-1 flex-col" : "no-print"}>
-            {showCountingGrid ? (
+            {showOperationalSheet ? (
               <StockDocumentCountingSheet
                 lines={state.lines}
                 activeHookGroup={activeHookGroup}
@@ -147,6 +167,15 @@ export function StockDocumentEditorView({
                 onHookGroupChange={onHookGroupChange}
                 onLineChange={onLineChange}
                 toolbarActions={toolbarActions}
+                staffOperationalPhase={
+                  stockCountStaffMode
+                    ? {
+                        docType: state.docType,
+                        status: state.status,
+                        viewerEntityCode,
+                      }
+                    : null
+                }
                 staffCountBanner={
                   stockCountStaffMode && staffHeader
                     ? {
@@ -159,6 +188,7 @@ export function StockDocumentEditorView({
                       }
                     : null
                 }
+                staffPhaseTitle={stockCountStaffMode ? staffPhaseTitle : null}
               />
             ) : (
               <div className="space-y-4">

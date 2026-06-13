@@ -11,6 +11,7 @@ export type PosActionKind =
   | "wire-repair-ticket"
   | "wire-read-x"
   | "wire-read-z"
+  | "wire-staff-evidence"
   | "wire-print-report"
   | "placeholder"
   | "keypad"
@@ -19,7 +20,7 @@ const PLACEHOLDER_IDS: readonly PosPlaceholderId[] = []
 
 const PLACEHOLDER_SET = new Set<string>(PLACEHOLDER_IDS)
 
-const WIRE_NAV_IDS = new Set<string>(["stock-count"])
+const WIRE_NAV_IDS = new Set<string>(["stock-count", "order"])
 
 const WIRE_TARGET_VS_SALES_IDS = new Set<string>(["target-vs-sales"])
 
@@ -51,6 +52,7 @@ export function getPosActionKind(id: PosKeypadActionId): PosActionKind {
   if (id === "repair-ticket") return "wire-repair-ticket"
   if (id === "read-x") return "wire-read-x"
   if (id === "read-z") return "wire-read-z"
+  if (id === "staff-evidence") return "wire-staff-evidence"
   if (id === "print-report") return "wire-print-report"
   if (WIRE_TARGET_VS_SALES_IDS.has(id)) return "wire-target-vs-sales"
   if (WIRE_WORKTIME_IDS.has(id)) return "wire-worktime"

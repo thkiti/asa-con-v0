@@ -6,6 +6,8 @@ export type GeneralLedgerFilter = {
   periodKey?: string
   from?: string
   to?: string
+  accountId?: string
+  accountIds?: string[]
   accountCode?: string
   accountCodes?: string[]
 }
@@ -16,6 +18,10 @@ function buildQuery(filter: GeneralLedgerFilter): string {
   if (filter.periodKey?.trim()) params.set("periodKey", filter.periodKey.trim())
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())
+  if (filter.accountId?.trim()) params.set("accountId", filter.accountId.trim())
+  for (const id of filter.accountIds ?? []) {
+    if (id.trim()) params.append("accountIds", id.trim())
+  }
   if (filter.accountCode?.trim()) params.set("accountCode", filter.accountCode.trim())
   for (const code of filter.accountCodes ?? []) {
     if (code.trim()) params.append("accountCodes", code.trim())
@@ -50,9 +56,11 @@ export function generalLedgerToCsv(result: GeneralLedgerResult): string {
     "Account Name",
     "Date",
     "Entry No",
+    "Source Ref",
     "Description",
     "Debit",
     "Credit",
+    "Signed Movement",
     "Running Balance",
   ] as const
 
@@ -63,9 +71,11 @@ export function generalLedgerToCsv(result: GeneralLedgerResult): string {
       account.accountName,
       "",
       "",
-      `Opening Balance`,
+      "",
+      "Opening Balance",
       account.openingDebit,
       account.openingCredit,
+      "",
       account.openingBalance,
     ])
     for (const tx of account.transactions) {
@@ -74,9 +84,11 @@ export function generalLedgerToCsv(result: GeneralLedgerResult): string {
         account.accountName,
         tx.journalDate.slice(0, 10),
         tx.entryNo,
+        tx.sourceRef,
         tx.description ?? tx.lineMemo ?? "",
         tx.debit,
         tx.credit,
+        tx.signedMovement,
         tx.runningBalance,
       ])
     }
@@ -85,7 +97,9 @@ export function generalLedgerToCsv(result: GeneralLedgerResult): string {
       account.accountName,
       "",
       "",
-      `Closing Balance`,
+      "",
+      "Closing Balance",
+      "",
       "",
       "",
       account.closingBalance,

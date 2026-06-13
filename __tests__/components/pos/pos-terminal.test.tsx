@@ -64,6 +64,10 @@ jest.mock("@/lib/pos-ui/stock-count-client", () => ({
     id: "doc-adj-1",
     refNo: "ADJ-SH001-202606-0001",
   })),
+  openOrderDraft: jest.fn(async () => ({
+    id: "doc-tro-1",
+    refNo: "TRO-SH001-202606-0001",
+  })),
 }))
 
 jest.mock("@/lib/pos-ui/pos-thermal-layouts-client", () => {
@@ -157,6 +161,19 @@ function mockWorktimeResponse() {
           isToday: true,
         },
       ],
+    }),
+  } as Response
+}
+
+function mockStaffEvidenceStatusResponse() {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      staffId: "S001",
+      photoUploaded: false,
+      idCardUploaded: false,
+      evidenceComplete: false,
     }),
   } as Response
 }
@@ -255,6 +272,9 @@ describe("PosTerminalPage", () => {
       }
       if (url === "/api/pos/worktime") {
         return Promise.resolve(mockWorktimeResponse())
+      }
+      if (url === "/api/pos/staff-evidence/status") {
+        return Promise.resolve(mockStaffEvidenceStatusResponse())
       }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as typeof fetch
@@ -378,13 +398,48 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("shows REFUND button instead of ORDER", async () => {
+  it("shows ORDER and REFUND buttons", async () => {
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
 
     expect(container.textContent).toContain("REFUND")
-    expect(container.textContent).not.toContain("ORDER")
+    expect(container.textContent).toContain("ORDER")
+
+    act(() => root.unmount())
+  })
+
+  it("keeps a reserved keypad message slot so warnings do not shift layout", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-keypad-message-block"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="pos-keypad-message-slot"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="pos-evidence-pending-banner"]')).toBeNull()
+
+    const checkoutBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "CHECKOUT"
+    )
+    expect(checkoutBtn?.className).not.toContain("max-h-")
+
+    act(() => root.unmount())
+  })
+
+  it("navigates ORDER to active transfer-out editor draft", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    const orderBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "ORDER"
+    )
+    expect(orderBtn).toBeDefined()
+    act(() => {
+      orderBtn!.click()
+    })
+    await flushPromises()
+    expect(push).toHaveBeenCalledWith("/shop/stock-documents/doc-tro-1?from=shop")
 
     act(() => root.unmount())
   })
@@ -482,6 +537,9 @@ describe("PosTerminalPage", () => {
             },
           }),
         } as Response)
+      }
+      if (url === "/api/pos/staff-evidence/status") {
+        return Promise.resolve(mockStaffEvidenceStatusResponse())
       }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as typeof fetch
@@ -622,6 +680,9 @@ describe("PosTerminalPage", () => {
             code: "OVER_REFUND",
           }),
         } as Response)
+      }
+      if (url === "/api/pos/staff-evidence/status") {
+        return Promise.resolve(mockStaffEvidenceStatusResponse())
       }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     })
@@ -915,7 +976,8 @@ describe("PosTerminalPage", () => {
     expect(openSpy).toHaveBeenCalledWith("/shop/receipt/sale-bank-1?autoprint=1", "_blank")
     expect(mockedBackgroundUpload).not.toHaveBeenCalled()
     expect(container.textContent).toContain("Scan a product to add to cart")
-    expect(container.querySelector('[data-testid="pos-evidence-pending-banner"]')).toBeTruthy()
+    const messageSlot = container.querySelector('[data-testid="pos-keypad-message-slot"]')
+    expect(messageSlot?.querySelector('[data-testid="pos-evidence-pending-banner"]')).toBeTruthy()
     expect(container.textContent).toContain("SLIP PENDING")
 
     openSpy.mockRestore()

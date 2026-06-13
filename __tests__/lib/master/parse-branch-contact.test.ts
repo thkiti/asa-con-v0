@@ -1,4 +1,6 @@
 import {
+  branchListMachineNoDisplay,
+  branchListTaxIdDisplay,
   branchTaxIdFieldLabel,
   previewBranchCodeForTaxLabel,
 } from "@/lib/master/parse-branch-contact"
@@ -22,5 +24,19 @@ describe("previewBranchCodeForTaxLabel", () => {
 
   it("returns SH when code empty", () => {
     expect(previewBranchCodeForTaxLabel("", "SH")).toBe("SH")
+  })
+})
+
+describe("branch list tax / machine columns", () => {
+  it("shows tax ID for HO only", () => {
+    expect(branchListTaxIdDisplay({ type: "HO", taxId: "0123456789012" })).toBe(
+      "0123456789012"
+    )
+    expect(branchListTaxIdDisplay({ type: "SH", taxId: "M-001" })).toBe("")
+  })
+
+  it("shows machine no for SH only", () => {
+    expect(branchListMachineNoDisplay({ type: "SH", taxId: "M-001" })).toBe("M-001")
+    expect(branchListMachineNoDisplay({ type: "HO", taxId: "0123456789012" })).toBe("")
   })
 })

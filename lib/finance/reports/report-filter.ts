@@ -110,6 +110,22 @@ function parseAccountCodes(params: ReportFilterParams): string[] | undefined {
   return [...new Set(codes)]
 }
 
+function parseAccountIds(params: ReportFilterParams): string[] | undefined {
+  const single = params.get("accountId")?.trim()
+  const repeated = (params.getAll?.("accountIds") ?? []).flatMap((value) =>
+    value
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+  )
+  const ids = [
+    ...(single ? [single] : []),
+    ...repeated,
+  ]
+  if (ids.length === 0) return undefined
+  return [...new Set(ids)]
+}
+
 export type ReportFilterParams = {
   get(name: string): string | null
   getAll?(name: string): string[]
@@ -129,8 +145,11 @@ export function parseTrialBalanceFilter(params: ReportFilterParams): TrialBalanc
 export function parseGeneralLedgerFilter(params: ReportFilterParams): GeneralLedgerFilter {
   const scope = parseFinanceReportScope(params)
   const accountCodes = parseAccountCodes(params)
+  const accountIds = parseAccountIds(params)
   return {
     ...scope,
+    accountId: accountIds?.length === 1 ? accountIds[0] : undefined,
+    accountIds: accountIds && accountIds.length > 1 ? accountIds : undefined,
     accountCode: accountCodes?.length === 1 ? accountCodes[0] : undefined,
     accountCodes: accountCodes && accountCodes.length > 1 ? accountCodes : undefined,
   }

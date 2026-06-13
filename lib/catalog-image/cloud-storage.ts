@@ -1,5 +1,7 @@
 import { CatalogImageError } from "./errors"
 
+export { getCatalogProductCloudPath } from "./cloud-paths"
+
 export type UploadCatalogProductImageParams = {
   productCode: string
   localFilePath: string
@@ -9,10 +11,6 @@ export type UploadCatalogProductImageParams = {
 export type UploadCatalogProductImageResult = {
   cloudPath: string
   publicUrl?: string | null
-}
-
-export function getCatalogProductCloudPath(productCode: string): string {
-  return `products/${productCode}.png`
 }
 
 export async function uploadCatalogProductImage(

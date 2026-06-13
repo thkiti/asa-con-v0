@@ -321,6 +321,7 @@ describe("StockDocumentEditorView", () => {
         error={null}
         statusMessage={null}
         countingMode
+        staffOperationalSheet
         activeHookGroup="K"
         onHookGroupChange={() => {}}
         onHeaderChange={() => {}}
@@ -339,8 +340,9 @@ describe("StockDocumentEditorView", () => {
     )
 
     const identityLine =
-      "ตรวจนับสต๊อก — ADJ-SH001-202606-0001 | SH001 • Chidlom | 103 • Somsak Kamnuch | 2026.06.10"
+      "ตรวจนับสต๊อก • CNT-SH001-202606-0001 • SH001 • Chidlom • 103 • Somsak Kamnuch • 2026.06.10"
     expect(html).toContain(identityLine)
+    expect(html).not.toContain("ADJ-SH001-202606-0001")
     expect(html).toContain("stock-count-header-box")
     expect(html).toContain("stock-count-header-box__identity")
     expect(html).toContain("stock-count-header-box__controls")
@@ -379,6 +381,79 @@ describe("StockDocumentEditorView", () => {
     expect(controlsRow).not.toMatch(/Save[\s\S]*?bg-zinc-900 text-white/)
     expect(controlsRow).toContain("1 รายการ กลุ่ม K")
     expect(controlsRow).not.toContain("Items:")
+  })
+
+  it("renders transfer-out staff order sheet with ORDER labeling and ASAS • ORD", () => {
+    const transferDraft: StockDocumentEditorStateVM = {
+      ...draftState,
+      docType: "TRANSFER_OUT",
+      refNo: "TRO-SH001-202606-0002",
+      date: "2026-06-10",
+      lines: [
+        {
+          key: "K-1",
+          rowKey: "K-1",
+          productId: "prod-k",
+          productCode: "0101001",
+          productName: "Home key",
+          displayCode: "#K1",
+          hookGroup: "K",
+          hookNo: 1,
+          hookLabel: "K.1",
+          qty: "1",
+          endingQty: "",
+          reviewPostingDelta: "",
+        },
+      ],
+    }
+
+    const staffActions = filterEditorActionsForStockCountStaff(
+      getEditorWorkflowActions(
+        { role: "SH_STAFF", docType: "TRANSFER_OUT", status: "DRAFT" },
+        { hasDocumentId: false }
+      )
+    )
+
+    const html = renderToStaticMarkup(
+      <StockDocumentEditorView
+        state={transferDraft}
+        detailSnapshot={null}
+        loading={false}
+        saving={false}
+        actionBusy={null}
+        actions={staffActions}
+        error={null}
+        statusMessage={null}
+        countingMode={false}
+        staffOperationalSheet
+        activeHookGroup="K"
+        onHookGroupChange={() => {}}
+        onHeaderChange={() => {}}
+        onAddLine={() => {}}
+        onRemoveLine={() => {}}
+        onLineChange={() => {}}
+        onWorkflowAction={() => {}}
+        stockCountStaffMode
+        staffHeader={{
+          branchCode: "SH001",
+          branchName: "Chidlom",
+          staffCode: "103",
+          staffName: "Somsak Kamnuch",
+        }}
+        viewerEntityCode="AS"
+      />
+    )
+
+    expect(html).toContain("ASAS • ORD")
+    expect(html).toContain(
+      "ใบสั่งของ • ORD-SH001-202606-0002 • SH001 • Chidlom • 103 • Somsak Kamnuch • 2026.06.10"
+    )
+    expect(html).not.toContain("ORDER —")
+    expect(html).not.toContain("| SH001")
+    expect(html).toContain("stock-count-staff-sheet")
+    expect(html).not.toContain("Document header")
+    expect(html).not.toContain("From location")
+    expect(html).not.toContain("Product UUID")
   })
 
   it("renders sparse lines table for submitted adjustment", () => {

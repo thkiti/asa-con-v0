@@ -302,16 +302,15 @@ describe("System Import UI", () => {
     expect(html).toContain("รหัส Product ที่ยังไม่มีในระบบ")
   })
 
-  it("staff page shows bootstrap mapping copy in Thai", () => {
+  it("staff page shows short prerequisite note", () => {
     const html = renderToStaticMarkup(
       <ImportEntityPage entity="staff" documentEntityCode="AS" />
     )
-    expect(html).toContain("staffId 001 → สำนักงานใหญ่ HO999")
-    expect(html).toContain("staffId 001 → ผู้ดูแลระบบ")
-    expect(html).toContain("พนักงานอื่น → สาขา SH999")
-    expect(html).toContain("พนักงานอื่น → พนักงานสาขา")
-    expect(html).not.toContain("HO_ADMIN")
-    expect(html).not.toContain("SH_STAFF")
+    expect(html).toContain("ต้องมี HO999 • Head Office และ SH999 • Service Center ก่อน")
+    expect(html).not.toContain("สำนักงานใหญ่")
+    expect(html).not.toContain("ศูนย์บริการ")
+    expect(html).not.toContain("staffId 001")
+    expect(html).not.toContain("ไม่ใช่สาขาขายปลีก")
   })
 
   it("staff page shows login note and no-staff warning when empty", () => {

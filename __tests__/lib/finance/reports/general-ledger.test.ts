@@ -16,6 +16,7 @@ function seedJournal(
     periodId: string
     date: Date
     voucherNo?: string
+    refNo?: string | null
     description?: string | null
     lines: { code: string; debit: string; credit: string; memo?: string | null }[]
   }
@@ -30,7 +31,7 @@ function seedJournal(
     periodId: input.periodId,
     refType: "MANUAL_JOURNAL",
     refId: input.id,
-    refNo: null,
+    refNo: input.refNo ?? null,
     description: input.description ?? null,
     postedAt: input.date,
     createdAt: input.date,
@@ -407,5 +408,207 @@ describe("getGeneralLedger", () => {
         expect(account.transactions.at(-1)?.runningBalance).toBe(account.closingBalance)
       }
     }
+  })
+
+  it("filters by accountId", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const period = await seedPeriod(tx, branchId, "2026-05")
+    const cashAccount = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)
+    if (!cashAccount) throw new Error("missing cash account")
+
+    seedJournal(state, {
+      id: "journal-1",
+      branchId,
+      periodId: period.id,
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "250", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "250" },
+      ],
+    })
+
+    const result = await getGeneralLedger(tx, {
+      branchId,
+      periodKey: "2026-05",
+      accountId: cashAccount.id,
+    })
+
+    expect(result.accounts).toHaveLength(1)
+    expect(result.accounts[0]?.accountCode).toBe(DEFAULT_ACCOUNT_CODES.CASH)
+    expect(result.accounts[0]?.closingBalance).toBe("250")
+  })
+
+  it("populates journalLineId, sourceRef, and signedMovement on transactions", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const period = await seedPeriod(tx, branchId, "2026-05")
+
+    seedJournal(state, {
+      id: "journal-ref",
+      branchId,
+      periodId: period.id,
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      voucherNo: "V-REF-001",
+      refNo: "MJ-2026-001",
+      description: "Manual journal",
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "100", credit: "0", memo: "Cash in" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "100" },
+      ],
+    })
+
+    const result = await getGeneralLedger(tx, {
+      branchId,
+      periodKey: "2026-05",
+      accountCode: DEFAULT_ACCOUNT_CODES.CASH,
+    })
+
+    expect(result.accounts[0]?.transactions[0]).toMatchObject({
+      journalLineId: "jline-journal-ref-1",
+      entryNo: "V-REF-001",
+      sourceRef: "MJ-2026-001",
+      signedMovement: "100",
+      runningBalance: "100",
+    })
+  })
+
+  it("applies credit-normal signed movement for revenue accounts", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const period = await seedPeriod(tx, branchId, "2026-05")
+
+    seedJournal(state, {
+      id: "journal-revenue",
+      branchId,
+      periodId: period.id,
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "400", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "400" },
+      ],
+    })
+
+    const result = await getGeneralLedger(tx, {
+      branchId,
+      periodKey: "2026-05",
+      accountCode: DEFAULT_ACCOUNT_CODES.REVENUE,
+    })
+
+    const account = result.accounts[0]!
+    expect(account.transactions[0]?.debit).toBe("0")
+    expect(account.transactions[0]?.credit).toBe("400")
+    expect(account.transactions[0]?.signedMovement).toBe("400")
+    expect(account.transactions[0]?.runningBalance).toBe("400")
+    expect(account.closingBalance).toBe("400")
+  })
+
+  it("applies credit-normal signed movement for liability accounts", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const period = await seedPeriod(tx, branchId, "2026-05")
+
+    seedJournal(state, {
+      id: "journal-ap",
+      branchId,
+      periodId: period.id,
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: "150", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.AP, debit: "0", credit: "150" },
+      ],
+    })
+
+    const result = await getGeneralLedger(tx, {
+      branchId,
+      periodKey: "2026-05",
+      accountCode: DEFAULT_ACCOUNT_CODES.AP,
+    })
+
+    const account = result.accounts[0]!
+    expect(account.transactions[0]?.signedMovement).toBe("150")
+    expect(account.transactions[0]?.runningBalance).toBe("150")
+    expect(account.closingBalance).toBe("150")
+  })
+
+  it("excludes journal lines outside the date range", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    await seedPeriod(tx, branchId, "2026-05")
+    const periodApr = await seedPeriod(tx, branchId, "2026-04")
+
+    seedJournal(state, {
+      id: "journal-april",
+      branchId,
+      periodId: periodApr.id,
+      date: new Date("2026-04-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "50", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "50" },
+      ],
+    })
+    seedJournal(state, {
+      id: "journal-may",
+      branchId,
+      periodId: periodApr.id,
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "75", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "75" },
+      ],
+    })
+    seedJournal(state, {
+      id: "journal-june",
+      branchId,
+      periodId: periodApr.id,
+      date: new Date("2026-06-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "999", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "999" },
+      ],
+    })
+
+    const result = await getGeneralLedger(tx, {
+      branchId,
+      from: "2026-05-01",
+      to: "2026-05-31",
+      accountCode: DEFAULT_ACCOUNT_CODES.CASH,
+    })
+
+    expect(result.accounts[0]?.openingBalance).toBe("50")
+    expect(result.accounts[0]?.transactions).toHaveLength(1)
+    expect(result.accounts[0]?.transactions[0]?.signedMovement).toBe("75")
+    expect(result.accounts[0]?.closingBalance).toBe("125")
+  })
+
+  it("sorts by date, voucherNo, lineNo, then journalLineId", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const period = await seedPeriod(tx, branchId, "2026-05")
+
+    seedJournal(state, {
+      id: "journal-z",
+      branchId,
+      periodId: period.id,
+      date: new Date("2026-05-10T12:00:00.000Z"),
+      voucherNo: "V-Z",
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "10", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "10" },
+      ],
+    })
+    seedJournal(state, {
+      id: "journal-a",
+      branchId,
+      periodId: period.id,
+      date: new Date("2026-05-10T12:00:00.000Z"),
+      voucherNo: "V-A",
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "20", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "20" },
+      ],
+    })
+
+    const result = await getGeneralLedger(tx, {
+      branchId,
+      periodKey: "2026-05",
+      accountCode: DEFAULT_ACCOUNT_CODES.CASH,
+    })
+
+    expect(result.accounts[0]?.transactions.map((tx) => tx.entryNo)).toEqual(["V-A", "V-Z"])
   })
 })

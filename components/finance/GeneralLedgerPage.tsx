@@ -40,6 +40,17 @@ export function GeneralLedgerPage() {
   }, [accountCode, branchId, filterMode, from, periodKey, to])
 
   async function handleRefresh() {
+    if (!accountCode.trim()) {
+      setError("Account code is required")
+      setResult(null)
+      return
+    }
+    if (filterMode === "dateRange" && (!from.trim() || !to.trim())) {
+      setError("From and to dates are required for date range scope")
+      setResult(null)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -88,10 +99,11 @@ export function GeneralLedgerPage() {
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Account code (optional)</span>
+            <span className="text-zinc-600">Account code</span>
             <input
               className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
               placeholder="1100"
+              required
               value={accountCode}
               onChange={(e) => setAccountCode(e.target.value)}
             />
@@ -232,7 +244,7 @@ export function GeneralLedgerPage() {
                     <thead>
                       <tr className="border-b border-zinc-200 text-left text-zinc-500">
                         <th className="px-2 py-1">Date</th>
-                        <th className="px-2 py-1">Entry No</th>
+                        <th className="px-2 py-1">Ref</th>
                         <th className="px-2 py-1">Description</th>
                         <th className="px-2 py-1 text-right">Debit</th>
                         <th className="px-2 py-1 text-right">Credit</th>
@@ -241,11 +253,16 @@ export function GeneralLedgerPage() {
                     </thead>
                     <tbody>
                       {account.transactions.map((tx) => (
-                        <tr key={`${tx.journalEntryId}-${tx.entryNo}-${tx.debit}-${tx.credit}`} className="border-b border-zinc-100">
+                        <tr key={tx.journalLineId} className="border-b border-zinc-100">
                           <td className="px-2 py-1 whitespace-nowrap">
                             {formatDateTime(tx.journalDate)}
                           </td>
-                          <td className="px-2 py-1 font-mono text-xs">{tx.entryNo}</td>
+                          <td className="px-2 py-1 font-mono text-xs">
+                            <div>{tx.entryNo}</div>
+                            {tx.sourceRef ? (
+                              <div className="text-zinc-500">{tx.sourceRef}</div>
+                            ) : null}
+                          </td>
                           <td className="px-2 py-1 text-zinc-700">
                             <Link
                               href={`/finance/journal-entries/${tx.journalEntryId}`}

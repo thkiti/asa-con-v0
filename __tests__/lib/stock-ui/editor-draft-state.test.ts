@@ -12,6 +12,7 @@ import {
   updateEditorLine,
 } from "@/lib/stock-ui/editor-draft-state"
 import type { StockDocumentDetailVM } from "@/lib/stock-ui/types"
+import type { StockDocumentEditorStateVM } from "@/lib/stock-ui/editor-types"
 import type { StockInputRowVM } from "@/lib/stock-ui/stock-input-list"
 
 const sampleDetail: StockDocumentDetailVM = {
@@ -288,6 +289,49 @@ describe("editor-draft-state", () => {
       expect.objectContaining({ productId: "prod-1", qty: 3 })
     )
     expect(payload.lines[0]?.reviewPostingDelta).toBeNull()
+  })
+
+  it("editorStateToSavePayload filters transfer-out staff sheet rows without counting delta", () => {
+    const state: StockDocumentEditorStateVM = {
+      ...detailToEditorState({
+        ...sampleDetail,
+        docType: "TRANSFER_OUT",
+        lines: [],
+      }),
+      lines: [
+        {
+          key: "K-1",
+          rowKey: "K-1",
+          productId: "prod-1",
+          productCode: "0101001",
+          productName: "Key",
+          hookGroup: "K",
+          qty: "2",
+          endingQty: "",
+          reviewPostingDelta: "",
+        },
+        {
+          key: "K-2",
+          rowKey: "K-2",
+          productId: "prod-2",
+          productCode: "0101002",
+          productName: "Blank",
+          hookGroup: "K",
+          qty: "",
+          endingQty: "",
+          reviewPostingDelta: "",
+        },
+      ],
+    }
+
+    const payload = editorStateToSavePayload(state, "staff-1", {
+      staffOperationalSheet: true,
+    })
+
+    expect(payload.docType).toBe("TRANSFER_OUT")
+    expect(payload.lines).toEqual([
+      { productId: "prod-1", qty: 2, endingQty: null, reviewPostingDelta: null },
+    ])
   })
 
   it("applyCountingSaveToEditorState keeps master lines after save", () => {

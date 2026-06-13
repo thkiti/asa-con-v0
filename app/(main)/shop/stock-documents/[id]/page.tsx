@@ -1,10 +1,7 @@
 import Link from "next/link"
 import { StockDocumentEditorController } from "@/components/stock/StockDocumentEditorController"
-import { formatEntityContextTitle } from "@/lib/legal-entity"
-import { isShopDocType } from "@/lib/stock-ui/editor-draft-state"
-import { formatDocTypeLabel } from "@/lib/stock-ui/format"
+import { StockDocumentEditPageHeading } from "@/components/stock/StockDocumentEditPageHeading"
 import { isStockCountStaffEntry } from "@/lib/stock-ui/stock-count-staff-mode"
-import type { DocType } from "@/lib/stock-ui/types"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -32,12 +29,7 @@ export default async function EditStockDocumentPage({ params, searchParams }: Pa
           >
             ← Stock documents
           </Link>
-          <h1
-            className="mt-4 text-xl font-semibold"
-            data-testid="entity-context-page-title"
-          >
-            {formatEntityContextTitle("AS", "Stock Document")}
-          </h1>
+          <StockDocumentEditPageHeading documentId={id} />
         </>
       ) : null}
       <div

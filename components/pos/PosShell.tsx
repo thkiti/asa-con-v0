@@ -10,10 +10,11 @@ import { PosPlaceholderOverlay } from "./PosPlaceholderOverlay"
 import { PosReadReportCredentialGate } from "./PosReadReportCredentialGate"
 import { PosReadReportPanel } from "./PosReadReportPanel"
 import { PosRepairTicketOverlay } from "./PosRepairTicketOverlay"
+import { PosStaffEvidenceOverlay } from "./PosStaffEvidenceOverlay"
 import { PosTargetVsSalesOverlay } from "./PosTargetVsSalesOverlay"
 import { PosWorktimeOverlay } from "./PosWorktimeOverlay"
 import { PosReceiptPanel } from "./PosReceiptPanel"
-import { PosEvidencePendingBanner } from "./PosEvidencePendingBanner"
+import { PosKeypadMessageBlock } from "./PosKeypadMessageBlock"
 import { PosEvidencePendingOverlay } from "./PosEvidencePendingOverlay"
 import { PosSessionBanner } from "./PosSessionBanner"
 import {
@@ -28,6 +29,7 @@ import type { PosCartLine } from "@/lib/pos/cart"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
 import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
 import { POS_KEYPAD_BUTTONS } from "@/lib/pos-ui/keypad-layout"
+import { POS_PANEL_FRAME_CLASS, POS_WORKSPACE_GAP_CLASS } from "@/lib/pos-ui/pos-panel-frame"
 import type { PendingPaymentEvidenceRow } from "@/lib/pos/pending-payment-evidence-types"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 
@@ -91,6 +93,10 @@ type PosShellProps = {
   onCloseReadReport: () => void
   repairTicketOpen: boolean
   onCloseRepairTicket: () => void
+  staffEvidenceOpen: boolean
+  onCloseStaffEvidence: () => void
+  staffEvidenceComplete: boolean
+  onStaffEvidenceComplete: () => void
   thermalLayouts: Record<
     "RECEIPT" | "REFUND" | "COLLECTOR" | "REPAIR_TICKET" | "READ_Z",
     ResolvedThermalLayout
@@ -162,6 +168,10 @@ export function PosShell({
   onCloseReadReport,
   repairTicketOpen,
   onCloseRepairTicket,
+  staffEvidenceOpen,
+  onCloseStaffEvidence,
+  staffEvidenceComplete,
+  onStaffEvidenceComplete,
   thermalLayouts,
   keypadDisabled = false,
   pendingEvidenceCount = 0,
@@ -175,7 +185,7 @@ export function PosShell({
   onPendingEvidenceQrModalOpenChange,
 }: PosShellProps) {
   const keypadSideMuted =
-    collectorOpen || readStaffGate !== null || repairTicketOpen
+    collectorOpen || readStaffGate !== null || repairTicketOpen || staffEvidenceOpen
   const readReportMode = readReport?.mode ?? null
   const muted =
     keypadDisabled ||
@@ -201,6 +211,9 @@ export function PosShell({
         ghostButtonIds.add(btn.id)
       }
     }
+  }
+  if (staffEvidenceComplete) {
+    ghostButtonIds.add("staff-evidence")
   }
 
   return (
@@ -236,14 +249,9 @@ export function PosShell({
           onQrModalOpenChange={onPendingEvidenceQrModalOpenChange}
         />
       ) : null}
-      <div className="flex min-h-0 flex-1 flex-col p-4">
-        <div className="mx-auto flex h-full w-full min-h-0 max-w-[1200px] flex-col gap-3">
+      <div className={`flex min-h-0 flex-1 ${POS_WORKSPACE_GAP_CLASS} px-4 py-4`}>
+        <div className="mx-auto flex h-full w-full min-h-0 max-w-[1200px] flex-1 flex-col gap-3">
           <PosSessionBanner session={session} />
-
-          <PosEvidencePendingBanner
-            count={pendingEvidenceCount}
-            onOpen={() => onOpenPendingEvidence?.()}
-          />
 
           <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-zinc-500 bg-gradient-to-b from-zinc-100 to-zinc-300 p-3 shadow-sm">
             <div className="flex items-center justify-center py-1">
@@ -260,7 +268,7 @@ export function PosShell({
             />
           </div>
 
-          <div className="min-h-0 flex-1 rounded-xl border border-zinc-500 bg-gradient-to-b from-slate-200 to-slate-300 p-3 shadow-inner">
+          <div className={`min-h-0 flex-1 ${POS_PANEL_FRAME_CLASS} bg-gradient-to-b from-slate-200 to-slate-300`}>
             <PosKeypadGrid
               onAction={onKeypadAction}
               disabled={muted && !readReport}
@@ -269,16 +277,22 @@ export function PosShell({
                 readReportMode === "Z" ? "PRINT REPORT\nAND EXIT" : undefined
               }
               ghostButtonIds={ghostButtonIds.size > 0 ? ghostButtonIds : undefined}
+              messageSlot={
+                <PosKeypadMessageBlock
+                  pendingEvidenceCount={pendingEvidenceCount}
+                  onOpenPendingEvidence={() => onOpenPendingEvidence?.()}
+                  cartLookupError={cartLookupError}
+                />
+              }
             />
           </div>
         </div>
-      </div>
 
       <PosReceiptPanel
         session={session}
         receiptNo={receiptNo}
         lines={cartLines}
-        lookupError={cartLookupError}
+        lookupError={null}
         onIncrementQty={onIncrementQty}
         onDecrementQty={onDecrementQty}
         onRemoveLine={onRemoveCartLine}
@@ -335,6 +349,7 @@ export function PosShell({
           ) : null
         }
       />
+      </div>
 
       {collectorOpen ? (
         <PosCollectorOverlay
@@ -352,6 +367,14 @@ export function PosShell({
           onReport={(report) => {
             onReadReport(report)
           }}
+        />
+      ) : null}
+
+      {staffEvidenceOpen ? (
+        <PosStaffEvidenceOverlay
+          session={session}
+          onClose={onCloseStaffEvidence}
+          onEvidenceComplete={onStaffEvidenceComplete}
         />
       ) : null}
     </div>

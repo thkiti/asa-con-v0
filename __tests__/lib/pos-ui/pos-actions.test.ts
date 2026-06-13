@@ -10,6 +10,7 @@ import {
 describe("pos-ui/pos-actions", () => {
   it("classifies wired navigation and refund actions", () => {
     expect(getPosActionKind("refund")).toBe("wire-refund")
+    expect(getPosActionKind("order")).toBe("wire-nav")
     expect(getPosActionKind("stock-count")).toBe("wire-nav")
     expect(getPosActionKind("target-vs-sales")).toBe("wire-target-vs-sales")
     expect(getPosActionKind("worktime")).toBe("wire-worktime")
@@ -25,6 +26,7 @@ describe("pos-ui/pos-actions", () => {
     expect(getPosActionKind("repair-ticket")).toBe("wire-repair-ticket")
     expect(getPosActionKind("read-x")).toBe("wire-read-x")
     expect(getPosActionKind("read-z")).toBe("wire-read-z")
+    expect(getPosActionKind("staff-evidence")).toBe("wire-staff-evidence")
     expect(getPosActionKind("print-report")).toBe("wire-print-report")
     expect(isPosPlaceholderId("read-x")).toBe(false)
   })

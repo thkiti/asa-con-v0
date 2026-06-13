@@ -129,7 +129,7 @@ Warnings when reconciliation fails or data is incomplete.
 
 - **Read-only** — no mutations.
 - **No dividend auto-labeling** — “Other changes” is generic equity journal activity.
-- **No Cash Flow** — deferred to a later phase (16J).
+- **No Cash Flow** — deferred to a future phase (see [37_FINANCE_CORE_16J_GENERAL_LEDGER.md](./37_FINANCE_CORE_16J_GENERAL_LEDGER.md) §Future).
 - **No configurable RE account** in v1 — code `301` only (same as 16G/16H).
 
 ---
@@ -155,7 +155,7 @@ Warnings when reconciliation fails or data is incomplete.
 
 ## Future (out of 16I scope)
 
-- **16J Cash Flow** — next approved finance report phase.
+- **Cash Flow statement** — next approved finance report phase (after 16J General Ledger).
 - Dividend-specific refType / labels in other changes row.
 - Configurable retained earnings account mapping.
 - Multi-entity consolidation.

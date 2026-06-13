@@ -42,14 +42,20 @@ export type ProductReferenceSaveAllValues = ProductReferenceSaveProductValues & 
   productGroup: string
 }
 
+export type ProductReferenceCreateValues = ProductReferenceSaveAllValues & {
+  productCode: string
+}
+
 type ProductReferenceFormModalProps = {
   open: boolean
+  mode?: "create" | "edit"
   row?: ProductReferenceListItem | null
   submitting?: boolean
   error?: string | null
   onClose: () => void
   onSaveProduct: (values: ProductReferenceSaveProductValues) => Promise<void>
   onSaveAll: (values: ProductReferenceSaveAllValues) => Promise<void>
+  onCreate?: (values: ProductReferenceCreateValues) => Promise<void>
   onTrashReference?: () => Promise<void>
 }
 
@@ -62,14 +68,18 @@ function sanitizeHookGroupInput(value: string): string {
 
 export function ProductReferenceFormModal({
   open,
+  mode = "edit",
   row,
   submitting = false,
   error,
   onClose,
   onSaveProduct,
   onSaveAll,
+  onCreate,
   onTrashReference,
 }: ProductReferenceFormModalProps) {
+  const isCreateMode = mode === "create"
+  const [productCodeInput, setProductCodeInput] = useState("")
   const [name, setName] = useState("")
   const [productType, setProductType] = useState<ProductReferenceListItem["productType"]>("TRACKED")
   const [initialProductType, setInitialProductType] =
@@ -86,10 +96,23 @@ export function ProductReferenceFormModal({
   const [localError, setLocalError] = useState<string | null>(null)
 
   const hasReference = row?.hasReference ?? false
-  const sellableProductCode = row?.productCode ?? ""
+  const sellableProductCode = isCreateMode ? productCodeInput : (row?.productCode ?? "")
+
+  const resetFormEmpty = useCallback(() => {
+    setProductCodeInput("")
+    setName("")
+    setProductType("TRACKED")
+    setInitialProductType("TRACKED")
+    setHookGroup("")
+    setHookNo("")
+    setSupplierCode("")
+    setRun(DEFAULT_PRODUCT_GROUP_RUN)
+    setLocalError(null)
+  }, [])
 
   const resetFormFromRow = useCallback(() => {
     if (!row) return
+    setProductCodeInput(row.productCode)
     setName(row.productName)
     setProductType(row.productType)
     setInitialProductType(row.productType)
@@ -108,8 +131,12 @@ export function ProductReferenceFormModal({
       setTrashRefConfirmOpen(false)
       return
     }
-    resetFormFromRow()
-  }, [open, resetFormFromRow])
+    if (isCreateMode) {
+      resetFormEmpty()
+    } else {
+      resetFormFromRow()
+    }
+  }, [open, isCreateMode, resetFormEmpty, resetFormFromRow])
 
   useEffect(() => {
     if (!open || !sellableProductCode) return
@@ -151,7 +178,7 @@ export function ProductReferenceFormModal({
       return
     }
 
-    if (!hasReference) {
+    if (!hasReference || isCreateMode) {
       try {
         const { nextHookNo } = await fetchMasterLatestHookNo(clean)
         setHookNo(String(nextHookNo))
@@ -168,9 +195,11 @@ export function ProductReferenceFormModal({
     }
   }
 
-  if (!open || !row) return null
+  if (!open) return null
+  if (!isCreateMode && !row) return null
 
   const trimmedName = name.trim()
+  const trimmedProductCode = productCodeInput.replace(/\D/g, "").slice(0, 7)
   const hookNoNum = Number(hookNo)
   const showTypeWarning = productType !== initialProductType
   const displayError = localError ?? error
@@ -178,6 +207,10 @@ export function ProductReferenceFormModal({
   const canSaveProduct = trimmedName.length > 0 && !submitting
 
   const validateSaveAll = (): string | null => {
+    if (isCreateMode) {
+      if (!trimmedProductCode) return "Product code is required"
+      if (trimmedProductCode.length < 1) return "Product code must be a valid 7-digit product code"
+    }
     if (!trimmedName) return "Product name is required"
     if (!hookGroup.trim()) return "Hook group is required"
     if (!Number.isInteger(hookNoNum) || hookNoNum <= 0) return "Hook number must be a positive integer"
@@ -204,9 +237,30 @@ export function ProductReferenceFormModal({
     setShowSaveChoice(false)
     setLocalError(null)
     const groupUpper = hookGroup.trim().toUpperCase()
-    await onSaveAll({
+    const values: ProductReferenceSaveAllValues = {
       name: trimmedName,
       productType,
+      hookGroup: groupUpper,
+      hookNo: hookNoNum,
+      supplierCode: groupUpper === "S" ? "-" : supplierCode.trim().toUpperCase(),
+      productGroup: derivedProductGroup,
+    }
+    await onSaveAll(values)
+  }
+
+  const runCreate = async () => {
+    const validationError = validateSaveAll()
+    if (validationError) {
+      setLocalError(validationError)
+      return
+    }
+    if (!onCreate) return
+    setLocalError(null)
+    const groupUpper = hookGroup.trim().toUpperCase()
+    await onCreate({
+      name: trimmedName,
+      productType,
+      productCode: trimmedProductCode,
       hookGroup: groupUpper,
       hookNo: hookNoNum,
       supplierCode: groupUpper === "S" ? "-" : supplierCode.trim().toUpperCase(),
@@ -214,12 +268,16 @@ export function ProductReferenceFormModal({
     })
   }
 
-  const title = hasReference ? "Edit Product Reference" : "Add Product Reference"
+  const title = isCreateMode
+    ? "Add Product Reference"
+    : hasReference
+      ? "Edit Product Reference"
+      : "Add Product Reference"
 
   return (
     <>
       <ProductReferenceSaveChoiceDialog
-        open={showSaveChoice}
+        open={showSaveChoice && !isCreateMode}
         pending={submitting}
         onSaveProduct={() => void runSaveProduct()}
         onSaveAll={() => void runSaveAll()}
@@ -378,9 +436,14 @@ export function ProductReferenceFormModal({
                   <span className="text-xs text-muted-foreground">Product Code</span>
                   <input
                     type="text"
-                    readOnly
-                    value={sellableProductCode}
-                    className={`mt-0.5 w-full ${themeInput} bg-[var(--btn-secondary-hover)] font-medium`}
+                    inputMode="numeric"
+                    readOnly={!isCreateMode}
+                    value={isCreateMode ? productCodeInput : sellableProductCode}
+                    onChange={(event) =>
+                      setProductCodeInput(event.target.value.replace(/\D/g, "").slice(0, 7))
+                    }
+                    disabled={submitting}
+                    className={`mt-0.5 w-full ${themeInput} ${isCreateMode ? "font-medium" : "bg-[var(--btn-secondary-hover)] font-medium"}`}
                   />
                 </label>
 
@@ -428,7 +491,7 @@ export function ProductReferenceFormModal({
             ) : null}
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-              {hasReference && onTrashReference ? (
+              {!isCreateMode && hasReference && onTrashReference ? (
                 <button
                   type="button"
                   disabled={submitting}
@@ -451,10 +514,14 @@ export function ProductReferenceFormModal({
                 </button>
                 <button
                   type="button"
-                  disabled={!canSaveProduct}
+                  disabled={isCreateMode ? submitting || !onCreate : !canSaveProduct}
                   onClick={() => {
                     setLocalError(null)
-                    setShowSaveChoice(true)
+                    if (isCreateMode) {
+                      void runCreate()
+                    } else {
+                      setShowSaveChoice(true)
+                    }
                   }}
                   className={themeBtnPrimary}
                 >

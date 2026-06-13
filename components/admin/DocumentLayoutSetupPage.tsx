@@ -370,7 +370,11 @@ export function DocumentLayoutSetupPage({ user }: DocumentLayoutSetupPageProps) 
               Sample slip ({THERMAL_COLUMNS} columns) — same builder as print.
             </p>
             <div className="receipt-setup-preview mt-3">
-              <ThermalSlipPre text={previewText} ariaLabel={`${activeType} preview`} />
+              <ThermalSlipPre
+                text={previewText}
+                ariaLabel={`${activeType} preview`}
+                className="receipt-setup-preview-slip"
+              />
             </div>
           </div>
         </div>

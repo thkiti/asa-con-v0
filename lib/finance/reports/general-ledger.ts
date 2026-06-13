@@ -29,6 +29,7 @@ type PeriodLineRow = {
     date: Date
     voucher: {
       voucherNo: string
+      refNo: string | null
       description: string | null
     }
   }
@@ -46,21 +47,44 @@ async function resolvePeriodExists(
 }
 
 async function loadAccounts(prisma: GeneralLedgerPrisma, filter: GeneralLedgerFilter) {
+  const requestedIds = [
+    ...(filter.accountId ? [filter.accountId] : []),
+    ...(filter.accountIds ?? []),
+  ]
   const requestedCodes = [
     ...(filter.accountCode ? [filter.accountCode] : []),
     ...(filter.accountCodes ?? []),
   ]
 
+  const hasIdFilter = requestedIds.length > 0
+  const hasCodeFilter = requestedCodes.length > 0
+
   const accounts = await prisma.glAccount.findMany({
     where: {
       deleted: false,
       isActive: true,
-      ...(requestedCodes.length > 0 ? { code: { in: requestedCodes } } : {}),
+      ...(hasIdFilter && hasCodeFilter
+        ? {
+            OR: [{ id: { in: requestedIds } }, { code: { in: requestedCodes } }],
+          }
+        : hasIdFilter
+          ? { id: { in: requestedIds } }
+          : hasCodeFilter
+            ? { code: { in: requestedCodes } }
+            : {}),
     },
     orderBy: { code: "asc" },
   })
 
-  if (requestedCodes.length > 0) {
+  if (hasIdFilter) {
+    for (const id of requestedIds) {
+      if (!accounts.some((account) => account.id === id)) {
+        throw new ReportError(`GL account not found for id ${id}`, "ACCOUNT_NOT_FOUND")
+      }
+    }
+  }
+
+  if (hasCodeFilter) {
     for (const code of requestedCodes) {
       if (!accounts.some((account) => account.code === code)) {
         throw new ReportError(`GL account not found for code ${code}`, "ACCOUNT_NOT_FOUND")
@@ -80,7 +104,10 @@ function comparePeriodLines(a: PeriodLineRow, b: PeriodLineRow): number {
   )
   if (entryDiff !== 0) return entryDiff
 
-  return a.lineNo - b.lineNo
+  const lineNoDiff = a.lineNo - b.lineNo
+  if (lineNoDiff !== 0) return lineNoDiff
+
+  return a.id.localeCompare(b.id)
 }
 
 function buildTransactions(
@@ -99,12 +126,15 @@ function buildTransactions(
 
     transactions.push({
       journalEntryId: line.journalEntry.id,
+      journalLineId: line.id,
       journalDate: line.journalEntry.date.toISOString(),
       entryNo: line.journalEntry.voucher.voucherNo,
+      sourceRef: line.journalEntry.voucher.refNo,
       description: line.journalEntry.voucher.description,
       lineMemo: line.memo,
       debit: debit.toString(),
       credit: credit.toString(),
+      signedMovement: movement.toString(),
       runningBalance: running.toString(),
     })
   }
@@ -171,6 +201,7 @@ export async function getGeneralLedger(
           voucher: {
             select: {
               voucherNo: true,
+              refNo: true,
               description: true,
             },
           },

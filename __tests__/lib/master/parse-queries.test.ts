@@ -8,14 +8,25 @@ describe("parseBranchListQuery", () => {
   it("defaults mode to active", () => {
     expect(parseBranchListQuery(new URLSearchParams())).toEqual({
       mode: "active",
-      q: "",
+      code: "",
+      name: "",
+      type: "",
+      activeOnly: false,
     })
   })
 
-  it("parses trash mode and search", () => {
+  it("parses trash mode and filters", () => {
     expect(
-      parseBranchListQuery(new URLSearchParams("mode=trash&q=sh"))
-    ).toEqual({ mode: "trash", q: "sh" })
+      parseBranchListQuery(
+        new URLSearchParams("mode=trash&code=sh&name=shop&type=SH&activeOnly=1")
+      )
+    ).toEqual({
+      mode: "trash",
+      code: "sh",
+      name: "shop",
+      type: "SH",
+      activeOnly: true,
+    })
   })
 })
 
@@ -23,11 +34,14 @@ describe("parseStaffListQuery", () => {
   it("parses role and branchCode when valid", () => {
     expect(
       parseStaffListQuery(
-        new URLSearchParams("mode=active&role=HO_ADMIN&branchCode=HO999&q=001")
+        new URLSearchParams(
+          "mode=active&role=HO_ADMIN&branchCode=HO999&staffId=001&name=admin"
+        )
       )
     ).toEqual({
       mode: "active",
-      q: "001",
+      staffId: "001",
+      name: "admin",
       role: "HO_ADMIN",
       branchCode: "HO999",
     })

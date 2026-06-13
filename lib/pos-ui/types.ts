@@ -6,6 +6,7 @@ export type PosPlaceholderId =
   | "collector"
   | "read-x"
   | "read-z"
+  | "staff-evidence"
   | "repair-ticket"
   | "print-report"
 
@@ -14,6 +15,7 @@ export type PosKeypadActionId =
   | "checkout"
   | "logout"
   | "refund"
+  | "order"
   | "stock-count"
   | "digit-7"
   | "digit-8"
@@ -39,10 +41,12 @@ export type PosKeypadButtonVariant =
   | "control"
   | "enter"
   | "refund"
+  | "order"
   | "stock-count"
   | "repair"
   | "read-x"
   | "read-z"
+  | "staff-evidence"
   | "print-report"
   | "checkout"
 

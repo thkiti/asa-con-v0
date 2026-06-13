@@ -6,12 +6,14 @@ import {
   previewBranchCodeForTaxLabel,
 } from "@/lib/master/parse-branch-contact"
 import type { BranchListItem } from "@/lib/master/types"
-import { themeBtnPrimary, themeBtnSecondary, themeInput, themeMuted } from "@/lib/theme/theme-classes"
+import {
+  themeBtnPrimary,
+  themeBtnSecondary,
+  themeInput,
+  themeMuted,
+} from "@/lib/theme/theme-classes"
 
-const BRANCH_TYPE_OPTIONS: { value: BranchListItem["type"]; label: string }[] = [
-  { value: "HO", label: "HO — Head Office" },
-  { value: "SH", label: "SH — Shop" },
-]
+const BRANCH_TYPE_OPTIONS: BranchListItem["type"][] = ["HO", "SH"]
 
 export type BranchFormMode = "create" | "edit"
 
@@ -32,6 +34,9 @@ type BranchFormModalProps = {
     taxId: string | null
   }) => Promise<void>
 }
+
+const fieldLabel = "text-xs text-muted-foreground"
+const rowOneFieldClass = `mt-0.5 h-10 w-full ${themeInput}`
 
 export function BranchFormModal({
   open,
@@ -92,7 +97,7 @@ export function BranchFormModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg"
+        className="w-full max-w-lg rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
         role="dialog"
         aria-modal="true"
         aria-labelledby="branch-form-title"
@@ -103,7 +108,7 @@ export function BranchFormModal({
         </h2>
 
         <form
-          className="mt-4 space-y-4"
+          className="mt-3 space-y-3"
           onSubmit={(event) => {
             event.preventDefault()
             if (!canSubmit) return
@@ -118,93 +123,93 @@ export function BranchFormModal({
             })
           }}
         >
+          <div className="grid grid-cols-[5.5rem_minmax(0,1fr)_4.25rem] gap-x-2 gap-y-1">
+            <label className="block min-w-0">
+              <span className={fieldLabel}>Code</span>
+              <input
+                type="text"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                disabled={isEdit || submitting}
+                readOnly={isEdit}
+                className={rowOneFieldClass}
+                placeholder={isEdit ? undefined : "SH002"}
+                autoComplete="off"
+              />
+            </label>
+
+            <label className="block min-w-0">
+              <span className={fieldLabel}>Name</span>
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                disabled={submitting}
+                className={rowOneFieldClass}
+                required
+              />
+            </label>
+
+            <label className="block min-w-0">
+              <span className={fieldLabel}>Type</span>
+              <select
+                value={type}
+                onChange={(event) =>
+                  setType(event.target.value as BranchListItem["type"])
+                }
+                disabled={isEdit || submitting}
+                className={rowOneFieldClass}
+              >
+                {BRANCH_TYPE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {isEdit ? (
+              <p className={`col-span-full text-xs ${themeMuted}`}>
+                Code and type cannot be changed after creation.
+              </p>
+            ) : null}
+          </div>
+
           <label className="block">
-            <span className="text-sm text-muted-foreground">Code</span>
+            <span className={fieldLabel}>Address</span>
             <input
               type="text"
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              disabled={isEdit || submitting}
-              readOnly={isEdit}
-              className={themeInput}
-              placeholder={isEdit ? undefined : "e.g. SH002 or 2"}
-              autoComplete="off"
-            />
-            {isEdit ? (
-              <span className={`mt-1 block text-xs ${themeMuted}`}>
-                Code cannot be changed after creation.
-              </span>
-            ) : null}
-          </label>
-
-          <label className="block">
-            <span className="text-sm text-muted-foreground">Type</span>
-            <select
-              value={type}
-              onChange={(event) =>
-                setType(event.target.value as BranchListItem["type"])
-              }
-              disabled={isEdit || submitting}
-              className={themeInput}
-            >
-              {BRANCH_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {isEdit ? (
-              <span className={`mt-1 block text-xs ${themeMuted}`}>
-                Type cannot be changed; create a new branch instead.
-              </span>
-            ) : null}
-          </label>
-
-          <label className="block">
-            <span className="text-sm text-muted-foreground">Name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              disabled={submitting}
-              className={themeInput}
-              required
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm text-muted-foreground">Address</span>
-            <textarea
               value={address}
               onChange={(event) => setAddress(event.target.value)}
               disabled={submitting}
-              rows={2}
-              className={themeInput}
+              className={`mt-0.5 w-full ${themeInput}`}
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm text-muted-foreground">Phone</span>
-            <input
-              type="text"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              disabled={submitting}
-              className={themeInput}
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-x-2">
+            <label className="block min-w-0">
+              <span className={fieldLabel}>Phone</span>
+              <input
+                type="text"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                disabled={submitting}
+                className={`mt-0.5 w-full ${themeInput}`}
+              />
+            </label>
 
-          <label className="block">
-            <span className="text-sm text-muted-foreground">{taxIdLabel}</span>
-            <input
-              type="text"
-              value={taxId}
-              onChange={(event) => setTaxId(event.target.value)}
-              disabled={submitting}
-              className={themeInput}
-              autoComplete="off"
-            />
-          </label>
+            <label className="block min-w-0">
+              <span className={fieldLabel}>{taxIdLabel}</span>
+              <input
+                type="text"
+                value={taxId}
+                onChange={(event) => setTaxId(event.target.value)}
+                disabled={submitting}
+                className={`mt-0.5 w-full ${themeInput}`}
+                autoComplete="off"
+              />
+            </label>
+          </div>
 
           <label className="flex items-center gap-2">
             <input
@@ -222,7 +227,7 @@ export function BranchFormModal({
             </p>
           ) : null}
 
-          <div className="flex flex-wrap justify-end gap-2 pt-2">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
             <button
               type="button"
               onClick={onClose}
@@ -236,7 +241,7 @@ export function BranchFormModal({
               disabled={!canSubmit}
               className={themeBtnPrimary}
             >
-              {submitting ? "Saving…" : isEdit ? "Save" : "Create"}
+              {submitting ? "Saving…" : "Save"}
             </button>
           </div>
         </form>

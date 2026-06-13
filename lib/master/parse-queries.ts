@@ -1,3 +1,4 @@
+import { BranchType } from "@/lib/shared"
 import { Role } from "@/lib/shared"
 import type {
   BranchListQuery,
@@ -17,12 +18,27 @@ function trimParam(value: string | null): string {
   return String(value ?? "").trim()
 }
 
+const VALID_BRANCH_TYPES = new Set<string>([BranchType.HO, BranchType.SH])
+
+function parseBranchType(value: string | null): string {
+  const raw = trimParam(value).toUpperCase()
+  return VALID_BRANCH_TYPES.has(raw) ? raw : ""
+}
+
+function parseActiveOnly(value: string | null): boolean {
+  const raw = trimParam(value).toLowerCase()
+  return raw === "1" || raw === "true" || raw === "yes"
+}
+
 export function parseBranchListQuery(
   searchParams: URLSearchParams
 ): BranchListQuery {
   return {
     mode: parseMode(searchParams.get("mode")),
-    q: trimParam(searchParams.get("q")),
+    code: trimParam(searchParams.get("code")),
+    name: trimParam(searchParams.get("name")),
+    type: parseBranchType(searchParams.get("type")),
+    activeOnly: parseActiveOnly(searchParams.get("activeOnly")),
   }
 }
 
@@ -32,7 +48,8 @@ export function parseStaffListQuery(searchParams: URLSearchParams): StaffListQue
 
   return {
     mode: parseMode(searchParams.get("mode")),
-    q: trimParam(searchParams.get("q")),
+    staffId: trimParam(searchParams.get("staffId")),
+    name: trimParam(searchParams.get("name")),
     role,
     branchCode: trimParam(searchParams.get("branchCode")),
   }

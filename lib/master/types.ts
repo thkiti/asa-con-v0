@@ -27,6 +27,8 @@ export type StaffListItem = {
   branchName: string
   posCanCollect: boolean
   allowAnyBranchLogin: boolean
+  evidencePhotoUploaded?: boolean
+  evidenceIdUploaded?: boolean
 }
 
 export type ProductReferenceListItem = {
@@ -46,12 +48,16 @@ export type ProductReferenceListItem = {
 
 export type BranchListQuery = {
   mode: ListMode
-  q: string
+  code: string
+  name: string
+  type: string
+  activeOnly: boolean
 }
 
 export type StaffListQuery = {
   mode: ListMode
-  q: string
+  staffId: string
+  name: string
   role: Role | null
   branchCode: string
 }

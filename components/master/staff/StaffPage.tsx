@@ -8,7 +8,6 @@ import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
 import { MASTER_ACTIONS_COLUMN } from "@/lib/master-ui/table-columns"
-import { MasterToolbar } from "@/components/master/shared/MasterToolbar"
 import {
   BOOTSTRAP_SHOP_BRANCH_CODE,
   STAFF_BOOTSTRAP_ADMIN_ID,
@@ -19,15 +18,22 @@ import {
   fetchMasterStaff,
   patchMasterStaff,
 } from "@/lib/master-ui/fetchers"
-import { masterPageLayout, masterToolbarLabel } from "@/lib/master-ui/table-classes"
+import { masterPageLayout } from "@/lib/master-ui/table-classes"
 import type { BranchListItem, StaffListItem } from "@/lib/master/types"
-import { themeBtnPrimary, themeSelect } from "@/lib/theme/theme-classes"
+import { themeBtnPrimary } from "@/lib/theme/theme-classes"
 import { StaffConfirmDialog } from "./StaffConfirmDialog"
+import { StaffEvidenceBadgeCell } from "./StaffEvidenceBadgeCell"
 import { StaffFormModal, type StaffFormMode } from "./StaffFormModal"
+import {
+  StaffFilterBar,
+  refFilterToListMode,
+  type StaffRefFilter,
+} from "./StaffFilterBar"
 import { StaffResetPasswordDialog } from "./StaffResetPasswordDialog"
 
 const COLUMNS = [
   { key: "staffId", label: "Staff ID", width: "88px" },
+  { key: "evidence", label: "Evidence", width: "52px" },
   { key: "name", label: "Name", width: "160px" },
   { key: "role", label: "Role", width: "120px" },
   { key: "branch", label: "Branch", width: "120px" },
@@ -35,24 +41,26 @@ const COLUMNS = [
   MASTER_ACTIONS_COLUMN,
 ] as const
 
-const ROLE_OPTIONS = [
-  "HO_FINANCE",
-  "HO_ADMIN",
-  "HO_OPERATIONS",
-  "SH_STAFF",
-] as const
-
 type StaffPageProps = {
   documentEntityCode: DocumentEntityCode
 }
 
 export function StaffPage({ documentEntityCode }: StaffPageProps) {
-  const [mode, setMode] = useState<"active" | "trash">("active")
-  const [search, setSearch] = useState("")
-  const [appliedSearch, setAppliedSearch] = useState("")
+  const [refFilter, setRefFilter] = useState<StaffRefFilter>("all")
+  const mode = refFilterToListMode(refFilter)
+  const [staffId, setStaffId] = useState("")
+  const [name, setName] = useState("")
   const [roleFilter, setRoleFilter] = useState("")
   const [branchFilter, setBranchFilter] = useState("")
   const [branchOptions, setBranchOptions] = useState<BranchListItem[]>([])
+
+  const [applied, setApplied] = useState({
+    staffId: "",
+    name: "",
+    role: "",
+    branchCode: "",
+  })
+
   const [items, setItems] = useState<StaffListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -71,6 +79,7 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
   const [resetOpen, setResetOpen] = useState(false)
   const [resetPending, setResetPending] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
+  const [evidenceRefreshKey, setEvidenceRefreshKey] = useState(0)
 
   const defaultBranchId = useMemo(
     () =>
@@ -81,10 +90,24 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
   )
 
   useEffect(() => {
-    fetchMasterBranches({ mode: "active", q: "" })
+    fetchMasterBranches({ mode: "active", code: "", name: "", type: "", activeOnly: false })
       .then((result) => setBranchOptions(result.items))
       .catch(() => setBranchOptions([]))
   }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () =>
+        setApplied({
+          staffId: staffId.trim(),
+          name: name.trim(),
+          role: roleFilter.trim(),
+          branchCode: branchFilter.trim(),
+        }),
+      300
+    )
+    return () => clearTimeout(timer)
+  }, [staffId, name, roleFilter, branchFilter])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -92,9 +115,10 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
     try {
       const result = await fetchMasterStaff({
         mode,
-        q: appliedSearch,
-        role: roleFilter ? (roleFilter as StaffListItem["role"]) : null,
-        branchCode: branchFilter,
+        staffId: applied.staffId,
+        name: applied.name,
+        role: applied.role ? (applied.role as StaffListItem["role"]) : null,
+        branchCode: applied.branchCode,
       })
       setItems(result.items)
     } catch (err: unknown) {
@@ -103,12 +127,7 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
     } finally {
       setLoading(false)
     }
-  }, [mode, appliedSearch, roleFilter, branchFilter])
-
-  useEffect(() => {
-    const timer = setTimeout(() => setAppliedSearch(search.trim()), 300)
-    return () => clearTimeout(timer)
-  }, [search])
+  }, [mode, applied])
 
   useEffect(() => {
     void load()
@@ -220,63 +239,36 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
       title="Staff"
       documentEntityCode={documentEntityCode}
       description="Staff accounts, roles, and branch assignment. Passwords are stored as hashes only."
+      headerActions={
+        <button
+          type="button"
+          className={themeBtnPrimary}
+          onClick={openCreate}
+          disabled={trashMode}
+          title={trashMode ? "Switch to Active to add staff" : undefined}
+        >
+          Add staff
+        </button>
+      }
     >
       <div className={masterPageLayout}>
         <div className="mt-3">
-          <MasterToolbar
-            searchLabel="Search"
-            searchPlaceholder="Staff ID or name…"
-            searchValue={search}
-            onSearchChange={setSearch}
-            mode={mode}
-            onModeChange={setMode}
-            extraFilters={
-              <>
-                <label>
-                  <span className={masterToolbarLabel}>Role</span>
-                  <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className={`mt-0.5 w-full ${themeSelect}`}
-                    aria-label="Role filter"
-                  >
-                    <option value="">All roles</option>
-                    {ROLE_OPTIONS.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span className={masterToolbarLabel}>Branch</span>
-                  <select
-                    value={branchFilter}
-                    onChange={(e) => setBranchFilter(e.target.value)}
-                    className={`mt-0.5 w-full ${themeSelect}`}
-                    aria-label="Branch filter"
-                  >
-                    <option value="">All branches</option>
-                    {branchOptions.map((branch) => (
-                      <option key={branch.id} value={branch.code}>
-                        {branch.code} — {branch.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            }
-            actions={
-              <button
-                type="button"
-                className={themeBtnPrimary}
-                onClick={openCreate}
-                disabled={trashMode}
-                title={trashMode ? "Switch to Active to add staff" : undefined}
-              >
-                Add staff
-              </button>
-            }
+          <StaffFilterBar
+            branchOptions={branchOptions}
+            values={{
+              staffId,
+              name,
+              role: roleFilter,
+              branchCode: branchFilter,
+              refFilter,
+            }}
+            onChange={(patch) => {
+              if (patch.staffId !== undefined) setStaffId(patch.staffId)
+              if (patch.name !== undefined) setName(patch.name)
+              if (patch.role !== undefined) setRoleFilter(patch.role)
+              if (patch.branchCode !== undefined) setBranchFilter(patch.branchCode)
+              if (patch.refFilter !== undefined) setRefFilter(patch.refFilter)
+            }}
           />
         </div>
 
@@ -295,6 +287,13 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
                 key={row.id}
                 cells={[
                   row.staffId,
+                  <StaffEvidenceBadgeCell
+                    key="evidence"
+                    staffRowId={row.id}
+                    staffCode={row.staffId}
+                    photoUploaded={row.evidencePhotoUploaded ?? false}
+                    idUploaded={row.evidenceIdUploaded ?? false}
+                  />,
                   <span key="name" title={row.name}>
                     {row.name}
                   </span>,
@@ -339,6 +338,11 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
         error={formError}
         onClose={() => setFormOpen(false)}
         onSubmit={handleFormSubmit}
+        evidenceRefreshKey={evidenceRefreshKey}
+        onEvidenceChanged={() => {
+          setEvidenceRefreshKey((key) => key + 1)
+          void load()
+        }}
       />
 
       <StaffConfirmDialog

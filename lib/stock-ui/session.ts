@@ -1,4 +1,6 @@
 import type { Role } from "@/lib/shared"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import { StockDocumentUiError, StockUiErrorCodes } from "./document-errors"
 
 export type ShopSessionVM = {
@@ -9,6 +11,7 @@ export type ShopSessionVM = {
   branchId: string
   branchCode: string
   branchName: string
+  documentEntityCode: DocumentEntityCode
 }
 
 type SessionResponse = {
@@ -37,5 +40,6 @@ export async function fetchShopSession(): Promise<ShopSessionVM> {
     ...body.user,
     branchCode: body.user.branchCode?.trim() ?? "",
     branchName: body.user.branchName?.trim() ?? "",
+    documentEntityCode: body.user.documentEntityCode ?? DEFAULT_DOCUMENT_ENTITY_CODE,
   }
 }

@@ -235,11 +235,29 @@ function parseOptionalInt(value: string): number | null {
   return Math.trunc(n)
 }
 
+export type EditorSaveOptions = {
+  /** POS staff sheet for TRANSFER_OUT — qty filter only, no counting delta semantics. */
+  staffOperationalSheet?: boolean
+}
+
+export function usesStaffSheetQtyFilter(
+  state: StockDocumentEditorStateVM,
+  options?: EditorSaveOptions
+): boolean {
+  if (isCountingEditorMode(state)) return true
+  return Boolean(
+    options?.staffOperationalSheet &&
+      state.docType === "TRANSFER_OUT" &&
+      !state.readOnly
+  )
+}
+
 export function editorStateToSavePayload(
   state: StockDocumentEditorStateVM,
-  staffId: string
+  staffId: string,
+  options?: EditorSaveOptions
 ): SaveStockDocumentPayload {
-  const sourceLines = isCountingEditorMode(state)
+  const sourceLines = usesStaffSheetQtyFilter(state, options)
     ? state.lines.filter(
         (line) =>
           line.productId.trim() && Number(line.qty.trim() || 0) > 0
@@ -311,9 +329,14 @@ export function mergeSavedDetailWithEditorLines(
 /** After first save on /new, navigate to the persisted document URL. */
 export function postSaveEditorPath(
   mode: "create" | "edit",
-  savedDocumentId: string
+  savedDocumentId: string,
+  options?: { staffEntry?: boolean }
 ): string | null {
   if (mode !== "create") return null
   const id = savedDocumentId.trim()
-  return id ? `/shop/stock-documents/${id}` : null
+  if (!id) return null
+  if (options?.staffEntry) {
+    return `/shop/stock-documents/${encodeURIComponent(id)}?from=shop`
+  }
+  return `/shop/stock-documents/${id}`
 }

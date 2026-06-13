@@ -15,6 +15,7 @@ type MasterPageShellProps = {
   title: string
   documentEntityCode?: DocumentEntityCode
   description?: string
+  headerActions?: ReactNode
   backHref?: string
   backLabel?: string
   children: ReactNode
@@ -24,6 +25,7 @@ export function MasterPageShell({
   title,
   documentEntityCode,
   description,
+  headerActions,
   backHref = "/master",
   backLabel = "← ADMINISTRATION",
   children,
@@ -47,8 +49,17 @@ export function MasterPageShell({
         >
           {displayTitle}
         </h1>
-        {description ? (
+        {description && headerActions ? (
+          <div className="mt-2 flex items-start justify-between gap-4">
+            <p className={`max-w-3xl text-sm ${themeMuted}`}>{description}</p>
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+              {headerActions}
+            </div>
+          </div>
+        ) : description ? (
           <p className={`mt-2 max-w-3xl text-sm ${themeMuted}`}>{description}</p>
+        ) : headerActions ? (
+          <div className="mt-2 flex justify-end gap-1">{headerActions}</div>
         ) : null}
       </header>
       <div className="mt-6">{children}</div>

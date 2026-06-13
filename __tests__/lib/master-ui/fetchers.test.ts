@@ -24,22 +24,29 @@ describe("master fetchers URL params", () => {
     global.fetch = originalFetch
   })
 
-  it("fetchMasterBranches encodes mode and q", async () => {
-    await fetchMasterBranches({ mode: "trash", q: "sh" })
+  it("fetchMasterBranches encodes mode and filters", async () => {
+    await fetchMasterBranches({
+      mode: "trash",
+      code: "sh",
+      name: "shop",
+      type: "SH",
+      activeOnly: true,
+    })
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/master/branches?mode=trash&q=sh"
+      "/api/master/branches?mode=trash&code=sh&name=shop&type=SH&activeOnly=1"
     )
   })
 
-  it("fetchMasterStaff encodes role and branchCode", async () => {
+  it("fetchMasterStaff encodes role and filters", async () => {
     await fetchMasterStaff({
       mode: "active",
-      q: "001",
+      staffId: "001",
+      name: "admin",
       role: "HO_ADMIN",
       branchCode: "HO999",
     })
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/master/staff?mode=active&q=001&role=HO_ADMIN&branchCode=HO999"
+      "/api/master/staff?mode=active&staffId=001&name=admin&role=HO_ADMIN&branchCode=HO999"
     )
   })
 

@@ -62,6 +62,8 @@ describe("StockDocumentCountingBlock", () => {
       />
     )
 
+    expect(html).toContain('data-testid="catalog-product-code-hover-trigger"')
+    expect(html).toContain('data-product-code="0101001"')
     expect(html).toContain(">1<")
     expect(html).not.toContain("K.1")
     expect(html).toContain(">Hook</th>")

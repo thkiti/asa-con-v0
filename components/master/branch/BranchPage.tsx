@@ -8,13 +8,16 @@ import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
 import { MASTER_ACTIONS_COLUMN } from "@/lib/master-ui/table-columns"
-import { MasterToolbar } from "@/components/master/shared/MasterToolbar"
 import {
   createMasterBranch,
   fetchMasterBranches,
   patchMasterBranch,
 } from "@/lib/master-ui/fetchers"
 import { masterPageLayout } from "@/lib/master-ui/table-classes"
+import {
+  branchListMachineNoDisplay,
+  branchListTaxIdDisplay,
+} from "@/lib/master/parse-branch-contact"
 import type { BranchListItem } from "@/lib/master/types"
 import {
   BOOTSTRAP_HO_BRANCH_CODE,
@@ -22,12 +25,20 @@ import {
 } from "@/lib/import/constants"
 import { themeBtnPrimary } from "@/lib/theme/theme-classes"
 import { BranchConfirmDialog } from "./BranchConfirmDialog"
+import {
+  BranchFilterBar,
+  refFilterToActiveOnly,
+  refFilterToListMode,
+  type BranchRefFilter,
+} from "./BranchFilterBar"
 import { BranchFormModal, type BranchFormMode } from "./BranchFormModal"
 
 const COLUMNS = [
   { key: "code", label: "Code", width: "88px" },
-  { key: "name", label: "Name", width: "200px" },
+  { key: "name", label: "Name", width: "160px" },
   { key: "type", label: "Type", width: "56px" },
+  { key: "taxId", label: "Tax ID", width: "100px" },
+  { key: "machineNo", label: "Machine No.", width: "100px" },
   { key: "active", label: "Active", width: "56px" },
   MASTER_ACTIONS_COLUMN,
 ] as const
@@ -42,9 +53,19 @@ function isBootstrapBranch(code: string): boolean {
 }
 
 export function BranchPage({ documentEntityCode }: { documentEntityCode: DocumentEntityCode }) {
-  const [mode, setMode] = useState<"active" | "trash">("active")
-  const [search, setSearch] = useState("")
-  const [appliedSearch, setAppliedSearch] = useState("")
+  const [refFilter, setRefFilter] = useState<BranchRefFilter>("all")
+  const mode = refFilterToListMode(refFilter)
+  const activeOnly = refFilterToActiveOnly(refFilter)
+  const [code, setCode] = useState("")
+  const [name, setName] = useState("")
+  const [type, setType] = useState("")
+
+  const [applied, setApplied] = useState({
+    code: "",
+    name: "",
+    type: "",
+  })
+
   const [items, setItems] = useState<BranchListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -60,11 +81,28 @@ export function BranchPage({ documentEntityCode }: { documentEntityCode: Documen
   const [confirmPending, setConfirmPending] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
 
+  useEffect(() => {
+    const timer = setTimeout(
+      () =>
+        setApplied({
+          code: code.trim(),
+          name: name.trim(),
+          type: type.trim(),
+        }),
+      300
+    )
+    return () => clearTimeout(timer)
+  }, [code, name, type])
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchMasterBranches({ mode, q: appliedSearch })
+      const result = await fetchMasterBranches({
+        mode,
+        activeOnly,
+        ...applied,
+      })
       setItems(result.items)
     } catch (err: unknown) {
       setItems([])
@@ -72,12 +110,7 @@ export function BranchPage({ documentEntityCode }: { documentEntityCode: Documen
     } finally {
       setLoading(false)
     }
-  }, [mode, appliedSearch])
-
-  useEffect(() => {
-    const timer = setTimeout(() => setAppliedSearch(search.trim()), 300)
-    return () => clearTimeout(timer)
-  }, [search])
+  }, [mode, activeOnly, applied])
 
   useEffect(() => {
     void load()
@@ -169,27 +202,28 @@ export function BranchPage({ documentEntityCode }: { documentEntityCode: Documen
       title="Branch"
       documentEntityCode={documentEntityCode}
       description="Branch codes, names, HO/SH type, and active status. Address, phone, and tax ID are edited in the branch form."
+      headerActions={
+        <button
+          type="button"
+          className={themeBtnPrimary}
+          onClick={openCreate}
+          disabled={trashMode}
+          title={trashMode ? "Switch to Active to add a branch" : undefined}
+        >
+          Add branch
+        </button>
+      }
     >
       <div className={masterPageLayout}>
         <div className="mt-3">
-          <MasterToolbar
-            searchLabel="Search"
-            searchPlaceholder="Code or name…"
-            searchValue={search}
-            onSearchChange={setSearch}
-            mode={mode}
-            onModeChange={setMode}
-            actions={
-              <button
-                type="button"
-                className={themeBtnPrimary}
-                onClick={openCreate}
-                disabled={trashMode}
-                title={trashMode ? "Switch to Active to add a branch" : undefined}
-              >
-                Add branch
-              </button>
-            }
+          <BranchFilterBar
+            values={{ code, name, type, refFilter }}
+            onChange={(patch) => {
+              if (patch.code !== undefined) setCode(patch.code)
+              if (patch.name !== undefined) setName(patch.name)
+              if (patch.type !== undefined) setType(patch.type)
+              if (patch.refFilter !== undefined) setRefFilter(patch.refFilter)
+            }}
           />
         </div>
 
@@ -212,6 +246,8 @@ export function BranchPage({ documentEntityCode }: { documentEntityCode: Documen
                     {row.name}
                   </span>,
                   row.type,
+                  branchListTaxIdDisplay(row),
+                  branchListMachineNoDisplay(row),
                   row.isActive ? "Yes" : "No",
                 ]}
                 actions={

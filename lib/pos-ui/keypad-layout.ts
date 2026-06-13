@@ -1,6 +1,6 @@
 import type { PosKeypadActionId, PosKeypadButtonDef } from "./types"
 
-/** 7×4 keypad grid — mirrors legacy full-pos terminal layout. */
+/** 7×5 keypad grid — legacy full-pos terminal layout with ORDER above STOCK COUNT. */
 export const POS_KEYPAD_BUTTONS: readonly PosKeypadButtonDef[] = [
   {
     id: "worktime",
@@ -62,10 +62,17 @@ export const POS_KEYPAD_BUTTONS: readonly PosKeypadButtonDef[] = [
   },
   { id: "refund", label: "REFUND", col: 6, row: 1, variant: "refund" },
   {
+    id: "order",
+    label: "ORDER",
+    col: 6,
+    row: 2,
+    variant: "order",
+  },
+  {
     id: "stock-count",
     label: "STOCK\nCOUNT",
     col: 6,
-    row: 2,
+    row: 3,
     variant: "stock-count",
     multiline: true,
   },
@@ -73,17 +80,25 @@ export const POS_KEYPAD_BUTTONS: readonly PosKeypadButtonDef[] = [
     id: "repair-ticket",
     label: "REPAIR\nTICKET",
     col: 6,
-    row: 3,
+    row: 4,
     variant: "repair",
     multiline: true,
   },
   { id: "read-x", label: "READ X", col: 7, row: 1, variant: "read-x" },
   { id: "read-z", label: "READ Z", col: 7, row: 2, variant: "read-z" },
   {
+    id: "staff-evidence",
+    label: "ทำประวัติ\nพนักงาน",
+    col: 7,
+    row: 3,
+    variant: "staff-evidence",
+    multiline: true,
+  },
+  {
     id: "print-report",
     label: "PRINT\nREPORT",
     col: 7,
-    row: 3,
+    row: 4,
     variant: "print-report",
     multiline: true,
   },
@@ -91,11 +106,31 @@ export const POS_KEYPAD_BUTTONS: readonly PosKeypadButtonDef[] = [
     id: "checkout",
     label: "CHECKOUT",
     col: 6,
-    row: 4,
+    row: 5,
     colSpan: 2,
     variant: "checkout",
   },
 ] as const
+
+/** Non-action cells that keep the 7×5 grid visually balanced. */
+export type PosKeypadPlaceholderCell = {
+  col: number
+  row: number
+  colSpan?: number
+  rowSpan?: number
+}
+
+export const POS_KEYPAD_PLACEHOLDER_CELLS: readonly PosKeypadPlaceholderCell[] = []
+
+/** Reserved bottom-left slot for POS warnings (cols 1–5, row 5). */
+export const POS_KEYPAD_MESSAGE_SLOT = {
+  col: 1,
+  row: 5,
+  colSpan: 5,
+} as const
+
+export const POS_KEYPAD_ROW_COUNT = 5
+export const POS_KEYPAD_COL_COUNT = 7
 
 const REQUIRED_BUTTON_IDS: readonly PosKeypadActionId[] = [
   "worktime",
@@ -103,9 +138,11 @@ const REQUIRED_BUTTON_IDS: readonly PosKeypadActionId[] = [
   "collector",
   "logout",
   "refund",
+  "order",
   "stock-count",
   "read-x",
   "read-z",
+  "staff-evidence",
   "repair-ticket",
   "print-report",
   "checkout",
@@ -124,4 +161,10 @@ export function assertPosKeypadLayoutComplete(): void {
       throw new Error(`POS keypad layout missing button: ${id}`)
     }
   }
+}
+
+export function getPosKeypadButtonPlacement(
+  id: PosKeypadActionId
+): PosKeypadButtonDef | undefined {
+  return POS_KEYPAD_BUTTONS.find((button) => button.id === id)
 }

@@ -4,7 +4,7 @@ import { masterErrorResponse } from "@/app/api/master/shared/master-api-errors"
 import { getSession } from "@/lib/auth/session"
 import {
   createStaff,
-  listStaff,
+  listStaffWithEvidence,
   parseCreateStaffBody,
   parseStaffListQuery,
 } from "@/lib/master"
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     requireMasterDatabaseSession(await getSession())
     const query = parseStaffListQuery(req.nextUrl.searchParams)
-    const items = await listStaff(prisma, query)
+    const items = await listStaffWithEvidence(prisma, query)
     return NextResponse.json({ items })
   } catch (err: unknown) {
     return masterErrorResponse(err, "GET /api/master/staff")

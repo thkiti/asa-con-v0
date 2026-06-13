@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import { BranchType } from "@/lib/shared"
 import type { BranchListItem, BranchListQuery } from "./types"
 
 type BranchDb = Pick<PrismaClient, "branch">
@@ -7,19 +8,18 @@ export async function listBranches(
   db: BranchDb,
   query: BranchListQuery
 ): Promise<BranchListItem[]> {
-  const q = query.q.trim()
+  const code = query.code.trim()
+  const name = query.name.trim()
+  const type =
+    query.type === BranchType.HO || query.type === BranchType.SH ? query.type : null
 
   const rows = await db.branch.findMany({
     where: {
       deleted: query.mode === "trash",
-      ...(q
-        ? {
-            OR: [
-              { code: { contains: q, mode: "insensitive" } },
-              { name: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
+      ...(query.mode === "active" && query.activeOnly ? { isActive: true } : {}),
+      ...(code ? { code: { contains: code, mode: "insensitive" } } : {}),
+      ...(name ? { name: { contains: name, mode: "insensitive" } } : {}),
+      ...(type ? { type } : {}),
     },
     select: {
       id: true,

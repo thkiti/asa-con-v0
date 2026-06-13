@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import type { BranchListItem, StaffListItem } from "@/lib/master/types"
 import { themeBtnPrimary, themeBtnSecondary, themeInput, themeMuted } from "@/lib/theme/theme-classes"
+import { StaffEvidenceSection } from "./StaffEvidenceSection"
 
 const ROLE_OPTIONS: { value: StaffListItem["role"]; label: string }[] = [
   { value: "HO_ADMIN", label: "HO_ADMIN" },
@@ -22,6 +23,8 @@ type StaffFormModalProps = {
   submitting?: boolean
   error?: string | null
   onClose: () => void
+  evidenceRefreshKey?: number
+  onEvidenceChanged?: () => void
   onSubmit: (values: {
     staffId: string
     name: string
@@ -33,6 +36,10 @@ type StaffFormModalProps = {
   }) => Promise<void>
 }
 
+const fieldLabel = "text-xs text-muted-foreground"
+const fieldClass = `mt-0.5 h-10 w-full ${themeInput}`
+const rowOneFieldClass = fieldClass
+
 export function StaffFormModal({
   open,
   mode,
@@ -42,6 +49,8 @@ export function StaffFormModal({
   submitting = false,
   error,
   onClose,
+  evidenceRefreshKey = 0,
+  onEvidenceChanged,
   onSubmit,
 }: StaffFormModalProps) {
   const [staffId, setStaffId] = useState("")
@@ -91,7 +100,7 @@ export function StaffFormModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg"
+        className="w-full max-w-lg rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
         role="dialog"
         aria-modal="true"
         aria-labelledby="staff-form-title"
@@ -102,7 +111,7 @@ export function StaffFormModal({
         </h2>
 
         <form
-          className="mt-4 space-y-4"
+          className="mt-3 space-y-3"
           onSubmit={(event) => {
             event.preventDefault()
             if (!canSubmit) return
@@ -118,38 +127,41 @@ export function StaffFormModal({
             })
           }}
         >
-          <label className="block">
-            <span className="text-sm text-muted-foreground">Staff ID</span>
-            <input
-              type="text"
-              value={staffId}
-              onChange={(event) => setStaffId(event.target.value)}
-              disabled={isEdit || submitting}
-              readOnly={isEdit}
-              className={themeInput}
-              autoComplete="off"
-            />
+          <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-2 gap-y-1">
+            <label className="block min-w-0">
+              <span className={fieldLabel}>Staff ID</span>
+              <input
+                type="text"
+                value={staffId}
+                onChange={(event) => setStaffId(event.target.value)}
+                disabled={isEdit || submitting}
+                readOnly={isEdit}
+                className={rowOneFieldClass}
+                autoComplete="off"
+              />
+            </label>
+
+            <label className="block min-w-0">
+              <span className={fieldLabel}>Name</span>
+              <input
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                disabled={submitting}
+                className={rowOneFieldClass}
+                required
+              />
+            </label>
+
             {isEdit ? (
-              <span className={`mt-1 block text-xs ${themeMuted}`}>
+              <p className={`col-span-full text-xs ${themeMuted}`}>
                 Staff ID cannot be changed after creation.
-              </span>
+              </p>
             ) : null}
-          </label>
+          </div>
 
           <label className="block">
-            <span className="text-sm text-muted-foreground">Name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              disabled={submitting}
-              className={themeInput}
-              required
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm text-muted-foreground">Role</span>
+            <span className={fieldLabel}>Role</span>
             <select
               value={role}
               onChange={(event) => {
@@ -160,7 +172,7 @@ export function StaffFormModal({
                 }
               }}
               disabled={submitting}
-              className={themeInput}
+              className={fieldClass}
             >
               {ROLE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -169,17 +181,18 @@ export function StaffFormModal({
               ))}
             </select>
             <span className={`mt-1 block text-xs ${themeMuted}`}>
-              HO roles need an HO branch. SH_STAFF needs an SH branch. Role changes apply on next login.
+              HO roles need an HO branch. SH_STAFF needs an SH branch. Role changes apply on next
+              login.
             </span>
           </label>
 
           <label className="block">
-            <span className="text-sm text-muted-foreground">Branch</span>
+            <span className={fieldLabel}>Branch</span>
             <select
               value={branchId}
               onChange={(event) => setBranchId(event.target.value)}
               disabled={submitting}
-              className={themeInput}
+              className={fieldClass}
             >
               {branches.map((branch) => (
                 <option key={branch.id} value={branch.id}>
@@ -206,9 +219,7 @@ export function StaffFormModal({
               <input
                 type="checkbox"
                 checked={allowAnyBranchLogin}
-                onChange={(event) =>
-                  setAllowAnyBranchLogin(event.target.checked)
-                }
+                onChange={(event) => setAllowAnyBranchLogin(event.target.checked)}
                 disabled={submitting}
               />
               <span className="text-sm text-muted-foreground">
@@ -219,17 +230,26 @@ export function StaffFormModal({
 
           {!isEdit ? (
             <label className="block">
-              <span className="text-sm text-muted-foreground">Password</span>
+              <span className={fieldLabel}>Password</span>
               <input
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={submitting}
-                className={themeInput}
+                className={fieldClass}
                 placeholder="Leave blank for default (1234)"
                 autoComplete="new-password"
               />
             </label>
+          ) : null}
+
+          {isEdit && staff ? (
+            <StaffEvidenceSection
+              staffRowId={staff.id}
+              staffCode={staff.staffId}
+              refreshKey={evidenceRefreshKey}
+              onEvidenceChanged={onEvidenceChanged}
+            />
           ) : null}
 
           {error ? (
@@ -238,7 +258,7 @@ export function StaffFormModal({
             </p>
           ) : null}
 
-          <div className="flex flex-wrap justify-end gap-2 pt-2">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
             <button
               type="button"
               onClick={onClose}
@@ -248,7 +268,7 @@ export function StaffFormModal({
               Cancel
             </button>
             <button type="submit" disabled={!canSubmit} className={themeBtnPrimary}>
-              {submitting ? "Saving…" : isEdit ? "Save" : "Create"}
+              {submitting ? "Saving…" : "Save"}
             </button>
           </div>
         </form>

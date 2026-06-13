@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { CatalogProductCodeHover } from "@/components/catalog-image/CatalogProductCodeHover"
 import { MasterPageShell } from "@/components/master/MasterPageShell"
 import type { DocumentEntityCode } from "@/lib/legal-entity"
 import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
@@ -8,22 +9,25 @@ import { MasterRowActions } from "@/components/master/shared/MasterRowActions"
 import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
 import { MASTER_ACTIONS_COLUMN } from "@/lib/master-ui/table-columns"
-import { MasterToolbar } from "@/components/master/shared/MasterToolbar"
 import {
   createMasterProductReference,
+  createMasterProductWithReference,
   fetchMasterProductReference,
   patchMasterProduct,
   patchMasterProductReference,
 } from "@/lib/master-ui/fetchers"
-import { masterPageLayout, masterToolbarLabel } from "@/lib/master-ui/table-classes"
-import type {
-  ProductReferenceListItem,
-  ReferenceStatusFilter,
-} from "@/lib/master/types"
-import { themeSelect } from "@/lib/theme/theme-classes"
+import { masterPageLayout } from "@/lib/master-ui/table-classes"
+import type { ProductReferenceListItem } from "@/lib/master/types"
+import { themeBtnPrimary } from "@/lib/theme/theme-classes"
 import { ProductReferenceConfirmDialog } from "./ProductReferenceConfirmDialog"
 import {
+  ProductReferenceFilterBar,
+  refFilterToListMode,
+  type ProductReferenceRefFilter,
+} from "./ProductReferenceFilterBar"
+import {
   ProductReferenceFormModal,
+  type ProductReferenceCreateValues,
   type ProductReferenceSaveAllValues,
   type ProductReferenceSaveProductValues,
 } from "./ProductReferenceFormModal"
@@ -54,14 +58,14 @@ export function ProductReferencePage({
 }: {
   documentEntityCode: DocumentEntityCode
 }) {
-  const [mode, setMode] = useState<"active" | "trash">("active")
+  const [refFilter, setRefFilter] = useState<ProductReferenceRefFilter>("all")
+  const mode = refFilterToListMode(refFilter)
   const [productCode, setProductCode] = useState("")
   const [productName, setProductName] = useState("")
   const [hookGroup, setHookGroup] = useState("")
   const [hookNo, setHookNo] = useState("")
   const [supplierCode, setSupplierCode] = useState("")
   const [productGroup, setProductGroup] = useState("")
-  const [referenceStatus, setReferenceStatus] = useState<ReferenceStatusFilter>("all")
 
   const [applied, setApplied] = useState({
     productCode: "",
@@ -77,6 +81,7 @@ export function ProductReferencePage({
   const [error, setError] = useState<string | null>(null)
 
   const [formOpen, setFormOpen] = useState(false)
+  const [formMode, setFormMode] = useState<"create" | "edit">("edit")
   const [selectedRow, setSelectedRow] = useState<ProductReferenceListItem | null>(null)
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -109,7 +114,7 @@ export function ProductReferencePage({
       const result = await fetchMasterProductReference({
         mode,
         ...applied,
-        referenceStatus,
+        referenceStatus: "all",
       })
       setItems(result.items)
     } catch (err: unknown) {
@@ -118,13 +123,14 @@ export function ProductReferencePage({
     } finally {
       setLoading(false)
     }
-  }, [mode, applied, referenceStatus])
+  }, [mode, applied])
 
   useEffect(() => {
     void load()
   }, [load])
 
   const openEdit = (row: ProductReferenceListItem) => {
+    setFormMode("edit")
     setSelectedRow(row)
     setFormError(null)
     setFormOpen(true)
@@ -237,102 +243,76 @@ export function ProductReferencePage({
     }
   }
 
+  const handleCreate = async (values: ProductReferenceCreateValues) => {
+    setFormSubmitting(true)
+    setFormError(null)
+    try {
+      await createMasterProductWithReference({
+        productCode: values.productCode,
+        name: values.name,
+        productType: values.productType,
+        hookGroup: values.hookGroup,
+        hookNo: values.hookNo,
+        supplierCode: values.supplierCode,
+        productGroup: values.productGroup || null,
+      })
+      setFormOpen(false)
+      await load()
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Save failed")
+    } finally {
+      setFormSubmitting(false)
+    }
+  }
+
   const trashMode = mode === "trash"
+
+  const openAddProduct = () => {
+    setFormMode("create")
+    setSelectedRow(null)
+    setFormError(null)
+    setFormOpen(true)
+  }
 
   return (
     <MasterPageShell
       title="Product & Reference Stock"
       documentEntityCode={documentEntityCode}
       description="Maintain product names, types, and hook reference links. Does not change stock balances or posting rules."
+      headerActions={
+        <button
+          type="button"
+          className={themeBtnPrimary}
+          onClick={openAddProduct}
+          disabled={trashMode}
+          title={trashMode ? "Switch to Active to add products" : undefined}
+        >
+          Add Product
+        </button>
+      }
     >
       <div className={masterPageLayout}>
-        <div className="mt-3 space-y-2">
-          <MasterToolbar
-            searchLabel="Product code"
-            searchPlaceholder="Starts with, e.g. 5101"
-            searchValue={productCode}
-            onSearchChange={setProductCode}
-            mode={mode}
-            onModeChange={setMode}
-            extraFilters={
-              <>
-                <label>
-                  <span className={masterToolbarLabel}>Product name</span>
-                  <input
-                    type="search"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    placeholder="Name…"
-                    className="mt-0.5 w-full rounded border border-border bg-card px-2 py-1 text-xs"
-                    aria-label="Product name"
-                  />
-                </label>
-                <label>
-                  <span className={masterToolbarLabel}>Hook group</span>
-                  <input
-                    type="text"
-                    maxLength={1}
-                    value={hookGroup}
-                    onChange={(e) => setHookGroup(e.target.value)}
-                    placeholder="Exact, e.g. K"
-                    className="mt-0.5 w-full rounded border border-border bg-card px-2 py-1 text-xs"
-                    aria-label="Hook group (exact)"
-                  />
-                </label>
-                <label>
-                  <span className={masterToolbarLabel}>Hook no</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={3}
-                    value={hookNo}
-                    onChange={(e) => setHookNo(e.target.value)}
-                    placeholder="Exact, e.g. 12"
-                    className="mt-0.5 w-full rounded border border-border bg-card px-2 py-1 text-xs"
-                    aria-label="Hook number (exact)"
-                  />
-                </label>
-              </>
-            }
+        <div className="mt-3">
+          <ProductReferenceFilterBar
+            values={{
+              productCode,
+              productName,
+              hookNo,
+              hookGroup,
+              supplierCode,
+              productGroup,
+              refFilter,
+            }}
+            onChange={(patch) => {
+              if (patch.productCode !== undefined) setProductCode(patch.productCode)
+              if (patch.productName !== undefined) setProductName(patch.productName)
+              if (patch.hookNo !== undefined) setHookNo(patch.hookNo)
+              if (patch.hookGroup !== undefined) setHookGroup(patch.hookGroup)
+              if (patch.supplierCode !== undefined) setSupplierCode(patch.supplierCode)
+              if (patch.productGroup !== undefined) setProductGroup(patch.productGroup)
+              if (patch.refFilter !== undefined) setRefFilter(patch.refFilter)
+            }}
           />
-
-          <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 sm:items-end">
-            <label>
-              <span className={masterToolbarLabel}>Supplier code</span>
-              <input
-                type="search"
-                value={supplierCode}
-                onChange={(e) => setSupplierCode(e.target.value)}
-                className="mt-0.5 w-full rounded border border-border bg-card px-2 py-1 text-xs"
-                aria-label="Supplier code"
-              />
-            </label>
-            <label>
-              <span className={masterToolbarLabel}>Product group</span>
-              <input
-                type="search"
-                value={productGroup}
-                onChange={(e) => setProductGroup(e.target.value)}
-                className="mt-0.5 w-full rounded border border-border bg-card px-2 py-1 text-xs"
-                aria-label="Product group"
-              />
-            </label>
-            <label>
-              <span className={masterToolbarLabel}>Reference status</span>
-              <select
-                value={referenceStatus}
-                onChange={(e) =>
-                  setReferenceStatus(e.target.value as ReferenceStatusFilter)
-                }
-                className={`mt-0.5 w-full ${themeSelect}`}
-                aria-label="Reference status"
-              >
-                <option value="all">All</option>
-                <option value="has">Has Reference</option>
-                <option value="none">No Reference</option>
-              </select>
-            </label>
-          </div>
         </div>
 
         <MasterListStatus loading={loading} error={error} count={items.length} />
@@ -342,7 +322,11 @@ export function ProductReferencePage({
             <MasterTableRow
               key={row.rowId}
               cells={[
-                row.productCode,
+                <CatalogProductCodeHover
+                  key="code"
+                  productCode={row.productCode}
+                  className="font-mono"
+                />,
                 <span key="name" title={row.productName}>
                   {row.productName}
                 </span>,
@@ -384,14 +368,18 @@ export function ProductReferencePage({
 
       <ProductReferenceFormModal
         open={formOpen}
-        row={selectedRow}
+        mode={formMode}
+        row={formMode === "edit" ? selectedRow : null}
         submitting={formSubmitting}
         error={formError}
         onClose={() => setFormOpen(false)}
         onSaveProduct={handleSaveProduct}
         onSaveAll={handleSaveAll}
+        onCreate={formMode === "create" ? handleCreate : undefined}
         onTrashReference={
-          selectedRow?.hasReference ? () => handleTrashReference() : undefined
+          formMode === "edit" && selectedRow?.hasReference
+            ? () => handleTrashReference()
+            : undefined
         }
       />
 

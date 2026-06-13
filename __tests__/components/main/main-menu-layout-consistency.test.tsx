@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { MainMenuView } from "@/components/main/MainMenuView"
 import { MainMenuSectionView } from "@/components/main/MainMenuSectionView"
 import { MasterHubView } from "@/components/master/MasterHubView"
+import { PricingHubView } from "@/components/pricing/PricingHubView"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
 import { getMainMenuSectionDetail } from "@/lib/main-ui/main-menu"
 import {
@@ -86,6 +87,11 @@ describe("main menu layout consistency", () => {
     pages.push({
       name: "/master",
       html: renderToStaticMarkup(<MasterHubView user={hoAdmin} />),
+    })
+
+    pages.push({
+      name: "/master/pricing",
+      html: renderToStaticMarkup(<PricingHubView user={hoAdmin} />),
     })
   })
 

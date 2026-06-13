@@ -31,8 +31,11 @@ export async function captureVideoFrame(
   })
 }
 
-export async function startCheckoutCameraStream(
-  video: HTMLVideoElement | null
+export type CameraFacingMode = "user" | "environment"
+
+export async function startCameraStream(
+  video: HTMLVideoElement | null,
+  facingMode: CameraFacingMode = "environment"
 ): Promise<MediaStream | null> {
   if (!video || typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
     return null
@@ -40,7 +43,7 @@ export async function startCheckoutCameraStream(
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" } },
+      video: { facingMode: { ideal: facingMode } },
       audio: false,
     })
     video.srcObject = stream
@@ -48,6 +51,12 @@ export async function startCheckoutCameraStream(
   } catch {
     return null
   }
+}
+
+export async function startCheckoutCameraStream(
+  video: HTMLVideoElement | null
+): Promise<MediaStream | null> {
+  return startCameraStream(video, "environment")
 }
 
 export function stopMediaStream(stream: MediaStream | null): void {

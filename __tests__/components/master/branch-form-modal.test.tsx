@@ -30,7 +30,14 @@ async function renderModal(
   await act(async () => {
     root.render(<BranchFormModal {...props} />)
   })
+  await act(async () => {})
   return { root, container }
+}
+
+function textInputs(container: HTMLElement): HTMLInputElement[] {
+  return Array.from(
+    container.querySelectorAll('form input:not([type="checkbox"])')
+  ) as HTMLInputElement[]
 }
 
 describe("BranchFormModal", () => {
@@ -44,8 +51,10 @@ describe("BranchFormModal", () => {
       />
     )
     expect(html).toContain("Add branch")
-    expect(html).toContain("HO — Head Office")
-    expect(html).toContain("SH — Shop")
+    expect(html).toContain(">HO<")
+    expect(html).toContain(">SH<")
+    expect(html).not.toContain("HO — Head Office")
+    expect(html).not.toContain("SH — Shop")
     expect(html).toContain("Address")
     expect(html).toContain("Phone")
     expect(html).toContain("Machine / POS Approval ID")
@@ -69,7 +78,8 @@ describe("BranchFormModal", () => {
 
     expect(container.textContent).toContain("Edit branch")
     expect(container.textContent).toContain("Company Tax ID")
-    expect(container.textContent).toContain("123 Main St")
+    const inputs = textInputs(container)
+    expect(inputs[2]?.value).toBe("123 Main St")
 
     await act(async () => {
       root.unmount()
@@ -87,7 +97,7 @@ describe("BranchFormModal", () => {
     })
 
     expect(container.textContent).toContain("Machine / POS Approval ID")
-    expect(container.textContent).toContain("123 Main St")
+    expect(textInputs(container)[2]?.value).toBe("123 Main St")
 
     await act(async () => {
       root.unmount()

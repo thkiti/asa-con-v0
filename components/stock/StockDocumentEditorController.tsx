@@ -9,7 +9,7 @@ import {
 } from "@/lib/stock-ui/counting-editor-load"
 import { toStockDocumentUiError } from "@/lib/stock-ui/document-errors"
 import { getEditorWorkflowActions } from "@/lib/stock-ui/document-permissions"
-import { filterEditorActionsForStockCountStaff } from "@/lib/stock-ui/stock-count-staff-mode"
+import { filterEditorActionsForStockCountStaff, isStaffOperationalSheet } from "@/lib/stock-ui/stock-count-staff-mode"
 import {
   addEditorLine,
   applyCountingSaveToEditorState,
@@ -39,11 +39,14 @@ import type {
   StockDocumentDetailVM,
 } from "@/lib/stock-ui/types"
 import type { Role } from "@/lib/shared"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import { StockDocumentEditorView } from "./StockDocumentEditorView"
 
 type CreateProps = {
   mode: "create"
   docType: DocType
+  stockCountStaffMode?: boolean
 }
 
 type EditProps = {
@@ -92,10 +95,12 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     staffCode: string
     staffName: string
   } | null>(null)
+  const [viewerEntityCode, setViewerEntityCode] = useState<DocumentEntityCode>(
+    DEFAULT_DOCUMENT_ENTITY_CODE
+  )
   const [activeHookGroup, setActiveHookGroup] = useState<CountingHookGroup>("K")
 
-  const stockCountStaffMode =
-    props.mode === "edit" ? Boolean(props.stockCountStaffMode) : false
+  const stockCountStaffMode = Boolean(props.stockCountStaffMode)
 
   const applyDetail = useCallback((detail: StockDocumentDetailVM) => {
     setDetailSnapshot(detail)
@@ -115,6 +120,8 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
   }, [role, state, stockCountStaffMode])
 
   const countingMode = state ? isCountingEditorMode(state) : false
+  const staffOperationalSheet =
+    state !== null && isStaffOperationalSheet(state, stockCountStaffMode)
 
   const refreshDocument = useCallback(
     async (documentId: string) => {
@@ -128,10 +135,23 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
         }
         return detail
       }
+      if (
+        detail.docType === "TRANSFER_OUT" &&
+        detail.status === "DRAFT" &&
+        stockCountStaffMode
+      ) {
+        const loaded = await loadCountingEditorStateForEdit(detail)
+        setDetailSnapshot(detail)
+        setState(loaded.state)
+        if (loaded.orphans.length > 0) {
+          setStatusMessage(orphanWarning(loaded.orphans.length))
+        }
+        return detail
+      }
       applyDetail(detail)
       return detail
     },
-    [applyDetail]
+    [applyDetail, stockCountStaffMode]
   )
 
   useEffect(() => {
@@ -147,6 +167,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
         if (cancelled) return
         setStaffId(session.staffId)
         setRole(session.role)
+        setViewerEntityCode(session.documentEntityCode)
         setStaffHeader({
           branchCode: session.branchCode,
           branchName: session.branchName,
@@ -159,8 +180,11 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
             throw new Error("Invalid document type for shop editor")
           }
 
-          if (props.docType === "ADJUSTMENT") {
-            const loaded = await loadCountingEditorStateForCreate(session.branchId)
+          if (props.docType === "ADJUSTMENT" || (stockCountStaffMode && props.docType === "TRANSFER_OUT")) {
+            const loaded = await loadCountingEditorStateForCreate(
+              session.branchId,
+              props.docType
+            )
             if (cancelled) return
             setDetailSnapshot(null)
             setState(loaded.state)
@@ -192,6 +216,22 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
           return
         }
 
+        if (
+          detail.docType === "TRANSFER_OUT" &&
+          detail.status === "DRAFT" &&
+          stockCountStaffMode
+        ) {
+          const loaded = await loadCountingEditorStateForEdit(detail)
+          if (cancelled) return
+          setDetailSnapshot(detail)
+          setState(loaded.state)
+          if (loaded.orphans.length > 0) {
+            setStatusMessage(orphanWarning(loaded.orphans.length))
+          }
+          setLoading(false)
+          return
+        }
+
         applyDetail(detail)
       } catch (err: unknown) {
         if (!cancelled) {
@@ -208,7 +248,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     return () => {
       cancelled = true
     }
-  }, [applyDetail, props])
+  }, [applyDetail, props, stockCountStaffMode])
 
   const handleHeaderChange = useCallback((patch: Partial<StockDocumentEditorStateVM>) => {
     setState((prev) => (prev ? { ...prev, ...patch } : prev))
@@ -250,9 +290,11 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
 
     try {
       const priorLines = state.lines
-      const saved = await saveStockDocumentEditor(state, staffId, priorLines)
+      const saved = await saveStockDocumentEditor(state, staffId, priorLines, {
+        staffOperationalSheet: staffOperationalSheet,
+      })
 
-      if (isCountingEditorMode(state)) {
+      if (isCountingEditorMode(state) || staffOperationalSheet) {
         setDetailSnapshot(mergeSavedDetailWithEditorLines(saved, priorLines))
         setState(applyCountingSaveToEditorState(state, saved))
       } else {
@@ -261,7 +303,9 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
 
       setStatusMessage(workflowSuccessMessage("save"))
 
-      const redirect = postSaveEditorPath(props.mode, saved.id)
+      const redirect = postSaveEditorPath(props.mode, saved.id, {
+        staffEntry: stockCountStaffMode,
+      })
       if (redirect) {
         router.replace(redirect)
       }
@@ -270,7 +314,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     } finally {
       setSaving(false)
     }
-  }, [applyDetail, props, router, staffId, state])
+  }, [applyDetail, props, router, staffId, staffOperationalSheet, state, stockCountStaffMode])
 
   const handleWorkflowAction = useCallback(
     async (actionId: StockDocumentActionId) => {
@@ -357,6 +401,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
       error={error}
       statusMessage={statusMessage}
       countingMode={countingMode}
+      staffOperationalSheet={staffOperationalSheet}
       activeHookGroup={activeHookGroup}
       onHookGroupChange={setActiveHookGroup}
       onHeaderChange={handleHeaderChange}
@@ -366,6 +411,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
       onWorkflowAction={(id) => void handleWorkflowAction(id)}
       stockCountStaffMode={stockCountStaffMode}
       staffHeader={staffHeader}
+      viewerEntityCode={viewerEntityCode}
     />
   )
 }
