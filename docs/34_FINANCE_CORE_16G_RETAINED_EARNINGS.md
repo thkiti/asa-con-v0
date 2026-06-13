@@ -1,7 +1,7 @@
 # Finance Core 16G — Retained Earnings
 
 **Status:** Done  
-**Scope:** Read-only retained earnings analysis before closing entries (16H).
+**Scope:** Read-only retained earnings analysis before posting a closing entry (16H).
 
 Explains economic equity when revenue and expense accounts remain open. **No journal creation, no posting, no closing entry.**
 
@@ -24,6 +24,12 @@ Posted Total Equity (balance sheet)
 + Current Period Net Income
 = Adjusted Total Equity
 ```
+
+When ready to post, proceed to **16H** closing entry — see [35_FINANCE_CORE_16H_CLOSING_ENTRY.md](./35_FINANCE_CORE_16H_CLOSING_ENTRY.md).
+
+### Finance Core chain
+
+**16F** balance sheet → **16G** (this doc) → **16H** closing entry posting.
 
 ---
 
@@ -80,7 +86,7 @@ Same convention as Trial Balance / P&amp;L / Balance Sheet:
 - **Read-only** — no mutations.
 - **Account 301 only** — no name/code heuristics in v1.
 - **Posted data only** — same journal scope as 16C–16F.
-- **No closing entry** — deferred to 16H.
+- **No closing entry posting in this phase** — posting is 16H.
 
 ---
 
@@ -90,7 +96,7 @@ Same convention as Trial Balance / P&amp;L / Balance Sheet:
 |-------|-------|
 | 16F | Balance sheet |
 | **16G** | **Retained earnings analysis** |
-| 16H | Closing entry (planned) |
+| 16H | Closing entry (done — see 35_FINANCE_CORE_16H_CLOSING_ENTRY.md) |
 
 ---
 

@@ -3,7 +3,11 @@
 **Status:** Done  
 **Scope:** Read-only financial statement layer from posted journal data.
 
-Balance Sheet read-only statement layer implemented. **Retained Earnings** analysis is **16G**; **Closing Entry** deferred to **16H**.
+Balance Sheet read-only statement layer implemented. **Retained Earnings** analysis is **16G**; **Closing Entry** posting is **16H** — see [35_FINANCE_CORE_16H_CLOSING_ENTRY.md](./35_FINANCE_CORE_16H_CLOSING_ENTRY.md).
+
+### Finance Core chain
+
+**16F** (this doc) → **16G** retained earnings bridge → **16H** closing entry posting. See [34_FINANCE_CORE_16G_RETAINED_EARNINGS.md](./34_FINANCE_CORE_16G_RETAINED_EARNINGS.md) and [35_FINANCE_CORE_16H_CLOSING_ENTRY.md](./35_FINANCE_CORE_16H_CLOSING_ENTRY.md).
 
 ---
 
@@ -53,7 +57,7 @@ Query parameters (same convention as Trial Balance / P&amp;L):
 
 **Balance check:** `totalAssets` vs `totalLiabilities + totalEquity` using `roundMoney`.
 
-When revenue/expense activity exists without a closing entry to equity, the sheet may show **out of balance** — expected until 16G/16H.
+When revenue/expense activity exists without a closing entry to equity, the sheet may show **out of balance** — expected until 16G analysis confirms the gap and 16H closing entry is posted.
 
 ---
 
@@ -63,7 +67,7 @@ When revenue/expense activity exists without a closing entry to equity, the shee
 - **Posted data only** — journal entries in scope (via trial balance query).
 - **No nested transactions** — domain accepts `PrismaClient` or mock tx; no `$transaction`.
 - **No retained earnings roll-forward** — equity lines reflect posted equity accounts only.
-- **No closing entry creation** — deferred to 16H.
+- **No closing entry creation in this phase** — posting is 16H.
 
 ---
 
@@ -78,7 +82,7 @@ When revenue/expense activity exists without a closing entry to equity, the shee
 | 16E | Profit & loss |
 | **16F** | **Balance sheet** |
 | 16G | Retained earnings (done — see 34_FINANCE_CORE_16G_RETAINED_EARNINGS.md) |
-| 16H | Closing entry (planned) |
+| 16H | Closing entry (done — see 35_FINANCE_CORE_16H_CLOSING_ENTRY.md) |
 
 ---
 

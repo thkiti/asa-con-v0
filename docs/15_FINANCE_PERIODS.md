@@ -2,7 +2,7 @@
 
 Status: **Done** — period lifecycle, posting enforcement, admin API/UI, auth, middleware bypass; Phase 19B posting-lock audit  
 Scope: `AccountingPeriod` lifecycle, posting lock, admin operations, middleware/API boundaries  
-Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
+Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [21_FINANCE_CLOSE_WORKFLOW.md](./21_FINANCE_CLOSE_WORKFLOW.md), [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md), [23_FINANCE_CLOSE_EVIDENCE.md](./23_FINANCE_CLOSE_EVIDENCE.md), [35_FINANCE_CORE_16H_CLOSING_ENTRY.md](./35_FINANCE_CORE_16H_CLOSING_ENTRY.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md)
 
 ---
 
@@ -20,17 +20,17 @@ Period **creation** and **close/reopen** are admin workflows — not side effect
 stateDiagram-v2
   [*] --> OPEN: POST /api/finance/periods\n(bootstrapPeriodIfMissing)
   OPEN --> SOFT_CLOSED: PATCH SOFT_CLOSE
-  SOFT_CLOSED --> OPEN: PATCH REOPEN
+  SOFT_CLOSED --> OPEN: PATCH REOPEN\n(no active closing entry)
   OPEN --> HARD_CLOSED: PATCH HARD_CLOSE
   SOFT_CLOSED --> HARD_CLOSED: PATCH HARD_CLOSE
-  HARD_CLOSED --> [*]: terminal (no reopen)
+  HARD_CLOSED --> SOFT_CLOSED: PATCH REOPEN or\napproved reopen request (21A/21B)
 ```
 
 | Status | Meaning | Posting |
 |--------|---------|---------|
 | `OPEN` | Normal operations | **Allowed** |
 | `SOFT_CLOSED` | Month closed for routine posting | **Blocked** (`PERIOD_CLOSED`) |
-| `HARD_CLOSED` | Final close; no reopen | **Blocked** (`PERIOD_CLOSED`) |
+| `HARD_CLOSED` | Final close; controlled reopen via 21A/21B | **Blocked** (`PERIOD_CLOSED`) |
 
 ### Transitions
 
@@ -38,12 +38,13 @@ stateDiagram-v2
 |--------|------|-----|-----------------|
 | Create / open | missing | `OPEN` | Row already exists (returns existing row, no status change) |
 | `SOFT_CLOSE` | `OPEN`, `SOFT_CLOSED` | `SOFT_CLOSED` | Already `SOFT_CLOSED` |
-| `REOPEN` | `SOFT_CLOSED`, `OPEN` | `OPEN` | Already `OPEN` |
+| `REOPEN` | `SOFT_CLOSED` | `OPEN` | Already `OPEN`; blocked if active closing entry (16H) |
+| `REOPEN` | `HARD_CLOSED` | `SOFT_CLOSED` | Direct `HO_ADMIN` (21A) or approved request (21B); never `OPEN` |
 | `HARD_CLOSE` | any except terminal | `HARD_CLOSED` | Already `HARD_CLOSED` |
 
-`HARD_CLOSE` from `OPEN` or `SOFT_CLOSED` runs the **close gate** (Phase 20C) before status update — see [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md). `SOFT_CLOSE` is **ungated**.
+`HARD_CLOSE` from `OPEN` or `SOFT_CLOSED` runs the **close gate** (Phase 20C) before status update — see [22_FINANCE_CLOSE_GATE.md](./22_FINANCE_CLOSE_GATE.md). Gate may **BLOCK** when P&amp;L activity exists but no closing entry is posted (16H) — see [35_FINANCE_CORE_16H_CLOSING_ENTRY.md](./35_FINANCE_CORE_16H_CLOSING_ENTRY.md). `SOFT_CLOSE` is **ungated**.
 
-`REOPEN` from `HARD_CLOSED` throws `PERIOD_ALREADY_HARD_CLOSED` (409).
+Direct `PATCH REOPEN` from `HARD_CLOSED` to `OPEN` is rejected (`PERIOD_ALREADY_HARD_CLOSED` or `REOPEN_APPROVAL_REQUIRED` under 21B). `SOFT_CLOSED` → `OPEN` requires no active period closing entry — reverse the closing entry via manual journal reversal (16B) first.
 
 Implementation: [`lib/finance/period-setup.ts`](../lib/finance/period-setup.ts), [`lib/finance/period-close.ts`](../lib/finance/period-close.ts).
 
@@ -109,6 +110,7 @@ Feature flag: `FINANCE_POSTING_ENABLED=true` (server env). When false, operation
 |-------|-----------|--------------|
 | `/finance/periods` | `PeriodAdminPage` | `HO_FINANCE`, `HO_ADMIN` (via middleware RBAC) |
 | `/finance/periods/[id]/close-readiness` | `CloseReadinessPage` | Same — read-only close checklist (Phase 20B) |
+| `/finance/periods/[id]/closing-entry` | `ClosingEntryPage` | Preview/post period closing entry (16H) — link from close readiness |
 | `/finance/periods/[id]/close-evidence` | `CloseEvidencePage` | Immutable HARD-close evidence (Phase 20D) — `HARD_CLOSED` only; browser CSV export + audit print (Phase 20E) |
 
 Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetchers.ts) call `/api/finance/periods`.
@@ -121,6 +123,8 @@ Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetch
 | `POST` | `/api/finance/periods` | Period admin | Create/open period (`bootstrapPeriodIfMissing`) |
 | `PATCH` | `/api/finance/periods` | Period admin | `SOFT_CLOSE`, `HARD_CLOSE`, `REOPEN` |
 | `GET` | `/api/finance/periods/[id]/close-readiness` | None (public JSON) | Read-only close checklist for period (Phase 20B) |
+| `GET` | `/api/finance/periods/[id]/closing-entry/preview` | None (public JSON) | Closing entry simulation + `canPost` (16H) |
+| `POST` | `/api/finance/periods/[id]/closing-entry` | Period admin | Post period closing entry (16H) |
 | `GET` | `/api/finance/periods/[id]/close-evidence` | None (public JSON) | Immutable HARD-close evidence (Phase 20D) |
 
 Body (POST/PATCH): `{ branchId, periodKey }` plus `action` on PATCH.
@@ -237,6 +241,9 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | `lib/finance/close-gate.ts` | `assertCloseReadiness`, gate helpers (20C) |
 | `lib/finance/close-gate-errors.ts` | `CloseGateError`, structured payloads (20C) |
 | `lib/finance/close-readiness.ts` | Read-only checklist build for gate + GET API (20B/20C) |
+| `lib/finance/closing-entry.ts` | Pure closing line builder (16H) |
+| `lib/finance/closing-entry-post.ts` | Preview + post closing entry (16H) |
+| `lib/finance/closing-entry-status.ts` | Active closing entry lookup (16H) |
 | `lib/finance/close-evidence.ts` | Immutable evidence create (HARD close) + read (20D) |
 | `lib/finance/close-evidence-build.ts` | Compact payload builder (20D) |
 | `lib/finance/posting-period.ts` | `assertPostingPeriodOpen` — posting gate |
@@ -256,7 +263,10 @@ Smoke scripts reset a **closed** current-month period to `OPEN` via direct Prism
 | `PERIOD_NOT_OPENED` | 400 | Posting with no period row |
 | `PERIOD_CLOSED` | 400 | Posting when SOFT/HARD closed |
 | `PERIOD_NOT_FOUND` | 404 | Close/reopen on missing period |
-| `PERIOD_ALREADY_HARD_CLOSED` | 409 | Reopen or invalid transition |
+| `PERIOD_ALREADY_HARD_CLOSED` | 409 | Invalid reopen transition |
+| `REOPEN_APPROVAL_REQUIRED` | 409 | HARD reopen without approved request (21B) |
+| `CLOSING_ENTRY_REOPEN_BLOCKED` | 409 | SOFT→OPEN reopen while active closing entry exists (16H) |
+| `UNBALANCED_CLOSING_ENTRY` | 400 | Closing entry simulation not balanced (16H) |
 | `CLOSE_SNAPSHOT_REQUIRED` | 409 | HARD close blocked — missing/invalid snapshot evidence |
 | `CLOSE_BLOCKED` | 409 | HARD close blocked — reconciliation/posting blockers |
 | `CLOSE_EVIDENCE_REQUIRED` | 409 | HARD close blocked — audit evidence unavailable |
@@ -516,7 +526,23 @@ Full export/print contract: [28_FINANCE_PERIOD_AUDIT_EXPORT.md](./28_FINANCE_PER
 
 ---
 
-## 21. Out of scope (future)
+## 21. Phase 16H — Period closing entry
+
+Status: **Done** — preview + post P&amp;L closing journal to retained earnings (`301`) while period is `OPEN`
+
+| Surface | Path |
+|---------|------|
+| Preview API | `GET /api/finance/periods/[id]/closing-entry/preview` |
+| Post API | `POST /api/finance/periods/[id]/closing-entry` |
+| UI | `/finance/periods/[id]/closing-entry` |
+
+Closing entry is a **prerequisite for HARD close** when the period has revenue or expense activity (`closing-entry-missing` = BLOCKED on close checklist). Reopen `SOFT_CLOSED` → `OPEN` is blocked until the active closing entry is reversed (16B).
+
+Full architecture, line rules, and test map: [35_FINANCE_CORE_16H_CLOSING_ENTRY.md](./35_FINANCE_CORE_16H_CLOSING_ENTRY.md).
+
+---
+
+## 22. Out of scope (future)
 
 - Override posting into `SOFT_CLOSED` with audit reason (`canPostToPeriod` in close-policy exists but not wired to posting kernel)
 - Optional PATCH close reason text (actor snapshot exists in 20D evidence)
