@@ -30,6 +30,7 @@ export {
   deleteMasterStaffEvidence,
   getMasterStaffEvidenceDetail,
   listStaffWithEvidence,
+  submitMasterStaffEvidence,
 } from "./staff-evidence"
 export { createStaff } from "./create-staff"
 export { updateStaff } from "./update-staff"

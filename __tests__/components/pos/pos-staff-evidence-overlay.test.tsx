@@ -10,7 +10,7 @@ import {
   fetchStaffEvidenceMobileStatus,
 } from "@/lib/pos-ui/staff-evidence-mobile-client"
 import { submitStaffEvidenceCapture } from "@/lib/pos-ui/staff-evidence-client"
-import { resizeStaffPhotoForUpload } from "@/lib/pos-ui/staff-evidence-image"
+import { resizeStaffPhotoForUpload, rotateStaffEvidenceImageForUpload } from "@/lib/pos-ui/staff-evidence-image"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 
 jest.mock("@/lib/pos-ui/staff-evidence-client", () => ({
@@ -35,6 +35,7 @@ jest.mock("@/lib/pos-ui/staff-evidence-image", () => {
   return {
     ...actual,
     resizeStaffPhotoForUpload: jest.fn(),
+    rotateStaffEvidenceImageForUpload: jest.fn(),
   }
 })
 
@@ -55,6 +56,9 @@ const session = {
 const mockedResize = resizeStaffPhotoForUpload as jest.MockedFunction<
   typeof resizeStaffPhotoForUpload
 >
+const mockedRotate = rotateStaffEvidenceImageForUpload as jest.MockedFunction<
+  typeof rotateStaffEvidenceImageForUpload
+>
 const mockedIdProcess = processIdCardForUpload as jest.MockedFunction<
   typeof processIdCardForUpload
 >
@@ -74,10 +78,24 @@ describe("PosStaffEvidenceOverlay", () => {
   let container: HTMLDivElement
   let root: Root
 
+  function renderOverlay(onEvidenceComplete = jest.fn()) {
+    act(() => {
+      root.render(
+        <PosStaffEvidenceOverlay
+          session={session}
+          onClose={() => undefined}
+          onEvidenceComplete={onEvidenceComplete}
+        />
+      )
+    })
+    return onEvidenceComplete
+  }
+
   beforeEach(() => {
     URL.createObjectURL = jest.fn(() => "blob:preview")
     URL.revokeObjectURL = jest.fn()
     mockedResize.mockResolvedValue(new Blob(["resized-photo"], { type: "image/jpeg" }))
+    mockedRotate.mockImplementation(async (blob) => new Blob(["rotated", blob], { type: "image/jpeg" }))
     mockedIdProcess.mockResolvedValue(new Blob(["resized-id"], { type: "image/jpeg" }))
     mockedSubmit.mockResolvedValue({
       staffId: "103",
@@ -99,64 +117,52 @@ describe("PosStaffEvidenceOverlay", () => {
     jest.useRealTimers()
   })
 
-  it("starts directly at staff photo step with capture actions", () => {
-    act(() => {
-      root.render(
-        <PosStaffEvidenceOverlay
-          session={session}
-          onClose={() => undefined}
-          onEvidenceComplete={() => undefined}
-        />
-      )
-    })
+  it("auto-starts camera on mount at step 1 with mobile upload button", async () => {
+    renderOverlay()
 
-    expect(container.querySelector('[data-testid="pos-staff-evidence-choose-mode"]')).toBeNull()
-    expect(container.querySelector('[data-testid="pos-staff-evidence-step"]')?.textContent).toBe(
-      "ถ่ายรูปพนักงาน"
-    )
-    expect(container.querySelector('[data-testid="pos-staff-evidence-webcam-start"]')).toBeTruthy()
-    expect(container.querySelector('[data-testid="pos-staff-evidence-upload-start"]')).toBeTruthy()
-  })
-
-  it("opens webcam view when ถ่ายรูป is clicked", () => {
-    act(() => {
-      root.render(
-        <PosStaffEvidenceOverlay
-          session={session}
-          onClose={() => undefined}
-          onEvidenceComplete={() => undefined}
-        />
-      )
-    })
-
-    act(() => {
-      container.querySelector('[data-testid="pos-staff-evidence-webcam-start"]')?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true })
-      )
+    await act(async () => {
+      await Promise.resolve()
     })
 
     expect(container.querySelector('[data-testid="pos-staff-evidence-webcam-video"]')).toBeTruthy()
     expect(mockedStartCamera).toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="pos-staff-evidence-webcam-start"]')).toBeNull()
+    expect(container.querySelector('[data-testid="pos-staff-evidence-upload-start"]')?.textContent).toBe(
+      "Upload from Mobile"
+    )
+    expect(container.querySelector('[data-testid="pos-staff-evidence-step"]')?.textContent).toBe(
+      "Step 1/3 — ถ่ายรูปพนักงาน"
+    )
   })
 
-  it("shows horizontal compact confirm previews", async () => {
-    jest.useFakeTimers()
+  it("captures photo, advances to step 2 via ถัดไป", async () => {
+    renderOverlay()
 
-    act(() => {
-      root.render(
-        <PosStaffEvidenceOverlay
-          session={session}
-          onClose={() => undefined}
-          onEvidenceComplete={() => undefined}
-        />
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
       )
+      await Promise.resolve()
     })
 
+    expect(container.querySelector('[data-testid="pos-staff-evidence-preview-image"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="pos-staff-evidence-next"]')).toBeTruthy()
+
     act(() => {
-      container.querySelector('[data-testid="pos-staff-evidence-webcam-start"]')?.dispatchEvent(
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
         new MouseEvent("click", { bubbles: true })
       )
     })
+
+    expect(container.querySelector('[data-testid="pos-staff-evidence-step"]')?.textContent).toBe(
+      "Step 2/3 — สแกนบัตรประชาชน"
+    )
+  })
+
+  it("shows horizontal compact confirm previews after full flow", async () => {
+    jest.useFakeTimers()
+
+    renderOverlay()
 
     await act(async () => {
       container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
@@ -166,7 +172,7 @@ describe("PosStaffEvidenceOverlay", () => {
     })
 
     act(() => {
-      container.querySelector('[data-testid="pos-staff-evidence-confirm"]')?.dispatchEvent(
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
         new MouseEvent("click", { bubbles: true })
       )
     })
@@ -204,7 +210,7 @@ describe("PosStaffEvidenceOverlay", () => {
     })
 
     act(() => {
-      container.querySelector('[data-testid="pos-staff-evidence-confirm"]')?.dispatchEvent(
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
         new MouseEvent("click", { bubbles: true })
       )
     })
@@ -214,7 +220,217 @@ describe("PosStaffEvidenceOverlay", () => {
       "max-h-[260px]"
     )
     expect(container.querySelector('[data-testid="pos-staff-evidence-preview-id"]')?.className).toContain(
-      "max-h-[220px]"
+      "max-h-[260px]"
     )
+  })
+
+  it("keeps staff photo preview URL valid on step 3 after both captures", async () => {
+    let urlCounter = 0
+    ;(URL.createObjectURL as jest.Mock).mockImplementation(
+      () => `blob:preview-${++urlCounter}`
+    )
+
+    renderOverlay()
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    const staffImg = container.querySelector(
+      '[data-testid="pos-staff-evidence-preview-photo"]'
+    ) as HTMLImageElement
+    const idImg = container.querySelector(
+      '[data-testid="pos-staff-evidence-preview-id"]'
+    ) as HTMLImageElement
+
+    expect(staffImg).toBeTruthy()
+    expect(idImg).toBeTruthy()
+    expect(staffImg.src).toContain("blob:preview-")
+    expect(idImg.src).toContain("blob:preview-")
+    expect(staffImg.src).not.toBe(idImg.src)
+
+    const revokedUrls = (URL.revokeObjectURL as jest.Mock).mock.calls.map((call) => call[0])
+    expect(revokedUrls).not.toContain(staffImg.src)
+    expect(revokedUrls).not.toContain(idImg.src)
+  })
+
+  it("does not show Confirm & Upload until step 3 with both photos", async () => {
+    renderOverlay()
+
+    expect(container.querySelector('[data-testid="pos-staff-evidence-upload"]')).toBeNull()
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    expect(container.querySelector('[data-testid="pos-staff-evidence-upload"]')).toBeNull()
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    const uploadBtn = container.querySelector(
+      '[data-testid="pos-staff-evidence-upload"]'
+    ) as HTMLButtonElement
+    expect(uploadBtn).toBeTruthy()
+    expect(uploadBtn.disabled).toBe(false)
+  })
+
+  it("retake staff photo from step 3 returns to step 1", async () => {
+    renderOverlay()
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-retake-staff"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    expect(container.querySelector('[data-testid="pos-staff-evidence-step"]')?.textContent).toBe(
+      "Step 1/3 — ถ่ายรูปพนักงาน"
+    )
+    expect(container.querySelector('[data-testid="pos-staff-evidence-webcam-video"]')).toBeTruthy()
+  })
+
+  it("submits once on Confirm & Upload and calls onEvidenceComplete", async () => {
+    jest.useFakeTimers()
+    const onComplete = jest.fn()
+    renderOverlay(onComplete)
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    act(() => {
+      container.querySelector('[data-testid="pos-staff-evidence-next"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-upload"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    expect(mockedSubmit).toHaveBeenCalledTimes(1)
+    const submitArgs = mockedSubmit.mock.calls[0][0]
+    expect(submitArgs.photo.type).toBe("image/jpeg")
+    expect(submitArgs.idCard.type).toBe("image/jpeg")
+    expect(submitArgs.photo.name).toBe("staff-photo.jpg")
+    expect(submitArgs.idCard.name).toBe("staff-id.jpg")
+    expect(container.querySelector('[data-testid="pos-staff-evidence-success"]')).toBeTruthy()
+
+    await act(async () => {
+      jest.advanceTimersByTime(1500)
+      await Promise.resolve()
+    })
+
+    expect(onComplete).toHaveBeenCalledTimes(1)
+  })
+
+  it("shows rotate in preview and updates draft via rotateStaffEvidenceImageForUpload", async () => {
+    renderOverlay()
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-webcam-capture"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    expect(container.querySelector('[data-testid="pos-staff-evidence-rotate"]')).toBeTruthy()
+
+    await act(async () => {
+      container.querySelector('[data-testid="pos-staff-evidence-rotate"]')?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+      await Promise.resolve()
+    })
+
+    expect(mockedRotate).toHaveBeenCalledTimes(1)
+    expect(mockedSubmit).not.toHaveBeenCalled()
   })
 })

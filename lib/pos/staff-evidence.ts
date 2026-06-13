@@ -22,6 +22,8 @@ export type StaffEvidenceStatus = {
 export type StaffEvidenceDetail = StaffEvidenceStatus & {
   photoUrl: string | null
   idCardUrl: string | null
+  photoUpdatedAt: string | null
+  idCardUpdatedAt: string | null
 }
 
 export type StaffEvidencePresence = {
@@ -44,7 +46,7 @@ function blobListOptions(prefix: string) {
 async function findStaffEvidenceBlob(
   staffId: string,
   kind: StaffEvidenceFileKind
-): Promise<{ pathname: string; url: string } | null> {
+): Promise<{ pathname: string; url: string; uploadedAt: string | null } | null> {
   const pathname = buildStaffEvidenceBlobPath(staffId, kind)
   try {
     const prefix = pathname.replace(/\.jpg$/i, "")
@@ -52,7 +54,14 @@ async function findStaffEvidenceBlob(
     const match = blobs.find((blob) => blob.pathname === pathname)
     const url = String(match?.url ?? "").trim()
     if (!match || !url) return null
-    return { pathname: match.pathname, url }
+    const uploadedAtRaw = (match as { uploadedAt?: Date | string }).uploadedAt
+    let uploadedAt: string | null = null
+    if (uploadedAtRaw) {
+      const date =
+        uploadedAtRaw instanceof Date ? uploadedAtRaw : new Date(String(uploadedAtRaw))
+      uploadedAt = Number.isNaN(date.getTime()) ? null : date.toISOString()
+    }
+    return { pathname: match.pathname, url, uploadedAt }
   } catch (err) {
     if (err instanceof CatalogImageError) {
       throw err
@@ -181,6 +190,8 @@ export async function getStaffEvidenceDetail(
     ...toStaffEvidenceStatus(staff.staffId, presence),
     photoUrl: photoBlob?.url ?? null,
     idCardUrl: idBlob?.url ?? null,
+    photoUpdatedAt: photoBlob?.uploadedAt ?? null,
+    idCardUpdatedAt: idBlob?.uploadedAt ?? null,
   }
 }
 
@@ -198,6 +209,35 @@ export async function deleteStaffEvidence(
   }
 
   return getStaffEvidenceStatus(db, staff.staffId)
+}
+
+/** HO recovery upload — overwrite fixed staff-evidence/{staffId}-ph|id.jpg paths. */
+export async function replaceStaffEvidence(
+  db: StaffEvidenceDb,
+  input: {
+    staffId: string
+    photoBuffer: Buffer
+    idCardBuffer: Buffer
+    contentType?: string
+  }
+): Promise<StaffEvidenceDetail> {
+  const staff = await requireStaffByStaffId(db, input.staffId)
+  const contentType = input.contentType?.trim() || "image/jpeg"
+
+  await uploadStaffEvidenceToBlob({
+    staffId: staff.staffId,
+    kind: "ph",
+    fileBuffer: input.photoBuffer,
+    contentType,
+  })
+  await uploadStaffEvidenceToBlob({
+    staffId: staff.staffId,
+    kind: "id",
+    fileBuffer: input.idCardBuffer,
+    contentType,
+  })
+
+  return getStaffEvidenceDetail(db, staff.staffId)
 }
 
 async function assertStaffEvidenceNotComplete(staffId: string): Promise<void> {

@@ -7,7 +7,7 @@ function blobPutOptions(contentType: string) {
   const auth = getBlobAuthConfig()
   const options = {
     access: "public" as const,
-    allowOverwrite: false,
+    allowOverwrite: true,
     contentType,
   }
   if (auth.mode === "token") {

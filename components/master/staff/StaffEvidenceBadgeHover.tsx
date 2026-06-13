@@ -1,16 +1,13 @@
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type FocusEvent,
-} from "react"
-import { createPortal } from "react-dom"
+import { useCallback, useRef, useState } from "react"
 import { fetchMasterStaffEvidence } from "@/lib/master-ui/fetchers"
+import {
+  staffEvidenceCacheBustUrl,
+  staffEvidenceUpdatedAtForKind,
+} from "@/lib/master-ui/staff-evidence-view"
 import type { StaffEvidenceFileKind } from "@/lib/pos/staff-evidence-blob"
-import { StaffEvidenceImageHoverPreview } from "./StaffEvidenceImageHoverPreview"
+import { StaffEvidenceImageViewModal } from "./StaffEvidenceImageViewModal"
 
 type StaffEvidenceBadgeHoverProps = {
   staffRowId: string
@@ -21,33 +18,15 @@ type StaffEvidenceBadgeHoverProps = {
 }
 
 function circleClassName(kind: StaffEvidenceFileKind, exists: boolean): string {
-  const base = "inline-block h-3 w-3 shrink-0 rounded-full border border-transparent"
+  const base =
+    "inline-block h-3 w-3 shrink-0 rounded-full border border-transparent"
   if (!exists) {
     return `${base} bg-zinc-300`
   }
   if (kind === "ph") {
-    return `${base} bg-emerald-500`
+    return `${base} cursor-pointer bg-emerald-500`
   }
-  return `${base} bg-blue-500`
-}
-
-function computePreviewPosition(trigger: HTMLElement): { top: number; left: number } {
-  const rect = trigger.getBoundingClientRect()
-  const gap = 8
-  const maxWidth = 320
-  const maxHeight = 360
-
-  let left = rect.right + gap
-  if (left + maxWidth > window.innerWidth - gap) {
-    left = Math.max(gap, rect.left - maxWidth - gap)
-  }
-
-  let top = rect.top
-  if (top + maxHeight > window.innerHeight - gap) {
-    top = Math.max(gap, window.innerHeight - maxHeight - gap)
-  }
-
-  return { top, left }
+  return `${base} cursor-pointer bg-blue-500`
 }
 
 export function StaffEvidenceBadgeHover({
@@ -57,79 +36,79 @@ export function StaffEvidenceBadgeHover({
   tooltip,
   exists,
 }: StaffEvidenceBadgeHoverProps) {
-  const triggerRef = useRef<HTMLSpanElement>(null)
+  const requestIdRef = useRef(0)
   const [open, setOpen] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0 })
   const [loading, setLoading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [imageFailed, setImageFailed] = useState(false)
-  const requestIdRef = useRef(0)
-
-  const updatePosition = useCallback(() => {
-    const trigger = triggerRef.current
-    if (!trigger) return
-    setPosition(computePreviewPosition(trigger))
-  }, [])
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   const closePreview = useCallback(() => {
     setOpen(false)
     setLoading(false)
-    setImageFailed(false)
+    setFetchError(null)
     requestIdRef.current += 1
   }, [])
 
   const openPreview = useCallback(() => {
     if (!exists) return
     const requestId = requestIdRef.current + 1
-    updatePosition()
+    requestIdRef.current = requestId
     setOpen(true)
     setLoading(true)
     setImageUrl(null)
-    setImageFailed(false)
+    setFetchError(null)
 
     void fetchMasterStaffEvidence(staffRowId)
       .then((detail) => {
         if (requestIdRef.current !== requestId) return
         const url = kind === "ph" ? detail.photoUrl : detail.idCardUrl
-        setImageUrl(url)
+        const trimmed = typeof url === "string" ? url.trim() : ""
+        if (!trimmed) {
+          console.warn("[StaffEvidenceBadgeHover] evidence image URL missing", {
+            staffRowId,
+            staffCode,
+            kind,
+          })
+          return
+        }
+        setImageUrl(
+          staffEvidenceCacheBustUrl(
+            trimmed,
+            staffEvidenceUpdatedAtForKind(detail, kind)
+          )
+        )
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (requestIdRef.current !== requestId) return
-        setImageFailed(true)
+        console.error("[StaffEvidenceBadgeHover] failed to fetch evidence for view", {
+          staffRowId,
+          staffCode,
+          kind,
+          error: err,
+        })
+        setFetchError("Failed to load image")
       })
       .finally(() => {
         if (requestIdRef.current !== requestId) return
         setLoading(false)
       })
-  }, [exists, kind, staffRowId, updatePosition])
-
-  useEffect(() => {
-    if (!open) return
-    const onScroll = () => updatePosition()
-    window.addEventListener("scroll", onScroll, true)
-    window.addEventListener("resize", onScroll)
-    return () => {
-      window.removeEventListener("scroll", onScroll, true)
-      window.removeEventListener("resize", onScroll)
-    }
-  }, [open, updatePosition])
+  }, [exists, kind, staffCode, staffRowId])
 
   return (
     <>
       <span
-        ref={triggerRef}
-        role="img"
+        role="button"
         className={circleClassName(kind, exists)}
         data-testid={`staff-evidence-dot-${kind}`}
         data-evidence-present={exists ? "true" : "false"}
         title={tooltip}
         tabIndex={exists ? 0 : -1}
-        onMouseEnter={openPreview}
-        onMouseLeave={closePreview}
-        onFocus={openPreview}
-        onBlur={(event: FocusEvent<HTMLSpanElement>) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) {
-            closePreview()
+        onClick={() => openPreview()}
+        onKeyDown={(event) => {
+          if (!exists) return
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault()
+            openPreview()
           }
         }}
         aria-label={
@@ -138,21 +117,16 @@ export function StaffEvidenceBadgeHover({
             : `${tooltip} missing for ${staffCode}`
         }
       />
-      {open && typeof document !== "undefined"
-        ? createPortal(
-            <StaffEvidenceImageHoverPreview
-              kind={kind}
-              staffId={staffCode}
-              top={position.top}
-              left={position.left}
-              loading={loading}
-              imageUrl={imageUrl}
-              imageFailed={imageFailed}
-              onImageError={() => setImageFailed(true)}
-            />,
-            document.body
-          )
-        : null}
+      <StaffEvidenceImageViewModal
+        open={open}
+        title={kind === "ph" ? "Staff photo" : "ID card"}
+        staffCode={staffCode}
+        kind={kind}
+        urlLoading={loading}
+        fetchError={fetchError}
+        imageUrl={imageUrl}
+        onClose={closePreview}
+      />
     </>
   )
 }

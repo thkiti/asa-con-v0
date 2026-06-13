@@ -70,6 +70,56 @@ describe("getStaffEvidenceStatus", () => {
   })
 })
 
+describe("replaceStaffEvidence", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    listMock.mockResolvedValue({ blobs: [] })
+  })
+
+  it("overwrites both fixed blob paths without DB updates", async () => {
+    const { replaceStaffEvidence } = await import("@/lib/pos/staff-evidence")
+    const db = mockDb()
+    listMock.mockImplementation(async ({ prefix }: { prefix: string }) => ({
+      blobs:
+        prefix === "staff-evidence/103-ph"
+          ? [
+              {
+                pathname: "staff-evidence/103-ph.jpg",
+                url: "https://blob/103-ph.jpg",
+                uploadedAt: new Date("2026-06-13T10:00:00.000Z"),
+              },
+            ]
+          : prefix === "staff-evidence/103-id"
+            ? [
+                {
+                  pathname: "staff-evidence/103-id.jpg",
+                  url: "https://blob/103-id.jpg",
+                  uploadedAt: new Date("2026-06-13T10:00:00.000Z"),
+                },
+              ]
+            : [],
+    }))
+
+    const detail = await replaceStaffEvidence(db as never, {
+      staffId: "103",
+      photoBuffer: Buffer.from("photo"),
+      idCardBuffer: Buffer.from("id"),
+    })
+
+    expect(uploadMock).toHaveBeenCalledTimes(2)
+    expect(uploadMock).toHaveBeenCalledWith(
+      expect.objectContaining({ staffId: "103", kind: "ph" })
+    )
+    expect(uploadMock).toHaveBeenCalledWith(
+      expect.objectContaining({ staffId: "103", kind: "id" })
+    )
+    expect(detail.photoUrl).toBe("https://blob/103-ph.jpg")
+    expect(detail.idCardUrl).toBe("https://blob/103-id.jpg")
+    expect(detail.photoUpdatedAt).toBe("2026-06-13T10:00:00.000Z")
+    expect(db.staff.update).not.toHaveBeenCalled()
+  })
+})
+
 describe("submitStaffEvidence", () => {
   beforeEach(() => {
     jest.clearAllMocks()

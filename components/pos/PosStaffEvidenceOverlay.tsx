@@ -21,27 +21,27 @@ import {
   STAFF_CONFIRM_PHOTO_PREVIEW_CLASS,
   STAFF_CONFIRM_PREVIEW_ROW_CLASS,
   STAFF_EVIDENCE_UPLOAD_WARNING,
-  STAFF_ID_SCAN_FRAME_CLASS,
+  STAFF_ID_CARD_PREVIEW_IMAGE_CLASS,
   STAFF_ID_SCAN_HELPER_TEXT,
-  STAFF_PHOTO_FRAME_CLASS,
+  STAFF_PHOTO_PREVIEW_IMAGE_CLASS,
   STAFF_WEBCAM_ID_OVERLAY_CLASS,
   STAFF_WEBCAM_PORTRAIT_OVERLAY_CLASS,
   STAFF_WEBCAM_VIDEO_WRAPPER_CLASS,
   resizeStaffPhotoForUpload,
+  rotateStaffEvidenceImageForUpload,
 } from "@/lib/pos-ui/staff-evidence-image"
 import type { StaffEvidenceFileKind } from "@/lib/pos/staff-evidence-blob"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import { StaffEvidenceMobileQrPanel } from "./StaffEvidenceMobileQrPanel"
 
-type CaptureStep =
-  | "photo"
-  | "photo-preview"
-  | "id"
-  | "id-preview"
-  | "confirm-upload"
-  | "uploading"
+type WizardStep = 1 | 2 | 3
 
-type InteractionMode = "idle" | "webcam" | "upload"
+type CaptureView = "live" | "preview" | "qr"
+
+type StaffEvidenceDraft = {
+  staffPhoto: File | null
+  idCardPhoto: File | null
+}
 
 type PosStaffEvidenceOverlayProps = {
   session: PosTerminalSession
@@ -49,29 +49,31 @@ type PosStaffEvidenceOverlayProps = {
   onEvidenceComplete: () => void
 }
 
-function stepInstruction(step: CaptureStep): string {
-  switch (step) {
-    case "photo":
-    case "photo-preview":
-      return "ถ่ายรูปพนักงาน"
-    case "id":
-    case "id-preview":
-      return "สแกนบัตรประชาชน"
-    case "confirm-upload":
-      return "ยืนยันอัปโหลด"
-    case "uploading":
-      return "กำลังอัปโหลด…"
+function blobToFile(blob: Blob, filename: string): File {
+  return new File([blob], filename, { type: blob.type || "image/jpeg" })
+}
+
+function stepInstruction(wizardStep: WizardStep, uploading: boolean, success: boolean): string {
+  if (success) return "บันทึกประวัติพนักงานสำเร็จ"
+  if (uploading) return "กำลังอัปโหลด…"
+  switch (wizardStep) {
+    case 1:
+      return "Step 1/3 — ถ่ายรูปพนักงาน"
+    case 2:
+      return "Step 2/3 — สแกนบัตรประชาชน"
+    case 3:
+      return "Step 3/3 — ยืนยันอัปโหลด"
     default:
       return ""
   }
 }
 
-function currentKind(step: CaptureStep): StaffEvidenceFileKind {
-  return step === "photo" || step === "photo-preview" ? "ph" : "id"
+function currentKind(wizardStep: WizardStep): StaffEvidenceFileKind {
+  return wizardStep === 1 ? "ph" : "id"
 }
 
-function webcamFacing(step: CaptureStep): CameraFacingMode {
-  return step === "photo" ? "user" : "environment"
+function webcamFacing(wizardStep: WizardStep): CameraFacingMode {
+  return wizardStep === 1 ? "user" : "environment"
 }
 
 export function PosStaffEvidenceOverlay({
@@ -81,34 +83,43 @@ export function PosStaffEvidenceOverlay({
 }: PosStaffEvidenceOverlayProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const staffPreviewUrlRef = useRef<string | null>(null)
+  const idPreviewUrlRef = useRef<string | null>(null)
 
-  const [step, setStep] = useState<CaptureStep>("photo")
-  const [interaction, setInteraction] = useState<InteractionMode>("idle")
+  const [wizardStep, setWizardStep] = useState<WizardStep>(1)
+  const [captureView, setCaptureView] = useState<CaptureView>("live")
+  const [draft, setDraft] = useState<StaffEvidenceDraft>({
+    staffPhoto: null,
+    idCardPhoto: null,
+  })
+  const [staffPreviewUrl, setStaffPreviewUrl] = useState<string | null>(null)
+  const [idPreviewUrl, setIdPreviewUrl] = useState<string | null>(null)
   const [uploadToken, setUploadToken] = useState<string | null>(null)
   const [uploadUrl, setUploadUrl] = useState<string | null>(null)
   const [uploadExpiresAt, setUploadExpiresAt] = useState<string | null>(null)
   const [uploadLinkLoading, setUploadLinkLoading] = useState(false)
   const [uploadLinkError, setUploadLinkError] = useState<string | null>(null)
-  const [faceBlob, setFaceBlob] = useState<Blob | null>(null)
-  const [idBlob, setIdBlob] = useState<Blob | null>(null)
-  const [facePreviewUrl, setFacePreviewUrl] = useState<string | null>(null)
-  const [idPreviewUrl, setIdPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  staffPreviewUrlRef.current = staffPreviewUrl
+  idPreviewUrlRef.current = idPreviewUrl
 
   useEffect(() => {
     return () => {
       stopMediaStream(streamRef.current)
       streamRef.current = null
-      if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
-      if (idPreviewUrl) URL.revokeObjectURL(idPreviewUrl)
+      if (staffPreviewUrlRef.current) URL.revokeObjectURL(staffPreviewUrlRef.current)
+      if (idPreviewUrlRef.current) URL.revokeObjectURL(idPreviewUrlRef.current)
     }
-  }, [facePreviewUrl, idPreviewUrl])
+  }, [])
 
   useEffect(() => {
     const useWebcam =
-      interaction === "webcam" && (step === "photo" || step === "id")
+      (wizardStep === 1 || wizardStep === 2) && captureView === "live"
     if (!useWebcam) {
       stopMediaStream(streamRef.current)
       streamRef.current = null
@@ -120,7 +131,7 @@ export function PosStaffEvidenceOverlay({
     let cancelled = false
     setCameraError(null)
     void (async () => {
-      const stream = await startCameraStream(videoRef.current, webcamFacing(step))
+      const stream = await startCameraStream(videoRef.current, webcamFacing(wizardStep))
       if (cancelled) {
         stopMediaStream(stream)
         return
@@ -139,11 +150,11 @@ export function PosStaffEvidenceOverlay({
       const video = videoRef.current
       if (video) video.srcObject = null
     }
-  }, [interaction, step])
+  }, [wizardStep, captureView])
 
   useEffect(() => {
-    if (interaction !== "upload" || !uploadToken) return
-    if (step !== "photo" && step !== "id") return
+    if (captureView !== "qr" || !uploadToken) return
+    if (wizardStep !== 1 && wizardStep !== 2) return
 
     let cancelled = false
     const poll = async () => {
@@ -156,13 +167,12 @@ export function PosStaffEvidenceOverlay({
         const response = await fetch(status.blobUrl, { cache: "no-store" })
         if (!response.ok) throw new Error("download failed")
         const raw = await response.blob()
-        if (step === "photo") {
+        if (wizardStep === 1) {
           await applyPhotoBlob(raw)
         } else {
           await applyIdBlob(raw)
         }
-        setInteraction("idle")
-        setUploadToken(null)
+        clearQrState()
         return true
       } catch {
         setError("รับไฟล์จากมือถือไม่สำเร็จ")
@@ -184,11 +194,24 @@ export function PosStaffEvidenceOverlay({
       cancelled = true
       window.clearInterval(intervalId)
     }
-  }, [interaction, uploadToken, step])
+  }, [captureView, uploadToken, wizardStep])
 
-  function revokeFacePreview() {
-    if (facePreviewUrl) URL.revokeObjectURL(facePreviewUrl)
-    setFacePreviewUrl(null)
+  function clearQrState() {
+    setUploadToken(null)
+    setUploadUrl(null)
+    setUploadExpiresAt(null)
+    setUploadLinkLoading(false)
+    setUploadLinkError(null)
+  }
+
+  function resetQrToLive() {
+    clearQrState()
+    setCaptureView("live")
+  }
+
+  function revokeStaffPreview() {
+    if (staffPreviewUrl) URL.revokeObjectURL(staffPreviewUrl)
+    setStaffPreviewUrl(null)
   }
 
   function revokeIdPreview() {
@@ -196,37 +219,42 @@ export function PosStaffEvidenceOverlay({
     setIdPreviewUrl(null)
   }
 
+  function setStaffPreviewFromFile(file: File) {
+    revokeStaffPreview()
+    setStaffPreviewUrl(URL.createObjectURL(file))
+  }
+
+  function setIdPreviewFromFile(file: File) {
+    revokeIdPreview()
+    setIdPreviewUrl(URL.createObjectURL(file))
+  }
+
+  function syncConfirmPreviewUrls(staffPhoto: File, idCardPhoto: File) {
+    setStaffPreviewFromFile(staffPhoto)
+    setIdPreviewFromFile(idCardPhoto)
+  }
+
   async function applyPhotoBlob(blob: Blob) {
     const processed = await resizeStaffPhotoForUpload(blob)
-    revokeFacePreview()
-    setFaceBlob(processed)
-    setFacePreviewUrl(URL.createObjectURL(processed))
-    setStep("photo-preview")
+    const file = blobToFile(processed, "staff-photo.jpg")
+    setDraft((prev) => ({ ...prev, staffPhoto: file }))
+    setStaffPreviewFromFile(file)
+    setCaptureView("preview")
   }
 
   async function applyIdBlob(blob: Blob) {
     const processed = await processIdCardForUpload(blob)
-    revokeIdPreview()
-    setIdBlob(processed)
-    setIdPreviewUrl(URL.createObjectURL(processed))
-    setStep("id-preview")
-  }
-
-  function resetInteraction() {
-    setInteraction("idle")
-    setUploadToken(null)
-    setUploadUrl(null)
-    setUploadExpiresAt(null)
-    setUploadLinkLoading(false)
-    setUploadLinkError(null)
-    setCameraError(null)
+    const file = blobToFile(processed, "staff-id.jpg")
+    setDraft((prev) => ({ ...prev, idCardPhoto: file }))
+    setIdPreviewFromFile(file)
+    setCaptureView("preview")
   }
 
   async function startUploadFlow() {
     setError(null)
     setUploadLinkError(null)
     setUploadLinkLoading(true)
-    const kind = currentKind(step)
+    const kind = currentKind(wizardStep)
     const result = await fetchStaffEvidenceMobileLink({ kind })
     setUploadLinkLoading(false)
     if (!result.ok) {
@@ -237,7 +265,7 @@ export function PosStaffEvidenceOverlay({
     setUploadToken(result.token)
     setUploadUrl(result.uploadUrl)
     setUploadExpiresAt(result.expiresAt)
-    setInteraction("upload")
+    setCaptureView("qr")
   }
 
   async function handleWebcamCapture() {
@@ -250,14 +278,13 @@ export function PosStaffEvidenceOverlay({
         setCameraError("ถ่ายภาพไม่สำเร็จ — รอให้กล้องพร้อมแล้วลองอีกครั้ง")
         return
       }
-      if (step === "photo") {
+      if (wizardStep === 1) {
         await applyPhotoBlob(raw)
       } else {
         await applyIdBlob(raw)
       }
-      resetInteraction()
     } catch {
-      setError(step === "photo" ? "ประมวลผลรูปไม่สำเร็จ" : "ประมวลผลบัตรไม่สำเร็จ")
+      setError(wizardStep === 1 ? "ประมวลผลรูปไม่สำเร็จ" : "ประมวลผลบัตรไม่สำเร็จ")
     } finally {
       setProcessing(false)
     }
@@ -265,53 +292,107 @@ export function PosStaffEvidenceOverlay({
 
   function handleRetake() {
     setError(null)
-    resetInteraction()
-    if (step === "photo-preview") {
-      revokeFacePreview()
-      setFaceBlob(null)
-      setStep("photo")
-      return
-    }
-    if (step === "id-preview") {
+    clearQrState()
+    if (wizardStep === 1) {
+      revokeStaffPreview()
+      setDraft((prev) => ({ ...prev, staffPhoto: null }))
+    } else {
       revokeIdPreview()
-      setIdBlob(null)
-      setStep("id")
+      setDraft((prev) => ({ ...prev, idCardPhoto: null }))
     }
+    setCaptureView("live")
   }
 
-  function handleConfirmPhoto() {
-    if (!faceBlob) return
-    resetInteraction()
-    setStep("id")
-  }
-
-  function handleConfirmId() {
-    if (!faceBlob || !idBlob) return
-    resetInteraction()
-    setStep("confirm-upload")
-  }
-
-  async function handleUpload() {
-    if (!faceBlob || !idBlob) return
-    setStep("uploading")
+  async function handleRotate() {
+    const currentFile = wizardStep === 1 ? draft.staffPhoto : draft.idCardPhoto
+    if (!currentFile) return
+    setProcessing(true)
     setError(null)
     try {
-      await submitStaffEvidenceCapture({ photo: faceBlob, idCard: idBlob })
-      onEvidenceComplete()
-      onClose()
+      const rotated = await rotateStaffEvidenceImageForUpload(currentFile)
+      const filename = wizardStep === 1 ? "staff-photo.jpg" : "staff-id.jpg"
+      const file = blobToFile(rotated, filename)
+      if (wizardStep === 1) {
+        revokeStaffPreview()
+        setDraft((prev) => ({ ...prev, staffPhoto: file }))
+        setStaffPreviewFromFile(file)
+      } else {
+        revokeIdPreview()
+        setDraft((prev) => ({ ...prev, idCardPhoto: file }))
+        setIdPreviewFromFile(file)
+      }
+    } catch {
+      setError("หมุนรูปไม่สำเร็จ")
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  function handleNext() {
+    if (processing) return
+    if (wizardStep === 1) {
+      if (!draft.staffPhoto) return
+      clearQrState()
+      setWizardStep(2)
+      setCaptureView(draft.idCardPhoto ? "preview" : "live")
+      return
+    }
+    if (wizardStep === 2) {
+      if (!draft.staffPhoto || !draft.idCardPhoto) return
+      clearQrState()
+      syncConfirmPreviewUrls(draft.staffPhoto, draft.idCardPhoto)
+      setWizardStep(3)
+    }
+  }
+
+  function handleBackFromConfirm() {
+    setWizardStep(2)
+    setCaptureView(draft.idCardPhoto ? "preview" : "live")
+  }
+
+  function handleRetakeStaffPhoto() {
+    clearQrState()
+    revokeStaffPreview()
+    setDraft((prev) => ({ ...prev, staffPhoto: null }))
+    setWizardStep(1)
+    setCaptureView("live")
+  }
+
+  function handleRetakeIdCardPhoto() {
+    clearQrState()
+    revokeIdPreview()
+    setDraft((prev) => ({ ...prev, idCardPhoto: null }))
+    setWizardStep(2)
+    setCaptureView("live")
+  }
+
+  async function handleConfirmUpload() {
+    if (!draft.staffPhoto || !draft.idCardPhoto) return
+    setUploading(true)
+    setError(null)
+    try {
+      await submitStaffEvidenceCapture({
+        photo: draft.staffPhoto,
+        idCard: draft.idCardPhoto,
+      })
+      setSuccess(true)
+      window.setTimeout(() => {
+        onEvidenceComplete()
+        onClose()
+      }, 1500)
     } catch (err: unknown) {
-      setStep("confirm-upload")
+      setUploading(false)
       setError(err instanceof Error ? err.message : "อัปโหลดไม่สำเร็จ")
     }
   }
 
-  const isPhotoStep = step === "photo" || step === "photo-preview"
-  const isIdStep = step === "id" || step === "id-preview"
-  const showWebcam = interaction === "webcam" && (step === "photo" || step === "id")
-  const showUploadQr = interaction === "upload" && (step === "photo" || step === "id")
-  const isConfirm = step === "confirm-upload" || step === "uploading"
+  const isCaptureStep = wizardStep === 1 || wizardStep === 2
+  const showWebcam = isCaptureStep && captureView === "live"
+  const showPreview = isCaptureStep && captureView === "preview"
+  const showUploadQr = isCaptureStep && captureView === "qr"
+  const isConfirm = wizardStep === 3
 
-  const modalClass = isConfirm ? STAFF_CONFIRM_MODAL_PANEL_CLASS : STAFF_CONFIRM_MODAL_PANEL_CLASS
+  const currentPreviewUrl = wizardStep === 1 ? staffPreviewUrl : idPreviewUrl
 
   return (
     <div
@@ -321,7 +402,7 @@ export function PosStaffEvidenceOverlay({
       onClick={onClose}
     >
       <div
-        className={modalClass}
+        className={STAFF_CONFIRM_MODAL_PANEL_CLASS}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pos-staff-evidence-title"
@@ -341,14 +422,14 @@ export function PosStaffEvidenceOverlay({
               type="button"
               className="rounded border border-zinc-300 px-3 py-1 text-sm"
               onClick={onClose}
-              disabled={step === "uploading"}
+              disabled={uploading || success}
             >
               ปิด
             </button>
           </div>
 
           <p className="mt-4 text-center text-base font-semibold" data-testid="pos-staff-evidence-step">
-            {stepInstruction(step)}
+            {stepInstruction(wizardStep, uploading, success)}
           </p>
 
           {error ? (
@@ -367,15 +448,22 @@ export function PosStaffEvidenceOverlay({
             </p>
           ) : null}
 
-          {step === "confirm-upload" ? (
+          {success ? (
+            <p
+              className="mt-6 text-center text-sm font-medium text-emerald-700"
+              data-testid="pos-staff-evidence-success"
+            >
+              บันทึกประวัติพนักงานสำเร็จ
+            </p>
+          ) : isConfirm && !uploading ? (
             <div className="mt-4 space-y-3" data-testid="pos-staff-evidence-upload-warning">
               <p className="text-center text-sm font-medium text-amber-800">
                 {STAFF_EVIDENCE_UPLOAD_WARNING}
               </p>
               <div className={STAFF_CONFIRM_PREVIEW_ROW_CLASS}>
-                {facePreviewUrl ? (
+                {staffPreviewUrl ? (
                   <img
-                    src={facePreviewUrl}
+                    src={staffPreviewUrl}
                     alt="Staff photo preview"
                     className={STAFF_CONFIRM_PHOTO_PREVIEW_CLASS}
                     data-testid="pos-staff-evidence-preview-photo"
@@ -391,7 +479,7 @@ export function PosStaffEvidenceOverlay({
                 ) : null}
               </div>
             </div>
-          ) : step === "uploading" ? (
+          ) : isConfirm && uploading ? (
             <p className="mt-6 text-center text-sm text-zinc-600">กำลังอัปโหลด…</p>
           ) : showWebcam ? (
             <div className="mt-4 space-y-2">
@@ -407,96 +495,51 @@ export function PosStaffEvidenceOverlay({
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div
                     className={
-                      step === "photo"
+                      wizardStep === 1
                         ? STAFF_WEBCAM_PORTRAIT_OVERLAY_CLASS
                         : STAFF_WEBCAM_ID_OVERLAY_CLASS
                     }
                     data-testid={
-                      step === "photo"
+                      wizardStep === 1
                         ? "pos-staff-evidence-portrait-frame"
                         : "pos-staff-evidence-id-frame"
                     }
                   />
                 </div>
               </div>
-              {step === "id" ? (
+              {wizardStep === 2 ? (
                 <p className="text-center text-xs text-zinc-600">{STAFF_ID_SCAN_HELPER_TEXT}</p>
               ) : null}
             </div>
-          ) : isPhotoStep && step === "photo-preview" && facePreviewUrl ? (
+          ) : showPreview && currentPreviewUrl ? (
             <div className="mt-4 flex justify-center">
               <img
-                src={facePreviewUrl}
-                alt="Staff photo preview"
-                className="mx-auto max-h-[280px] max-w-[220px] object-contain aspect-[3/4]"
+                src={currentPreviewUrl}
+                alt={wizardStep === 1 ? "Staff photo preview" : "ID card preview"}
+                className={
+                  wizardStep === 1
+                    ? STAFF_PHOTO_PREVIEW_IMAGE_CLASS
+                    : STAFF_ID_CARD_PREVIEW_IMAGE_CLASS
+                }
                 data-testid="pos-staff-evidence-preview-image"
               />
-            </div>
-          ) : isIdStep && step === "id-preview" && idPreviewUrl ? (
-            <div className="mt-4 flex justify-center">
-              <img
-                src={idPreviewUrl}
-                alt="ID card preview"
-                className="mx-auto max-h-[240px] max-w-[360px] object-contain aspect-[1.586/1]"
-                data-testid="pos-staff-evidence-preview-image"
-              />
-            </div>
-          ) : isPhotoStep && step === "photo" ? (
-            <div className="mt-4">
-              <div
-                className={STAFF_PHOTO_FRAME_CLASS}
-                data-testid="pos-staff-evidence-portrait-frame"
-                aria-label="กรอบถ่ายรูปพนักงาน"
-              />
-            </div>
-          ) : isIdStep && step === "id" ? (
-            <div className="mt-4">
-              <div className={STAFF_ID_SCAN_FRAME_CLASS} data-testid="pos-staff-evidence-id-frame">
-                <p className="px-4 text-center text-sm text-zinc-200">{STAFF_ID_SCAN_HELPER_TEXT}</p>
-              </div>
-              <p className="mt-2 text-center text-xs text-zinc-600">{STAFF_ID_SCAN_HELPER_TEXT}</p>
             </div>
           ) : null}
 
           {showUploadQr ? (
             <StaffEvidenceMobileQrPanel
-              label={currentKind(step) === "ph" ? "Staff Photo" : "ID Card"}
+              label={currentKind(wizardStep) === "ph" ? "Staff Photo" : "ID Card"}
               loading={uploadLinkLoading}
               error={uploadLinkError}
               uploadUrl={uploadUrl}
               expiresAt={uploadExpiresAt}
-              onClose={resetInteraction}
+              onClose={resetQrToLive}
             />
           ) : null}
 
-          {!isConfirm ? (
+          {isCaptureStep && !success ? (
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {(step === "photo" || step === "id") && interaction === "idle" ? (
-                <>
-                  <button
-                    type="button"
-                    className="rounded bg-sky-700 px-4 py-2 text-sm font-semibold text-white"
-                    onClick={() => {
-                      setCameraError(null)
-                      setInteraction("webcam")
-                    }}
-                    data-testid="pos-staff-evidence-webcam-start"
-                  >
-                    ถ่ายรูป
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 disabled:opacity-60"
-                    onClick={() => void startUploadFlow()}
-                    disabled={uploadLinkLoading}
-                    data-testid="pos-staff-evidence-upload-start"
-                  >
-                    Upload
-                  </button>
-                </>
-              ) : null}
-
-              {showWebcam ? (
+              {captureView === "live" ? (
                 <>
                   <button
                     type="button"
@@ -505,35 +548,48 @@ export function PosStaffEvidenceOverlay({
                     disabled={processing || Boolean(cameraError)}
                     data-testid="pos-staff-evidence-webcam-capture"
                   >
-                    {processing ? "กำลังประมวลผล…" : "ถ่าย"}
+                    {processing ? "กำลังประมวลผล…" : "ถ่ายรูป"}
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-zinc-300 px-4 py-2 text-sm"
-                    onClick={resetInteraction}
+                    className="rounded border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 disabled:opacity-60"
+                    onClick={() => void startUploadFlow()}
+                    disabled={uploadLinkLoading || processing}
+                    data-testid="pos-staff-evidence-upload-start"
                   >
-                    ยกเลิก
+                    Upload from Mobile
                   </button>
                 </>
               ) : null}
 
-              {step === "photo-preview" || step === "id-preview" ? (
+              {captureView === "preview" ? (
                 <>
                   <button
                     type="button"
                     className="rounded border border-zinc-300 px-4 py-2 text-sm"
+                    onClick={() => void handleRotate()}
+                    disabled={processing}
+                    data-testid="pos-staff-evidence-rotate"
+                  >
+                    {processing ? "กำลังประมวลผล…" : "Rotate"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-zinc-300 px-4 py-2 text-sm"
                     onClick={handleRetake}
+                    disabled={processing}
                     data-testid="pos-staff-evidence-retake"
                   >
                     ถ่ายใหม่
                   </button>
                   <button
                     type="button"
-                    className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
-                    onClick={step === "photo-preview" ? handleConfirmPhoto : handleConfirmId}
-                    data-testid="pos-staff-evidence-confirm"
+                    className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                    onClick={handleNext}
+                    disabled={processing}
+                    data-testid="pos-staff-evidence-next"
                   >
-                    ตกลง
+                    ถัดไป
                   </button>
                 </>
               ) : null}
@@ -541,24 +597,42 @@ export function PosStaffEvidenceOverlay({
           ) : null}
         </div>
 
-        {isConfirm ? (
+        {isConfirm && !success ? (
           <div className={STAFF_CONFIRM_FOOTER_CLASS}>
-            {step === "confirm-upload" ? (
+            {!uploading ? (
               <div className="flex flex-wrap justify-center gap-2">
                 <button
                   type="button"
                   className="rounded border border-zinc-300 px-4 py-2 text-sm"
-                  onClick={() => setStep("id-preview")}
+                  onClick={handleBackFromConfirm}
+                  data-testid="pos-staff-evidence-back"
                 >
                   ย้อนกลับ
                 </button>
                 <button
                   type="button"
-                  className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white"
-                  onClick={() => void handleUpload()}
+                  className="rounded border border-zinc-300 px-4 py-2 text-sm"
+                  onClick={handleRetakeStaffPhoto}
+                  data-testid="pos-staff-evidence-retake-staff"
+                >
+                  Retake Staff Photo
+                </button>
+                <button
+                  type="button"
+                  className="rounded border border-zinc-300 px-4 py-2 text-sm"
+                  onClick={handleRetakeIdCardPhoto}
+                  data-testid="pos-staff-evidence-retake-id"
+                >
+                  Retake ID Card Photo
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  onClick={() => void handleConfirmUpload()}
+                  disabled={!draft.staffPhoto || !draft.idCardPhoto || processing || uploading}
                   data-testid="pos-staff-evidence-upload"
                 >
-                  Upload
+                  Confirm & Upload
                 </button>
               </div>
             ) : (

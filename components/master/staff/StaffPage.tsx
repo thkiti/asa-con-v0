@@ -191,6 +191,8 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
         })
       }
       setFormOpen(false)
+      setSelectedStaff(null)
+      setFormError(null)
       await load()
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Save failed")
@@ -340,6 +342,13 @@ export function StaffPage({ documentEntityCode }: StaffPageProps) {
         onSubmit={handleFormSubmit}
         evidenceRefreshKey={evidenceRefreshKey}
         onEvidenceChanged={() => {
+          setEvidenceRefreshKey((key) => key + 1)
+          void load()
+        }}
+        onEvidenceUploadSuccess={() => {
+          setFormOpen(false)
+          setSelectedStaff(null)
+          setFormError(null)
           setEvidenceRefreshKey((key) => key + 1)
           void load()
         }}

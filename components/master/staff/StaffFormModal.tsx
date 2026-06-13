@@ -25,6 +25,7 @@ type StaffFormModalProps = {
   onClose: () => void
   evidenceRefreshKey?: number
   onEvidenceChanged?: () => void
+  onEvidenceUploadSuccess?: () => void
   onSubmit: (values: {
     staffId: string
     name: string
@@ -51,6 +52,7 @@ export function StaffFormModal({
   onClose,
   evidenceRefreshKey = 0,
   onEvidenceChanged,
+  onEvidenceUploadSuccess,
   onSubmit,
 }: StaffFormModalProps) {
   const [staffId, setStaffId] = useState("")
@@ -68,7 +70,7 @@ export function StaffFormModal({
       setName(staff.name)
       setRole(staff.role)
       setBranchId(staff.branchId)
-      setPosCanCollect(staff.posCanCollect)
+      setPosCanCollect(staff.role === "SH_STAFF" ? false : staff.posCanCollect)
       setAllowAnyBranchLogin(staff.allowAnyBranchLogin)
       setPassword("")
       return
@@ -115,16 +117,18 @@ export function StaffFormModal({
           onSubmit={(event) => {
             event.preventDefault()
             if (!canSubmit) return
-            void onSubmit({
-              staffId: trimmedStaffId,
-              name: trimmedName,
-              role,
-              branchId,
-              password: isEdit ? undefined : password.trim() || undefined,
-              posCanCollect,
-              allowAnyBranchLogin:
-                role === "SH_STAFF" ? allowAnyBranchLogin : false,
-            })
+            void (async () => {
+              await onSubmit({
+                staffId: trimmedStaffId,
+                name: trimmedName,
+                role,
+                branchId,
+                password: isEdit ? undefined : password.trim() || undefined,
+                posCanCollect: role === "SH_STAFF" ? false : posCanCollect,
+                allowAnyBranchLogin:
+                  role === "SH_STAFF" ? allowAnyBranchLogin : false,
+              })
+            })()
           }}
         >
           <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-2 gap-y-1">
@@ -169,6 +173,8 @@ export function StaffFormModal({
                 setRole(nextRole)
                 if (nextRole !== "SH_STAFF") {
                   setAllowAnyBranchLogin(false)
+                } else {
+                  setPosCanCollect(false)
                 }
               }}
               disabled={submitting}
@@ -202,17 +208,19 @@ export function StaffFormModal({
             </select>
           </label>
 
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={posCanCollect}
-              onChange={(event) => setPosCanCollect(event.target.checked)}
-              disabled={submitting}
-            />
-            <span className="text-sm text-muted-foreground">
-              Collector (POS cash collection report)
-            </span>
-          </label>
+          {role !== "SH_STAFF" ? (
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={posCanCollect}
+                onChange={(event) => setPosCanCollect(event.target.checked)}
+                disabled={submitting}
+              />
+              <span className="text-sm text-muted-foreground">
+                Collector (POS cash collection report)
+              </span>
+            </label>
+          ) : null}
 
           {role === "SH_STAFF" ? (
             <label className="flex items-center gap-2">
@@ -249,6 +257,7 @@ export function StaffFormModal({
               staffCode={staff.staffId}
               refreshKey={evidenceRefreshKey}
               onEvidenceChanged={onEvidenceChanged}
+              onUploadSuccess={onEvidenceUploadSuccess}
             />
           ) : null}
 

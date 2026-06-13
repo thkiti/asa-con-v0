@@ -50,10 +50,11 @@ export async function findStaffEvidenceCaptureBlob(
 ): Promise<{ pathname: string; url: string } | null> {
   const pathname = buildStaffEvidenceCaptureBlobPathForToken(claims)
   const auth = getBlobAuthConfig()
+  const prefix = pathname.replace(/\.jpg$/i, "")
   const listOptions =
     auth.mode === "token"
-      ? { prefix: pathname, token: auth.token }
-      : { prefix: pathname, oidcToken: auth.oidcToken, storeId: auth.storeId }
+      ? { prefix, token: auth.token }
+      : { prefix, oidcToken: auth.oidcToken, storeId: auth.storeId }
 
   const { blobs } = await list(listOptions)
   const match = blobs.find((blob) => blob.pathname === pathname)

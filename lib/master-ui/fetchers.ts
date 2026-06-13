@@ -168,6 +168,8 @@ export type MasterStaffEvidenceDetail = {
   evidenceComplete: boolean
   photoUrl: string | null
   idCardUrl: string | null
+  photoUpdatedAt: string | null
+  idCardUpdatedAt: string | null
 }
 
 export function fetchMasterStaffEvidence(
@@ -186,6 +188,23 @@ export function deleteMasterStaffEvidence(
 ): Promise<MasterStaffEvidenceDetail> {
   return fetch(`/api/master/staff/${encodeURIComponent(staffRowId)}/evidence`, {
     method: "DELETE",
+  }).then(async (res) => {
+    if (!res.ok) return throwMasterFetchError(res)
+    return res.json() as Promise<MasterStaffEvidenceDetail & { ok: true }>
+  })
+}
+
+export function uploadMasterStaffEvidence(
+  staffRowId: string,
+  input: { photo: Blob; idCard: Blob }
+): Promise<MasterStaffEvidenceDetail & { ok: true }> {
+  const form = new FormData()
+  form.append("photo", input.photo, "staff-photo.jpg")
+  form.append("idCard", input.idCard, "staff-id.jpg")
+
+  return fetch(`/api/master/staff/${encodeURIComponent(staffRowId)}/evidence`, {
+    method: "POST",
+    body: form,
   }).then(async (res) => {
     if (!res.ok) return throwMasterFetchError(res)
     return res.json() as Promise<MasterStaffEvidenceDetail & { ok: true }>

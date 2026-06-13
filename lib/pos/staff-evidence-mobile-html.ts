@@ -95,7 +95,7 @@ export function renderStaffEvidenceMobileUploadSuccessPage(): string {
     `
     <section class="card success">
       <h1>Upload complete</h1>
-      <p>You can close this page and return to the POS.</p>
+      <p>You can close this page and return to the desktop upload screen.</p>
     </section>
     `
   )
