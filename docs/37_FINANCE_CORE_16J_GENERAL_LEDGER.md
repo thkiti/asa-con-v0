@@ -14,7 +14,7 @@ General Ledger formalizes the account drill-down report originally introduced as
 | Trial Balance (16C) | All accounts, period debit/credit totals |
 | General Ledger (16J) | **One account**, line-by-line with running balance |
 | Balance Sheet (16F) | A/L/E statement from trial balance aggregation |
-| Cash Flow | Deferred — future phase after 16J |
+| Cash Flow | Done — see [38_FINANCE_CORE_16K_CASH_FLOW.md](./38_FINANCE_CORE_16K_CASH_FLOW.md) |
 
 ---
 
@@ -151,6 +151,6 @@ Domain tests cover opening balance, running/closing balance, account-type signed
 
 ## Future (out of scope)
 
-- Cash Flow statement
 - Finance dashboard
 - Year-end close workflow
+- Optional persisted cash-flow metadata on `GlAccount` if config maintenance becomes burdensome

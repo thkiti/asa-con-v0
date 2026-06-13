@@ -155,7 +155,7 @@ Warnings when reconciliation fails or data is incomplete.
 
 ## Future (out of 16I scope)
 
-- **Cash Flow statement** — next approved finance report phase (after 16J General Ledger).
+- Promote additional cash-flow mappings as real CoA is imported (see [38_FINANCE_CORE_16K_CASH_FLOW.md](./38_FINANCE_CORE_16K_CASH_FLOW.md))
 - Dividend-specific refType / labels in other changes row.
 - Configurable retained earnings account mapping.
 - Multi-entity consolidation.

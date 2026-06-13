@@ -4,6 +4,7 @@ import type { GeneralLedgerFilter } from "./general-ledger-types"
 import type { BalanceSheetFilter } from "./balance-sheet-types"
 import type { ProfitLossFilter } from "./profit-loss-types"
 import type { ChangesInEquityFilter } from "./changes-in-equity-types"
+import type { CashFlowFilter } from "./cash-flow-types"
 import type { RetainedEarningsFilter } from "./retained-earnings-types"
 import type { TrialBalanceFilter } from "./trial-balance-types"
 
@@ -174,5 +175,9 @@ export function parseRetainedEarningsFilter(
 export function parseChangesInEquityFilter(
   params: ReportFilterParams
 ): ChangesInEquityFilter {
+  return parseFinanceReportScope(params)
+}
+
+export function parseCashFlowFilter(params: ReportFilterParams): CashFlowFilter {
   return parseFinanceReportScope(params)
 }

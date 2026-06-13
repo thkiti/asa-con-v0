@@ -371,6 +371,60 @@ export type ChangesInEquityResult = {
   warnings: ChangesInEquityWarning[]
 }
 
+export type CashFlowLine = {
+  key: string
+  label: string
+  amount: string
+  source: string
+  accountCode?: string
+}
+
+export type CashFlowSection = {
+  lines: CashFlowLine[]
+  subtotal: string
+}
+
+export type CashFlowWarning = {
+  code: string
+  message: string
+}
+
+export type CashFlowReconciliation = {
+  openingCashAndEquivalents: string
+  closingCashAndEquivalents: string
+  glChange: string
+  computedChange: string
+  difference: string
+  isReconciled: boolean
+}
+
+export type CashFlowResult = {
+  filter: {
+    branchId: string
+    periodKey?: string
+    from?: string
+    to?: string
+  }
+  period: {
+    branchId: string
+    periodKey?: string
+    periodId?: string
+    periodStatus?: string
+    from?: string
+    to?: string
+  }
+  method: "INDIRECT"
+  sections: {
+    operating: CashFlowSection
+    investing: CashFlowSection
+    financing: CashFlowSection
+  }
+  netChangeInCash: string
+  netIncome: string
+  cashReconciliation: CashFlowReconciliation
+  warnings: CashFlowWarning[]
+}
+
 export type JournalInquiryResult = {
   id: string
   voucherId: string

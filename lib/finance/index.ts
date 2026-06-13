@@ -339,6 +339,7 @@ export {
 } from "./reports/balance-helpers"
 export {
   parseBalanceSheetFilter,
+  parseCashFlowFilter,
   parseChangesInEquityFilter,
   parseGeneralLedgerFilter,
   parseProfitLossFilter,
@@ -348,6 +349,22 @@ export {
   resolveReportDateRange,
 } from "./reports/report-filter"
 export { getChangesInEquity } from "./reports/changes-in-equity"
+export { getCashFlow } from "./reports/cash-flow"
+export {
+  allMappedAccountCodes,
+  CASH_FLOW_V1_MAPPINGS,
+  isCashFlowMappedAccountCode,
+  PENDING_CASH_FLOW_MAPPINGS,
+} from "./reports/cash-flow-mapping"
+export type {
+  CashFlowFilter,
+  CashFlowLine,
+  CashFlowReconciliation,
+  CashFlowResult,
+  CashFlowSection,
+  CashFlowWarning,
+  CashFlowWarningCode,
+} from "./reports/cash-flow-types"
 export { getBalanceSheet } from "./reports/balance-sheet"
 export {
   classifyEquityAccounts,

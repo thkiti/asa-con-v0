@@ -114,6 +114,12 @@ function buildFinanceItemGroups(role: Role): MainMenuSectionItemGroup[] {
           "Account ledger with opening, activity, and closing balances"
         ),
         available(
+          "cash-flow",
+          "Cash Flow",
+          "/finance/reports/cash-flow",
+          "Indirect cash flow statement with cash reconciliation"
+        ),
+        available(
           "profit-loss",
           "Profit & Loss",
           "/finance/reports/profit-loss",
