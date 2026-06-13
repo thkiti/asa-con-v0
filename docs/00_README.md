@@ -38,6 +38,7 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 32. [32_FINANCE_CORE_16B_MANUAL_JOURNAL.md](./32_FINANCE_CORE_16B_MANUAL_JOURNAL.md) — Finance Core 16B manual journal & reversal
 33. [33_FINANCE_CORE_16F_BALANCE_SHEET.md](./33_FINANCE_CORE_16F_BALANCE_SHEET.md) — Finance Core 16F balance sheet (read-only; 16G/16H deferred)
 34. [34_FINANCE_CORE_16G_RETAINED_EARNINGS.md](./34_FINANCE_CORE_16G_RETAINED_EARNINGS.md) — Finance Core 16G retained earnings bridge (account 301; 16H deferred)
+36. [36_FINANCE_CORE_16I_CHANGES_IN_EQUITY.md](./36_FINANCE_CORE_16I_CHANGES_IN_EQUITY.md) — Finance Core 16I statement of changes in equity (read-only)
 31. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 32. [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) — **POS Complete gate (P1–P4)** + thermal 80mm scope (memory doc)
 33. [RECEIPT_SETUP.md](./RECEIPT_SETUP.md) — current receipt layout / tax ID rules (pre-unify)
@@ -75,5 +76,6 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | MD | Master Database — Branch / Staff / Product–Reference CRUD (`/master/*`, HO_ADMIN only) | Done |
 | 16F | Finance Core — Balance Sheet read-only statement (`/finance/reports/balance-sheet`) | Done |
 | 16G | Finance Core — Retained Earnings bridge (`/finance/reports/retained-earnings`, account 301) | Done |
+| 16I | Finance Core — Statement of changes in equity (`/finance/reports/changes-in-equity`) | Done |
 | POS | **POS Complete roadmap (P1–P4)** — posting validation, thermal print, READ_Z, repair review | **In progress** — see [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) |
 | MIG | 2026 legacy Excel migration and parallel run (Phases A–G) | **Planning** — see [2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md](./2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md) |

@@ -131,6 +131,12 @@ function buildFinanceItemGroups(role: Role): MainMenuSectionItemGroup[] {
           "/finance/reports/retained-earnings",
           "Posted account 301 plus net income — economic equity before close"
         ),
+        available(
+          "changes-in-equity",
+          "Changes in Equity",
+          "/finance/reports/changes-in-equity",
+          "Equity movement matrix — opening, profit, other changes, closing"
+        ),
       ],
     },
     {

@@ -307,6 +307,65 @@ export type RetainedEarningsResult = {
   warnings: RetainedEarningsWarning[]
 }
 
+export type ChangesInEquityColumn = {
+  accountCode: string
+  accountName: string
+}
+
+export type ChangesInEquityRowKey =
+  | "OPENING"
+  | "PROFIT_FOR_PERIOD"
+  | "OTHER_CHANGES"
+  | "CLOSING"
+  | "RECONCILIATION_CHECK"
+
+export type ChangesInEquityRow = {
+  rowKey: ChangesInEquityRowKey
+  label: string
+  amounts: Record<string, string>
+  total: string
+}
+
+export type ChangesInEquityWarning = {
+  code: string
+  message: string
+}
+
+export type ChangesInEquityResult = {
+  filter: {
+    branchId: string
+    periodKey?: string
+    from?: string
+    to?: string
+  }
+  period: {
+    branchId: string
+    periodKey?: string
+    periodId?: string
+    periodStatus?: string
+    from?: string
+    to?: string
+  }
+  columns: ChangesInEquityColumn[]
+  rows: ChangesInEquityRow[]
+  profitForPeriod: string
+  profitSource: "CLOSING_ENTRY" | "PROFIT_LOSS"
+  retainedEarningsAccountCode: string
+  activeClosingEntry: {
+    voucherId: string
+    voucherNo: string
+    journalEntryId: string
+    netIncome: string
+    postedAt: string
+  } | null
+  reconciliation: {
+    isBalanced: boolean
+    columnDifferences: Record<string, string>
+    totalDifference: string
+  }
+  warnings: ChangesInEquityWarning[]
+}
+
 export type JournalInquiryResult = {
   id: string
   voucherId: string

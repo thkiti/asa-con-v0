@@ -339,6 +339,7 @@ export {
 } from "./reports/balance-helpers"
 export {
   parseBalanceSheetFilter,
+  parseChangesInEquityFilter,
   parseGeneralLedgerFilter,
   parseProfitLossFilter,
   parseRetainedEarningsFilter,
@@ -346,6 +347,7 @@ export {
   periodKeyToReportDateRange,
   resolveReportDateRange,
 } from "./reports/report-filter"
+export { getChangesInEquity } from "./reports/changes-in-equity"
 export { getBalanceSheet } from "./reports/balance-sheet"
 export {
   classifyEquityAccounts,
@@ -386,6 +388,15 @@ export type {
   BalanceSheetResult,
   BalanceSheetRow,
 } from "./reports/balance-sheet-types"
+export type {
+  ChangesInEquityColumn,
+  ChangesInEquityFilter,
+  ChangesInEquityResult,
+  ChangesInEquityRow,
+  ChangesInEquityRowKey,
+  ChangesInEquityWarning,
+  ChangesInEquityWarningCode,
+} from "./reports/changes-in-equity-types"
 export type {
   RetainedEarningsFilter,
   RetainedEarningsResult,

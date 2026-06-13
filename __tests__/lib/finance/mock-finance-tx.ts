@@ -220,11 +220,18 @@ export function createFinanceMockTx(branchId = "branch-1") {
           if (where?.deleted !== undefined && a.deleted !== where.deleted) return false
           if (where?.isActive !== undefined && a.isActive !== where.isActive) return false
           if (where?.code?.in && !where.code.in.includes(a.code)) return false
-          if (
-            where?.accountType?.in &&
-            !where.accountType.in.includes(a.accountType)
-          ) {
-            return false
+          if (where?.accountType) {
+            const accountTypeFilter = where.accountType as
+              | GlAccountType
+              | { in: GlAccountType[] }
+            if (typeof accountTypeFilter === "string") {
+              if (a.accountType !== accountTypeFilter) return false
+            } else if (
+              accountTypeFilter.in &&
+              !accountTypeFilter.in.includes(a.accountType)
+            ) {
+              return false
+            }
           }
           return true
         })
