@@ -38,6 +38,14 @@ export {
   deleteDraftManualJournalEntry,
   submitManualJournalEntry,
 } from "./manual-journal-entry-workflow"
+export { assertOpeningBalanceEntryRules } from "./manual-journal-entry-opening-balance-rules"
+export {
+  getManualJournalEntryPostingVerification,
+} from "./manual-journal-entry-posting-verification"
+export type {
+  ManualJournalEntryPostingVerification,
+  ManualJournalPostingVerificationAccountCheck,
+} from "./manual-journal-entry-posting-verification-types"
 export {
   assertCanPostManualJournalEntry,
   assertCanSubmitManualJournalEntry,

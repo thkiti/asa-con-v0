@@ -34,6 +34,10 @@ export default async function MainMenuSectionPage({
     redirect("/master")
   }
 
+  if (sectionParam === "finance") {
+    redirect("/finance")
+  }
+
   const section = getMainMenuSectionDetail(session.role, sectionParam)
   if (!section) {
     redirect("/unauthorized")

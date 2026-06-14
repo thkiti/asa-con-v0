@@ -2,11 +2,14 @@
  * @jest-environment jsdom
  */
 import { renderToStaticMarkup } from "react-dom/server"
+import { FinanceMenuHubView } from "@/components/finance/FinanceMenuHubView"
+import { FinanceMenuView } from "@/components/finance/FinanceMenuView"
 import { MainMenuView } from "@/components/main/MainMenuView"
 import { MainMenuSectionView } from "@/components/main/MainMenuSectionView"
 import { MasterHubView } from "@/components/master/MasterHubView"
 import { PricingHubView } from "@/components/pricing/PricingHubView"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { getFinanceMenuHub } from "@/lib/main-ui/finance-menu"
 import { getMainMenuSectionDetail } from "@/lib/main-ui/main-menu"
 import {
   mainMenuCardClass,
@@ -16,8 +19,6 @@ import {
   mainMenuCardTitleClass,
   mainMenuCardTitleSlotClass,
   mainMenuGridClass,
-  mainMenuGroupedGridsClass,
-  mainMenuGroupHeadingClass,
   mainMenuHeaderClass,
   mainMenuIntroClass,
   mainMenuPageClass,
@@ -70,7 +71,6 @@ describe("main menu layout consistency", () => {
 
     for (const sectionKey of [
       "operations",
-      "finance",
       "system",
       "shop",
     ] as const) {
@@ -83,6 +83,20 @@ describe("main menu layout consistency", () => {
         ),
       })
     }
+
+    pages.push({
+      name: "/finance",
+      html: renderToStaticMarkup(<FinanceMenuView user={hoAdmin} />),
+    })
+
+    const reportsHub = getFinanceMenuHub("HO_ADMIN", "reports")
+    expect(reportsHub).not.toBeNull()
+    pages.push({
+      name: "/finance/reports",
+      html: renderToStaticMarkup(
+        <FinanceMenuHubView user={hoAdmin} hub={reportsHub!} />
+      ),
+    })
 
     pages.push({
       name: "/master",
@@ -124,13 +138,15 @@ describe("main menu layout consistency", () => {
     }
   })
 
-  it("uses grouped finance hub without breaking card primitives", () => {
-    const financeHtml = pages.find((page) => page.name === "/main/finance")!.html
-    expect(financeHtml).toContain(mainMenuGroupedGridsClass)
-    expect(financeHtml).toContain(mainMenuGroupHeadingClass)
-    expect(financeHtml).toContain("Reports")
+  it("uses finance hub pages with the same card primitives", () => {
+    const financeHtml = pages.find((page) => page.name === "/finance")!.html
+    const reportsHtml = pages.find((page) => page.name === "/finance/reports")!.html
+    expect(financeHtml).toContain("Daily Work")
     expect(financeHtml).toContain(mainMenuGridClass)
     expect(financeHtml).toContain(mainMenuCardClass)
+    expect(reportsHtml).toContain("Trial Balance")
+    expect(reportsHtml).toContain(mainMenuGridClass)
+    expect(reportsHtml).toContain(mainMenuCardClass)
   })
 
   it("renders every scoped hub page through MainMenuHubPage", () => {

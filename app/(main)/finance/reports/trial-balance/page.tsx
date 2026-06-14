@@ -5,7 +5,7 @@ import { EntityContextPageHeading } from "@/components/main/EntityContextPageHea
 export default function Page() {
   return (
     <main className="p-8">
-      <Link href="/main/finance" className="text-sm text-zinc-600 underline print:hidden">
+      <Link href="/finance" className="text-sm text-zinc-600 underline print:hidden">
         ← Finance
       </Link>
       <EntityContextPageHeading title="Trial Balance" className="mt-4 text-xl font-semibold" />

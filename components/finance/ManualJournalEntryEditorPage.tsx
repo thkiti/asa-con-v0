@@ -27,6 +27,7 @@ import {
   updateManualJournalEntryDraft,
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
+import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
 import {
   getLegalEntityDisplayName,
   type DocumentEntityCode,
@@ -116,6 +117,8 @@ type ManualJournalEntryEditorPageProps = {
   initialEntryType?: ManualJournalEntryTypeCode
   /** Optional preloaded entry (tests); skips client fetch when provided. */
   initialEntry?: ManualJournalEntryRead | null
+  /** Locks OPENING_BALANCE type and enables OPB-specific UX. */
+  openingBalanceMode?: boolean
 }
 
 export function ManualJournalEntryEditorPage({
@@ -123,9 +126,16 @@ export function ManualJournalEntryEditorPage({
   entryId,
   initialEntryType = "MANUAL",
   initialEntry = null,
+  openingBalanceMode = false,
 }: ManualJournalEntryEditorPageProps) {
   const router = useRouter()
-  const seed = editorSeed(initialEntry, initialEntryType)
+  const resolvedEntryType: ManualJournalEntryTypeCode = openingBalanceMode
+    ? "OPENING_BALANCE"
+    : initialEntryType
+  const listHref = openingBalanceMode
+    ? "/finance/opening-balance"
+    : "/finance/manual-journal-entries"
+  const seed = editorSeed(initialEntry, resolvedEntryType)
   const [loading, setLoading] = useState(mode === "edit" && !initialEntry)
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -243,14 +253,14 @@ export function ManualJournalEntryEditorPage({
           branchId: branchId.trim(),
           legalEntityCode,
           entryDate,
-          entryType,
+          entryType: openingBalanceMode ? "OPENING_BALANCE" : entryType,
           description: description.trim() || null,
           refNo: refNo.trim() || null,
           lines: payloadLines,
         })
         applyEntry(created)
         setStatusMessage("Draft created.")
-        router.replace(`/finance/manual-journal-entries/${created.id}`)
+        router.replace(`${listHref}/${created.id}`)
         return created
       }
 
@@ -333,7 +343,7 @@ export function ManualJournalEntryEditorPage({
     setError(null)
     try {
       await deleteDraftManualJournalEntry(entry.id)
-      router.push("/finance/manual-journal-entries")
+      router.push(listHref)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed")
       setBusyAction(null)
@@ -351,6 +361,16 @@ export function ManualJournalEntryEditorPage({
 
   return (
     <div className="space-y-6" data-testid="manual-journal-entry-editor">
+      {openingBalanceMode ? (
+        <div
+          className="rounded border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950"
+          data-testid="opb-mode-banner"
+        >
+          Opening balance (OPB) — use balance-sheet accounts only (asset, liability, equity).
+          Revenue and expense accounts are not allowed.
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2
@@ -414,7 +434,7 @@ export function ManualJournalEntryEditorPage({
             data-testid="field-entry-date"
           />
         </label>
-        {canEditHeader ? (
+        {canEditHeader && !openingBalanceMode ? (
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Entry type</span>
             <select
@@ -713,6 +733,14 @@ export function ManualJournalEntryEditorPage({
       ) : null}
       {statusMessage ? (
         <p className="text-sm text-emerald-800" data-testid="editor-status">{statusMessage}</p>
+      ) : null}
+
+      {openingBalanceMode && isPosted && entry ? (
+        <OpeningBalancePostingVerificationPanel
+          entryId={entry.id}
+          entryNo={entry.entryNo}
+          postedJournalEntryId={entry.postedJournalEntryId}
+        />
       ) : null}
     </div>
   )

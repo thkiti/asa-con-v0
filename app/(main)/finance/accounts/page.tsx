@@ -5,7 +5,7 @@ import { EntityContextPageHeading } from "@/components/main/EntityContextPageHea
 export default function FinanceAccountsPage() {
   return (
     <main className="p-8">
-      <Link href="/main/finance">← Finance</Link>
+      <Link href="/finance">← Finance</Link>
       <EntityContextPageHeading title="Chart of accounts" className="mt-4 text-xl font-semibold" />
       <p className="mt-2 text-zinc-600">
         Browse GL accounts. Export, edit, and re-import to maintain the chart.

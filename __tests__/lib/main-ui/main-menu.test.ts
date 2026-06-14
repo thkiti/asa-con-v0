@@ -57,24 +57,12 @@ describe("getMainMenuSections", () => {
 
   it("section cards link to /main/{section}", () => {
     expect(getMainMenuSections("HO_ADMIN")[0]?.href).toBe("/master")
-    expect(getMainMenuSections("HO_FINANCE")[0]?.href).toBe("/main/finance")
+    expect(getMainMenuSections("HO_FINANCE")[0]?.href).toBe("/finance")
   })
 })
 
 describe("getMainMenuSectionDetail", () => {
-  it("includes grouped Finance hub for HO_ADMIN finance section", () => {
-    const detail = getMainMenuSectionDetail("HO_ADMIN", "finance")
-    expect(detail?.label).toBe("FINANCE")
-    expect(detail?.description).toContain("Reports")
-    expect(detail?.description).toContain("period management")
-    expect(detail?.itemGroups?.map((g) => g.key)).toEqual([
-      "reports",
-      "operations",
-      "reconciliation",
-      "period-management",
-      "planned",
-    ])
-    expect(findItem("HO_ADMIN", "finance")).toBeUndefined()
+  it("includes Finance hub links for HO_ADMIN finance flat items", () => {
     expect(findItem("HO_ADMIN", "trial-balance")?.href).toBe(
       "/finance/reports/trial-balance"
     )
@@ -92,6 +80,9 @@ describe("getMainMenuSectionDetail", () => {
     )
     expect(findItem("HO_ADMIN", "accounting-periods")?.href).toBe(
       "/finance/periods"
+    )
+    expect(findItem("HO_ADMIN", "opening-balance")?.href).toBe(
+      "/finance/opening-balance"
     )
   })
 

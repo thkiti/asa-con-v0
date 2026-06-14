@@ -7,6 +7,7 @@ import { join } from "node:path"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { chromium } from "playwright"
+import { FinanceMenuView } from "@/components/finance/FinanceMenuView"
 import { MainMenuView } from "@/components/main/MainMenuView"
 import { MainMenuSectionView } from "@/components/main/MainMenuSectionView"
 import { OperationsHubView } from "@/components/operations/OperationsHubView"
@@ -97,7 +98,6 @@ async function measure(
 
 describe("main menu card pixel measurements", () => {
   const operations = getMainMenuSectionDetail("HO_ADMIN", "operations")!
-  const finance = getMainMenuSectionDetail("HO_ADMIN", "finance")!
   const system = getMainMenuSectionDetail("HO_ADMIN", "system")!
   const shop = getMainMenuSectionDetail("HO_ADMIN", "shop")!
 
@@ -123,10 +123,8 @@ describe("main menu card pixel measurements", () => {
       html: renderToStaticMarkup(createElement(MasterHubView, { user: hoAdmin })),
     },
     {
-      name: "/main/finance",
-      html: renderToStaticMarkup(
-        createElement(MainMenuSectionView, { user: hoAdmin, section: finance })
-      ),
+      name: "/finance",
+      html: renderToStaticMarkup(createElement(FinanceMenuView, { user: hoAdmin })),
     },
     {
       name: "/main/system",

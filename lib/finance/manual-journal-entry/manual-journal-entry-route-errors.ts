@@ -32,9 +32,13 @@ function statusForManualJournalEntryCode(code: string): number {
     code === "INVALID_LINE" ||
     code === "ACCOUNT_NOT_FOUND" ||
     code === "ACCOUNT_INACTIVE" ||
+    code === "OPB_PL_ACCOUNT_NOT_ALLOWED" ||
     code === "VALIDATION_ERROR"
   ) {
     return 400
+  }
+  if (code === "OPB_DUPLICATE_POSTED") {
+    return 409
   }
   return 500
 }

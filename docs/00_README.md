@@ -42,7 +42,8 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 36. [36_FINANCE_CORE_16I_CHANGES_IN_EQUITY.md](./36_FINANCE_CORE_16I_CHANGES_IN_EQUITY.md) — Finance Core 16I statement of changes in equity (read-only)
 37. [37_FINANCE_CORE_16J_GENERAL_LEDGER.md](./37_FINANCE_CORE_16J_GENERAL_LEDGER.md) — Finance Core 16J general ledger account drill-down (read-only)
 38. [38_FINANCE_CORE_16K_CASH_FLOW.md](./38_FINANCE_CORE_16K_CASH_FLOW.md) — Finance Core 16K indirect cash flow statement (read-only)
-39. [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — business architecture decisions; **Finance Vocabulary** (document codes and numbering)
+39. [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md) — Finance Core 17B manual opening balance operations
+40. [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — business architecture decisions; **Finance Vocabulary** (document codes and numbering)
 31. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 32. [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) — **POS Complete gate (P1–P4)** + thermal 80mm scope (memory doc)
 33. [RECEIPT_SETUP.md](./RECEIPT_SETUP.md) — current receipt layout / tax ID rules (pre-unify)
@@ -84,5 +85,6 @@ Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 | 16I | Finance Core — Statement of changes in equity (`/finance/reports/changes-in-equity`) | Done |
 | 16J | Finance Core — General Ledger account drill-down (`/finance/reports/general-ledger`) | Done |
 | 16K | Finance Core — Cash flow statement indirect (`/finance/reports/cash-flow`) | Done |
+| 17B | Finance Core — Manual opening balance operations (`/finance/opening-balance`) | Done |
 | POS | **POS Complete roadmap (P1–P4)** — posting validation, thermal print, READ_Z, repair review | **In progress** — see [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) |
 | MIG | 2026 legacy Excel migration and parallel run (Phases A–G) | **Planning** — see [2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md](./2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md) |

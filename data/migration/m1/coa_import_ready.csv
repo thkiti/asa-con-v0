@@ -1,0 +1,177 @@
+accountCode,accountName,accountType,normalBalance,parentAccountCode,isActive
+1,ทุนหุ้นสามัญ,EQUITY,CREDIT,,true
+101,สำรองตามกฎหมาย,EQUITY,CREDIT,,true
+201,สำรองอื่น,EQUITY,CREDIT,,true
+301,กำไร (ขาดทุน) สะสม,EQUITY,CREDIT,,true
+1001,เงินสดในเครื่องเก็บเงิน,ASSET,DEBIT,,true
+1011,เงินสดย่อย,ASSET,DEBIT,,true
+1021,เงินฝากธนาคาร,ASSET,DEBIT,,true
+1031,เงินสดระหว่างทาง,ASSET,DEBIT,,true
+1041,เงินลงทุนระยะสั้น,ASSET,DEBIT,,true
+1051,ตั๋วเงินรับ,ASSET,DEBIT,,true
+1101,ลูกหนี้การค้า - ห้างสรรพสินค้า,ASSET,DEBIT,,true
+1111,ลูกหนี้การค้า - แฟรนไชส์,ASSET,DEBIT,,true
+1121,ลูกหนี้การค้า - อื่น,ASSET,DEBIT,,true
+1131,ลูกหนี้การค้า - บริษัทที่เกี่ยวข้องกัน,ASSET,DEBIT,,true
+1161,เงินให้กู้ยืมระยะสั้นแก่บุคคลหรือกิจการที่เกี่ยวข้องกัน,ASSET,DEBIT,,true
+1301,เครื่องจักรและอุปกรณ์,ASSET,DEBIT,,true
+1302,ลูกกุญแจ,ASSET,DEBIT,,true
+1303,วัสดุรองเท้า,ASSET,DEBIT,,true
+1304,แม่กุญแจ,ASSET,DEBIT,,true
+1305,เบ็ดเตล็ด,ASSET,DEBIT,,true
+1306,วัสดุสิ้นเปลือง,ASSET,DEBIT,,true
+1307,แบตเตอรี่,ASSET,DEBIT,,true
+1311,สินค้าระหว่างทาง,ASSET,DEBIT,,true
+1312,ค่าภาษีอากรขาเข้า,ASSET,DEBIT,,true
+1313,ค่าระวาง ค่าขนส่ง,ASSET,DEBIT,,true
+1314,ค่าประกันภัย,ASSET,DEBIT,,true
+1315,ค่าใช้จ่ายอื่น ๆ ในการออกของ,ASSET,DEBIT,,true
+1321,ชิ้นส่วนและอะไหล่,ASSET,DEBIT,,true
+1351,วัสดุและอุปกรณ์,ASSET,DEBIT,,true
+1401,ดอกเบี้ยรับค้างรับ - อื่น,ASSET,DEBIT,,true
+1402,ดอกเบี้ยรับค้างรับ - บริษัทที่เกี่ยวข้องกัน,ASSET,DEBIT,,true
+1411,ค่าเช่าจ่ายล่วงหน้า,ASSET,DEBIT,,true
+1421,ค่าเบี้ยประกันภัยจ่ายล่วงหน้า,ASSET,DEBIT,,true
+1431,ค่าใช้จ่ายล่วงหน้าอื่น ๆ,ASSET,DEBIT,,true
+1441,เงินมัดจำลูกหนี้อื่น,ASSET,DEBIT,,true
+1451,ค่าภาษีเงินได้จ่ายล่วงหน้า,ASSET,DEBIT,,true
+1452,ภาษีซื้อ,ASSET,DEBIT,,true
+1453,ภาษีมูลค่าเพิ่มขอคืน,ASSET,DEBIT,,true
+1461,เงินเดือนเบิกล่วงหน้า,ASSET,DEBIT,,true
+1471,ค่าเดินทางเบิกล่วงหน้า,ASSET,DEBIT,,true
+2001,เงินลงทุนในบริษัทร่วม บริษัทย่อย และการร่วมค้า,ASSET,DEBIT,,true
+2101,เงินลงทุนระยะยาวอื่น,ASSET,DEBIT,,true
+2111,เงินให้กู้ยืมระยะยาวแก่บุคคลหรือกิจการที่เกี่ยวข้องกัน,ASSET,DEBIT,,true
+2201,ที่ดิน,ASSET,DEBIT,,true
+2202,อาคารชุด,ASSET,DEBIT,,true
+2211,เครื่องจักรและอุปกรณ์ในการดำเนินงาน,ASSET,DEBIT,,true
+2212,เครื่องตกแต่งในการดำเนินงาน,ASSET,DEBIT,,true
+2221,เครื่องใช้และอุปกรณ์สำนักงาน,ASSET,DEBIT,,true
+2222,เครื่องตกแต่งสำนักงาน,ASSET,DEBIT,,true
+2223,รถยนต์,ASSET,DEBIT,,true
+2231,สิ่งปรับปรุงสินทรัพย์-สำนักงานใหญ่,ASSET,DEBIT,,true
+2232,สิ่งปรับปรุงสินทรัพย์-สาขา,ASSET,DEBIT,,true
+2235,เครื่องจักรและอุปกรณ์ร้านที่ให้เช่าเครื่องจักร,ASSET,DEBIT,,true
+2236,สิ่งปรับปรุงสินทรัพย์ร้านที่ให้เช่าเครื่องจักร,ASSET,DEBIT,,true
+2240,เครื่องจักรและอุปกรณ์ระหว่างทาง,ASSET,DEBIT,,true
+3001,เงินประกันและเงินมัดจำ,ASSET,DEBIT,,true
+3101,สิทธิการเช่า,ASSET,DEBIT,,true
+3201,ดอกเบี้ยรอการตัดบัญชี,ASSET,DEBIT,,true
+3301,ภาษีเงินได้ถูกหักภาษี ณ. ที่จ่าย (รอขอคืนจากกรมสรรพากร),ASSET,DEBIT,,true
+4001,เงินกู้ยืมระยะสั้นจากสถาบันการเงิน,LIABILITY,CREDIT,,true
+4002,ตั๋วเงินจ่าย,LIABILITY,CREDIT,,true
+4101,เจ้าหนี้การค้า,LIABILITY,CREDIT,,true
+4151,เจ้าหนี้บริษัทที่เกี่ยวข้องกัน,LIABILITY,CREDIT,,true
+4201,เงินกู้ยืมระยะยาวที่ถึงกำหนดชำระภายในหนึ่งปี,LIABILITY,CREDIT,,true
+4202,เงินกู้ยืมระยะสั้นจากบุคคลหรือกิจการที่เกี่ยวข้องกัน,LIABILITY,CREDIT,,true
+4301,เงินปันผลค้างจ่าย,LIABILITY,CREDIT,,true
+4401,ภาษีเงินได้นิติบุคคลค้างจ่าย,LIABILITY,CREDIT,,true
+4501,เงินเดือนค้างจ่าย,LIABILITY,CREDIT,,true
+4502,เงินสะสมพนักงาน,LIABILITY,CREDIT,,true
+4511,รายได้รับล่วงหน้า,LIABILITY,CREDIT,,true
+4521,ค่าเช่าค้างจ่าย,LIABILITY,CREDIT,,true
+4531,ค่าเบี้ยประกันภัยค้างจ่าย,LIABILITY,CREDIT,,true
+4541,ค่าโทรศัพท์ ค่าโทรสาร ค้างจ่าย,LIABILITY,CREDIT,,true
+4551,ค่าตรวจสอบบัญชีค้างจ่าย,LIABILITY,CREDIT,,true
+4561,ค่าใช้จ่ายอื่น ๆ ค้างจ่าย,LIABILITY,CREDIT,,true
+4571,ดอกเบี้ยจ่ายค้างจ่าย,LIABILITY,CREDIT,,true
+4581,ดอกเบี้ยจ่ายค้างจ่ายบริษัทที่เกี่ยวข้องกัน,LIABILITY,CREDIT,,true
+4582,ค่าใช้จ่ายค้างจ่ายบริษัทที่เกี่ยวข้องกัน,LIABILITY,CREDIT,,true
+4601,ภาษีขาย,LIABILITY,CREDIT,,true
+4602,ภาษีมูลค่าเพิ่มค้างจ่าย,LIABILITY,CREDIT,,true
+4611,ภาษีเงินได้พนักงาน หัก ณ.ที่จ่ายค้างจ่าย,LIABILITY,CREDIT,,true
+4612,ภาษีเงินได้ หัก ณ.ที่จ่ายค้างจ่าย,LIABILITY,CREDIT,,true
+4613,ภาษีเงินได้นิติบุคคลค้างจ่าย,LIABILITY,CREDIT,,true
+4621,ภาษีอากรอื่น ๆ ค้างจ่าย,LIABILITY,CREDIT,,true
+4631,ประกันสังคมค้างจ่าย,LIABILITY,CREDIT,,true
+4701,เงินกู้ยืมระยะยาวจากบุคคลหรือกิจการที่เกี่ยวข้องกัน,LIABILITY,CREDIT,,true
+4801,เจ้าหนี้ตามสัญญาเช่าทางการเงิน,LIABILITY,CREDIT,,true
+4901,ภาระผูกพันผลประโยชน์พนักงาน,LIABILITY,CREDIT,,true
+4911,ประมาณการหนี้สินระยะยาว,LIABILITY,CREDIT,,true
+5001,รายได้จากการขาย,REVENUE,CREDIT,,true
+5002,รายได้จากการให้เช่าเครื่องจักรและอุปกรณ์,REVENUE,CREDIT,,true
+5003,รายได้จากค่าบริการอื่น ๆ,REVENUE,CREDIT,,true
+5101,สินค้ารับคืนและส่วนลด,REVENUE,CREDIT,,true
+6001,ต้นทุนขาย-เครื่องจักรและอุปกรณ์,EXPENSE,DEBIT,,true
+6002,ต้นทุนขาย-ลูกกุญแจ,EXPENSE,DEBIT,,true
+6003,ต้นทุนขาย-วัสดุรองเท้า,EXPENSE,DEBIT,,true
+6004,ต้นทุนขาย-แม่กุญแจ,EXPENSE,DEBIT,,true
+6005,ต้นทุนขาย-เบ็ดเตล็ด,EXPENSE,DEBIT,,true
+6006,ต้นทุนขาย-วัสดุสิ้นเปลือง,EXPENSE,DEBIT,,true
+6021,ต้นทุนขาย-ชิ้นส่วนและอะไหล่,EXPENSE,DEBIT,,true
+6031,ต้นทุนขาย-ชิ้นส่วนและอะไหล่,EXPENSE,DEBIT,,true
+6051,ซื้อวัสดุและอุปกรณ์,EXPENSE,DEBIT,,true
+6052,สินค้าส่งคืนและส่วนลด,EXPENSE,DEBIT,,true
+6061,ค่าแรง,EXPENSE,DEBIT,,true
+6091,ค่าเผื่อสินค้าล้าสมัย,EXPENSE,DEBIT,,true
+6101,ค่าเช่าและค่าบริการ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+6111,ค่าไฟ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+6121,ค่าภาษีโรงเรือน - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+6131,ค่าประกันภัย - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+6141,ค่าโทรศัพท์ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+6151,ค่าใช้จ่ายทางการเงิน - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+6161,ค่าใช้จ่ายอื่น ๆ - ร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+6171,ค่าใช้จ่ายร้านที่ให้เช่าเครื่องจักร,EXPENSE,DEBIT,,true
+6201,เงินเดือน และค่าจ้าง,EXPENSE,DEBIT,,true
+6211,ผลตอบแทนจากยอดขาย,EXPENSE,DEBIT,,true
+6221,เงินที่จ่ายสมทบเข้าประกันสังคม,EXPENSE,DEBIT,,true
+6231,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับพนักงานขาย,EXPENSE,DEBIT,,true
+6241,ค่าฝึกอบรมพนักงานขาย,EXPENSE,DEBIT,,true
+6251,ผลประโยชน์พนักงาน,EXPENSE,DEBIT,,true
+6261,ค่าพาหนะ ค่าใช้จ่ายในการเดินทาง และค่าที่พัก - พนักงานขาย,EXPENSE,DEBIT,,true
+6301,ค่าโฆษณาและส่งเสริมการขาย,EXPENSE,DEBIT,,true
+6401,ค่าเสื่อมราคา - เครื่องจักรและอุปกรณ์ในการดำเนินงาน,EXPENSE,DEBIT,,true
+6402,ค่าเสื่อมราคา - เครื่องตกแต่งในการดำเนินงาน,EXPENSE,DEBIT,,true
+6411,ค่าเสื่อมราคา - สิ่งปรับปรุงสินทรัพย์ - สาขา,EXPENSE,DEBIT,,true
+6412,ค่าเสื่อมราคา - ร้านที่ให้เช่าเครื่องจักร,EXPENSE,DEBIT,,true
+6421,ค่าตัดจำหน่าย,EXPENSE,DEBIT,,true
+6501,ค่าวัสดุใช้สิ้นเปลือง,EXPENSE,DEBIT,,true
+6502,ค่าซ่อมแซมรักษา,EXPENSE,DEBIT,,true
+6503,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับการขาย,EXPENSE,DEBIT,,true
+6510,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับการให้เช่าเครื่องจักร,EXPENSE,DEBIT,,true
+6601,เงินเดือน และค่าจ้าง,EXPENSE,DEBIT,,true
+6621,เงินที่จ่ายสมทบเข้าประกันสังคม,EXPENSE,DEBIT,,true
+6631,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับพนักงานสำนักงาน,EXPENSE,DEBIT,,true
+6641,ค่าฝึกอบรมพนักงานสำนักงาน,EXPENSE,DEBIT,,true
+6651,ผลประโยชน์พนักงาน,EXPENSE,DEBIT,,true
+6661,ค่าพาหนะ ค่าใช้จ่ายในการเดินทาง และค่าที่พัก - พนักงานสำนักงาน,EXPENSE,DEBIT,,true
+6701,ค่าใช้จ่ายเกี่ยวกับรถยนต์,EXPENSE,DEBIT,,true
+6702,ค่าซ่อมแซมรถยนต์,EXPENSE,DEBIT,,true
+6703,ค่าเช่ารถยนต์,EXPENSE,DEBIT,,true
+6801,ค่าเช่าและค่าบริการ - สำนักงาน,EXPENSE,DEBIT,,true
+6811,ค่าไฟ - สำนักงาน,EXPENSE,DEBIT,,true
+6821,ค่าประปา - สำนักงาน,EXPENSE,DEBIT,,true
+6831,ค่าไปรษณียากร - สำนักงาน,EXPENSE,DEBIT,,true
+6841,ค่าโทรศัพท์ โทรสาร - สำนักงาน,EXPENSE,DEBIT,,true
+6851,ค่าซ่อมแซมและรักษา - สำนักงาน,EXPENSE,DEBIT,,true
+6901,ค่าวัสดุใช้ในสำนักงาน,EXPENSE,DEBIT,,true
+6911,ค่าใช้จ่ายเกี่ยวกับคอมพิวเตอร์,EXPENSE,DEBIT,,true
+6921,ค่าเบี้ยประกันภัย,EXPENSE,DEBIT,,true
+6931,ค่าส่งเสริมการขาย,EXPENSE,DEBIT,,true
+6941,ค่าธรรมเนียมธนาคาร,EXPENSE,DEBIT,,true
+6951,ค่ารับรอง,EXPENSE,DEBIT,,true
+6961,ค่าภาษีธุรกิจเฉพาะ,EXPENSE,DEBIT,,true
+6962,ค่าภาษีอากรอื่น ๆ,EXPENSE,DEBIT,,true
+6971,ค่าการกุศลสาธารณะ,EXPENSE,DEBIT,,true
+6972,รายจ่ายเพื่อการศึกษาหรือเพื่อการกีฬา,EXPENSE,DEBIT,,true
+6981,ค่าใช้จ่ายอื่น ๆ เกี่ยวกับบริหาร,EXPENSE,DEBIT,,true
+7001,ค่าเสื่อมราคา - อาคาร,EXPENSE,DEBIT,,true
+7011,ค่าเสื่อมราคา - เครื่องใช้และอุปกรณ์สำนักงาน,EXPENSE,DEBIT,,true
+7012,ค่าเสื่อมราคา - เครื่องตกแต่งในสำนักงาน,EXPENSE,DEBIT,,true
+7013,ค่าเสื่อมราคา - รถยนต์,EXPENSE,DEBIT,,true
+7021,ค่าเสื่อมราคา - สิ่งปรับปรุงสินทรัพย์ - สำนักงานใหญ่,EXPENSE,DEBIT,,true
+7031,ค่าตัดจำหน่าย,EXPENSE,DEBIT,,true
+8001,ค่าเบี้ยประชุมกรรมการ,EXPENSE,DEBIT,,true
+8011,ค่าสอบบัญชี,EXPENSE,DEBIT,,true
+8021,ค่าที่ปรึกษา,EXPENSE,DEBIT,,true
+8031,ค่าใช้จ่ายอื่นๆ เกี่ยวกับการจัดตั้งบริษัท,EXPENSE,DEBIT,,true
+8201,ดอกเบี้ยจ่ายแก่ธนาคาร,EXPENSE,DEBIT,,true
+8211,ดอกเบี้ยจ่ายแก่บริษัทที่เกี่ยวข้องกัน,EXPENSE,DEBIT,,true
+8212,ดอกเบี้ยจ่ายอื่น ๆ,EXPENSE,DEBIT,,true
+8401,กำไรหรือ(ขาดทุน)จากการแลกเปลี่ยนเงินตราต่างประเทศ,EXPENSE,DEBIT,,true
+8402,กำไรหรือ(ขาดทุน)จากการจำหน่ายสินทรัพย์ถาวร,EXPENSE,DEBIT,,true
+8403,กำไรหรือ(ขาดทุน)จากการปิดร้านที่จำหน่ายสินค้า,EXPENSE,DEBIT,,true
+8501,หนี้สูญ,EXPENSE,DEBIT,,true
+8601,รายได้หรือค่าใช้จ่ายที่ไม่เกี่ยวกับการบริหาร,EXPENSE,DEBIT,,true
+9001,ค่าภาษีเงินได้นิติบุคคล,EXPENSE,DEBIT,,true
+9101,รายการพิเศษ,EXPENSE,DEBIT,,true

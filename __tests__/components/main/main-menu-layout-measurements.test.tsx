@@ -2,11 +2,14 @@
  * @jest-environment jsdom
  */
 import { renderToStaticMarkup } from "react-dom/server"
+import { FinanceMenuHubView } from "@/components/finance/FinanceMenuHubView"
+import { FinanceMenuView } from "@/components/finance/FinanceMenuView"
 import { MainMenuView } from "@/components/main/MainMenuView"
 import { MainMenuSectionView } from "@/components/main/MainMenuSectionView"
 import { OperationsHubView } from "@/components/operations/OperationsHubView"
 import { MasterHubView } from "@/components/master/MasterHubView"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { getFinanceMenuHub } from "@/lib/main-ui/finance-menu"
 import { getMainMenuSectionDetail } from "@/lib/main-ui/main-menu"
 import {
   MAIN_MENU_LAYOUT_SPEC,
@@ -91,12 +94,22 @@ function measure(html: string, page: string): MeasuredLayout {
 
 function renderAll(): MeasuredLayout[] {
   const operations = getMainMenuSectionDetail("HO_ADMIN", "operations")!
-  const finance = getMainMenuSectionDetail("HO_ADMIN", "finance")!
   const system = getMainMenuSectionDetail("HO_ADMIN", "system")!
   const shop = getMainMenuSectionDetail("HO_ADMIN", "shop")!
+  const reportsHub = getFinanceMenuHub("HO_ADMIN", "reports")!
 
   const pages: Array<{ name: string; html: string }> = [
     { name: "/main", html: renderToStaticMarkup(<MainMenuView user={hoAdmin} />) },
+    {
+      name: "/finance",
+      html: renderToStaticMarkup(<FinanceMenuView user={hoAdmin} />),
+    },
+    {
+      name: "/finance/reports",
+      html: renderToStaticMarkup(
+        <FinanceMenuHubView user={hoAdmin} hub={reportsHub!} />
+      ),
+    },
     {
       name: "/main/operations",
       html: renderToStaticMarkup(
@@ -112,12 +125,6 @@ function renderAll(): MeasuredLayout[] {
     {
       name: "/master",
       html: renderToStaticMarkup(<MasterHubView user={hoAdmin} />),
-    },
-    {
-      name: "/main/finance",
-      html: renderToStaticMarkup(
-        <MainMenuSectionView user={hoAdmin} section={finance} />
-      ),
     },
     {
       name: "/main/system",

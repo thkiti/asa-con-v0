@@ -67,6 +67,7 @@ describe("canAccessRoute", () => {
   })
 
   it("allows /main section paths for authenticated roles", () => {
+    expect(canAccessRoute("/finance", "HO_FINANCE")).toBe(true)
     expect(canAccessRoute("/main/finance", "HO_FINANCE")).toBe(true)
     expect(canAccessRoute("/main/operations", "HO_OPERATIONS")).toBe(true)
     expect(canAccessRoute("/main/administration", "SH_STAFF")).toBe(true)

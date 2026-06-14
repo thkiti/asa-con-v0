@@ -4,6 +4,7 @@ import {
   ManualJournalEntryError,
   ManualJournalEntryErrorCodes,
 } from "./manual-journal-entry-errors"
+import { assertOpeningBalanceEntryRules } from "./manual-journal-entry-opening-balance-rules"
 import { isImmutableStatus } from "./manual-journal-entry-transition-policy"
 import type {
   ManualJournalEntryWithLines,
@@ -226,7 +227,7 @@ async function assertManualJournalEntryLinesReady(
  * valid line sides, and active GL accounts.
  */
 export async function assertCanSubmitManualJournalEntry(
-  tx: Pick<Prisma.TransactionClient, "glAccount">,
+  tx: Pick<Prisma.TransactionClient, "glAccount" | "manualJournalEntry">,
   entry: ManualJournalEntryWithLines
 ): Promise<void> {
   if (entry.status !== "DRAFT") {
@@ -237,13 +238,14 @@ export async function assertCanSubmitManualJournalEntry(
   }
 
   await assertManualJournalEntryLinesReady(tx, entry)
+  await assertOpeningBalanceEntryRules(tx, entry)
 }
 
 /**
  * Post-time validation — requires CONFIRMED and submit-level line checks.
  */
 export async function assertCanPostManualJournalEntry(
-  tx: Pick<Prisma.TransactionClient, "glAccount">,
+  tx: Pick<Prisma.TransactionClient, "glAccount" | "manualJournalEntry">,
   entry: ManualJournalEntryWithLines
 ): Promise<void> {
   if (entry.status !== "CONFIRMED") {
@@ -254,4 +256,5 @@ export async function assertCanPostManualJournalEntry(
   }
 
   await assertManualJournalEntryLinesReady(tx, entry)
+  await assertOpeningBalanceEntryRules(tx, entry)
 }

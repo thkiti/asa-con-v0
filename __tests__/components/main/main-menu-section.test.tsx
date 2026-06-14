@@ -34,24 +34,9 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain("Back to Main Menu")
   })
 
-  it("renders grouped finance hub cards on finance section", () => {
+  it("renders finance section hub links via FinanceMenuView", () => {
     const section = getMainMenuSectionDetail("HO_ADMIN", "finance")
-    const html = renderToStaticMarkup(
-      <MainMenuSectionView user={hoAdmin} section={section!} />
-    )
-    expect(html).not.toContain('href="/finance"')
-    expect(html).toContain("Reports")
-    expect(html).toContain("Operations")
-    expect(html).toContain("Reconciliation")
-    expect(html).toContain("Period Management")
-    expect(html).toContain('href="/finance/reports/trial-balance"')
-    expect(html).toContain('href="/finance/accounts/import"')
-    expect(html).toContain('href="/finance/reconciliation"')
-    expect(html).toContain('href="/finance/periods"')
-    expect(html).toContain("Journal Entry Workflow")
-    expect(html).toContain("Planned")
-    expect(html).toContain("h-[108px]")
-    expect(html).toContain("line-clamp-2")
+    expect(section?.href).toBe("/finance")
   })
 
   it("renders administration master links", () => {
