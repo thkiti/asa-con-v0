@@ -17,7 +17,10 @@
     "audit:ui": "npx tsx scripts/audit/ui-boundary-audit.ts",
     "audit:tx": "npx tsx scripts/audit/no-nested-tx-audit.ts",
     "audit:all": "npm run audit:architecture",
-    "audit:posting-lock": "npx tsx scripts/audit/posting-lock-audit.ts"
+    "audit:posting-lock": "npx tsx scripts/audit/posting-lock-audit.ts",
+    "legacy:sales:stage": "npx tsx scripts/import-legacy-sales-dbf.ts",
+    "legacy:sales:validate": "npx tsx scripts/validate-legacy-sales-staging.ts",
+    "legacy:sales:convert": "npx tsx scripts/convert-legacy-sales-staging.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
