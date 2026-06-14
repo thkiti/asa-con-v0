@@ -1,3 +1,10 @@
+export {
+  buildLegacySalesControlReport,
+  isLegacyRefundCandidate,
+  isLegacySalesControlIncludedRow,
+  printLegacySalesControlReport,
+  runLegacySalesControlReport,
+} from "./control-report"
 export { LEGACY_SALES_CUTOFF_DATE, LEGACY_SALES_DEFAULT_FILE } from "./constants"
 export {
   parseLegacySalesCliArgs,

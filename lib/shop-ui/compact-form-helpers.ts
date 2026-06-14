@@ -137,3 +137,11 @@ export const SUNDAY_FIRST_WEEKDAY_HEADERS = [
   "Fri",
   "Sat",
 ] as const
+
+export function formatDashboardSummaryAmount(value: string): string {
+  return formatFinancialNumber(value, { maxFractionDigits: 0 })
+}
+
+export function formatDashboardBillCount(value: number): string {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 0 })
+}

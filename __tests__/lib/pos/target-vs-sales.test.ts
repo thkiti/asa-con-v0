@@ -48,6 +48,7 @@ describe("buildPosTargetVsSalesSummary", () => {
         grossSales: "50000.00",
         refunds: "10000.00",
         netSales: "40000.00",
+        billCount: 12,
       },
       days: [
         { dateKey: "2026-06-05", grossSales: "10000.00" },
@@ -93,6 +94,7 @@ describe("buildPosTargetVsSalesSummary", () => {
         grossSales: "1000.00",
         refunds: "0.00",
         netSales: "1000.00",
+        billCount: 1,
       },
       days: [{ dateKey: "2026-06-06", grossSales: "1000.00" }],
     })

@@ -20,7 +20,8 @@
     "audit:posting-lock": "npx tsx scripts/audit/posting-lock-audit.ts",
     "legacy:sales:stage": "npx tsx scripts/import-legacy-sales-dbf.ts",
     "legacy:sales:validate": "npx tsx scripts/validate-legacy-sales-staging.ts",
-    "legacy:sales:convert": "npx tsx scripts/convert-legacy-sales-staging.ts"
+    "legacy:sales:convert": "npx tsx scripts/convert-legacy-sales-staging.ts",
+    "legacy:sales:control": "npx tsx scripts/legacy-sales-control-report.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

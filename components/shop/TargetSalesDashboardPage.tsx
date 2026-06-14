@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { MainMenuShell } from "@/components/main/MainMenuShell"
 import { DaySalesSlideInPanel } from "@/components/shop/DaySalesSlideInPanel"
 import { TargetActualCalendarGrid } from "@/components/shop/TargetActualCalendarGrid"
+import { TargetSalesMonthSummary } from "@/components/shop/TargetSalesMonthSummary"
 import { CompactControlRow } from "@/components/shop-ui/CompactControlRow"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
 import type { SalesDashboardView } from "@/lib/shop/sales-dashboard-types"
@@ -13,11 +14,8 @@ import {
   TARGET_ACTUAL_DASHBOARD_HEADER_GRID,
 } from "@/lib/shop-ui/sales-dashboard-calendar"
 import { fetchSalesDashboard } from "@/lib/shop-ui/sales-dashboard-client"
-import {
-  compactHeaderFieldClass,
-  formatFinancialNumber,
-} from "@/lib/shop-ui/compact-form-helpers"
-import { themeCard, themeMuted } from "@/lib/theme/theme-classes"
+import { compactHeaderFieldClass } from "@/lib/shop-ui/compact-form-helpers"
+import { themeMuted } from "@/lib/theme/theme-classes"
 
 type TargetSalesDashboardPageProps = {
   user: SessionUserApi
@@ -75,7 +73,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
   return (
     <MainMenuShell
       user={user}
-      title="Target / Sales"
+      title="Last Month / Actual Sales"
       backHref="/main/shop"
       backLabel="← Back to Shop"
     >
@@ -125,31 +123,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
           </p>
         ) : null}
 
-        {view ? (
-          <section
-            className={`grid grid-cols-1 gap-2 rounded border border-border px-3 py-3 sm:grid-cols-3 ${themeCard}`}
-            data-testid="dashboard-month-summary"
-          >
-            <div>
-              <p className={`text-xs uppercase tracking-wide ${themeMuted}`}>Gross</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {formatFinancialNumber(view.monthSummary.grossSales)}
-              </p>
-            </div>
-            <div>
-              <p className={`text-xs uppercase tracking-wide ${themeMuted}`}>Refunds</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {formatFinancialNumber(view.monthSummary.refunds)}
-              </p>
-            </div>
-            <div>
-              <p className={`text-xs uppercase tracking-wide ${themeMuted}`}>Net</p>
-              <p className="text-lg font-semibold tabular-nums">
-                {formatFinancialNumber(view.monthSummary.netSales)}
-              </p>
-            </div>
-          </section>
-        ) : null}
+        {view ? <TargetSalesMonthSummary summary={view.monthSummary} /> : null}
 
         {loading ? (
           <p className={`text-sm ${themeMuted}`} data-testid="dashboard-loading">

@@ -7,7 +7,9 @@ import {
   bangkokDayRange,
   bangkokTimeLabel,
   monthDayKeys,
+  previousCalendarMonth,
 } from "@/lib/reporting/bangkok-calendar"
+import { getComparableLastMonthDateFromDateKey } from "@/lib/shop-ui/comparable-last-month-date"
 import { SalesDashboardError } from "@/lib/shop/sales-dashboard-errors"
 import type {
   SalesDashboardDayDetail,
@@ -106,11 +108,13 @@ export async function buildSalesDashboardView(
 
   let monthGross = ZERO
   let monthRefunds = ZERO
+  let monthBillCount = 0
 
   for (const bid of branchIds) {
     const metrics = await getSalesDashboardMetrics(db, { branchId: bid, year, month })
     monthGross = monthGross.plus(toDec(metrics.monthSummary.grossSales))
     monthRefunds = monthRefunds.plus(toDec(metrics.monthSummary.refunds))
+    monthBillCount += metrics.monthSummary.billCount
     for (const row of metrics.days) {
       actualByDay.set(
         row.dateKey,
@@ -119,13 +123,49 @@ export async function buildSalesDashboardView(
     }
   }
 
-  const days = dayKeys.map((dateKey) => ({
-    dateKey,
-    target: hasAnyTarget
-      ? (targetByDay.get(dateKey) ?? ZERO).toFixed(2)
-      : null,
-    actualGross: (actualByDay.get(dateKey) ?? ZERO).toFixed(2),
-  }))
+  const previous = previousCalendarMonth(year, month)
+  const lastMonthByDay = new Map<string, Prisma.Decimal>()
+  for (const key of monthDayKeys(previous.year, previous.month)) {
+    lastMonthByDay.set(key, ZERO)
+  }
+
+  for (const bid of branchIds) {
+    const metrics = await getSalesDashboardMetrics(db, {
+      branchId: bid,
+      year: previous.year,
+      month: previous.month,
+    })
+    for (const row of metrics.days) {
+      lastMonthByDay.set(
+        row.dateKey,
+        (lastMonthByDay.get(row.dateKey) ?? ZERO).plus(toDec(row.grossSales))
+      )
+    }
+  }
+
+  let lastMonthSalesTotal = ZERO
+  const days = dayKeys.map((dateKey) => {
+    const comparableDateKey = getComparableLastMonthDateFromDateKey(dateKey)
+    const lastMonthGross =
+      comparableDateKey == null
+        ? null
+        : (lastMonthByDay.get(comparableDateKey) ?? ZERO).toFixed(2)
+
+    if (comparableDateKey != null) {
+      lastMonthSalesTotal = lastMonthSalesTotal.plus(
+        lastMonthByDay.get(comparableDateKey) ?? ZERO
+      )
+    }
+
+    return {
+      dateKey,
+      target: hasAnyTarget
+        ? (targetByDay.get(dateKey) ?? ZERO).toFixed(2)
+        : null,
+      actualGross: (actualByDay.get(dateKey) ?? ZERO).toFixed(2),
+      lastMonthGross,
+    }
+  })
 
   return {
     scope: branchId ? "branch" : "company",
@@ -133,9 +173,11 @@ export async function buildSalesDashboardView(
     month,
     branches,
     monthSummary: {
+      lastMonthSales: lastMonthSalesTotal.toFixed(2),
       grossSales: monthGross.toFixed(2),
       refunds: monthRefunds.toFixed(2),
       netSales: monthGross.minus(monthRefunds).toFixed(2),
+      billCount: monthBillCount,
     },
     days,
     hasAnyTarget,

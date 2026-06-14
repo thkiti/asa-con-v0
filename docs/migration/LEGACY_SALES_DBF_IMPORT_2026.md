@@ -80,14 +80,15 @@ Re-running stage skips duplicate staging rows. Re-running convert skips transact
 Before `--apply` convert:
 
 1. Stage dry-run — confirm ~16k accepted rows for 2026 file
-2. Validate with `--apply` — review:
+2. **Seed legacy compatibility products** if validation reports unmatched codes (see §10)
+3. Validate with `--apply` — review:
    - unmatched branches (`S_ID` → `SHxxx`)
    - unmatched products (`I_ID` 7-digit code)
    - unmatched staff (warning only — import proceeds with `staffId = null`)
    - zero qty → `INVALID`
    - negative amount → `INVALID` (manual review)
-3. Convert dry-run — transaction group count ≈ ~10.9k
-4. Convert `--apply` only after validation clean enough for parallel run
+4. Convert dry-run — transaction group count ≈ ~10.9k
+5. Convert `--apply` only after validation clean enough for parallel run
 
 Transaction grouping key:
 
@@ -124,6 +125,14 @@ npm run legacy:sales:validate -- --batch latest
 npm run legacy:sales:validate -- --batch latest --apply
 ```
 
+### Control (pre-convert)
+
+```bash
+npm run legacy:sales:control -- --batch latest
+```
+
+Report-only: VALID positive sales, excluding refund candidates (`R*` / negative amount), branch `00`, zero qty, and invalid rows.
+
 ### Convert
 
 ```bash
@@ -141,6 +150,7 @@ npm run legacy:sales:convert -- --batch latest --apply
 | `scripts/import-legacy-sales-dbf.ts` | Stage CLI |
 | `scripts/validate-legacy-sales-staging.ts` | Validate CLI |
 | `scripts/convert-legacy-sales-staging.ts` | Convert CLI |
+| `scripts/seed-legacy-sales-import-products.ts` | Add missing legacy product codes |
 | `prisma/schema.prisma` | Staging + audit models |
 
 ---
@@ -150,3 +160,31 @@ npm run legacy:sales:convert -- --batch latest --apply
 - Finance auto-posting (`postSaleVoucher`)
 - Stock movement (`issueStock`)
 - Changing live POS checkout behaviour
+
+---
+
+## 10. Legacy compatibility products
+
+Some `I_ID` values in `SAE.dbf` are not in the main `POSINY.DBF` product import. Before convert, seed these **legacy sales import compatibility** products:
+
+| Code | Name | Category | `ProductType` | Stock at sale |
+|------|------|----------|---------------|---------------|
+| `0103005` | Misc count key / Legacy misc item | Misc | `CONSUMABLE` | No |
+| `7002015` | Promotion item | Promotion | `CONSUMABLE` | No |
+| `7003003` | Additional shoe services | Service | `CONSUMABLE` | No |
+
+Notes:
+
+- Codes are kept **exactly** as legacy 7-digit values (not remapped).
+- `CONSUMABLE` = sellable at POS/import but **no stock ledger** at sale (`ledgerSkippedReason: CONSUMABLE`).
+- **No `ReferenceStock` rows** are created for these items.
+- Added for **2026 parallel-run legacy sales import compatibility** only; review for master-data cleanup after cutover.
+
+Seed command:
+
+```bash
+npx tsx scripts/seed-legacy-sales-import-products.ts
+npx tsx scripts/seed-legacy-sales-import-products.ts --apply
+```
+
+Implementation: `lib/import/legacy-sales/legacy-import-products.ts`

@@ -29,6 +29,8 @@ export type MonthlySalesDashboardSummary = {
   refunds: string
   /** grossSales - refunds */
   netSales: string
+  /** Completed sale count in the selected month. */
+  billCount: number
 }
 
 export type SalesDashboardMetricsResult = {
@@ -119,6 +121,7 @@ export async function getSalesDashboardMetrics(
     grossSales: monthGross.toFixed(2),
     refunds: monthRefunds.toFixed(2),
     netSales: monthNet.toFixed(2),
+    billCount: sales.length,
   }
 
   return { year, month, days, monthSummary }

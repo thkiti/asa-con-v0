@@ -37,7 +37,13 @@ const sampleView = {
   year: 2026,
   month: 6,
   branches: [],
-  monthSummary: { grossSales: "1000.00", refunds: "100.00", netSales: "900.00" },
+  monthSummary: {
+    lastMonthSales: "800.00",
+    grossSales: "1000.00",
+    refunds: "100.00",
+    netSales: "900.00",
+    billCount: 42,
+  },
   days: [],
   hasAnyTarget: false,
 }

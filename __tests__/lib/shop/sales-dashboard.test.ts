@@ -47,12 +47,48 @@ describe("buildSalesDashboardView", () => {
 
     mockedMetrics
       .mockResolvedValueOnce({
-        monthSummary: { grossSales: "100.00", refunds: "10.00", netSales: "90.00" },
+        year: 2026,
+        month: 6,
+        monthSummary: {
+          grossSales: "100.00",
+          refunds: "10.00",
+          netSales: "90.00",
+          billCount: 2,
+        },
         days: [{ dateKey: "2026-06-05", grossSales: "100.00" }],
       })
       .mockResolvedValueOnce({
-        monthSummary: { grossSales: "50.00", refunds: "5.00", netSales: "45.00" },
+        year: 2026,
+        month: 6,
+        monthSummary: {
+          grossSales: "50.00",
+          refunds: "5.00",
+          netSales: "45.00",
+          billCount: 1,
+        },
         days: [{ dateKey: "2026-06-05", grossSales: "50.00" }],
+      })
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 5,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [{ dateKey: "2026-05-01", grossSales: "40.00" }],
+      })
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 5,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [{ dateKey: "2026-05-01", grossSales: "20.00" }],
       })
 
     const view = await buildSalesDashboardView({} as never, {
@@ -64,8 +100,11 @@ describe("buildSalesDashboardView", () => {
     expect(view.monthSummary.grossSales).toBe("150.00")
     expect(view.monthSummary.refunds).toBe("15.00")
     expect(view.monthSummary.netSales).toBe("135.00")
+    expect(view.monthSummary.lastMonthSales).toBe("60.00")
+    expect(view.monthSummary.billCount).toBe(3)
     const day5 = view.days.find((d) => d.dateKey === "2026-06-05")
     expect(day5?.actualGross).toBe("150.00")
+    expect(day5?.lastMonthGross).toBe("60.00")
     expect(day5?.target).toBeNull()
     expect(view.hasAnyTarget).toBe(false)
   })
@@ -80,10 +119,29 @@ describe("buildSalesDashboardView", () => {
       weekPattern: [1, 1, 1, 1, 1, 1, 1],
       exists: true,
     })
-    mockedMetrics.mockResolvedValue({
-      monthSummary: { grossSales: "0.00", refunds: "0.00", netSales: "0.00" },
-      days: [],
-    })
+    mockedMetrics
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 6,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [],
+      })
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 5,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [],
+      })
 
     const view = await buildSalesDashboardView({} as never, {
       year: 2026,

@@ -3,15 +3,20 @@ import type { SalesTargetBranchOption } from "@/lib/shop/sales-target-types"
 export type SalesDashboardScope = "company" | "branch"
 
 export type SalesDashboardMonthSummary = {
+  /** Sum of prior-month gross on each comparable calendar-grid day in the view month. */
+  lastMonthSales: string
   grossSales: string
   refunds: string
   netSales: string
+  billCount: number
 }
 
 export type SalesDashboardDayCell = {
   dateKey: string
   target: string | null
   actualGross: string
+  /** Previous-month sales on the comparable calendar grid date, or null for "-". */
+  lastMonthGross: string | null
 }
 
 export type SalesDashboardView = {

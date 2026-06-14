@@ -13,14 +13,63 @@ type TargetActualCalendarGridProps = {
   ariaLabel?: string
 }
 
+function formatCalendarAmount(value: string | null | undefined): string {
+  const formatted = formatFinancialCellValue(value)
+  return formatted === "—" ? "-" : formatted
+}
+
+function CalendarAmountRow({
+  label,
+  amount,
+  bold = false,
+  testId,
+  onClick,
+}: {
+  label: "L" | "A"
+  amount: string
+  bold?: boolean
+  testId: string
+  onClick?: () => void
+}) {
+  const amountClass = `shrink-0 text-right text-xs tabular-nums leading-tight sm:text-sm ${
+    bold
+      ? "font-semibold text-emerald-600"
+      : label === "A"
+        ? "font-normal text-emerald-500/70"
+        : "font-normal text-muted-foreground"
+  }`
+
+  return (
+    <div
+      className="flex w-full items-baseline justify-between gap-2"
+      data-testid={testId}
+    >
+      <span className="w-3 shrink-0 text-[9px] font-medium leading-none text-muted-foreground sm:text-[10px]">
+        {label}
+      </span>
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className={`${amountClass} underline-offset-2 hover:underline`}
+        >
+          {amount}
+        </button>
+      ) : (
+        <span className={amountClass}>{amount}</span>
+      )}
+    </div>
+  )
+}
+
 export function TargetActualCalendarGrid({
   cells,
   onActualClick,
-  ariaLabel = "Target and actual sales calendar",
+  ariaLabel = "Last month and actual sales calendar",
 }: TargetActualCalendarGridProps) {
   return (
     <div
-      className="grid w-full min-w-[320px] grid-cols-7 gap-px rounded-md border border-border/50 bg-border/30"
+      className="grid w-full min-w-[320px] grid-cols-7 gap-px rounded-md border border-zinc-600/45 bg-zinc-600/30"
       role="grid"
       aria-label={ariaLabel}
       data-testid="target-actual-calendar-grid"
@@ -30,7 +79,7 @@ export function TargetActualCalendarGrid({
           key={label}
           role="columnheader"
           data-testid={`target-actual-header-${label}`}
-          className={`bg-card px-1 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide sm:text-xs ${themeMuted}`}
+          className={`border-b border-zinc-600/40 bg-card px-1 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide sm:text-xs ${themeMuted}`}
         >
           {label}
         </div>
@@ -43,15 +92,16 @@ export function TargetActualCalendarGrid({
               key={cell.key}
               role="gridcell"
               aria-hidden
-              className="min-h-[4rem] bg-muted/10 sm:min-h-[4.25rem] lg:min-h-[4.5rem]"
+              className="min-h-[4.25rem] bg-muted/10 sm:min-h-[4.5rem] lg:min-h-[4.75rem]"
             />
           )
         }
 
         const isWeekend = cell.weekdaySun0 === 0 || cell.weekdaySun0 === 6
-        const actualDisplay = formatFinancialCellValue(cell.actualGross)
+        const lastMonthDisplay = formatCalendarAmount(cell.lastMonthGross)
+        const actualDisplay = formatCalendarAmount(cell.actualGross)
         const hasActual =
-          actualDisplay !== "—" &&
+          actualDisplay !== "-" &&
           Number(String(cell.actualGross).replace(/,/g, "")) > 0
 
         return (
@@ -59,7 +109,7 @@ export function TargetActualCalendarGrid({
             key={cell.key}
             role="gridcell"
             data-testid={`target-actual-cell-${cell.dateKey}`}
-            className="flex min-h-[4rem] flex-col justify-between bg-card px-1 py-1 sm:min-h-[4.25rem] sm:px-1.5 sm:py-1.5 lg:min-h-[4.5rem]"
+            className="flex min-h-[4.25rem] flex-col justify-between border border-zinc-600/20 bg-card px-1 py-1 sm:min-h-[4.5rem] sm:px-1.5 sm:py-1.5 lg:min-h-[4.75rem]"
           >
             <span
               className={`text-[11px] tabular-nums leading-none sm:text-xs ${
@@ -71,29 +121,18 @@ export function TargetActualCalendarGrid({
               {cell.day}
             </span>
             <div className="flex flex-col gap-0.5">
-              <span
-                className="truncate text-right text-[10px] tabular-nums leading-tight text-muted-foreground sm:text-xs"
-                data-testid={`target-line-${cell.dateKey}`}
-              >
-                T {formatFinancialCellValue(cell.target)}
-              </span>
-              {hasActual ? (
-                <button
-                  type="button"
-                  onClick={() => onActualClick(cell.dateKey)}
-                  className="truncate text-right text-[10px] font-semibold tabular-nums leading-tight text-emerald-600 underline-offset-2 hover:underline sm:text-xs"
-                  data-testid={`actual-line-${cell.dateKey}`}
-                >
-                  A {actualDisplay}
-                </button>
-              ) : (
-                <span
-                  className="truncate text-right text-[10px] tabular-nums leading-tight text-emerald-500/70 sm:text-xs"
-                  data-testid={`actual-line-${cell.dateKey}`}
-                >
-                  A {actualDisplay}
-                </span>
-              )}
+              <CalendarAmountRow
+                label="L"
+                amount={lastMonthDisplay}
+                testId={`last-month-line-${cell.dateKey}`}
+              />
+              <CalendarAmountRow
+                label="A"
+                amount={actualDisplay}
+                bold={hasActual}
+                testId={`actual-line-${cell.dateKey}`}
+                onClick={hasActual ? () => onActualClick(cell.dateKey) : undefined}
+              />
             </div>
           </div>
         )

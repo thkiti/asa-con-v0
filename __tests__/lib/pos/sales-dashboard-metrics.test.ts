@@ -101,6 +101,7 @@ describe("getSalesDashboardMetrics", () => {
     expect(result.monthSummary.grossSales).toBe("150.00")
     expect(result.monthSummary.refunds).toBe("100.00")
     expect(result.monthSummary.netSales).toBe("50.00")
+    expect(result.monthSummary.billCount).toBe(2)
   })
 
   it("counts refunds by refund.createdAt month not original sale month", async () => {
@@ -141,6 +142,7 @@ describe("getSalesDashboardMetrics", () => {
     expect(june.monthSummary.grossSales).toBe("80.00")
     expect(june.monthSummary.refunds).toBe("200.00")
     expect(june.monthSummary.netSales).toBe("-120.00")
+    expect(june.monthSummary.billCount).toBe(1)
 
     const may = await getSalesDashboardMetrics(createMockDb(state), {
       branchId,
@@ -151,6 +153,7 @@ describe("getSalesDashboardMetrics", () => {
     expect(may.monthSummary.grossSales).toBe("200.00")
     expect(may.monthSummary.refunds).toBe("0.00")
     expect(may.monthSummary.netSales).toBe("200.00")
+    expect(may.monthSummary.billCount).toBe(1)
   })
 
   it("returns zero gross for days with no sales", async () => {
@@ -162,5 +165,6 @@ describe("getSalesDashboardMetrics", () => {
     expect(result.days).toHaveLength(30)
     expect(result.days.every((row) => row.grossSales === "0.00")).toBe(true)
     expect(result.monthSummary.grossSales).toBe("0.00")
+    expect(result.monthSummary.billCount).toBe(0)
   })
 })
