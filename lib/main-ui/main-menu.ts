@@ -151,9 +151,15 @@ function buildFinanceItemGroups(role: Role): MainMenuSectionItemGroup[] {
       items: [
         available(
           "manual-journal",
-          "Manual Journal",
+          "Instant GL Journal",
           "/finance/journal-entries",
-          "Post balanced GL journals and reversals"
+          "Post balanced GL journals immediately (16B)"
+        ),
+        available(
+          "manual-journal-entries",
+          "Journal Entry Workflow",
+          "/finance/manual-journal-entries",
+          "Draft, submit, confirm, and post operational journal entries"
         ),
         available(
           "chart-of-accounts",

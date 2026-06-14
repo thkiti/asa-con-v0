@@ -98,7 +98,12 @@ export async function postOperationalVoucher(
   assertNonZeroLines(input.lines)
   assertBalanced(input.lines)
 
-  const period = await assertPostingPeriodOpen(tx, input.branchId, input.date)
+  const period = await assertPostingPeriodOpen(
+    tx,
+    input.branchId,
+    input.date,
+    input.legalEntityCode
+  )
   const periodId = period.id
 
   const { voucherId, voucherNo } = await createVoucherWithLines(tx, {

@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import type { DocType, PaymentMethod } from "@/generated/prisma/client"
 
 export const FINANCE_REF_TYPES = {
@@ -7,6 +8,11 @@ export const FINANCE_REF_TYPES = {
   STOCK_DOC_POST: "STOCK_DOC_POST",
   MANUAL_JOURNAL: "MANUAL_JOURNAL",
   MANUAL_JOURNAL_REVERSAL: "MANUAL_JOURNAL_REVERSAL",
+  OPENING_BALANCE_JOURNAL: "OPENING_BALANCE_JOURNAL",
+  ADJUSTMENT_JOURNAL: "ADJUSTMENT_JOURNAL",
+  RECLASS_JOURNAL: "RECLASS_JOURNAL",
+  ACCRUAL_JOURNAL: "ACCRUAL_JOURNAL",
+  AUDITOR_ADJUSTMENT_JOURNAL: "AUDITOR_ADJUSTMENT_JOURNAL",
   PERIOD_CLOSING_ENTRY: "PERIOD_CLOSING_ENTRY",
 } as const
 
@@ -36,6 +42,7 @@ export type OperationalVoucherInput = {
   refNo?: string | null
   description?: string | null
   lines: JournalLineDraft[]
+  legalEntityCode?: DocumentEntityCode | null
 }
 
 export type PostedVoucherResult = {

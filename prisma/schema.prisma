@@ -113,7 +113,8 @@ model Branch {
   stockDocuments    StockDocument[]
   sales             Sale[]
   refunds           Refund[]
-  vouchers          Voucher[]
+  vouchers                 Voucher[]
+  manualJournalEntries     ManualJournalEntry[]
   accountingPeriods        AccountingPeriod[]
   reconciliationSnapshots  ReconciliationSnapshot[]
   salesTargets             BranchSalesTarget[]
@@ -525,6 +526,23 @@ enum AccountingPeriodReopenRequestStatus {
   EXECUTED
 }
 
+enum ManualJournalEntryType {
+  MANUAL
+  OPENING_BALANCE
+  ADJUSTMENT
+  RECLASS
+  ACCRUAL
+  AUDITOR_ADJUSTMENT
+}
+
+enum ManualJournalEntryStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  POSTED
+  CANCELLED
+}
+
 model GlAccount {
   id          String         @id @default(uuid())
   code        String         @unique
@@ -538,8 +556,9 @@ model GlAccount {
 
   parent            GlAccount?         @relation("GlAccountHierarchy", fields: [parentId], references: [id])
   children          GlAccount[]        @relation("GlAccountHierarchy")
-  voucherLines      VoucherLine[]
-  journalEntryLines JournalEntryLine[]
+  voucherLines              VoucherLine[]
+  journalEntryLines         JournalEntryLine[]
+  manualJournalEntryLines   ManualJournalEntryLine[]
 }
 
 model LegalEntity {
@@ -548,10 +567,11 @@ model LegalEntity {
   address String?
   taxId   String?
 
-  vouchers          Voucher[]
-  journalEntries    JournalEntry[]
-  accountingPeriods AccountingPeriod[]
-  stockDocuments    StockDocument[]
+  vouchers             Voucher[]
+  journalEntries       JournalEntry[]
+  manualJournalEntries ManualJournalEntry[]
+  accountingPeriods    AccountingPeriod[]
+  stockDocuments       StockDocument[]
 }
 
 model AccountingPeriod {
@@ -707,8 +727,9 @@ model Voucher {
   branch       Branch           @relation(fields: [branchId], references: [id])
   legalEntity  LegalEntity      @relation(fields: [legalEntityCode], references: [code])
   period       AccountingPeriod @relation(fields: [periodId], references: [id])
-  lines        VoucherLine[]
-  journalEntry JournalEntry?
+  lines                    VoucherLine[]
+  journalEntry             JournalEntry?
+  manualJournalEntryPosted ManualJournalEntry?
 
   @@unique([refType, refId])
   @@index([branchId, date])
@@ -748,9 +769,11 @@ model JournalEntry {
   voucher     Voucher          @relation(fields: [voucherId], references: [id])
   legalEntity LegalEntity      @relation(fields: [legalEntityCode], references: [code])
   period      AccountingPeriod @relation(fields: [periodId], references: [id])
-  lines       JournalEntryLine[]
-  reverses    JournalEntry?    @relation("JournalReversal", fields: [reversalOfJournalEntryId], references: [id])
-  reversedBy  JournalEntry?    @relation("JournalReversal")
+  lines                    JournalEntryLine[]
+  reverses                 JournalEntry?       @relation("JournalReversal", fields: [reversalOfJournalEntryId], references: [id])
+  reversedBy               JournalEntry?       @relation("JournalReversal")
+  manualJournalEntryPosted ManualJournalEntry? @relation("ManualJournalPosted")
+  manualJournalEntryReversal ManualJournalEntry? @relation("ManualJournalReversal")
 
   @@index([branchId, periodId, date])
   @@index([date])
@@ -772,6 +795,66 @@ model JournalEntryLine {
   glAccount    GlAccount    @relation(fields: [glAccountId], references: [id])
 
   @@index([journalEntryId])
+}
+
+/// Finance operational document — workflow layer before GL post (Phase 17A).
+/// Document numbers: see docs/99_ASA_HANDBOOK.md Finance Vocabulary.
+model ManualJournalEntry {
+  id               String                   @id @default(uuid())
+  entryNo          String                   @unique
+  entryType        ManualJournalEntryType
+  status           ManualJournalEntryStatus @default(DRAFT)
+  branchId         String
+  legalEntityCode  String
+  entryDate        DateTime
+  description      String?
+  refNo            String?
+  createdByStaffId String
+
+  submittedAt         DateTime?
+  submittedByStaffId  String?
+  confirmedAt         DateTime?
+  confirmedByStaffId  String?
+  postedAt            DateTime?
+  postedByStaffId     String?
+  cancelledAt         DateTime?
+  cancelledByStaffId  String?
+  cancelReason        String? @db.Text
+
+  postedVoucherId          String? @unique
+  postedJournalEntryId     String? @unique
+  reversalJournalEntryId   String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch               Branch       @relation(fields: [branchId], references: [id])
+  legalEntity          LegalEntity  @relation(fields: [legalEntityCode], references: [code])
+  postedVoucher        Voucher?     @relation(fields: [postedVoucherId], references: [id])
+  postedJournalEntry   JournalEntry? @relation("ManualJournalPosted", fields: [postedJournalEntryId], references: [id])
+  reversalJournalEntry JournalEntry? @relation("ManualJournalReversal", fields: [reversalJournalEntryId], references: [id])
+  lines                ManualJournalEntryLine[]
+
+  @@index([branchId, entryDate])
+  @@index([legalEntityCode, entryDate])
+  @@index([legalEntityCode, entryType, status])
+  @@index([status, entryDate])
+}
+
+model ManualJournalEntryLine {
+  id                   String  @id @default(uuid())
+  manualJournalEntryId String
+  lineNo               Int
+  glAccountId          String
+  debit                Decimal @default(0) @db.Decimal(18, 2)
+  credit               Decimal @default(0) @db.Decimal(18, 2)
+  memo                 String?
+
+  manualJournalEntry ManualJournalEntry @relation(fields: [manualJournalEntryId], references: [id], onDelete: Cascade)
+  glAccount          GlAccount          @relation(fields: [glAccountId], references: [id])
+
+  @@unique([manualJournalEntryId, lineNo])
+  @@index([manualJournalEntryId])
 }
 
 enum ReconciliationSnapshotKind {

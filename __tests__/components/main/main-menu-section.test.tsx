@@ -48,7 +48,7 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain('href="/finance/accounts/import"')
     expect(html).toContain('href="/finance/reconciliation"')
     expect(html).toContain('href="/finance/periods"')
-    expect(html).toContain("Manual Journal")
+    expect(html).toContain("Journal Entry Workflow")
     expect(html).toContain("Planned")
     expect(html).toContain("h-[108px]")
     expect(html).toContain("line-clamp-2")
