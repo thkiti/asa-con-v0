@@ -15,6 +15,7 @@ jest.mock("@/lib/shared/prisma", () => ({
 
 import { getSession } from "@/lib/auth/session"
 import { buildSalesDashboardView } from "@/lib/shop/sales-dashboard"
+import { SHOP_SALES_DASHBOARD_ASAS_ONLY_MESSAGE } from "@/lib/permissions/sales-dashboard"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
 const mockedBuild = buildSalesDashboardView as jest.MockedFunction<
@@ -30,6 +31,7 @@ const hoAdminSession = {
   branchId: "b1",
   branchCode: "HO999",
   branchName: "HO",
+  documentEntityCode: "AS" as const,
 }
 
 const sampleView = {
@@ -76,5 +78,38 @@ describe("GET /api/shop/sales-dashboard", () => {
     )
     const res = await GET(req)
     expect(res.status).toBe(403)
+    expect(mockedBuild).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 for ASAD without querying sales", async () => {
+    mockedGetSession.mockResolvedValue({
+      ...hoAdminSession,
+      documentEntityCode: "AD",
+    })
+
+    const req = new NextRequest(
+      "http://localhost/api/shop/sales-dashboard?year=2026&month=6"
+    )
+    const res = await GET(req)
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toBe(SHOP_SALES_DASHBOARD_ASAS_ONLY_MESSAGE)
+    expect(body.code).toBe("SHOP_SALES_ENTITY_FORBIDDEN")
+    expect(mockedBuild).not.toHaveBeenCalled()
+  })
+
+  it("passes yearToDate to buildSalesDashboardView when requested", async () => {
+    mockedGetSession.mockResolvedValue(hoAdminSession)
+    mockedBuild.mockResolvedValue({ ...sampleView, yearToDate: true })
+
+    const req = new NextRequest(
+      "http://localhost/api/shop/sales-dashboard?year=2026&month=6&yearToDate=true"
+    )
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    expect(mockedBuild).toHaveBeenCalledWith(
+      {},
+      { year: 2026, month: 6, yearToDate: true }
+    )
   })
 })

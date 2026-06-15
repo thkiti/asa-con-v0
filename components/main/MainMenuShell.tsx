@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
-import { mainMenuPageClass } from "@/lib/main-ui/main-menu-layout"
+import { mainMenuPageClass, mainMenuShellBodyClass, mainMenuShellContentClass } from "@/lib/main-ui/main-menu-layout"
 import { MainMenuHeader } from "./MainMenuHeader"
 
 type MainMenuShellProps = {
@@ -25,14 +25,17 @@ export function MainMenuShell({
 }: MainMenuShellProps) {
   return (
     <main className={mainMenuPageClass}>
-      <MainMenuHeader
-        user={user}
-        title={title}
-        titleClassName={titleClassName}
-        backHref={backHref}
-        backLabel={backLabel}
-      />
-      {children}
+      <div className={mainMenuShellContentClass} data-testid="main-menu-shell-content">
+        <MainMenuHeader
+          user={user}
+          title={title}
+          titleClassName={titleClassName}
+          backHref={backHref}
+          backLabel={backLabel}
+          layout="shell"
+        />
+        <div className={mainMenuShellBodyClass}>{children}</div>
+      </div>
     </main>
   )
 }

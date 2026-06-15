@@ -19,6 +19,14 @@ import { compactHeaderFieldClass } from "@/lib/shop-ui/compact-form-helpers"
 import { mainMenuLargePageTitleClass } from "@/lib/main-ui/main-menu-layout"
 import { themeMuted } from "@/lib/theme/theme-classes"
 
+const EMPTY_MONTH_SUMMARY = {
+  lastMonthSales: "0.00",
+  grossSales: "0.00",
+  refunds: "0.00",
+  netSales: "0.00",
+  billCount: 0,
+} as const
+
 type TargetSalesDashboardPageProps = {
   user: SessionUserApi
 }
@@ -28,6 +36,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
   const [scopeBranchId, setScopeBranchId] = useState(ALL_COMPANY_SCOPE_VALUE)
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
+  const [yearToDate, setYearToDate] = useState(false)
   const [view, setView] = useState<SalesDashboardView | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,6 +50,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
       year,
       month,
       branchId: scopeBranchId || undefined,
+      yearToDate,
     })
     if (!result.ok) {
       setError(result.error)
@@ -50,7 +60,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
     }
     setView(result.view)
     setLoading(false)
-  }, [year, month, scopeBranchId])
+  }, [year, month, scopeBranchId, yearToDate])
 
   useEffect(() => {
     void loadDashboard()
@@ -80,7 +90,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
       backHref="/main/shop"
       backLabel="← Back to Shop"
     >
-      <div className="space-y-4" data-testid="target-sales-dashboard">
+      <div data-testid="target-sales-dashboard">
         <CompactControlRow gridClassName={TARGET_ACTUAL_DASHBOARD_HEADER_GRID}>
           <select
             className={compactHeaderFieldClass}
@@ -121,7 +131,11 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
           </p>
         ) : null}
 
-        {view ? <TargetSalesMonthSummary summary={view.monthSummary} /> : null}
+        <TargetSalesMonthSummary
+          summary={view?.monthSummary ?? EMPTY_MONTH_SUMMARY}
+          yearToDate={yearToDate}
+          onYearToDateChange={setYearToDate}
+        />
 
         {loading ? (
           <p className={`text-sm ${themeMuted}`} data-testid="dashboard-loading">

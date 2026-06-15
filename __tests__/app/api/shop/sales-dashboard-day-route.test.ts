@@ -15,6 +15,7 @@ jest.mock("@/lib/shared/prisma", () => ({
 
 import { getSession } from "@/lib/auth/session"
 import { getSalesDashboardDayDetail } from "@/lib/shop/sales-dashboard"
+import { SHOP_SALES_DASHBOARD_ASAS_ONLY_MESSAGE } from "@/lib/permissions/sales-dashboard"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
 const mockedDetail = getSalesDashboardDayDetail as jest.MockedFunction<
@@ -30,6 +31,7 @@ const hoFinanceSession = {
   branchId: "b1",
   branchCode: "HO999",
   branchName: "HO",
+  documentEntityCode: "AS" as const,
 }
 
 describe("GET /api/shop/sales-dashboard/day", () => {
@@ -62,5 +64,22 @@ describe("GET /api/shop/sales-dashboard/day", () => {
     )
     const res = await GET(req)
     expect(res.status).toBe(403)
+    expect(mockedDetail).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 for ASAD without querying day detail", async () => {
+    mockedGetSession.mockResolvedValue({
+      ...hoFinanceSession,
+      documentEntityCode: "AD",
+    })
+
+    const req = new NextRequest(
+      "http://localhost/api/shop/sales-dashboard/day?dateKey=2026-06-05"
+    )
+    const res = await GET(req)
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toBe(SHOP_SALES_DASHBOARD_ASAS_ONLY_MESSAGE)
+    expect(mockedDetail).not.toHaveBeenCalled()
   })
 })

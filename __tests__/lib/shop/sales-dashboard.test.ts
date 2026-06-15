@@ -1,5 +1,7 @@
 jest.mock("@/lib/pos/sales-dashboard-metrics", () => ({
   getSalesDashboardMetrics: jest.fn(),
+  getSalesDashboardGrossByDayInRange: jest.fn(),
+  getSalesDashboardRefundsTotalInRange: jest.fn(),
 }))
 
 jest.mock("@/lib/shop/sales-targets", () => ({
@@ -9,7 +11,10 @@ jest.mock("@/lib/shop/sales-targets", () => ({
     .splitMonthlyTargetToDaily,
 }))
 
+import { Prisma } from "@/generated/prisma/client"
 import { getSalesDashboardMetrics } from "@/lib/pos/sales-dashboard-metrics"
+import { getSalesDashboardGrossByDayInRange } from "@/lib/pos/sales-dashboard-metrics"
+import { getSalesDashboardRefundsTotalInRange } from "@/lib/pos/sales-dashboard-metrics"
 import {
   getBranchSalesTarget,
   listActiveShopBranches,
@@ -19,6 +24,13 @@ import { buildSalesDashboardView } from "@/lib/shop/sales-dashboard"
 const mockedMetrics = getSalesDashboardMetrics as jest.MockedFunction<
   typeof getSalesDashboardMetrics
 >
+const mockedGrossByDay = getSalesDashboardGrossByDayInRange as jest.MockedFunction<
+  typeof getSalesDashboardGrossByDayInRange
+>
+const mockedRefundsInRange =
+  getSalesDashboardRefundsTotalInRange as jest.MockedFunction<
+    typeof getSalesDashboardRefundsTotalInRange
+  >
 const mockedBranches = listActiveShopBranches as jest.MockedFunction<
   typeof listActiveShopBranches
 >
@@ -244,5 +256,116 @@ describe("buildSalesDashboardView", () => {
     expect(view.scope).toBe("branch")
     expect(view.hasAnyTarget).toBe(true)
     expect(view.days.some((d) => d.target != null && d.target !== "0.00")).toBe(true)
+  })
+
+  it("keeps default month view when yearToDate is false", async () => {
+    mockedTarget.mockResolvedValue({
+      branchId: "b1",
+      year: 2026,
+      month: 6,
+      monthlyTotal: "0",
+      weekPattern: [1, 1, 1, 1, 1, 1, 1],
+      exists: false,
+    })
+    mockedMetrics
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 6,
+        monthSummary: {
+          grossSales: "10.00",
+          refunds: "0.00",
+          netSales: "10.00",
+          billCount: 1,
+        },
+        days: [{ dateKey: "2026-06-05", grossSales: "10.00" }],
+      })
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 5,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [{ dateKey: "2026-05-01", grossSales: "4.00" }],
+      })
+
+    const view = await buildSalesDashboardView({} as never, {
+      year: 2026,
+      month: 6,
+      branchId: "b1",
+      yearToDate: false,
+    })
+
+    expect(view.yearToDate).toBeFalsy()
+    expect(mockedGrossByDay).not.toHaveBeenCalled()
+    const day5 = view.days.find((d) => d.dateKey === "2026-06-05")
+    expect(day5?.actualGross).toBe("10.00")
+  })
+
+  it("puts YTD totals on summary only and keeps calendar on daily month values", async () => {
+    mockedTarget.mockResolvedValue({
+      branchId: "b1",
+      year: 2026,
+      month: 6,
+      monthlyTotal: "0",
+      weekPattern: [1, 1, 1, 1, 1, 1, 1],
+      exists: false,
+    })
+    mockedMetrics
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 6,
+        monthSummary: {
+          grossSales: "30.00",
+          refunds: "0.00",
+          netSales: "30.00",
+          billCount: 2,
+        },
+        days: [{ dateKey: "2026-06-05", grossSales: "30.00" }],
+      })
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 5,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [{ dateKey: "2026-05-01", grossSales: "12.00" }],
+      })
+
+    const makeMap = (entries: [string, string][]) =>
+      new Map(entries.map(([key, value]) => [key, new Prisma.Decimal(value)]))
+
+    mockedGrossByDay
+      .mockResolvedValueOnce(
+        makeMap([
+          ["2026-01-15", "100.00"],
+          ["2026-06-05", "30.00"],
+        ])
+      )
+      .mockResolvedValueOnce(new Map())
+    mockedRefundsInRange.mockResolvedValue(new Prisma.Decimal(0))
+
+    const view = await buildSalesDashboardView({} as never, {
+      year: 2026,
+      month: 6,
+      branchId: "b1",
+      yearToDate: true,
+    })
+
+    expect(view.yearToDate).toBe(true)
+    const day5 = view.days.find((d) => d.dateKey === "2026-06-05")
+    expect(day5?.actualGross).toBe("30.00")
+    expect(day5?.lastMonthGross).toBe("12.00")
+    expect(view.monthSummary.grossSales).toBe("130.00")
+    expect(view.monthSummary.lastMonthSales).toBe("0.00")
+    expect(view.monthSummary.billCount).toBe(2)
+    expect(view.days).toHaveLength(30)
+    expect(view.days[0]?.dateKey).toBe("2026-06-01")
+    expect(view.days[view.days.length - 1]?.dateKey).toBe("2026-06-30")
   })
 })

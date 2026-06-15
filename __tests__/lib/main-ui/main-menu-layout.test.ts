@@ -7,6 +7,8 @@ import {
   mainMenuLargePageTitleClass,
   mainMenuPageClass,
   mainMenuProfileClass,
+  mainMenuShellContentClass,
+  mainMenuShellHeaderClass,
   mainMenuTitleClass,
 } from "@/lib/main-ui/main-menu-layout"
 
@@ -26,5 +28,7 @@ describe("main-menu-layout", () => {
     )
     expect(mainMenuCardClass).toContain(mainMenuCardHeightClass)
     expect(mainMenuCardHeightClass).toContain("max-h-[108px]")
+    expect(mainMenuShellContentClass).toBe("w-full max-w-none")
+    expect(mainMenuShellHeaderClass).toContain("w-full")
   })
 })

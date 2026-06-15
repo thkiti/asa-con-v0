@@ -101,7 +101,7 @@ export function TargetActualCalendarGrid({
 }: TargetActualCalendarGridProps) {
   return (
     <div
-      className="grid w-full min-w-[320px] grid-cols-7 gap-px rounded-md border border-zinc-600/45 bg-zinc-600/30"
+      className="grid w-full grid-cols-7 gap-px rounded-md border border-zinc-600/45 bg-zinc-600/30"
       role="grid"
       aria-label={ariaLabel}
       data-testid="target-actual-calendar-grid"

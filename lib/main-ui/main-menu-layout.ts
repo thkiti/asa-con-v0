@@ -32,6 +32,15 @@ export const mainMenuPageClass = `mx-auto max-w-5xl p-6 ${themePage}`
 export const mainMenuHeaderClass =
   "flex flex-nowrap items-start justify-between gap-4 border-b border-border pb-4"
 
+/** Shell feature pages — full-width header stack (logout does not narrow content). */
+export const mainMenuShellHeaderClass =
+  "w-full border-b border-border pb-4"
+
+/** Single column shared by header profile, filters, dashboard, and calendar on shell pages. */
+export const mainMenuShellContentClass = "w-full max-w-none"
+
+export const mainMenuShellBodyClass = "mt-4 w-full space-y-4"
+
 export const mainMenuHeaderMainClass = "min-w-0 w-full flex-1"
 
 export const mainMenuBackLinkClass = `text-sm ${themeLinkMuted}`

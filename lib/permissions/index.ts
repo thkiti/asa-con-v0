@@ -30,7 +30,9 @@ export {
   requireSalesTargetViewSession,
 } from "./sales-targets"
 export {
+  canAccessShopSalesDashboard,
   canViewSalesDashboard,
+  SHOP_SALES_DASHBOARD_ASAS_ONLY_MESSAGE,
   SalesDashboardAuthError,
   requireSalesDashboardSession,
 } from "./sales-dashboard"

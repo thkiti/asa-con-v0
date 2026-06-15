@@ -42,6 +42,121 @@ export type SalesDashboardMetricsResult = {
 
 export type SalesDashboardMetricsDb = Pick<PrismaClient, "sale" | "refund">
 
+function initGrossByDayMap(
+  year: number,
+  fromMonth: number,
+  throughMonth: number
+): Map<string, Prisma.Decimal> {
+  const grossByDay = new Map<string, Prisma.Decimal>()
+  for (let month = fromMonth; month <= throughMonth; month++) {
+    for (const key of monthDayKeys(year, month)) {
+      grossByDay.set(key, ZERO)
+    }
+  }
+  return grossByDay
+}
+
+function accumulateSalesIntoGrossByDay(
+  grossByDay: Map<string, Prisma.Decimal>,
+  sales: ReadonlyArray<{ total: Prisma.Decimal | null; createdAt: Date }>
+): void {
+  for (const sale of sales) {
+    const key = bangkokDateKey(sale.createdAt)
+    if (!grossByDay.has(key)) continue
+    grossByDay.set(key, (grossByDay.get(key) ?? ZERO).plus(toDec(sale.total)))
+  }
+}
+
+/**
+ * Daily gross sales (not cumulative) from fromMonth through throughMonth inclusive.
+ * Used for year-to-date dashboard aggregation.
+ */
+export async function getSalesDashboardGrossByDayInRange(
+  db: SalesDashboardMetricsDb,
+  input: {
+    branchId: string
+    year: number
+    fromMonth: number
+    throughMonth: number
+  }
+): Promise<Map<string, Prisma.Decimal>> {
+  const branchId = String(input.branchId ?? "").trim()
+  if (!branchId) {
+    throw new Error("branchId is required")
+  }
+
+  const year = input.year
+  const fromMonth = input.fromMonth
+  const throughMonth = input.throughMonth
+  assertYear(year)
+  if (!Number.isFinite(fromMonth) || fromMonth < 1 || fromMonth > 12) {
+    throw new Error("Invalid fromMonth")
+  }
+  assertMonth(throughMonth)
+  if (fromMonth > throughMonth) {
+    throw new Error("fromMonth must be <= throughMonth")
+  }
+
+  const { start } = bangkokMonthRange(year, fromMonth)
+  const { end } = bangkokMonthRange(year, throughMonth)
+
+  const sales = await db.sale.findMany({
+    where: {
+      branchId,
+      status: SaleStatus.COMPLETED,
+      createdAt: { gte: start, lte: end },
+    },
+    select: { total: true, createdAt: true },
+  })
+
+  const grossByDay = initGrossByDayMap(year, fromMonth, throughMonth)
+  accumulateSalesIntoGrossByDay(grossByDay, sales)
+  return grossByDay
+}
+
+/**
+ * Refund total from fromMonth through throughMonth inclusive (Bangkok calendar).
+ */
+export async function getSalesDashboardRefundsTotalInRange(
+  db: SalesDashboardMetricsDb,
+  input: {
+    branchId: string
+    year: number
+    fromMonth: number
+    throughMonth: number
+  }
+): Promise<Prisma.Decimal> {
+  const branchId = String(input.branchId ?? "").trim()
+  if (!branchId) {
+    throw new Error("branchId is required")
+  }
+
+  const year = input.year
+  const fromMonth = input.fromMonth
+  const throughMonth = input.throughMonth
+  assertYear(year)
+  if (!Number.isFinite(fromMonth) || fromMonth < 1 || fromMonth > 12) {
+    throw new Error("Invalid fromMonth")
+  }
+  assertMonth(throughMonth)
+  if (fromMonth > throughMonth) {
+    throw new Error("fromMonth must be <= throughMonth")
+  }
+
+  const { start } = bangkokMonthRange(year, fromMonth)
+  const { end } = bangkokMonthRange(year, throughMonth)
+
+  const refunds = await db.refund.findMany({
+    where: {
+      branchId,
+      createdAt: { gte: start, lte: end },
+    },
+    select: { amount: true },
+  })
+
+  return refunds.reduce((total, refund) => total.plus(toDec(refund.amount)), ZERO)
+}
+
 function assertMonth(month: number): void {
   if (!Number.isFinite(month) || month < 1 || month > 12) {
     throw new Error("Invalid month")

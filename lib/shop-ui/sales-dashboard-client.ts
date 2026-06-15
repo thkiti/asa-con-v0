@@ -16,6 +16,7 @@ function buildDashboardQuery(input: {
   year: number
   month: number
   branchId?: string
+  yearToDate?: boolean
 }): string {
   const params = new URLSearchParams({
     year: String(input.year),
@@ -24,6 +25,9 @@ function buildDashboardQuery(input: {
   if (input.branchId) {
     params.set("branchId", input.branchId)
   }
+  if (input.yearToDate) {
+    params.set("yearToDate", "true")
+  }
   return params.toString()
 }
 
@@ -31,6 +35,7 @@ export async function fetchSalesDashboard(input: {
   year: number
   month: number
   branchId?: string
+  yearToDate?: boolean
 }): Promise<SalesDashboardLoadResult> {
   const res = await fetch(
     `/api/shop/sales-dashboard?${buildDashboardQuery(input)}`

@@ -53,6 +53,6 @@ export function buildTargetActualCalendarGrid(input: {
 }
 
 export const TARGET_ACTUAL_DASHBOARD_HEADER_GRID =
-  "grid grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_4.25rem_3rem] sm:items-center"
+  "grid w-full grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,1fr)_4.25rem_3rem] sm:items-center"
 
 export const ALL_COMPANY_SCOPE_VALUE = ""

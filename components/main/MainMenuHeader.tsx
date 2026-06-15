@@ -11,6 +11,7 @@ import {
   mainMenuHeaderClass,
   mainMenuHeaderMainClass,
   mainMenuLogoutButtonClass,
+  mainMenuShellHeaderClass,
   mainMenuTitleClass,
 } from "@/lib/main-ui/main-menu-layout"
 import { MainMenuUserCard } from "./MainMenuUserCard"
@@ -21,6 +22,8 @@ type MainMenuHeaderProps = {
   titleClassName?: string
   backHref?: string
   backLabel?: string
+  /** hub: logout beside title block; shell: logout above full-width content column */
+  layout?: "hub" | "shell"
 }
 
 export function MainMenuHeader({
@@ -29,6 +32,7 @@ export function MainMenuHeader({
   titleClassName,
   backHref,
   backLabel = "← Back to Main Menu",
+  layout = "hub",
 }: MainMenuHeaderProps) {
   const router = useRouter()
   const [logoutPending, setLogoutPending] = useState(false)
@@ -48,23 +52,51 @@ export function MainMenuHeader({
     }
   }, [router])
 
+  const logoutButton = (
+    <button
+      type="button"
+      onClick={() => void onLogout()}
+      disabled={logoutPending}
+      className={mainMenuLogoutButtonClass}
+      data-testid="main-menu-logout"
+    >
+      {logoutPending ? "กำลัง Logout…" : "Logout"}
+    </button>
+  )
+
+  const backLink = backHref ? (
+    <Link href={backHref} className={mainMenuBackLinkClass}>
+      {backLabel}
+    </Link>
+  ) : (
+    <span
+      className={`${mainMenuBackLinkClass} invisible select-none`}
+      aria-hidden
+    >
+      {backLabel}
+    </span>
+  )
+
+  if (layout === "shell") {
+    return (
+      <header className={mainMenuShellHeaderClass} data-testid="main-menu-header">
+        <div className="mb-3 flex justify-end">{logoutButton}</div>
+        <div className={mainMenuBackLinkSlotClass}>{backLink}</div>
+        <h1
+          className={titleClassName ?? mainMenuTitleClass}
+          data-testid="main-menu-title"
+        >
+          {formatEntityContextTitle(user.documentEntityCode, title)}
+        </h1>
+        <MainMenuUserCard user={user} />
+      </header>
+    )
+  }
+
   return (
     <header className={mainMenuHeaderClass} data-testid="main-menu-header">
       <div className={mainMenuHeaderMainClass}>
-        <div className={mainMenuBackLinkSlotClass}>
-          {backHref ? (
-            <Link href={backHref} className={mainMenuBackLinkClass}>
-              {backLabel}
-            </Link>
-          ) : (
-            <span
-              className={`${mainMenuBackLinkClass} invisible select-none`}
-              aria-hidden
-            >
-              {backLabel}
-            </span>
-          )}
-        </div>
+        <div className={mainMenuBackLinkSlotClass}>{backLink}</div>
         <h1
           className={titleClassName ?? mainMenuTitleClass}
           data-testid="main-menu-title"
@@ -73,15 +105,7 @@ export function MainMenuHeader({
         </h1>
         <MainMenuUserCard user={user} />
       </div>
-      <button
-        type="button"
-        onClick={() => void onLogout()}
-        disabled={logoutPending}
-        className={mainMenuLogoutButtonClass}
-        data-testid="main-menu-logout"
-      >
-        {logoutPending ? "กำลัง Logout…" : "Logout"}
-      </button>
+      {logoutButton}
     </header>
   )
 }

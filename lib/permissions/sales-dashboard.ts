@@ -1,4 +1,6 @@
 import type { SessionUser } from "@/lib/auth/types"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import type { Role } from "@/lib/shared"
 
 const VIEW_ROLES: ReadonlySet<Role> = new Set([
@@ -6,6 +8,16 @@ const VIEW_ROLES: ReadonlySet<Role> = new Set([
   "HO_FINANCE",
   "HO_OPERATIONS",
 ])
+
+export const SHOP_SALES_DASHBOARD_ASAS_ONLY_MESSAGE =
+  "This report is available for ASAS shop sales only."
+
+/** Shop POS sales dashboard is ASAS-only; ASAD has no shop/POS sales. */
+export function canAccessShopSalesDashboard(
+  documentEntityCode: DocumentEntityCode | null | undefined
+): boolean {
+  return (documentEntityCode ?? DEFAULT_DOCUMENT_ENTITY_CODE) === "AS"
+}
 
 export function canViewSalesDashboard(role: Role | null | undefined): boolean {
   if (!role) return false
@@ -38,6 +50,13 @@ export function requireSalesDashboardSession(
     throw new SalesDashboardAuthError(
       "Sales dashboard requires HO role",
       "FORBIDDEN",
+      403
+    )
+  }
+  if (!canAccessShopSalesDashboard(session.documentEntityCode)) {
+    throw new SalesDashboardAuthError(
+      SHOP_SALES_DASHBOARD_ASAS_ONLY_MESSAGE,
+      "SHOP_SALES_ENTITY_FORBIDDEN",
       403
     )
   }

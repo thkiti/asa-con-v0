@@ -1,6 +1,9 @@
 import { canAccessMenu } from "@/lib/permissions/menu"
 import { canAccessMasterDatabase } from "@/lib/permissions/master"
+import { canAccessShopSalesDashboard } from "@/lib/permissions/sales-dashboard"
 import { getAllFinanceMenuItems } from "@/lib/main-ui/finance-menu"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import type { Role } from "@/lib/shared"
 
 export type MainMenuItemStatus = "available" | "planned"
@@ -137,7 +140,11 @@ export function canAccessMainMenuSection(
   }
 }
 
-function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] {
+function buildSectionItems(
+  role: Role,
+  key: MainMenuSectionKey,
+  documentEntityCode: DocumentEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE
+): MainMenuItem[] {
   switch (key) {
     case "administration":
       if (!canAccessMasterDatabase(role)) return []
@@ -212,12 +219,16 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
           "/shop/sales-targets",
           "Set monthly sales targets per branch (Mon–Sun pattern)"
         ),
-        available(
-          "target-sales",
-          "Last Month / Actual Sales",
-          "/shop/target-sales",
-          "Compare last month and actual gross sales by day (All Company or branch)"
-        ),
+        ...(canAccessShopSalesDashboard(documentEntityCode)
+          ? [
+              available(
+                "target-sales",
+                "Last Month / Actual Sales",
+                "/shop/target-sales",
+                "Compare last month and actual gross sales by day (All Company or branch)"
+              ),
+            ]
+          : []),
         planned("shop-stock", "Shop stock"),
         planned("daily-closing", "Daily closing"),
         planned("monthly-closing", "Monthly closing"),
@@ -269,7 +280,8 @@ export function getMainMenuSections(role: Role): MainMenuSection[] {
 /** Detail menu for `/main/{section}` — null when role may not open the section. */
 export function getMainMenuSectionDetail(
   role: Role,
-  key: MainMenuSectionKey
+  key: MainMenuSectionKey,
+  documentEntityCode: DocumentEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE
 ): MainMenuSectionDetail | null {
   if (!canAccessMainMenuSection(role, key)) {
     return null
@@ -277,7 +289,7 @@ export function getMainMenuSectionDetail(
 
   return {
     ...toSection(key),
-    items: buildSectionItems(role, key),
+    items: buildSectionItems(role, key, documentEntityCode),
   }
 }
 
@@ -286,17 +298,23 @@ export function isMainMenuSectionKey(value: string): value is MainMenuSectionKey
 }
 
 /** @deprecated Use getMainMenuSectionDetail — kept for transitional tests/diagnostics. */
-export function getMainMenuGroups(role: Role): MainMenuGroup[] {
+export function getMainMenuGroups(
+  role: Role,
+  documentEntityCode: DocumentEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE
+): MainMenuGroup[] {
   return getMainMenuSections(role).map((section) => ({
     key: section.key,
     label: section.label,
-    items: buildSectionItems(role, section.key),
+    items: buildSectionItems(role, section.key, documentEntityCode),
   }))
 }
 
 /** Flat list of all menu entries (available + planned) for tests and diagnostics. */
-export function getMainMenuItems(role: Role): MainMenuItem[] {
+export function getMainMenuItems(
+  role: Role,
+  documentEntityCode: DocumentEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE
+): MainMenuItem[] {
   return getMainMenuSections(role).flatMap((section) =>
-    buildSectionItems(role, section.key)
+    buildSectionItems(role, section.key, documentEntityCode)
   )
 }

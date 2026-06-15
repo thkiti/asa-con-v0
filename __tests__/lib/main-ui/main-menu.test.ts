@@ -171,6 +171,21 @@ describe("getMainMenuSectionDetail", () => {
     )
     expect(findItem("SH_STAFF", "target-sales")).toBeUndefined()
   })
+
+  it("hides Last Month / Actual Sales for ASAD document entity", () => {
+    expect(
+      getMainMenuItems("HO_ADMIN", "AD").find((item) => item.key === "target-sales")
+    ).toBeUndefined()
+    expect(
+      getMainMenuSectionDetail("HO_ADMIN", "shop", "AD")?.items.some(
+        (item) => item.key === "target-sales"
+      )
+    ).toBe(false)
+    expect(
+      getMainMenuItems("HO_ADMIN", "AS").find((item) => item.key === "target-sales")
+        ?.href
+    ).toBe("/shop/target-sales")
+  })
 })
 
 describe("canAccessMainMenuSection", () => {

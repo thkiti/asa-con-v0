@@ -2,7 +2,11 @@ import { SaleStatus, type Prisma } from "@/generated/prisma/client"
 import { getRefundPreview } from "@/lib/pos/refund"
 import { RefundError } from "@/lib/pos/refund-errors"
 import { resolveReceiptEvidenceStatus } from "@/lib/pos/payment-evidence"
-import { getSalesDashboardMetrics } from "@/lib/pos/sales-dashboard-metrics"
+import {
+  getSalesDashboardGrossByDayInRange,
+  getSalesDashboardMetrics,
+  getSalesDashboardRefundsTotalInRange,
+} from "@/lib/pos/sales-dashboard-metrics"
 import {
   bangkokDayRange,
   bangkokTimeLabel,
@@ -11,6 +15,12 @@ import {
 } from "@/lib/reporting/bangkok-calendar"
 import { getComparableLastMonthDateFromDateKey } from "@/lib/shop-ui/comparable-last-month-date"
 import { computePreviousMonthWeekdayPatterns } from "@/lib/shop/sales-dashboard-weekday-pattern"
+import {
+  buildYtdCumulativeGrossMap,
+  mergeGrossByDateKey,
+  toComparablePreviousYearDateKey,
+  ytdGrossThroughMonth,
+} from "@/lib/shop/sales-dashboard-ytd"
 import { SalesDashboardError } from "@/lib/shop/sales-dashboard-errors"
 import type {
   SalesDashboardDayDetail,
@@ -63,11 +73,57 @@ async function assertActiveShopBranch(
   }
 }
 
+async function loadRefundsTotalForBranches(
+  db: SalesDashboardDb,
+  branchIds: string[],
+  year: number,
+  fromMonth: number,
+  throughMonth: number
+): Promise<Prisma.Decimal> {
+  let total = ZERO
+  for (const branchId of branchIds) {
+    const branchTotal = await getSalesDashboardRefundsTotalInRange(db, {
+      branchId,
+      year,
+      fromMonth,
+      throughMonth,
+    })
+    total = total.plus(branchTotal)
+  }
+  return total
+}
+
+async function loadGrossByDayForBranches(
+  db: SalesDashboardDb,
+  branchIds: string[],
+  year: number,
+  fromMonth: number,
+  throughMonth: number
+): Promise<Map<string, Prisma.Decimal>> {
+  const merged = new Map<string, Prisma.Decimal>()
+  for (const branchId of branchIds) {
+    const byDay = await getSalesDashboardGrossByDayInRange(db, {
+      branchId,
+      year,
+      fromMonth,
+      throughMonth,
+    })
+    mergeGrossByDateKey(merged, byDay)
+  }
+  return merged
+}
+
 export async function buildSalesDashboardView(
   db: SalesDashboardDb,
-  input: { year: number; month: number; branchId?: string | null }
+  input: {
+    year: number
+    month: number
+    branchId?: string | null
+    yearToDate?: boolean
+  }
 ): Promise<SalesDashboardView> {
   const { year, month } = input
+  const yearToDate = input.yearToDate === true
   const branches = await listActiveShopBranches(db)
   const branchId = String(input.branchId ?? "").trim()
 
@@ -151,18 +207,37 @@ export async function buildSalesDashboardView(
   })
 
   let lastMonthSalesTotal = ZERO
+
+  let currentYtdByDay: Map<string, Prisma.Decimal> | null = null
+  let previousYtdByDay: Map<string, Prisma.Decimal> | null = null
+  let ytdRefunds = ZERO
+  if (yearToDate) {
+    const [currentGrossByDay, previousGrossByDay, refundsTotal] = await Promise.all([
+      loadGrossByDayForBranches(db, branchIds, year, 1, month),
+      loadGrossByDayForBranches(db, branchIds, year - 1, 1, month),
+      loadRefundsTotalForBranches(db, branchIds, year, 1, month),
+    ])
+    currentYtdByDay = buildYtdCumulativeGrossMap(year, month, currentGrossByDay)
+    previousYtdByDay = buildYtdCumulativeGrossMap(
+      year - 1,
+      month,
+      previousGrossByDay
+    )
+    ytdRefunds = refundsTotal
+  }
+
   const days = dayKeys.map((dateKey) => {
     const comparableDateKey = getComparableLastMonthDateFromDateKey(dateKey)
-    const lastMonthGross =
-      comparableDateKey == null
-        ? null
-        : (lastMonthByDay.get(comparableDateKey) ?? ZERO).toFixed(2)
-
     if (comparableDateKey != null) {
       lastMonthSalesTotal = lastMonthSalesTotal.plus(
         lastMonthByDay.get(comparableDateKey) ?? ZERO
       )
     }
+
+    const lastMonthGross =
+      comparableDateKey == null
+        ? null
+        : (lastMonthByDay.get(comparableDateKey) ?? ZERO).toFixed(2)
 
     return {
       dateKey,
@@ -174,16 +249,30 @@ export async function buildSalesDashboardView(
     }
   })
 
+  let summaryLastMonth = lastMonthSalesTotal
+  let summaryGross = monthGross
+  let summaryRefunds = monthRefunds
+  if (yearToDate && currentYtdByDay && previousYtdByDay) {
+    const lastDayKey = dayKeys[dayKeys.length - 1]
+    if (lastDayKey) {
+      const prevLastDayKey = toComparablePreviousYearDateKey(lastDayKey)
+      summaryLastMonth = previousYtdByDay.get(prevLastDayKey) ?? ZERO
+      summaryGross = ytdGrossThroughMonth(year, month, currentYtdByDay)
+    }
+    summaryRefunds = ytdRefunds
+  }
+
   return {
     scope: branchId ? "branch" : "company",
     year,
     month,
+    yearToDate,
     branches,
     monthSummary: {
-      lastMonthSales: lastMonthSalesTotal.toFixed(2),
-      grossSales: monthGross.toFixed(2),
-      refunds: monthRefunds.toFixed(2),
-      netSales: monthGross.minus(monthRefunds).toFixed(2),
+      lastMonthSales: summaryLastMonth.toFixed(2),
+      grossSales: summaryGross.toFixed(2),
+      refunds: summaryRefunds.toFixed(2),
+      netSales: summaryGross.minus(summaryRefunds).toFixed(2),
       billCount: monthBillCount,
     },
     previousMonthWeekdayPatterns,

@@ -23,6 +23,8 @@ export type SalesDashboardView = {
   scope: SalesDashboardScope
   year: number
   month: number
+  /** When true, summary row shows year-to-date totals; calendar stays on selected month. */
+  yearToDate?: boolean
   branches: SalesTargetBranchOption[]
   monthSummary: SalesDashboardMonthSummary
   /** Previous-month weekday multipliers (Sun=0 … Sat=6), null renders "-". */

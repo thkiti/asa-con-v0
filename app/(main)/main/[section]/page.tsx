@@ -38,7 +38,11 @@ export default async function MainMenuSectionPage({
     redirect("/finance")
   }
 
-  const section = getMainMenuSectionDetail(session.role, sectionParam)
+  const section = getMainMenuSectionDetail(
+    session.role,
+    sectionParam,
+    session.documentEntityCode
+  )
   if (!section) {
     redirect("/unauthorized")
   }

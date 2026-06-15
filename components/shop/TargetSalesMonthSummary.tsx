@@ -16,12 +16,18 @@ const SUMMARY_BOXES = [
 
 type TargetSalesMonthSummaryProps = {
   summary: SalesDashboardMonthSummary
+  yearToDate?: boolean
+  onYearToDateChange?: (active: boolean) => void
 }
 
-export function TargetSalesMonthSummary({ summary }: TargetSalesMonthSummaryProps) {
+export function TargetSalesMonthSummary({
+  summary,
+  yearToDate = false,
+  onYearToDateChange,
+}: TargetSalesMonthSummaryProps) {
   return (
     <section
-      className={`grid grid-cols-2 gap-2 rounded border border-border px-3 py-3 sm:grid-cols-3 xl:grid-cols-6 ${themeCard}`}
+      className={`grid w-full grid-cols-2 gap-2 rounded border border-border px-3 py-3 sm:grid-cols-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto] ${themeCard}`}
       data-testid="dashboard-month-summary"
     >
       {SUMMARY_BOXES.map((box) => (
@@ -39,6 +45,31 @@ export function TargetSalesMonthSummary({ summary }: TargetSalesMonthSummaryProp
           </p>
         </div>
       ))}
+
+      {onYearToDateChange ? (
+        <button
+          type="button"
+          onClick={() => onYearToDateChange(!yearToDate)}
+          data-testid="dashboard-ytd-toggle"
+          aria-pressed={yearToDate}
+          aria-label="Year to date"
+          className={`flex min-h-[3.25rem] min-w-[4.5rem] flex-col items-center justify-center rounded border px-2 py-1 text-center transition-colors ${
+            yearToDate
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border bg-background text-muted-foreground hover:bg-muted/40"
+          }`}
+        >
+          <span className="text-[10px] font-semibold uppercase leading-tight tracking-wide">
+            Year
+          </span>
+          <span className="text-[10px] font-semibold uppercase leading-tight tracking-wide">
+            To
+          </span>
+          <span className="text-[10px] font-semibold uppercase leading-tight tracking-wide">
+            Date
+          </span>
+        </button>
+      ) : null}
     </section>
   )
 }

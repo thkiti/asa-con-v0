@@ -62,7 +62,7 @@ function parseYearMonthParams(
 
 function parseDashboardParams(
   searchParams: URLSearchParams
-): { year: number; month: number; branchId?: string } {
+): { year: number; month: number; branchId?: string; yearToDate?: boolean } {
   const year = Number(searchParams.get("year") ?? "")
   const month = Number(searchParams.get("month") ?? "")
   if (!Number.isFinite(year) || !Number.isFinite(month)) {
@@ -73,7 +73,12 @@ function parseDashboardParams(
     )
   }
   const branchId = String(searchParams.get("branchId") ?? "").trim()
-  return branchId ? { year, month, branchId } : { year, month }
+  const yearToDateParam = String(searchParams.get("yearToDate") ?? "").trim()
+  const yearToDate =
+    yearToDateParam === "1" ||
+    yearToDateParam.toLowerCase() === "true"
+  const base = branchId ? { year, month, branchId } : { year, month }
+  return yearToDate ? { ...base, yearToDate: true } : base
 }
 
 function parseDayDetailParams(searchParams: URLSearchParams): {
