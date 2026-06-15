@@ -4,6 +4,7 @@ import {
   mainMenuGridClass,
   mainMenuHeaderClass,
   mainMenuIntroClass,
+  mainMenuLargePageTitleClass,
   mainMenuPageClass,
   mainMenuProfileClass,
   mainMenuTitleClass,
@@ -18,6 +19,8 @@ describe("main-menu-layout", () => {
     expect(mainMenuIntroClass).toContain("mt-6")
     expect(mainMenuTitleClass).toContain("text-2xl")
     expect(mainMenuTitleClass).toContain("mt-3")
+    expect(mainMenuLargePageTitleClass).toContain("text-3xl")
+    expect(mainMenuLargePageTitleClass).toContain("font-bold")
     expect(mainMenuGridClass).toBe(
       "mt-4 grid w-[976px] grid-cols-[482px_482px] gap-[12px]"
     )

@@ -25,6 +25,8 @@ export type SalesDashboardView = {
   month: number
   branches: SalesTargetBranchOption[]
   monthSummary: SalesDashboardMonthSummary
+  /** Previous-month weekday multipliers (Sun=0 … Sat=6), null renders "-". */
+  previousMonthWeekdayPatterns: ReadonlyArray<string | null>
   days: SalesDashboardDayCell[]
   hasAnyTarget: boolean
 }

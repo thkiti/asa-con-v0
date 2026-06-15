@@ -21,10 +21,17 @@ describe("TargetActualCalendarGrid", () => {
     })
 
     const html = renderToStaticMarkup(
-      <TargetActualCalendarGrid cells={cells} onActualClick={() => {}} />
+      <TargetActualCalendarGrid
+        cells={cells}
+        weekdayPatterns={["1.52", "1.28", "1.10", "1.00", "1.00", "1.00", "0.95"]}
+        onActualClick={() => {}}
+      />
     )
 
     expect(html.indexOf('data-testid="target-actual-header-Sun"')).toBeGreaterThan(-1)
+    expect(html).toContain('data-testid="target-actual-header-pattern-Sun"')
+    expect(html).toContain("(1.52)")
+    expect(html).toContain("(1.28)")
     expect(html).toContain('data-testid="last-month-line-2026-06-05"')
     expect(html).toContain('data-testid="actual-line-2026-06-05"')
     expect(html).toContain(">L<")
@@ -94,6 +101,25 @@ describe("TargetActualCalendarGrid", () => {
     expect(html).toContain('<button type="button"')
     expect(html).toMatch(/data-testid="actual-line-2026-06-05"/)
     expect(html).not.toMatch(/data-testid="actual-line-2026-06-06"[\s\S]*?<button/)
+  })
+
+  it("shows dash in weekday header when pattern is missing", () => {
+    const cells = buildTargetActualCalendarGrid({
+      year: 2026,
+      month: 6,
+      days: [],
+    })
+
+    const html = renderToStaticMarkup(
+      <TargetActualCalendarGrid
+        cells={cells}
+        weekdayPatterns={[null, null, null, null, null, null, null]}
+        onActualClick={() => {}}
+      />
+    )
+
+    expect(html).toContain('data-testid="target-actual-header-pattern-Sun"')
+    expect(html).toContain("(-)")
   })
 
   it("shows last-month comparable amount when data exists", () => {

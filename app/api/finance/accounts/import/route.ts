@@ -12,6 +12,7 @@ import { parseGlAccountCsv } from "@/lib/finance/gl-account-csv-parser"
 import {
   applyGlAccountImport,
   buildImportPreview,
+  prepareGlAccountImportApply,
 } from "@/lib/finance/gl-account-import"
 import { prisma } from "@/lib/shared/prisma"
 
@@ -27,8 +28,10 @@ export async function POST(req: NextRequest) {
       parsed.warnings
     )
 
-    const result = await prisma.$transaction((tx) =>
-      applyGlAccountImport(tx, preview)
+    const prepared = await prepareGlAccountImportApply(prisma, preview)
+    const result = await prisma.$transaction(
+      (tx) => applyGlAccountImport(tx, prepared),
+      { timeout: 30_000 }
     )
 
     return NextResponse.json(result)

@@ -10,6 +10,7 @@ import {
   previousCalendarMonth,
 } from "@/lib/reporting/bangkok-calendar"
 import { getComparableLastMonthDateFromDateKey } from "@/lib/shop-ui/comparable-last-month-date"
+import { computePreviousMonthWeekdayPatterns } from "@/lib/shop/sales-dashboard-weekday-pattern"
 import { SalesDashboardError } from "@/lib/shop/sales-dashboard-errors"
 import type {
   SalesDashboardDayDetail,
@@ -143,6 +144,12 @@ export async function buildSalesDashboardView(
     }
   }
 
+  const previousMonthWeekdayPatterns = computePreviousMonthWeekdayPatterns({
+    year: previous.year,
+    month: previous.month,
+    grossByDateKey: lastMonthByDay,
+  })
+
   let lastMonthSalesTotal = ZERO
   const days = dayKeys.map((dateKey) => {
     const comparableDateKey = getComparableLastMonthDateFromDateKey(dateKey)
@@ -179,6 +186,7 @@ export async function buildSalesDashboardView(
       netSales: monthGross.minus(monthRefunds).toFixed(2),
       billCount: monthBillCount,
     },
+    previousMonthWeekdayPatterns,
     days,
     hasAnyTarget,
   }

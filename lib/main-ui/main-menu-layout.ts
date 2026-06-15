@@ -40,6 +40,10 @@ export const mainMenuBackLinkSlotClass = "text-sm leading-none"
 
 export const mainMenuTitleClass = `mt-3 min-h-[2rem] ${themePageTitle}`
 
+/** Optional larger page title (+6px vs default text-2xl) for primary feature pages. */
+export const mainMenuLargePageTitleClass =
+  "mt-3 min-h-[2rem] text-3xl font-bold tracking-tight text-foreground"
+
 export const mainMenuProfileClass = `mt-3 w-full text-sm ${themeMenuSummary}`
 
 export const mainMenuIntroClass = `mt-6 w-full text-sm ${themeMuted}`

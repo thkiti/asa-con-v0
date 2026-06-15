@@ -6,6 +6,8 @@ import type {
   GlAccountFieldChange,
   GlAccountImportApplyResult,
   GlAccountImportErrorRow,
+  GlAccountImportPreparedApply,
+  GlAccountImportPreparedRow,
   GlAccountImportPreview,
   GlAccountPreviewRow,
 } from "./gl-account-import-types"
@@ -330,37 +332,19 @@ export async function buildImportPreview(
   }
 }
 
-async function resolveParentId(
-  tx: Prisma.TransactionClient,
-  parentAccountCode: string | null,
-  cache: Map<string, string | null>
-): Promise<string | null> {
-  if (!parentAccountCode) return null
-  if (cache.has(parentAccountCode)) {
-    return cache.get(parentAccountCode) ?? null
-  }
-  const parent = await tx.glAccount.findUnique({
-    where: { code: parentAccountCode },
-    select: { id: true },
-  })
-  const id = parent?.id ?? null
-  cache.set(parentAccountCode, id)
-  return id
-}
-
-export async function applyGlAccountImport(
-  tx: Prisma.TransactionClient,
-  preview: GlAccountImportPreview
-): Promise<GlAccountImportApplyResult> {
+function assertImportPreviewReady(preview: GlAccountImportPreview): void {
   if (preview.summary.errorCount > 0 || preview.summary.blockedCount > 0) {
     throw new GlAccountImportError(
       "Import validation failed — fix errors and blocked rows before apply",
       "VALIDATION_FAILED"
     )
   }
+}
 
-  const rowsToApply = [...preview.inserts, ...preview.updates]
-  const csvRows: GlAccountCsvRow[] = rowsToApply.map((p) => ({
+function previewRowsToCsvRows(
+  rows: GlAccountPreviewRow[]
+): GlAccountCsvRow[] {
+  return rows.map((p) => ({
     rowNumber: p.rowNumber,
     accountCode: p.accountCode,
     accountName: p.accountName,
@@ -369,32 +353,109 @@ export async function applyGlAccountImport(
     parentAccountCode: p.parentAccountCode,
     isActive: p.isActive,
   }))
+}
 
-  const sorted = topologicalSort(csvRows)
-  const parentCache = new Map<string, string | null>()
+function resolveParentIdFromDb(
+  parentAccountCode: string | null,
+  insertCodes: Set<string>,
+  idByCode: Map<string, string>
+): string | null | undefined {
+  if (!parentAccountCode) return null
+  const existingParentId = idByCode.get(parentAccountCode)
+  if (existingParentId != null) return existingParentId
+  if (insertCodes.has(parentAccountCode)) return undefined
+  return null
+}
+
+/** Validation, sorting, and DB lookups — run before opening a transaction. */
+export async function prepareGlAccountImportApply(
+  prisma: GlAccountImportPrisma,
+  preview: GlAccountImportPreview
+): Promise<GlAccountImportPreparedApply> {
+  assertImportPreviewReady(preview)
+
+  const rowsToApply = [...preview.inserts, ...preview.updates]
+  const insertCodes = new Set(preview.inserts.map((row) => row.accountCode))
+  const sorted = topologicalSort(previewRowsToCsvRows(rowsToApply))
+
+  const codesToLoad = new Set<string>()
+  for (const row of sorted) {
+    codesToLoad.add(row.accountCode)
+    if (row.parentAccountCode) codesToLoad.add(row.parentAccountCode)
+  }
+
+  const existingAccounts =
+    codesToLoad.size === 0
+      ? []
+      : await prisma.glAccount.findMany({
+          where: { code: { in: [...codesToLoad] } },
+          select: { id: true, code: true },
+        })
+
+  const idByCode = new Map(existingAccounts.map((account) => [account.code, account.id]))
+  const parentIdByCode = new Map(idByCode)
+
+  const preparedRows: GlAccountImportPreparedRow[] = sorted.map((row) => {
+    const isUpdate = !insertCodes.has(row.accountCode)
+    const existingId = idByCode.get(row.accountCode)
+    return {
+      accountCode: row.accountCode,
+      accountName: row.accountName,
+      accountType: row.accountType,
+      parentAccountCode: row.parentAccountCode,
+      parentIdFromDb: resolveParentIdFromDb(
+        row.parentAccountCode,
+        insertCodes,
+        idByCode
+      ),
+      isActive: row.isActive ?? true,
+      isUpdate,
+      existingId: isUpdate ? existingId : undefined,
+    }
+  })
+
+  const operationalCodesCheck = await checkOperationalAccountCodes(prisma)
+  const warnings = [
+    ...preview.warnings,
+    ...operationalCodesWarnings(operationalCodesCheck),
+  ]
+
+  return { rows: preparedRows, parentIdByCode, warnings, operationalCodesCheck }
+}
+
+/** DB writes only — parent cache seeded from {@link prepareGlAccountImportApply}. */
+export async function applyGlAccountImport(
+  tx: Prisma.TransactionClient,
+  prepared: GlAccountImportPreparedApply
+): Promise<GlAccountImportApplyResult> {
+  const parentCache = new Map<string, string>(prepared.parentIdByCode)
   let inserted = 0
   let updated = 0
 
-  for (const row of sorted) {
-    const parentId = await resolveParentId(tx, row.parentAccountCode, parentCache)
-    const existing = await tx.glAccount.findUnique({
-      where: { code: row.accountCode },
-      select: { id: true },
-    })
+  for (const row of prepared.rows) {
+    let parentId: string | null = null
+    if (row.parentAccountCode) {
+      parentId =
+        row.parentIdFromDb !== undefined
+          ? row.parentIdFromDb
+          : (parentCache.get(row.parentAccountCode) ?? null)
+    }
 
-    if (existing) {
+    if (row.isUpdate) {
       await tx.glAccount.update({
         where: { code: row.accountCode },
         data: {
           name: row.accountName,
           accountType: row.accountType,
           parentId,
-          isActive: row.isActive ?? true,
+          isActive: row.isActive,
           deleted: false,
         },
       })
       updated++
-      parentCache.set(row.accountCode, existing.id)
+      if (row.existingId) {
+        parentCache.set(row.accountCode, row.existingId)
+      }
     } else {
       const created = await tx.glAccount.create({
         data: {
@@ -402,7 +463,7 @@ export async function applyGlAccountImport(
           name: row.accountName,
           accountType: row.accountType,
           parentId,
-          isActive: row.isActive ?? true,
+          isActive: row.isActive,
           deleted: false,
         },
         select: { id: true },
@@ -412,11 +473,10 @@ export async function applyGlAccountImport(
     }
   }
 
-  const operationalCodesCheck = await checkOperationalAccountCodes(tx)
-  const warnings = [
-    ...preview.warnings,
-    ...operationalCodesWarnings(operationalCodesCheck),
-  ]
-
-  return { inserted, updated, warnings, operationalCodesCheck }
+  return {
+    inserted,
+    updated,
+    warnings: prepared.warnings,
+    operationalCodesCheck: prepared.operationalCodesCheck,
+  }
 }

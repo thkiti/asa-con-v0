@@ -107,6 +107,98 @@ describe("buildSalesDashboardView", () => {
     expect(day5?.lastMonthGross).toBe("60.00")
     expect(day5?.target).toBeNull()
     expect(view.hasAnyTarget).toBe(false)
+    expect(view.previousMonthWeekdayPatterns[5]).toBe("6.20")
+    expect(view.previousMonthWeekdayPatterns[0]).toBe("0.00")
+  })
+
+  it("derives weekday patterns from previous month only for branch scope", async () => {
+    mockedBranches.mockResolvedValue([{ id: "b1", code: "SH01", name: "Shop 1" }])
+    mockedTarget.mockResolvedValue({
+      branchId: "b1",
+      year: 2026,
+      month: 6,
+      monthlyTotal: "0",
+      weekPattern: [1, 1, 1, 1, 1, 1, 1],
+      exists: false,
+    })
+
+    mockedMetrics
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 6,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [],
+      })
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 5,
+        monthSummary: {
+          grossSales: "100.00",
+          refunds: "0.00",
+          netSales: "100.00",
+          billCount: 1,
+        },
+        days: [{ dateKey: "2026-05-01", grossSales: "100.00" }],
+      })
+
+    const view = await buildSalesDashboardView({} as never, {
+      year: 2026,
+      month: 6,
+      branchId: "b1",
+    })
+
+    expect(view.previousMonthWeekdayPatterns[5]).toBe("6.20")
+    expect(view.previousMonthWeekdayPatterns[0]).toBe("0.00")
+  })
+
+  it("returns null weekday patterns when previous month has no sales", async () => {
+    mockedTarget.mockResolvedValue({
+      branchId: "b1",
+      year: 2026,
+      month: 6,
+      monthlyTotal: "0",
+      weekPattern: [1, 1, 1, 1, 1, 1, 1],
+      exists: false,
+    })
+
+    mockedMetrics
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 6,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [],
+      })
+      .mockResolvedValueOnce({
+        year: 2026,
+        month: 5,
+        monthSummary: {
+          grossSales: "0.00",
+          refunds: "0.00",
+          netSales: "0.00",
+          billCount: 0,
+        },
+        days: [],
+      })
+
+    const view = await buildSalesDashboardView({} as never, {
+      year: 2026,
+      month: 6,
+      branchId: "b1",
+    })
+
+    expect(view.previousMonthWeekdayPatterns.every((value) => value === null)).toBe(
+      true
+    )
   })
 
   it("sums daily targets when branch has target row", async () => {

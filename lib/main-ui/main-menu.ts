@@ -214,9 +214,9 @@ function buildSectionItems(role: Role, key: MainMenuSectionKey): MainMenuItem[] 
         ),
         available(
           "target-sales",
-          "Target / Sales",
+          "Last Month / Actual Sales",
           "/shop/target-sales",
-          "Monthly target vs gross sales by day (All Company or branch)"
+          "Compare last month and actual gross sales by day (All Company or branch)"
         ),
         planned("shop-stock", "Shop stock"),
         planned("daily-closing", "Daily closing"),

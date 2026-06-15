@@ -44,6 +44,7 @@ const sampleView = {
     netSales: "900.00",
     billCount: 42,
   },
+  previousMonthWeekdayPatterns: ["0.00", "1.10", "1.00", "1.00", "1.00", "1.28", "0.00"],
   days: [],
   hasAnyTarget: false,
 }

@@ -9,8 +9,39 @@ import { themeMuted } from "@/lib/theme/theme-classes"
 
 type TargetActualCalendarGridProps = {
   cells: TargetActualCalendarCell[]
+  weekdayPatterns?: ReadonlyArray<string | null>
   onActualClick: (dateKey: string) => void
   ariaLabel?: string
+}
+
+function WeekdayHeader({
+  label,
+  pattern,
+}: {
+  label: (typeof SUNDAY_FIRST_WEEKDAY_HEADERS)[number]
+  pattern: string | null | undefined
+}) {
+  const patternDisplay = pattern ?? "-"
+
+  return (
+    <div
+      role="columnheader"
+      data-testid={`target-actual-header-${label}`}
+      className={`border-b border-zinc-600/40 bg-card px-0.5 py-1.5 text-center sm:px-1 ${themeMuted}`}
+    >
+      <div className="flex flex-col items-center leading-tight">
+        <span className="text-[10px] font-semibold uppercase tracking-wide sm:text-xs">
+          {label}
+        </span>
+        <span
+          className="text-[9px] font-normal tabular-nums tracking-normal text-muted-foreground/75 sm:text-[10px]"
+          data-testid={`target-actual-header-pattern-${label}`}
+        >
+          ({patternDisplay})
+        </span>
+      </div>
+    </div>
+  )
 }
 
 function formatCalendarAmount(value: string | null | undefined): string {
@@ -64,6 +95,7 @@ function CalendarAmountRow({
 
 export function TargetActualCalendarGrid({
   cells,
+  weekdayPatterns,
   onActualClick,
   ariaLabel = "Last month and actual sales calendar",
 }: TargetActualCalendarGridProps) {
@@ -74,15 +106,12 @@ export function TargetActualCalendarGrid({
       aria-label={ariaLabel}
       data-testid="target-actual-calendar-grid"
     >
-      {SUNDAY_FIRST_WEEKDAY_HEADERS.map((label) => (
-        <div
+      {SUNDAY_FIRST_WEEKDAY_HEADERS.map((label, index) => (
+        <WeekdayHeader
           key={label}
-          role="columnheader"
-          data-testid={`target-actual-header-${label}`}
-          className={`border-b border-zinc-600/40 bg-card px-1 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wide sm:text-xs ${themeMuted}`}
-        >
-          {label}
-        </div>
+          label={label}
+          pattern={weekdayPatterns?.[index]}
+        />
       ))}
 
       {cells.map((cell) => {

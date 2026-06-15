@@ -161,9 +161,10 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("SH_STAFF", "sales-target-setup")).toBeUndefined()
   })
 
-  it("includes Target / Sales dashboard for HO shop section", () => {
+  it("includes Last Month / Actual Sales dashboard for HO shop section", () => {
     const item = findItem("HO_ADMIN", "target-sales")
     expect(item?.status).toBe("available")
+    expect(item?.label).toBe("Last Month / Actual Sales")
     expect(item?.href).toBe("/shop/target-sales")
     expect(findItem("HO_OPERATIONS", "target-sales")?.href).toBe(
       "/shop/target-sales"

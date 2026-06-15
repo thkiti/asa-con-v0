@@ -6,6 +6,7 @@ import { DaySalesSlideInPanel } from "@/components/shop/DaySalesSlideInPanel"
 import { TargetActualCalendarGrid } from "@/components/shop/TargetActualCalendarGrid"
 import { TargetSalesMonthSummary } from "@/components/shop/TargetSalesMonthSummary"
 import { CompactControlRow } from "@/components/shop-ui/CompactControlRow"
+import { CompactMonthSelect } from "@/components/shop-ui/CompactMonthSelect"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
 import type { SalesDashboardView } from "@/lib/shop/sales-dashboard-types"
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/lib/shop-ui/sales-dashboard-calendar"
 import { fetchSalesDashboard } from "@/lib/shop-ui/sales-dashboard-client"
 import { compactHeaderFieldClass } from "@/lib/shop-ui/compact-form-helpers"
+import { mainMenuLargePageTitleClass } from "@/lib/main-ui/main-menu-layout"
 import { themeMuted } from "@/lib/theme/theme-classes"
 
 type TargetSalesDashboardPageProps = {
@@ -73,7 +75,8 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
   return (
     <MainMenuShell
       user={user}
-      title="Last Month / Actual Sales"
+      title="LAST MONTH / ACTUAL SALES"
+      titleClassName={mainMenuLargePageTitleClass}
       backHref="/main/shop"
       backLabel="← Back to Shop"
     >
@@ -96,7 +99,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
 
           <input
             type="number"
-            className={compactHeaderFieldClass}
+            className={`${compactHeaderFieldClass} tabular-nums`}
             value={year}
             min={2000}
             max={2100}
@@ -105,15 +108,10 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
             aria-label="Year"
           />
 
-          <input
-            type="number"
-            className={compactHeaderFieldClass}
+          <CompactMonthSelect
             value={month}
-            min={1}
-            max={12}
-            onChange={(event) => setMonth(Number(event.target.value))}
+            onChange={setMonth}
             data-testid="dashboard-month"
-            aria-label="Month"
           />
         </CompactControlRow>
 
@@ -134,6 +132,7 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
         {!loading && view ? (
           <TargetActualCalendarGrid
             cells={calendarCells}
+            weekdayPatterns={view.previousMonthWeekdayPatterns}
             onActualClick={handleActualClick}
           />
         ) : null}

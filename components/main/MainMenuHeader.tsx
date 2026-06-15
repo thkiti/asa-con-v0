@@ -18,6 +18,7 @@ import { MainMenuUserCard } from "./MainMenuUserCard"
 type MainMenuHeaderProps = {
   user: SessionUserApi
   title: string
+  titleClassName?: string
   backHref?: string
   backLabel?: string
 }
@@ -25,6 +26,7 @@ type MainMenuHeaderProps = {
 export function MainMenuHeader({
   user,
   title,
+  titleClassName,
   backHref,
   backLabel = "← Back to Main Menu",
 }: MainMenuHeaderProps) {
@@ -63,7 +65,10 @@ export function MainMenuHeader({
             </span>
           )}
         </div>
-        <h1 className={mainMenuTitleClass} data-testid="main-menu-title">
+        <h1
+          className={titleClassName ?? mainMenuTitleClass}
+          data-testid="main-menu-title"
+        >
           {formatEntityContextTitle(user.documentEntityCode, title)}
         </h1>
         <MainMenuUserCard user={user} />

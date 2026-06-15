@@ -87,3 +87,24 @@ export type GlAccountImportApplyResult = {
   warnings: string[]
   operationalCodesCheck: OperationalCodeCheck[]
 }
+
+/** One row ready for DB write — parent ids resolved when parent already exists in DB. */
+export type GlAccountImportPreparedRow = {
+  accountCode: string
+  accountName: string
+  accountType: GlAccountType
+  parentAccountCode: string | null
+  /** Parent id when parent is in DB; undefined when parent is inserted in this same import. */
+  parentIdFromDb: string | null | undefined
+  isActive: boolean
+  isUpdate: boolean
+  existingId?: string
+}
+
+export type GlAccountImportPreparedApply = {
+  rows: GlAccountImportPreparedRow[]
+  /** Preloaded parent/account codes → id (seed for in-transaction parent cache). */
+  parentIdByCode: Map<string, string>
+  warnings: string[]
+  operationalCodesCheck: OperationalCodeCheck[]
+}

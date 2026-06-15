@@ -75,7 +75,7 @@ describe("MainMenuSectionView", () => {
     )
     expect(html).toContain('href="/shop/sales-targets"')
     expect(html).toContain("Sales Target Setup")
-    expect(html).toContain("Target / Sales")
+    expect(html).toContain("Last Month / Actual Sales")
     expect(html).toContain("Planned")
     expect(html).toContain("h-[108px]")
     expect(html).toContain("line-clamp-2")

@@ -8,6 +8,7 @@ import { MainMenuHeader } from "./MainMenuHeader"
 type MainMenuShellProps = {
   user: SessionUserApi
   title?: string
+  titleClassName?: string
   backHref?: string
   backLabel?: string
   children: ReactNode
@@ -17,6 +18,7 @@ type MainMenuShellProps = {
 export function MainMenuShell({
   user,
   title = "Main Menu",
+  titleClassName,
   backHref,
   backLabel = "← Back to Main Menu",
   children,
@@ -26,6 +28,7 @@ export function MainMenuShell({
       <MainMenuHeader
         user={user}
         title={title}
+        titleClassName={titleClassName}
         backHref={backHref}
         backLabel={backLabel}
       />
