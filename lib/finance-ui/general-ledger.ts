@@ -1,4 +1,5 @@
 import { rowsToCsvTable } from "./csv"
+import { formatAccountDisplay } from "./format-account"
 import type { GeneralLedgerResult } from "./types"
 
 export type GeneralLedgerFilter = {
@@ -52,8 +53,7 @@ export async function fetchGeneralLedger(
 
 export function generalLedgerToCsv(result: GeneralLedgerResult): string {
   const headers = [
-    "Account Code",
-    "Account Name",
+    "Account",
     "Date",
     "Entry No",
     "Source Ref",
@@ -66,9 +66,9 @@ export function generalLedgerToCsv(result: GeneralLedgerResult): string {
 
   const rows: (string | null)[][] = []
   for (const account of result.accounts) {
+    const accountLabel = formatAccountDisplay(account.accountCode, account.accountName)
     rows.push([
-      account.accountCode,
-      account.accountName,
+      accountLabel,
       "",
       "",
       "",
@@ -80,8 +80,7 @@ export function generalLedgerToCsv(result: GeneralLedgerResult): string {
     ])
     for (const tx of account.transactions) {
       rows.push([
-        account.accountCode,
-        account.accountName,
+        accountLabel,
         tx.journalDate.slice(0, 10),
         tx.entryNo,
         tx.sourceRef,
@@ -93,8 +92,7 @@ export function generalLedgerToCsv(result: GeneralLedgerResult): string {
       ])
     }
     rows.push([
-      account.accountCode,
-      account.accountName,
+      accountLabel,
       "",
       "",
       "",

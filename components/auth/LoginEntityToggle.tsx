@@ -1,7 +1,8 @@
 "use client"
 
 import type { DocumentEntityCode } from "@/lib/legal-entity"
-import { themeMuted } from "@/lib/theme/theme-classes"
+import { formatEntityThai } from "@/lib/legal-entity"
+import { themeLabel, themeTextSecondary } from "@/lib/theme/theme-classes"
 
 type LoginEntityToggleProps = {
   value: DocumentEntityCode
@@ -20,7 +21,7 @@ export function LoginEntityToggle({
       data-testid="login-entity-toggle"
       disabled={disabled}
     >
-      <legend className="text-sm font-medium">นิติบุคคล (เอกสาร)</legend>
+      <legend className={`text-sm ${themeLabel}`}>นิติบุคคล (เอกสาร)</legend>
       <div className="flex gap-4 text-sm">
         <label className="inline-flex cursor-pointer items-center gap-2">
           <input
@@ -31,7 +32,7 @@ export function LoginEntityToggle({
             onChange={() => onChange("AS")}
             disabled={disabled}
           />
-          <span>ASAS</span>
+          <span>{formatEntityThai("AS")}</span>
         </label>
         <label className="inline-flex cursor-pointer items-center gap-2">
           <input
@@ -42,10 +43,10 @@ export function LoginEntityToggle({
             onChange={() => onChange("AD")}
             disabled={disabled}
           />
-          <span>ASAD</span>
+          <span>{formatEntityThai("AD")}</span>
         </label>
       </div>
-      <p className={`text-xs ${themeMuted}`}>
+      <p className={`text-xs ${themeTextSecondary}`}>
         เลือกนิติบุคคลที่เอกสารใหม่จะอยู่ภายใต้
       </p>
     </fieldset>

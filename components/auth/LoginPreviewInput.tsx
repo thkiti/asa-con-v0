@@ -1,6 +1,6 @@
 "use client"
 
-import { themeInput } from "@/lib/theme/theme-classes"
+import { themeInput, themeLabel } from "@/lib/theme/theme-classes"
 import type { KeyboardEvent, RefObject } from "react"
 
 const PREVIEW_SEPARATOR = " • "
@@ -72,7 +72,7 @@ export function LoginPreviewInput({
 
   return (
     <label className="block text-sm" htmlFor={id}>
-      <span className="font-medium">{label}</span>
+      <span className={themeLabel}>{label}</span>
       <div className="relative">
         <input
           ref={inputRef}

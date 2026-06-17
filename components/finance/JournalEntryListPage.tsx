@@ -8,6 +8,15 @@ import {
 } from "@/lib/finance-ui/journal-entries"
 import type { JournalListRow } from "@/lib/finance-ui/types"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
+import {
+  financeMemo,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 export function JournalEntryListPage() {
   const [filter, setFilter] = useState<JournalListFilter>({
@@ -82,44 +91,36 @@ export function JournalEntryListPage() {
           <p className="text-sm text-zinc-600">
             {total} journal{total === 1 ? "" : "s"} (manual and reversals)
           </p>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+          <div className={financeTableScroll}>
+            <table className={financeTable}>
               <thead>
-                <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                  <th className="px-2 py-1">Date</th>
-                  <th className="px-2 py-1">Voucher</th>
-                  <th className="px-2 py-1">Type</th>
-                  <th className="px-2 py-1">Description</th>
-                  <th className="px-2 py-1 text-right">Debit</th>
-                  <th className="px-2 py-1 text-right">Credit</th>
-                  <th className="px-2 py-1">Status</th>
+                <tr>
+                  <th className={financeTh}>Date</th>
+                  <th className={financeTh}>Voucher</th>
+                  <th className={financeTh}>Type</th>
+                  <th className={financeTh}>Description</th>
+                  <th className={financeThRight}>Debit</th>
+                  <th className={financeThRight}>Credit</th>
+                  <th className={financeTh}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {journals.map((row) => (
-                  <tr key={row.id} className="border-b border-zinc-100">
-                    <td className="px-2 py-1 whitespace-nowrap">
-                      {formatDateTime(row.date)}
-                    </td>
-                    <td className="px-2 py-1">
+                  <tr key={row.id}>
+                    <td className={financeMemo}>{formatDateTime(row.date)}</td>
+                    <td>
                       <Link
                         href={`/finance/journal-entries/${row.id}`}
-                        className="font-mono text-xs underline"
+                        className={`font-mono text-xs ${themeLinkMuted}`}
                       >
                         {row.voucherNo}
                       </Link>
                     </td>
-                    <td className="px-2 py-1 text-xs">{row.refType}</td>
-                    <td className="px-2 py-1 text-zinc-700">
-                      {row.description ?? "—"}
-                    </td>
-                    <td className="px-2 py-1 text-right tabular-nums">
-                      {formatAmount(row.totalDebit)}
-                    </td>
-                    <td className="px-2 py-1 text-right tabular-nums">
-                      {formatAmount(row.totalCredit)}
-                    </td>
-                    <td className="px-2 py-1 text-xs">
+                    <td className={financeMemo}>{row.refType}</td>
+                    <td className={financeMemo}>{row.description ?? "—"}</td>
+                    <td className={financeNumber}>{formatAmount(row.totalDebit)}</td>
+                    <td className={financeNumber}>{formatAmount(row.totalCredit)}</td>
+                    <td className={financeMemo}>
                       {row.isReversal ? "Reversal" : row.isReversed ? "Reversed" : "Posted"}
                     </td>
                   </tr>

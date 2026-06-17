@@ -21,7 +21,10 @@
     "legacy:sales:stage": "npx tsx scripts/import-legacy-sales-dbf.ts",
     "legacy:sales:validate": "npx tsx scripts/validate-legacy-sales-staging.ts",
     "legacy:sales:convert": "npx tsx scripts/convert-legacy-sales-staging.ts",
-    "legacy:sales:control": "npx tsx scripts/legacy-sales-control-report.ts"
+    "legacy:sales:control": "npx tsx scripts/legacy-sales-control-report.ts",
+    "uat:finance:backup": "npx tsx scripts/uat/finance-uat-backup.ts",
+    "uat:finance:reset:dry-run": "npx tsx scripts/uat/finance-uat-reset.ts",
+    "uat:finance:verify": "npx tsx scripts/uat/finance-uat-verify.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",

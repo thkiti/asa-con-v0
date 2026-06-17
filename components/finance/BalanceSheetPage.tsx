@@ -8,6 +8,18 @@ import {
 } from "@/lib/finance-ui/balance-sheet"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { BalanceSheetResult, BalanceSheetRow } from "@/lib/finance-ui/types"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeAccount,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+  financeTotalLabel,
+  financeTotalRowStrong,
+  financeTotalValue,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 type FilterMode = "period" | "dateRange"
 
@@ -28,34 +40,34 @@ function SectionTable({
       {rows.length === 0 ? (
         <p className="text-sm text-zinc-500">No {title.toLowerCase()} balances in scope.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+        <div className={financeTableScroll}>
+          <table className={financeTable}>
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                <th className="px-2 py-1">Account Code</th>
-                <th className="px-2 py-1">Account Name</th>
-                <th className="px-2 py-1 text-right">Amount</th>
+              <tr>
+                <th className={financeTh}>Account</th>
+                <th className={financeThRight}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.accountCode} className="border-b border-zinc-100">
-                  <td className="px-2 py-1 font-mono text-xs">{row.accountCode}</td>
-                  <td className="px-2 py-1">{row.accountName}</td>
-                  <td className="px-2 py-1 text-right tabular-nums">
-                    {formatAmount(row.amount)}
+                <tr key={row.accountCode}>
+                  <td className={financeAccount}>
+                    <FinanceAccountDisplay
+                      accountCode={row.accountCode}
+                      accountName={row.accountName}
+                      data-testid={`balance-sheet-account-${row.accountCode}`}
+                    />
                   </td>
+                  <td className={financeNumber}>{formatAmount(row.amount)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-zinc-300 font-semibold">
-                <td className="px-2 py-2" colSpan={2}>
+              <tr className={financeTotalRowStrong}>
+                <td className={financeTotalLabel} colSpan={1}>
                   {totalLabel}
                 </td>
-                <td className="px-2 py-2 text-right tabular-nums">
-                  {formatAmount(totalAmount)}
-                </td>
+                <td className={financeTotalValue}>{formatAmount(totalAmount)}</td>
               </tr>
             </tfoot>
           </table>

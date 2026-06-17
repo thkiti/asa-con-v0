@@ -11,10 +11,18 @@ import {
 } from "@/lib/finance-ui/opening-balance"
 import type { ManualJournalEntryListItem } from "@/lib/finance-ui/manual-journal-entries"
 import {
-  getLegalEntityDisplayName,
+  formatEntityShort,
   LEGAL_ENTITY_CODES,
   type DocumentEntityCode,
-} from "@/lib/legal-entity/constants"
+} from "@/lib/legal-entity"
+import {
+  financeMemo,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 const ALL = ""
 
@@ -93,7 +101,7 @@ export function OpeningBalanceHubPage() {
             <option value={ALL}>All</option>
             {LEGAL_ENTITY_CODES.map((code) => (
               <option key={code} value={code}>
-                {getLegalEntityDisplayName(code)} ({code})
+                {formatEntityShort(code)}
               </option>
             ))}
           </select>
@@ -159,41 +167,37 @@ export function OpeningBalanceHubPage() {
           <p className="text-sm text-zinc-600">
             {total} opening balance entr{total === 1 ? "y" : "ies"}
           </p>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+          <div className={financeTableScroll}>
+            <table className={financeTable}>
               <thead>
-                <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                  <th className="px-2 py-1">Document no</th>
-                  <th className="px-2 py-1">Entity</th>
-                  <th className="px-2 py-1">Date</th>
-                  <th className="px-2 py-1">Description</th>
-                  <th className="px-2 py-1">Lines</th>
-                  <th className="px-2 py-1">Status</th>
+                <tr>
+                  <th className={financeTh}>Document no</th>
+                  <th className={financeTh}>Entity</th>
+                  <th className={financeTh}>Date</th>
+                  <th className={financeTh}>Description</th>
+                  <th className={financeTh}>Lines</th>
+                  <th className={financeTh}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((row) => (
-                  <tr key={row.id} className="border-b border-zinc-100">
-                    <td className="px-2 py-1">
+                  <tr key={row.id}>
+                    <td>
                       <Link
                         href={`/finance/opening-balance/${row.id}`}
-                        className="font-mono text-xs underline"
+                        className={`font-mono text-xs ${themeLinkMuted}`}
                         data-testid={`opb-entry-link-${row.id}`}
                       >
                         {formatManualJournalEntryDocumentNo(row.entryNo, row.entryType)}
                       </Link>
                     </td>
-                    <td className="px-2 py-1 text-xs">
-                      {getLegalEntityDisplayName(row.legalEntityCode as DocumentEntityCode)}
+                    <td className={financeMemo}>
+                      {formatEntityShort(row.legalEntityCode)}
                     </td>
-                    <td className="px-2 py-1 whitespace-nowrap">
-                      {formatDateTime(row.entryDate)}
-                    </td>
-                    <td className="px-2 py-1 text-zinc-700">
-                      {row.description ?? "—"}
-                    </td>
-                    <td className="px-2 py-1 tabular-nums">{row.lineCount}</td>
-                    <td className="px-2 py-1">
+                    <td className={financeMemo}>{formatDateTime(row.entryDate)}</td>
+                    <td className={financeMemo}>{row.description ?? "—"}</td>
+                    <td className={financeNumber}>{row.lineCount}</td>
+                    <td className={financeMemo}>
                       <ManualJournalEntryStatusBadge status={row.status} />
                     </td>
                   </tr>

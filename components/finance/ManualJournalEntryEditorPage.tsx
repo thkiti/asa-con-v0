@@ -13,7 +13,11 @@ import {
   type ManualJournalEntryTypeCode,
 } from "@/lib/finance-ui/manual-journal-entry-display"
 import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
-import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
+import {
+  formatAmount,
+  formatDateTime,
+  formatJournalLineSideAmount,
+} from "@/lib/finance-ui/format"
 import { fetchGlAccounts } from "@/lib/finance-ui/gl-accounts"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import {
@@ -27,11 +31,31 @@ import {
   updateManualJournalEntryDraft,
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
+import { OpeningBalanceConfirmedDocumentHeader } from "@/components/finance/OpeningBalanceConfirmedDocumentHeader"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import { ACCOUNT_DISPLAY_SEPARATOR } from "@/lib/finance-ui/format-account"
+import { formatEntityShort } from "@/lib/legal-entity"
 import {
-  getLegalEntityDisplayName,
   type DocumentEntityCode,
 } from "@/lib/legal-entity/constants"
+import {
+  financeAccount,
+  financeAccountDisplay,
+  financeMemo,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+  financeTotalLabel,
+  financeTotalRow,
+  financeTotalRowStrong,
+  financeTotalValue,
+  financeDiffBalanced,
+  financeDiffUnbalanced,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeInput } from "@/lib/theme/theme-classes"
 
 type LineRow = {
   key: string
@@ -167,6 +191,13 @@ export function ManualJournalEntryEditorPage({
   const canEditLines = isDraft
 
   const totals = useMemo(() => computeManualJournalLineTotals(lines), [lines])
+
+  function formatLineSideAmount(value: string): string {
+    return openingBalanceMode ? formatJournalLineSideAmount(value) : formatAmount(value)
+  }
+
+  const memoColSpan = canEditLines ? 2 : 1
+  const opbConfirmedDocumentLayout = openingBalanceMode && isConfirmed && entry != null
 
   const applyEntry = useCallback((loaded: ManualJournalEntryRead) => {
     setEntry(loaded)
@@ -360,8 +391,11 @@ export function ManualJournalEntryEditorPage({
   }
 
   return (
-    <div className="space-y-6" data-testid="manual-journal-entry-editor">
-      {openingBalanceMode ? (
+    <div
+      className={opbConfirmedDocumentLayout ? "space-y-4" : "space-y-6"}
+      data-testid="manual-journal-entry-editor"
+    >
+      {openingBalanceMode && !opbConfirmedDocumentLayout ? (
         <div
           className="rounded border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950"
           data-testid="opb-mode-banner"
@@ -371,197 +405,227 @@ export function ManualJournalEntryEditorPage({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2
-            className="font-mono text-lg font-semibold"
-            data-testid="manual-journal-document-no"
-          >
-            {documentNo}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-600">
-            Legal entity: {getLegalEntityDisplayName(legalEntityCode)} ({legalEntityCode})
-          </p>
-          {entry ? (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <ManualJournalEntryStatusBadge status={entry.status} />
-              <span className="text-xs text-zinc-500">
-                {formatManualJournalEntryTypeLabel(entry.entryType)}
-              </span>
+      {opbConfirmedDocumentLayout ? (
+        <OpeningBalanceConfirmedDocumentHeader
+          documentNo={documentNo}
+          entryDate={entryDate}
+          description={description}
+          entry={entry}
+        />
+      ) : (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2
+                className="font-mono text-lg font-semibold"
+                data-testid="manual-journal-document-no"
+              >
+                {documentNo}
+              </h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Legal entity: {formatEntityShort(legalEntityCode)}
+              </p>
+              {entry ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <ManualJournalEntryStatusBadge status={entry.status} />
+                  <span className="text-xs text-zinc-500">
+                    {formatManualJournalEntryTypeLabel(entry.entryType)}
+                  </span>
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-zinc-500">
+                  {formatManualJournalEntryTypeLabel(entryType)}
+                </p>
+              )}
             </div>
-          ) : (
-            <p className="mt-2 text-xs text-zinc-500">
-              {formatManualJournalEntryTypeLabel(entryType)}
-            </p>
-          )}
-        </div>
-        {entry?.postedJournalEntryId ? (
-          <Link
-            href={`/finance/journal-entries/${entry.postedJournalEntryId}`}
-            className="text-sm text-zinc-600 underline"
-            data-testid="posted-journal-link"
-          >
-            View posted GL journal
-          </Link>
-        ) : null}
-      </div>
-
-      {readOnly ? (
-        <p className="text-sm text-zinc-600" data-testid="read-only-notice">
-          This entry is read-only in status {entry?.status}.
-        </p>
-      ) : null}
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Branch</span>
-          <input
-            className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-            value={branchId}
-            disabled={!canEditHeader}
-            onChange={(e) => setBranchId(e.target.value)}
-            data-testid="field-branch-id"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Entry date</span>
-          <input
-            type="date"
-            className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-            value={entryDate}
-            disabled={!canEditHeader}
-            onChange={(e) => setEntryDate(e.target.value)}
-            data-testid="field-entry-date"
-          />
-        </label>
-        {canEditHeader && !openingBalanceMode ? (
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Entry type</span>
-            <select
-              className="rounded border border-zinc-300 px-2 py-1"
-              value={entryType}
-              onChange={(e) => setEntryType(e.target.value as ManualJournalEntryTypeCode)}
-              data-testid="field-entry-type"
-            >
-              {MANUAL_JOURNAL_ENTRY_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {formatManualJournalEntryTypeLabel(type)}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <div className="text-sm">
-            <span className="text-zinc-600">Entry type</span>
-            <p className="mt-1">{formatManualJournalEntryTypeLabel(entryType)}</p>
+            {entry?.postedJournalEntryId ? (
+              <Link
+                href={`/finance/journal-entries/${entry.postedJournalEntryId}`}
+                className="text-sm text-zinc-600 underline"
+                data-testid="posted-journal-link"
+              >
+                View posted GL journal
+              </Link>
+            ) : null}
           </div>
-        )}
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className="text-zinc-600">Description</span>
-          <input
-            className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-            value={description}
-            disabled={!canEditHeader}
-            onChange={(e) => setDescription(e.target.value)}
-            data-testid="field-description"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-          <span className="text-zinc-600">Reference no</span>
-          <input
-            className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-            value={refNo}
-            disabled={!canEditHeader}
-            onChange={(e) => setRefNo(e.target.value)}
-            data-testid="field-ref-no"
-          />
-        </label>
-      </div>
 
-      {entry ? (
-        <div className="grid gap-2 text-xs text-zinc-500 sm:grid-cols-2 lg:grid-cols-4">
-          <p>Created: {formatDateTime(entry.createdAt)}</p>
-          {entry.submittedAt ? <p>Submitted: {formatDateTime(entry.submittedAt)}</p> : null}
-          {entry.confirmedAt ? <p>Confirmed: {formatDateTime(entry.confirmedAt)}</p> : null}
-          {entry.postedAt ? <p>Posted: {formatDateTime(entry.postedAt)}</p> : null}
-          {entry.cancelledAt ? <p>Cancelled: {formatDateTime(entry.cancelledAt)}</p> : null}
-        </div>
-      ) : null}
+          {readOnly ? (
+            <p className="text-sm text-zinc-600" data-testid="read-only-notice">
+              This entry is read-only in status {entry?.status}.
+            </p>
+          ) : null}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm" data-testid="manual-journal-lines-table">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-zinc-600">Branch</span>
+              <input
+                className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
+                value={branchId}
+                disabled={!canEditHeader}
+                onChange={(e) => setBranchId(e.target.value)}
+                data-testid="field-branch-id"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-zinc-600">Entry date</span>
+              <input
+                type="date"
+                className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
+                value={entryDate}
+                disabled={!canEditHeader}
+                onChange={(e) => setEntryDate(e.target.value)}
+                data-testid="field-entry-date"
+              />
+            </label>
+            {canEditHeader && !openingBalanceMode ? (
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-zinc-600">Entry type</span>
+                <select
+                  className="rounded border border-zinc-300 px-2 py-1"
+                  value={entryType}
+                  onChange={(e) => setEntryType(e.target.value as ManualJournalEntryTypeCode)}
+                  data-testid="field-entry-type"
+                >
+                  {MANUAL_JOURNAL_ENTRY_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {formatManualJournalEntryTypeLabel(type)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <div className="text-sm">
+                <span className="text-zinc-600">Entry type</span>
+                <p className="mt-1">{formatManualJournalEntryTypeLabel(entryType)}</p>
+              </div>
+            )}
+            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+              <span className="text-zinc-600">Description</span>
+              <input
+                className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
+                value={description}
+                disabled={!canEditHeader}
+                onChange={(e) => setDescription(e.target.value)}
+                data-testid="field-description"
+              />
+            </label>
+            {refNo.trim() || canEditHeader ? (
+              <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                <span className="text-zinc-600">Reference no</span>
+                <input
+                  className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
+                  value={refNo}
+                  disabled={!canEditHeader}
+                  onChange={(e) => setRefNo(e.target.value)}
+                  data-testid="field-ref-no"
+                />
+              </label>
+            ) : null}
+          </div>
+
+          {entry ? (
+            <div className="grid gap-2 text-xs text-zinc-500 sm:grid-cols-2 lg:grid-cols-4">
+              <p>Created: {formatDateTime(entry.createdAt)}</p>
+              {entry.submittedAt ? <p>Submitted: {formatDateTime(entry.submittedAt)}</p> : null}
+              {entry.confirmedAt ? <p>Confirmed: {formatDateTime(entry.confirmedAt)}</p> : null}
+              {entry.postedAt ? <p>Posted: {formatDateTime(entry.postedAt)}</p> : null}
+              {entry.cancelledAt ? <p>Cancelled: {formatDateTime(entry.cancelledAt)}</p> : null}
+            </div>
+          ) : null}
+        </>
+      )}
+
+      <div className={financeTableScroll}>
+        <table className={financeTable} data-testid="manual-journal-lines-table">
           <thead>
-            <tr className="border-b border-zinc-200 text-left text-zinc-500">
-              <th className="px-2 py-1">Account code</th>
-              <th className="px-2 py-1">Account name</th>
-              <th className="px-2 py-1 text-right">Debit</th>
-              <th className="px-2 py-1 text-right">Credit</th>
-              <th className="px-2 py-1">Memo</th>
-              {canEditLines ? <th className="px-2 py-1" /> : null}
+            <tr>
+              <th className={financeTh}>Account</th>
+              <th className={financeThRight}>Debit</th>
+              <th className={financeThRight}>Credit</th>
+              <th className={financeTh}>Memo</th>
+              {canEditLines ? <th className={financeTh} /> : null}
             </tr>
           </thead>
           <tbody>
             {lines.map((row) => (
-              <tr key={row.key} className="border-b border-zinc-100">
-                <td className="px-2 py-1">
+              <tr key={row.key}>
+                <td className={financeAccount}>
                   {canEditLines ? (
-                    <input
-                      className="w-full rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
-                      value={row.accountCode}
-                      onChange={(e) => updateLine(row.key, { accountCode: e.target.value })}
-                      onBlur={() => void handleAccountBlur(row.key, row.accountCode)}
-                      data-testid="line-account-code"
-                    />
+                    <span className={financeAccountDisplay}>
+                      <input
+                        className={`${themeInput} finance-account-code-input mt-0`}
+                        value={row.accountCode}
+                        onChange={(e) => updateLine(row.key, { accountCode: e.target.value })}
+                        onBlur={() => void handleAccountBlur(row.key, row.accountCode)}
+                        data-testid="line-account-code"
+                      />
+                      {row.accountName ? (
+                        <>
+                          <span className="finance-account-separator">
+                            {ACCOUNT_DISPLAY_SEPARATOR}
+                          </span>
+                          <span
+                            className="finance-account-name-part"
+                            data-testid="line-account-name"
+                          >
+                            {row.accountName}
+                          </span>
+                        </>
+                      ) : (
+                        <span data-testid="line-account-name" className="sr-only" />
+                      )}
+                    </span>
                   ) : (
-                    <span className="font-mono text-xs">{row.accountCode}</span>
+                    <FinanceAccountDisplay
+                      accountCode={row.accountCode}
+                      accountName={row.accountName}
+                      data-testid="line-account-name"
+                    />
                   )}
                 </td>
-                <td className="px-2 py-1 text-zinc-700" data-testid="line-account-name">
-                  {row.accountName || "—"}
-                </td>
-                <td className="px-2 py-1">
+                <td className={financeNumber}>
                   {canEditLines ? (
                     <input
-                      className="w-full rounded border border-zinc-300 px-2 py-1 text-right tabular-nums"
+                      className={`${themeInput} mt-0`}
                       value={row.debit}
                       onChange={(e) => updateLine(row.key, { debit: e.target.value })}
                       inputMode="decimal"
                       data-testid="line-debit"
                     />
                   ) : (
-                    <span className="tabular-nums">{formatAmount(row.debit)}</span>
+                    formatLineSideAmount(row.debit)
                   )}
                 </td>
-                <td className="px-2 py-1">
+                <td className={financeNumber}>
                   {canEditLines ? (
                     <input
-                      className="w-full rounded border border-zinc-300 px-2 py-1 text-right tabular-nums"
+                      className={`${themeInput} mt-0`}
                       value={row.credit}
                       onChange={(e) => updateLine(row.key, { credit: e.target.value })}
                       inputMode="decimal"
                       data-testid="line-credit"
                     />
                   ) : (
-                    <span className="tabular-nums">{formatAmount(row.credit)}</span>
+                    formatLineSideAmount(row.credit)
                   )}
                 </td>
-                <td className="px-2 py-1">
+                <td>
                   {canEditLines ? (
                     <input
-                      className="w-full rounded border border-zinc-300 px-2 py-1"
+                      className={`${themeInput} mt-0`}
                       value={row.memo}
                       onChange={(e) => updateLine(row.key, { memo: e.target.value })}
                       data-testid="line-memo"
                     />
                   ) : (
-                    <span>{row.memo || "—"}</span>
+                    <span className={financeMemo}>{row.memo || "—"}</span>
                   )}
                 </td>
                 {canEditLines ? (
                   <td className="px-2 py-1">
                     <button
                       type="button"
-                      className="text-xs text-zinc-500 underline"
+                      className="text-xs text-muted underline"
                       onClick={() => removeLine(row.key)}
                     >
                       Remove
@@ -572,25 +636,69 @@ export function ManualJournalEntryEditorPage({
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-zinc-300 font-medium">
-              <td className="px-2 py-2" colSpan={2}>Totals</td>
-              <td className="px-2 py-2 text-right tabular-nums" data-testid="line-total-debit">
-                {formatAmount(String(totals.debit))}
-              </td>
-              <td className="px-2 py-2 text-right tabular-nums" data-testid="line-total-credit">
-                {formatAmount(String(totals.credit))}
-              </td>
-              <td className="px-2 py-2" colSpan={canEditLines ? 2 : 1}>
-                <span
-                  data-testid="line-balance-status"
-                  className={totals.balanced ? "text-emerald-700" : "text-red-700"}
-                >
-                  {totals.balanced
-                    ? "Balanced"
-                    : `Difference ${formatAmount(String(totals.difference))}`}
-                </span>
-              </td>
-            </tr>
+            {openingBalanceMode ? (
+              <>
+                <tr className={financeTotalRow}>
+                  <td className={financeTotalLabel} colSpan={1}>
+                    Total Debit
+                  </td>
+                  <td className={financeTotalValue} data-testid="line-total-debit">
+                    {formatAmount(String(totals.debit))}
+                  </td>
+                  <td className="px-2 py-2" />
+                  <td className="px-2 py-2" colSpan={memoColSpan} />
+                </tr>
+                <tr>
+                  <td className={financeTotalLabel} colSpan={1}>
+                    Total Credit
+                  </td>
+                  <td className="px-2 py-2" />
+                  <td className={financeTotalValue} data-testid="line-total-credit">
+                    {formatAmount(String(totals.credit))}
+                  </td>
+                  <td className="px-2 py-2" colSpan={memoColSpan} />
+                </tr>
+                <tr className={financeTotalRowStrong}>
+                  <td className={financeTotalLabel} colSpan={1}>
+                    Difference
+                  </td>
+                  <td className={financeTotalValue} colSpan={2} data-testid="line-total-difference">
+                    <span
+                      className={
+                        totals.balanced ? financeDiffBalanced : financeDiffUnbalanced
+                      }
+                    >
+                      {formatAmount(String(totals.difference))}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2" colSpan={memoColSpan} />
+                </tr>
+              </>
+            ) : (
+              <tr className={financeTotalRowStrong}>
+                <td className={financeTotalLabel} colSpan={1}>
+                  Totals
+                </td>
+                <td className={financeTotalValue} data-testid="line-total-debit">
+                  {formatAmount(String(totals.debit))}
+                </td>
+                <td className={financeTotalValue} data-testid="line-total-credit">
+                  {formatAmount(String(totals.credit))}
+                </td>
+                <td className="px-2 py-2" colSpan={memoColSpan}>
+                  <span
+                    data-testid="line-balance-status"
+                    className={
+                      totals.balanced ? financeDiffBalanced : financeDiffUnbalanced
+                    }
+                  >
+                    {totals.balanced
+                      ? "Balanced"
+                      : `Difference ${formatAmount(String(totals.difference))}`}
+                  </span>
+                </td>
+              </tr>
+            )}
           </tfoot>
         </table>
       </div>

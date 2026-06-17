@@ -1,20 +1,22 @@
 import Link from "next/link"
 import { ChangesInEquityPage } from "@/components/finance/ChangesInEquityPage"
+import { FinanceReportContainer } from "@/components/finance/FinanceReportContainer"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
+import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 export default function Page() {
   return (
     <main className="p-8">
-      <Link href="/finance" className="text-sm text-zinc-600 underline print:hidden">
+      <Link href="/finance" className={`text-sm print:hidden ${themeLinkMuted}`}>
         ← Finance
       </Link>
       <EntityContextPageHeading
         title="Statement of Changes in Equity"
         className="mt-4 text-xl font-semibold"
       />
-      <div className="mt-6">
+      <FinanceReportContainer className="mt-6">
         <ChangesInEquityPage />
-      </div>
+      </FinanceReportContainer>
     </main>
   )
 }

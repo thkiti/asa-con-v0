@@ -1,0 +1,44 @@
+[
+  {
+    "id": "f3d0a59e-235f-4f70-924c-44f24ea42d44",
+    "entryNo": "OPB-260001",
+    "entryType": "OPENING_BALANCE",
+    "status": "CANCELLED",
+    "legalEntityCode": "AD",
+    "entryDate": "2026-01-01T00:00:00.000Z",
+    "description": "ยอดยกมาต้นปี 2026",
+    "postedAt": null,
+    "postedJournalEntryId": null,
+    "postedVoucherId": null,
+    "createdAt": "2026-06-16T04:21:48.094Z",
+    "updatedAt": "2026-06-16T04:28:48.516Z"
+  },
+  {
+    "id": "7b24e9a7-274a-434a-9190-2d14ae4b52dd",
+    "entryNo": "OPB-260002",
+    "entryType": "OPENING_BALANCE",
+    "status": "CANCELLED",
+    "legalEntityCode": "AD",
+    "entryDate": "2026-01-01T00:00:00.000Z",
+    "description": "ยอดยกมาต้นปี 2026",
+    "postedAt": null,
+    "postedJournalEntryId": null,
+    "postedVoucherId": null,
+    "createdAt": "2026-06-16T06:42:24.957Z",
+    "updatedAt": "2026-06-16T09:21:30.079Z"
+  },
+  {
+    "id": "1f4b366f-724f-4228-85fc-7985a9044877",
+    "entryNo": "OPB-260003",
+    "entryType": "OPENING_BALANCE",
+    "status": "CONFIRMED",
+    "legalEntityCode": "AD",
+    "entryDate": "2026-01-01T00:00:00.000Z",
+    "description": "ยอดยกมา อาสาดิสปี 68",
+    "postedAt": null,
+    "postedJournalEntryId": null,
+    "postedVoucherId": null,
+    "createdAt": "2026-06-16T09:34:00.117Z",
+    "updatedAt": "2026-06-16T09:34:18.464Z"
+  }
+]

@@ -1,6 +1,6 @@
 "use client"
 
-import { themeInput } from "@/lib/theme/theme-classes"
+import { themeInput, themeLabel, themeTextSecondary } from "@/lib/theme/theme-classes"
 import type { KeyboardEvent, RefObject } from "react"
 
 import {
@@ -55,7 +55,7 @@ export function LoginBranchSelect({
 
   return (
     <label className="block text-sm" htmlFor={id}>
-      <span className="font-medium">{label}</span>
+      <span className={themeLabel}>{label}</span>
       <div className="relative">
         <select
           ref={selectRef}

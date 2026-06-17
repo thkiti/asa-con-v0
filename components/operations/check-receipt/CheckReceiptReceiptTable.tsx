@@ -7,6 +7,7 @@ import type { CheckReceiptRow } from "@/lib/operations/check-receipt-types"
 import { computeSlipPreviewPosition } from "@/lib/operations-ui/slip-hover-preview-layout"
 import { formatFinancialNumber } from "@/lib/shop-ui/compact-form-helpers"
 import { themeCard, themeMuted } from "@/lib/theme/theme-classes"
+import { numericCell, numericTh } from "@/lib/ui/numeric-display"
 
 type CheckReceiptReceiptTableProps = {
   receipts: CheckReceiptRow[]
@@ -94,7 +95,7 @@ function CheckReceiptTableRow({ row }: { row: CheckReceiptRow }) {
       </td>
       <td className="px-3 py-2 tabular-nums">{formatIssuedAt(row.issuedAt)}</td>
       <td className="px-3 py-2">{row.staff ?? "—"}</td>
-      <td className="px-3 py-2 text-right tabular-nums">
+      <td className={`px-3 py-2 ${numericCell}`}>
         {formatFinancialNumber(row.total)}
       </td>
       <td
@@ -140,7 +141,7 @@ export function CheckReceiptReceiptTable({
             <th className="px-3 py-2 font-semibold">Receipt No</th>
             <th className="px-3 py-2 font-semibold">Issued At</th>
             <th className="px-3 py-2 font-semibold">Staff</th>
-            <th className="px-3 py-2 text-right font-semibold">Total</th>
+            <th className={`px-3 py-2 font-semibold ${numericTh}`}>Total</th>
             <th className="px-3 py-2 font-semibold">Payment</th>
           </tr>
         </thead>

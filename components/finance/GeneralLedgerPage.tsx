@@ -9,6 +9,17 @@ import {
 } from "@/lib/finance-ui/general-ledger"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeMemo,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+  financeTextMuted,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type FilterMode = "period" | "dateRange"
 
@@ -218,8 +229,11 @@ export function GeneralLedgerPage() {
             >
               <header className="space-y-1">
                 <h2 className="text-lg font-medium text-zinc-900">
-                  <span className="font-mono text-sm">{account.accountCode}</span>
-                  <span className="ml-2">{account.accountName}</span>
+                  <FinanceAccountDisplay
+                    accountCode={account.accountCode}
+                    accountName={account.accountName}
+                    data-testid={`gl-account-${account.accountCode}`}
+                  />
                   <span className="ml-2 text-sm font-normal text-zinc-500">
                     ({account.accountType})
                   </span>
@@ -239,47 +253,39 @@ export function GeneralLedgerPage() {
               {account.transactions.length === 0 ? (
                 <p className="mt-3 text-sm text-zinc-500">No period transactions.</p>
               ) : (
-                <div className="mt-3 overflow-x-auto">
-                  <table className="min-w-full text-sm">
+                <div className={`mt-3 ${financeTableScroll}`}>
+                  <table className={financeTable}>
                     <thead>
-                      <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                        <th className="px-2 py-1">Date</th>
-                        <th className="px-2 py-1">Ref</th>
-                        <th className="px-2 py-1">Description</th>
-                        <th className="px-2 py-1 text-right">Debit</th>
-                        <th className="px-2 py-1 text-right">Credit</th>
-                        <th className="px-2 py-1 text-right">Running Balance</th>
+                      <tr>
+                        <th className={financeTh}>Date</th>
+                        <th className={financeTh}>Ref</th>
+                        <th className={financeTh}>Description</th>
+                        <th className={financeThRight}>Debit</th>
+                        <th className={financeThRight}>Credit</th>
+                        <th className={financeThRight}>Running Balance</th>
                       </tr>
                     </thead>
                     <tbody>
                       {account.transactions.map((tx) => (
-                        <tr key={tx.journalLineId} className="border-b border-zinc-100">
-                          <td className="px-2 py-1 whitespace-nowrap">
-                            {formatDateTime(tx.journalDate)}
-                          </td>
-                          <td className="px-2 py-1 font-mono text-xs">
+                        <tr key={tx.journalLineId}>
+                          <td className={financeMemo}>{formatDateTime(tx.journalDate)}</td>
+                          <td className={financeMemo}>
                             <div>{tx.entryNo}</div>
                             {tx.sourceRef ? (
-                              <div className="text-zinc-500">{tx.sourceRef}</div>
+                              <div className={financeTextMuted}>{tx.sourceRef}</div>
                             ) : null}
                           </td>
-                          <td className="px-2 py-1 text-zinc-700">
+                          <td className={financeMemo}>
                             <Link
                               href={`/finance/journal-entries/${tx.journalEntryId}`}
-                              className="underline print:no-underline"
+                              className={`${themeLinkMuted} print:no-underline`}
                             >
                               {tx.description ?? tx.lineMemo ?? "Journal entry"}
                             </Link>
                           </td>
-                          <td className="px-2 py-1 text-right tabular-nums">
-                            {formatAmount(tx.debit)}
-                          </td>
-                          <td className="px-2 py-1 text-right tabular-nums">
-                            {formatAmount(tx.credit)}
-                          </td>
-                          <td className="px-2 py-1 text-right tabular-nums">
-                            {formatAmount(tx.runningBalance)}
-                          </td>
+                          <td className={financeNumber}>{formatAmount(tx.debit)}</td>
+                          <td className={financeNumber}>{formatAmount(tx.credit)}</td>
+                          <td className={financeNumber}>{formatAmount(tx.runningBalance)}</td>
                         </tr>
                       ))}
                     </tbody>

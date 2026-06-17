@@ -1,6 +1,6 @@
+import { formatEntityShort } from "./display"
 import {
   DEFAULT_DOCUMENT_ENTITY_CODE,
-  getLegalEntityDisplayName,
   type DocumentEntityCode,
 } from "./constants"
 
@@ -9,7 +9,7 @@ export function formatEntityContextTitle(
   documentEntityCode: DocumentEntityCode,
   ...segments: string[]
 ): string {
-  const entity = getLegalEntityDisplayName(documentEntityCode)
+  const entity = formatEntityShort(documentEntityCode)
   const normalized = segments
     .map((segment) => segment.trim())
     .filter(Boolean)

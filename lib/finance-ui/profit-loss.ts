@@ -1,4 +1,5 @@
 import { rowsToCsvTable } from "./csv"
+import { formatAccountDisplay } from "./format-account"
 import type { ProfitLossResult } from "./types"
 
 export type ProfitLossFilter = {
@@ -39,19 +40,27 @@ export async function fetchProfitLoss(
 }
 
 export function profitLossToCsv(result: ProfitLossResult): string {
-  const headers = ["Section", "Account Code", "Account Name", "Amount"] as const
+  const headers = ["Section", "Account", "Amount"] as const
   const rows: (string | null)[][] = []
 
   for (const row of result.revenue) {
-    rows.push(["Revenue", row.accountCode, row.accountName, row.amount])
+    rows.push([
+      "Revenue",
+      formatAccountDisplay(row.accountCode, row.accountName),
+      row.amount,
+    ])
   }
-  rows.push(["Revenue", "", "Total Revenue", result.totalRevenue])
+  rows.push(["Revenue", "Total Revenue", result.totalRevenue])
 
   for (const row of result.expenses) {
-    rows.push(["Expense", row.accountCode, row.accountName, row.amount])
+    rows.push([
+      "Expense",
+      formatAccountDisplay(row.accountCode, row.accountName),
+      row.amount,
+    ])
   }
-  rows.push(["Expense", "", "Total Expense", result.totalExpense])
-  rows.push(["Summary", "", "Net Income", result.netIncome])
+  rows.push(["Expense", "Total Expense", result.totalExpense])
+  rows.push(["Summary", "Net Income", result.netIncome])
 
   return rowsToCsvTable(headers, rows)
 }

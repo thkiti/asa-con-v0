@@ -7,6 +7,13 @@
   })
 }
 
+/** Journal line debit/credit display — blank when zero (not 0.00). */
+export function formatJournalLineSideAmount(value: string): string {
+  const num = Number(String(value ?? "").trim() || "0")
+  if (Number.isNaN(num) || num === 0) return ""
+  return formatAmount(String(num))
+}
+
 /** Locale-aware date/time for ISO timestamps in finance UI. */
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—"

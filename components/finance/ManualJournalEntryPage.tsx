@@ -4,7 +4,19 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { postManualJournal } from "@/lib/finance-ui/journal-entries"
 import { formatAmount } from "@/lib/finance-ui/format"
-
+import {
+  financeAccount,
+  financeMemo,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+  financeTotalLabel,
+  financeTotalRowStrong,
+  financeTotalValue,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeInput, themeLinkMuted } from "@/lib/theme/theme-classes"
 type GridRow = {
   key: string
   accountCode: string
@@ -147,21 +159,21 @@ export function ManualJournalEntryPage() {
         </label>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+      <div className={financeTableScroll}>
+        <table className={financeTable}>
           <thead>
-            <tr className="border-b border-zinc-200 text-left text-zinc-500">
-              <th className="px-2 py-1">Account code</th>
-              <th className="px-2 py-1 text-right">Debit</th>
-              <th className="px-2 py-1 text-right">Credit</th>
-              <th className="px-2 py-1">Memo</th>
-              <th className="px-2 py-1" />
+            <tr>
+              <th className={financeTh}>Account</th>
+              <th className={financeThRight}>Debit</th>
+              <th className={financeThRight}>Credit</th>
+              <th className={financeTh}>Memo</th>
+              <th className={financeTh} />
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.key} className="border-b border-zinc-100">
-                <td className="px-2 py-1">
+              <tr key={row.key}>
+                <td className={financeAccount}>
                   <input
                     className="w-full rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
                     value={row.accountCode}
@@ -169,30 +181,30 @@ export function ManualJournalEntryPage() {
                     placeholder="1100"
                   />
                 </td>
-                <td className="px-2 py-1">
+                <td className={financeNumber}>
                   <input
-                    className="w-full rounded border border-zinc-300 px-2 py-1 text-right tabular-nums"
+                    className={`${themeInput} mt-0`}
                     value={row.debit}
                     onChange={(e) => updateRow(row.key, { debit: e.target.value })}
                     inputMode="decimal"
                   />
                 </td>
-                <td className="px-2 py-1">
+                <td className={financeNumber}>
                   <input
-                    className="w-full rounded border border-zinc-300 px-2 py-1 text-right tabular-nums"
+                    className={`${themeInput} mt-0`}
                     value={row.credit}
                     onChange={(e) => updateRow(row.key, { credit: e.target.value })}
                     inputMode="decimal"
                   />
                 </td>
-                <td className="px-2 py-1">
+                <td className={financeMemo}>
                   <input
                     className="w-full rounded border border-zinc-300 px-2 py-1"
                     value={row.memo}
                     onChange={(e) => updateRow(row.key, { memo: e.target.value })}
                   />
                 </td>
-                <td className="px-2 py-1">
+                <td className={financeMemo}>
                   <button
                     type="button"
                     className="text-xs text-zinc-500 underline"
@@ -205,15 +217,15 @@ export function ManualJournalEntryPage() {
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-zinc-300 font-medium">
-              <td className="px-2 py-2">Totals</td>
-              <td className="px-2 py-2 text-right tabular-nums">
+            <tr className={financeTotalRowStrong}>
+              <td className={financeTotalLabel}>Totals</td>
+              <td className={financeTotalValue}>
                 {formatAmount(String(totals.debit))}
               </td>
-              <td className="px-2 py-2 text-right tabular-nums">
+              <td className={financeTotalValue}>
                 {formatAmount(String(totals.credit))}
               </td>
-              <td className="px-2 py-2" colSpan={2}>
+              <td className={financeTotalLabel} colSpan={2}>
                 <span
                   className={
                     totals.balanced ? "text-emerald-700" : "text-red-700"
@@ -251,7 +263,7 @@ export function ManualJournalEntryPage() {
           Posted.{" "}
           <Link
             href={`/finance/journal-entries/${postedJournalId}`}
-            className="underline"
+            className={themeLinkMuted}
           >
             View journal inquiry
           </Link>

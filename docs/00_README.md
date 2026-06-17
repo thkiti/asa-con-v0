@@ -2,6 +2,13 @@
 
 Clean-base modular monolith. Reference repo: `asa-con` (read-only).
 
+## Architecture (ASAS / ASAD)
+
+Core decision: one application, one database, two legal entities — not duplicate ASAS/ASAD systems.
+
+- [architecture/00_ARCHITECTURE_OVERVIEW.md](./architecture/00_ARCHITECTURE_OVERVIEW.md) — principles, module summary, identity leakage
+- [architecture/01_ASAS_ASAD_ENTITY_MODEL.md](./architecture/01_ASAS_ASAD_ENTITY_MODEL.md) — entity model, ownership vs consumer, ASAD menu
+
 ## Reading order
 
 1. [01_MODULAR_MONOLITH_BOUNDARIES.md](./01_MODULAR_MONOLITH_BOUNDARIES.md) — invariants and layer rules

@@ -60,7 +60,7 @@ describe("changesInEquityToCsv", () => {
     })
 
     expect(csv).toContain("Opening balance")
-    expect(csv).toContain("301 Retained Earnings")
+    expect(csv).toContain("301 • Retained Earnings")
     expect(csv).toContain("Closing entry (posted)")
     expect(csv).toContain("Balanced")
   })

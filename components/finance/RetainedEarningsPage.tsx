@@ -9,6 +9,15 @@ import {
   type RetainedEarningsFilter,
 } from "@/lib/finance-ui/retained-earnings"
 import type { BalanceSheetRow, RetainedEarningsResult } from "@/lib/finance-ui/types"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeAccount,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 type FilterMode = "period" | "dateRange"
 
@@ -27,23 +36,25 @@ function AccountTable({
       {rows.length === 0 ? (
         <p className="text-sm text-zinc-500">{emptyMessage}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+        <div className={financeTableScroll}>
+          <table className={financeTable}>
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                <th className="px-2 py-1">Account Code</th>
-                <th className="px-2 py-1">Account Name</th>
-                <th className="px-2 py-1 text-right">Amount</th>
+              <tr>
+                <th className={financeTh}>Account</th>
+                <th className={financeThRight}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.accountCode} className="border-b border-zinc-100">
-                  <td className="px-2 py-1 font-mono text-xs">{row.accountCode}</td>
-                  <td className="px-2 py-1">{row.accountName}</td>
-                  <td className="px-2 py-1 text-right tabular-nums">
-                    {formatAmount(row.amount)}
+                <tr key={row.accountCode}>
+                  <td className={financeAccount}>
+                    <FinanceAccountDisplay
+                      accountCode={row.accountCode}
+                      accountName={row.accountName}
+                      data-testid={`retained-earnings-account-${row.accountCode}`}
+                    />
                   </td>
+                  <td className={financeNumber}>{formatAmount(row.amount)}</td>
                 </tr>
               ))}
             </tbody>

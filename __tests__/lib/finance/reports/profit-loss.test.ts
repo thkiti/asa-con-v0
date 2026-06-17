@@ -342,10 +342,10 @@ describe("profitLossToCsv", () => {
       netIncome: "700",
     })
 
-    expect(csv).toContain('"Revenue","4000","Revenue","1000"')
-    expect(csv).toContain('"Revenue","","Total Revenue","1000"')
-    expect(csv).toContain('"Expense","5000","COGS","300"')
-    expect(csv).toContain('"Expense","","Total Expense","300"')
-    expect(csv).toContain('"Summary","","Net Income","700"')
+    expect(csv).toContain('"Revenue","4000 • Revenue","1000"')
+    expect(csv).toContain('"Revenue","Total Revenue","1000"')
+    expect(csv).toContain('"Expense","5000 • COGS","300"')
+    expect(csv).toContain('"Expense","Total Expense","300"')
+    expect(csv).toContain('"Summary","Net Income","700"')
   })
 })

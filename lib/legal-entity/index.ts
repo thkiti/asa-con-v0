@@ -7,6 +7,13 @@ export {
   type DocumentEntityCode,
 } from "./constants"
 export {
+  formatEntityDisplay,
+  formatEntityShort,
+  formatEntityThai,
+  normalizeDocumentEntityCode,
+  type EntityDisplayLocale,
+} from "./display"
+export {
   formatEntityContextTitle,
   formatEntityContextTitleOrDefault,
 } from "./context-title"

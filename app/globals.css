@@ -9,6 +9,19 @@
   --card-foreground: #171717;
   --muted-foreground: #52525b;
   --border: #e4e4e7;
+  --text-primary: #09090b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --border-subtle: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --surface: #ffffff;
+  --surface-raised: #fafafa;
+  --link-primary: #1d4ed8;
+  --link-primary-hover: #1e40af;
+  --label-text: #3f3f46;
+  --input-bg: #ffffff;
+  --input-border: #d4d4d8;
+  --input-text: #09090b;
   --btn-primary-bg: #18181b;
   --btn-primary-fg: #ffffff;
   --btn-primary-hover: #27272a;
@@ -19,25 +32,71 @@
   --btn-disabled-bg: #f4f4f5;
   --btn-disabled-fg: #a1a1aa;
   --btn-disabled-border: #e4e4e7;
+  --finance-text-primary: var(--text-primary);
+  --finance-text-secondary: #27272a;
+  --finance-text-muted: var(--text-muted);
+  --finance-amount: #09090b;
+  --finance-account-name: #18181b;
+  --finance-header: #52525b;
+  --finance-account-code: #71717a;
+  --finance-account-code-width: 8ch;
+  --finance-memo: #71717a;
+  --finance-description: #52525b;
+  --finance-audit: #a1a1aa;
+  --finance-grid: #d4d4d8;
+  --finance-grid-soft: #e4e4e7;
+  --finance-grid-strong: #a1a1aa;
+  --finance-number: var(--finance-amount);
+  --finance-document-max-width: 1050px;
+  --finance-report-max-width: 1100px;
 }
 
 [data-theme="dark"] {
   --background: #0a0a0a;
-  --foreground: #ededed;
+  --foreground: #fafafa;
   --card: #18181b;
-  --card-foreground: #ededed;
-  --muted-foreground: #a1a1aa;
-  --border: #3f3f46;
+  --card-foreground: #fafafa;
+  --muted-foreground: #d4d4d8;
+  --border: #52525b;
+  --text-primary: #fafafa;
+  --text-secondary: #e4e4e7;
+  --text-muted: #a1a1aa;
+  --border-subtle: #3f3f46;
+  --border-strong: #52525b;
+  --surface: #18181b;
+  --surface-raised: #27272a;
+  --link-primary: #60a5fa;
+  --link-primary-hover: #93c5fd;
+  --label-text: #e4e4e7;
+  --input-bg: #18181b;
+  --input-border: #52525b;
+  --input-text: #fafafa;
   --btn-primary-bg: #fafafa;
-  --btn-primary-fg: #18181b;
+  --btn-primary-fg: #09090b;
   --btn-primary-hover: #e4e4e7;
-  --btn-secondary-bg: #18181b;
-  --btn-secondary-fg: #ededed;
+  --btn-secondary-bg: #27272a;
+  --btn-secondary-fg: #fafafa;
   --btn-secondary-border: #71717a;
-  --btn-secondary-hover: #27272a;
+  --btn-secondary-hover: #3f3f46;
   --btn-disabled-bg: #27272a;
   --btn-disabled-fg: #71717a;
   --btn-disabled-border: #3f3f46;
+  --finance-text-primary: #fafafa;
+  --finance-text-secondary: #e4e4e7;
+  --finance-text-muted: #a1a1aa;
+  --finance-amount: #fafafa;
+  --finance-account-name: #f4f4f5;
+  --finance-header: #a1a1aa;
+  --finance-account-code: #a1a1aa;
+  --finance-memo: #a1a1aa;
+  --finance-description: #d4d4d8;
+  --finance-audit: #71717a;
+  --finance-grid: #3f3f46;
+  --finance-grid-soft: #27272a;
+  --finance-grid-strong: #52525b;
+  --finance-number: var(--finance-amount);
+  --finance-document-max-width: 1050px;
+  --finance-report-max-width: 1100px;
 }
 
 @theme inline {
@@ -55,6 +114,290 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Global semantic utilities */
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.border-subtle {
+  border-color: var(--border-subtle);
+}
+
+.border-strong {
+  border-color: var(--border-strong);
+}
+
+.surface {
+  background-color: var(--surface);
+}
+
+.surface-raised {
+  background-color: var(--surface-raised);
+}
+
+.link-primary {
+  color: var(--link-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-primary:hover {
+  color: var(--link-primary-hover);
+}
+
+/* Global numeric / money columns */
+.numeric-cell,
+.finance-number,
+.finance-total-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.numeric-th {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Finance tables — amount columns fill cell width; values align on right edge */
+.finance-table th.numeric-th,
+.finance-table td.numeric-cell,
+.finance-table td.finance-number,
+.finance-table td.finance-total-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.finance-table td.numeric-cell > :only-child,
+.finance-table td.finance-number > :only-child,
+.finance-table td.finance-total-value > :only-child {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.finance-table td.numeric-cell input,
+.finance-table td.finance-number input,
+.finance-table td.finance-total-value input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Finance Visual Standard v1 — hierarchy via weight + tone (not global contrast) */
+.finance-text-primary {
+  color: var(--finance-amount);
+}
+
+.finance-text-secondary {
+  color: var(--finance-account-name);
+}
+
+.finance-text-muted {
+  color: var(--finance-memo);
+}
+
+.finance-document-container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: var(--finance-document-max-width);
+}
+
+.finance-report-container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: var(--finance-report-max-width);
+}
+
+/* P5 — audit metadata (lowest) */
+.finance-audit-line {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--finance-audit);
+}
+
+/* P4 — description */
+.finance-description-line {
+  font-size: 0.875rem;
+  line-height: 1.375;
+  font-weight: 400;
+  color: var(--finance-description);
+}
+
+.finance-description-label {
+  font-weight: 500;
+  color: var(--finance-memo);
+}
+
+.finance-table {
+  min-width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.finance-table--compact {
+  font-size: 0.75rem;
+}
+
+/* P3 — column headers */
+.finance-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--background);
+  box-shadow: 0 1px 0 var(--finance-grid);
+}
+
+.finance-table thead tr {
+  border-bottom: 1px solid var(--finance-grid);
+  color: var(--finance-header);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.finance-table tbody tr {
+  border-bottom: 1px solid var(--finance-grid-soft);
+}
+
+/* P2 — combined account field (code • name) */
+.finance-account-cell {
+  vertical-align: top;
+}
+
+span.finance-account {
+  display: inline-flex;
+  align-items: baseline;
+  max-width: 100%;
+  font-weight: 400;
+  color: var(--finance-account-name);
+}
+
+span.finance-account .finance-account-code-part {
+  display: block;
+  flex: 0 0 var(--finance-account-code-width);
+  width: var(--finance-account-code-width);
+  min-width: var(--finance-account-code-width);
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--finance-account-code);
+}
+
+span.finance-account .finance-account-code-input {
+  box-sizing: border-box;
+  flex: 0 0 var(--finance-account-code-width);
+  width: var(--finance-account-code-width);
+  min-width: var(--finance-account-code-width);
+  padding-inline: 0.125rem;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+span.finance-account .finance-account-separator {
+  flex: 0 0 auto;
+  color: var(--finance-memo);
+  white-space: pre;
+}
+
+span.finance-account .finance-account-name-part {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 400;
+  color: var(--finance-account-name);
+}
+
+/* Legacy separate cells — prefer .finance-account */
+.finance-table .finance-account-code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--finance-account-code);
+}
+
+.finance-table .finance-account-name {
+  font-weight: 400;
+  color: var(--finance-account-name);
+}
+
+/* P1 — debit / credit / balance */
+.finance-table .finance-number {
+  font-weight: 600;
+  color: var(--finance-amount);
+}
+
+/* P4 — memo */
+.finance-table .finance-memo {
+  font-weight: 400;
+  color: var(--finance-memo);
+}
+
+.finance-table tfoot .finance-total-row {
+  border-top: 1px solid var(--finance-grid);
+}
+
+.finance-table tfoot .finance-total-row-strong {
+  border-top: 1px solid var(--finance-grid-strong);
+}
+
+/* P3 — total row labels */
+.finance-table .finance-total-label {
+  font-weight: 500;
+  color: var(--finance-header);
+}
+
+/* P1 — total / balance values */
+.finance-table .finance-total-value {
+  font-weight: 700;
+  color: var(--finance-amount);
+}
+
+.finance-table th.text-right,
+.finance-table td.text-right {
+  text-align: right;
+}
+
+.finance-diff-balanced {
+  color: #047857;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .finance-diff-balanced {
+  color: #6ee7b7;
+}
+
+.finance-diff-unbalanced {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .finance-diff-unbalanced {
+  color: #f87171;
 }
 
 .compact-theme-select {

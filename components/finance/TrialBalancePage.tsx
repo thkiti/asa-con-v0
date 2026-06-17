@@ -8,6 +8,18 @@ import {
 } from "@/lib/finance-ui/trial-balance"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { TrialBalanceResult } from "@/lib/finance-ui/types"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeAccount,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+  financeTotalLabel,
+  financeTotalRowStrong,
+  financeTotalValue,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 type FilterMode = "period" | "dateRange"
 
@@ -201,46 +213,44 @@ export function TrialBalancePage() {
                 : null}
           </p>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+          <div className={financeTableScroll}>
+            <table className={financeTable}>
               <thead>
-                <tr className="border-b border-zinc-300 text-left text-zinc-600">
-                  <th className="px-2 py-2">Account Code</th>
-                  <th className="px-2 py-2">Account Name</th>
-                  <th className="px-2 py-2 text-right">Debit</th>
-                  <th className="px-2 py-2 text-right">Credit</th>
-                  <th className="px-2 py-2 text-right">Balance</th>
+                <tr>
+                  <th className={financeTh}>Account</th>
+                  <th className={financeThRight}>Debit</th>
+                  <th className={financeThRight}>Credit</th>
+                  <th className={financeThRight}>Balance</th>
                 </tr>
               </thead>
               <tbody>
                 {result.rows.map((row) => (
-                  <tr key={row.accountCode} className="border-b border-zinc-100">
-                    <td className="px-2 py-1 font-mono text-xs">{row.accountCode}</td>
-                    <td className="px-2 py-1">{row.accountName}</td>
-                    <td className="px-2 py-1 text-right tabular-nums">
-                      {formatAmount(row.totalDebit)}
+                  <tr key={row.accountCode}>
+                    <td className={financeAccount}>
+                      <FinanceAccountDisplay
+                        accountCode={row.accountCode}
+                        accountName={row.accountName}
+                        data-testid={`trial-balance-account-${row.accountCode}`}
+                      />
                     </td>
-                    <td className="px-2 py-1 text-right tabular-nums">
-                      {formatAmount(row.totalCredit)}
-                    </td>
-                    <td className="px-2 py-1 text-right tabular-nums">
-                      {formatAmount(row.signedBalance)}
-                    </td>
+                    <td className={financeNumber}>{formatAmount(row.totalDebit)}</td>
+                    <td className={financeNumber}>{formatAmount(row.totalCredit)}</td>
+                    <td className={financeNumber}>{formatAmount(row.signedBalance)}</td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-zinc-400 font-semibold">
-                  <td className="px-2 py-2" colSpan={2}>
+                <tr className={financeTotalRowStrong}>
+                  <td className={financeTotalLabel} colSpan={1}>
                     Totals
                   </td>
-                  <td className="px-2 py-2 text-right tabular-nums">
+                  <td className={financeTotalValue}>
                     {formatAmount(result.totalDebits)}
                   </td>
-                  <td className="px-2 py-2 text-right tabular-nums">
+                  <td className={financeTotalValue}>
                     {formatAmount(result.totalCredits)}
                   </td>
-                  <td className="px-2 py-2 text-right tabular-nums">
+                  <td className={financeTotalValue}>
                     {formatAmount(result.difference)}
                   </td>
                 </tr>

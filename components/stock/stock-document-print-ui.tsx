@@ -7,6 +7,7 @@ import {
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import type { StockDocumentDetailVM } from "@/lib/stock-ui/types"
+import { numericCell, numericTh } from "@/lib/ui/numeric-display"
 
 type StockDocumentPrintHeaderProps = {
   detail: StockDocumentDetailVM
@@ -88,11 +89,11 @@ export function StockDocumentPrintLinesTable({
           <tr className="border-b border-zinc-400 text-left text-zinc-700">
             <th className="py-1 pr-3 font-medium">Code</th>
             <th className="py-1 pr-3 font-medium">Name</th>
-            <th className="py-1 pr-3 text-right font-medium">Qty</th>
+            <th className={`py-1 pr-3 font-medium ${numericTh}`}>Qty</th>
             {showAdjFields ? (
               <>
-                <th className="py-1 pr-3 text-right font-medium">Ending qty</th>
-                <th className="py-1 text-right font-medium">ADJ delta</th>
+                <th className={`py-1 pr-3 font-medium ${numericTh}`}>Ending qty</th>
+                <th className={`py-1 font-medium ${numericTh}`}>ADJ delta</th>
               </>
             ) : null}
           </tr>
@@ -102,13 +103,13 @@ export function StockDocumentPrintLinesTable({
             <tr key={line.id} className="border-b border-zinc-200">
               <td className="py-1 pr-3 font-mono">{line.product.code}</td>
               <td className="py-1 pr-3">{line.product.name}</td>
-              <td className="py-1 pr-3 text-right tabular-nums">{line.qty}</td>
+              <td className={`py-1 pr-3 ${numericCell}`}>{line.qty}</td>
               {showAdjFields ? (
                 <>
-                  <td className="py-1 pr-3 text-right tabular-nums">
+                  <td className={`py-1 pr-3 ${numericCell}`}>
                     {line.endingQty ?? "—"}
                   </td>
-                  <td className="py-1 text-right tabular-nums">
+                  <td className={`py-1 ${numericCell}`}>
                     {line.reviewPostingDelta ?? "—"}
                   </td>
                 </>

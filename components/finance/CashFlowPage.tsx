@@ -8,6 +8,17 @@ import {
 } from "@/lib/finance-ui/cash-flow"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { CashFlowResult, CashFlowSection } from "@/lib/finance-ui/types"
+import {
+  financeAccountName,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+  financeTotalLabel,
+  financeTotalRowStrong,
+  financeTotalValue,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 type FilterMode = "period" | "dateRange"
 
@@ -24,30 +35,26 @@ function SectionTable({
       {section.lines.length === 0 ? (
         <p className="text-sm text-zinc-500">No lines in scope.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+        <div className={financeTableScroll}>
+          <table className={financeTable}>
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                <th className="px-2 py-1">Line</th>
-                <th className="px-2 py-1 text-right">Amount</th>
+              <tr>
+                <th className={financeTh}>Line</th>
+                <th className={financeThRight}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {section.lines.map((line) => (
-                <tr key={line.key} className="border-b border-zinc-100">
-                  <td className="px-2 py-1">{line.label}</td>
-                  <td className="px-2 py-1 text-right tabular-nums">
-                    {formatAmount(line.amount)}
-                  </td>
+                <tr key={line.key}>
+                  <td className={financeAccountName}>{line.label}</td>
+                  <td className={financeNumber}>{formatAmount(line.amount)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t border-zinc-300 font-semibold">
-                <td className="px-2 py-2">Subtotal</td>
-                <td className="px-2 py-2 text-right tabular-nums">
-                  {formatAmount(section.subtotal)}
-                </td>
+              <tr className={financeTotalRowStrong}>
+                <td className={financeTotalLabel}>Subtotal</td>
+                <td className={financeTotalValue}>{formatAmount(section.subtotal)}</td>
               </tr>
             </tfoot>
           </table>

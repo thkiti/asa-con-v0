@@ -5,6 +5,15 @@ import { fetchVoucherById } from "@/lib/finance-ui/fetchers"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import { formatFinanceRefType } from "@/lib/finance-ui/traceability"
 import type { VoucherDetail } from "@/lib/finance-ui/types"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeMemo,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+} from "@/lib/finance-ui/finance-visual-classes"
 import { CopyRefButton } from "./traceability-badges"
 
 type VoucherDetailViewProps = {
@@ -25,33 +34,32 @@ function VoucherLinesTable({
   }
 
   return (
-    <div className="mt-3 overflow-x-auto">
+    <div className={`mt-3 ${financeTableScroll}`}>
       <p className="font-medium text-zinc-800">{title}</p>
-      <table className="mt-2 min-w-full text-sm">
+      <table className={`mt-2 ${financeTable}`}>
         <thead>
-          <tr className="border-b border-zinc-200 text-left text-zinc-500">
-            <th className="px-2 py-1">#</th>
-            <th className="px-2 py-1">Account</th>
-            <th className="px-2 py-1 text-right">Debit</th>
-            <th className="px-2 py-1 text-right">Credit</th>
-            <th className="px-2 py-1">Memo</th>
+          <tr>
+            <th className={financeTh}>#</th>
+            <th className={financeTh}>Account</th>
+            <th className={financeThRight}>Debit</th>
+            <th className={financeThRight}>Credit</th>
+            <th className={financeTh}>Memo</th>
           </tr>
         </thead>
         <tbody>
           {lines.map((line) => (
-            <tr key={line.id} className="border-b border-zinc-100">
-              <td className="px-2 py-1 tabular-nums">{line.lineNo}</td>
-              <td className="px-2 py-1">
-                <span className="font-mono text-xs">{line.accountCode}</span>
-                <span className="ml-2 text-zinc-700">{line.accountName}</span>
+            <tr key={line.id}>
+              <td className={financeNumber}>{line.lineNo}</td>
+              <td>
+                <FinanceAccountDisplay
+                  accountCode={line.accountCode}
+                  accountName={line.accountName}
+                  data-testid={`voucher-line-account-${line.id}`}
+                />
               </td>
-              <td className="px-2 py-1 text-right tabular-nums">
-                {formatAmount(line.debit)}
-              </td>
-              <td className="px-2 py-1 text-right tabular-nums">
-                {formatAmount(line.credit)}
-              </td>
-              <td className="px-2 py-1 text-zinc-600">{line.memo ?? "—"}</td>
+              <td className={financeNumber}>{formatAmount(line.debit)}</td>
+              <td className={financeNumber}>{formatAmount(line.credit)}</td>
+              <td className={financeMemo}>{line.memo ?? "—"}</td>
             </tr>
           ))}
         </tbody>

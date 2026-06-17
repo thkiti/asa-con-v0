@@ -1,5 +1,6 @@
 import { netIncomeLabel } from "./profit-loss"
 import { rowsToCsvTable } from "./csv"
+import { formatAccountDisplay } from "./format-account"
 import type { BalanceSheetRow, RetainedEarningsResult } from "./types"
 
 export type RetainedEarningsFilter = {
@@ -41,25 +42,29 @@ export async function fetchRetainedEarnings(
 
 function accountRows(label: string, rows: BalanceSheetRow[]): string[][] {
   if (rows.length === 0) {
-    return [[`${label}`, "", "", "0"]]
+    return [[`${label}`, "", "0"]]
   }
-  return rows.map((row) => [label, row.accountCode, row.accountName, row.amount])
+  return rows.map((row) => [
+    label,
+    formatAccountDisplay(row.accountCode, row.accountName),
+    row.amount,
+  ])
 }
 
 export function retainedEarningsToCsv(result: RetainedEarningsResult): string {
-  const headers = ["Section", "Account Code", "Account Name", "Amount"] as const
+  const headers = ["Section", "Account", "Amount"] as const
   const incomeLabel = netIncomeLabel(result.currentNetIncome)
   const bodyRows = [
     ...accountRows("Retained Earnings (301)", result.retainedEarningsAccounts),
-    ["Retained Earnings (301)", "", "Posted Retained Earnings", result.postedRetainedEarnings],
+    ["Retained Earnings (301)", "Posted Retained Earnings", result.postedRetainedEarnings],
     ...accountRows("Other Equity", result.otherEquityAccounts),
-    ["Other Equity", "", "Other Equity Total", result.otherEquityTotal],
-    ["Equity", "", "Posted Total Equity", result.postedTotalEquity],
-    ["P&L", "", `Current Net ${incomeLabel}`, result.currentNetIncome],
-    ["Bridge", "", "Adjusted Retained Earnings", result.adjustedRetainedEarnings],
-    ["Bridge", "", "Adjusted Total Equity", result.adjustedTotalEquity],
-    ["Reconciliation", "", "Balance Sheet Difference", result.balanceSheetDifference],
-    ["Reconciliation", "", "Unclosed Earnings Gap", result.unclosedEarningsGap],
+    ["Other Equity", "Other Equity Total", result.otherEquityTotal],
+    ["Equity", "Posted Total Equity", result.postedTotalEquity],
+    ["P&L", `Current Net ${incomeLabel}`, result.currentNetIncome],
+    ["Bridge", "Adjusted Retained Earnings", result.adjustedRetainedEarnings],
+    ["Bridge", "Adjusted Total Equity", result.adjustedTotalEquity],
+    ["Reconciliation", "Balance Sheet Difference", result.balanceSheetDifference],
+    ["Reconciliation", "Unclosed Earnings Gap", result.unclosedEarningsGap],
   ]
 
   const table = rowsToCsvTable(headers, bodyRows)

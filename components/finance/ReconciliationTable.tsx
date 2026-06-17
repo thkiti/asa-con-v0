@@ -1,5 +1,6 @@
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { ReconciliationVariance } from "@/lib/finance-ui/types"
+import { numericCell, numericTh } from "@/lib/ui/numeric-display"
 import { VarianceBadge } from "./VarianceBadge"
 
 type ReconciliationTableProps = {
@@ -18,9 +19,9 @@ export function ReconciliationTable({
           <tr className="border-b border-zinc-200 text-left text-zinc-600">
             <th className="px-3 py-2 font-medium">Domain</th>
             <th className="px-3 py-2 font-medium">Label</th>
-            <th className="px-3 py-2 font-medium text-right">Operational</th>
-            <th className="px-3 py-2 font-medium text-right">GL</th>
-            <th className="px-3 py-2 font-medium text-right">Variance</th>
+            <th className={`px-3 py-2 font-medium ${numericTh}`}>Operational</th>
+            <th className={`px-3 py-2 font-medium ${numericTh}`}>GL</th>
+            <th className={`px-3 py-2 font-medium ${numericTh}`}>Variance</th>
             {showReason ? (
               <th className="px-3 py-2 font-medium">Reason</th>
             ) : null}
@@ -44,13 +45,13 @@ export function ReconciliationTable({
               >
                 <td className="px-3 py-2">{row.domain}</td>
                 <td className="px-3 py-2">{row.label}</td>
-                <td className="px-3 py-2 text-right tabular-nums">
+                <td className={`px-3 py-2 ${numericCell}`}>
                   {formatAmount(row.operationalAmount)}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">
+                <td className={`px-3 py-2 ${numericCell}`}>
                   {formatAmount(row.glAmount)}
                 </td>
-                <td className="px-3 py-2 text-right">
+                <td className={`px-3 py-2 ${numericCell}`}>
                   <VarianceBadge variance={row.variance} />
                 </td>
                 {showReason ? (

@@ -1,4 +1,5 @@
 import { rowsToCsvTable } from "./csv"
+import { formatAccountDisplay } from "./format-account"
 import type { TrialBalanceResult, TrialBalanceRow } from "./types"
 
 export type TrialBalanceFilter = {
@@ -41,18 +42,10 @@ export async function fetchTrialBalance(
 }
 
 export function trialBalanceToCsv(result: TrialBalanceResult): string {
-  const headers = [
-    "Account Code",
-    "Account Name",
-    "Account Type",
-    "Debit",
-    "Credit",
-    "Balance",
-  ] as const
+  const headers = ["Account", "Account Type", "Debit", "Credit", "Balance"] as const
 
   const bodyRows = result.rows.map((row: TrialBalanceRow) => [
-    row.accountCode,
-    row.accountName,
+    formatAccountDisplay(row.accountCode, row.accountName),
     row.accountType,
     row.totalDebit,
     row.totalCredit,
@@ -60,19 +53,12 @@ export function trialBalanceToCsv(result: TrialBalanceResult): string {
   ])
 
   const table = rowsToCsvTable(headers, bodyRows)
-  const footer = [
-    "",
-    "",
-    "TOTAL",
-    result.totalDebits,
-    result.totalCredits,
-    result.difference,
-  ]
+  const footer = ["TOTAL", "", result.totalDebits, result.totalCredits, result.difference]
     .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
     .join(",")
 
   const status = result.isBalanced ? "Balanced" : "Out of Balance"
-  return `${table}\n${footer}\n"","","Status","","","${status}"`
+  return `${table}\n${footer}\n"","","Status","","${status}"`
 }
 
 export function downloadTrialBalanceCsv(

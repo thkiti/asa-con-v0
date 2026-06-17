@@ -1,5 +1,6 @@
 import {
   formatAmount,
+  formatJournalLineSideAmount,
   formatVarianceLabel,
   getVarianceTone,
 } from "@/lib/finance-ui/format"
@@ -12,6 +13,19 @@ describe("formatAmount", () => {
 
   it("returns original value when not numeric", () => {
     expect(formatAmount("n/a")).toBe("n/a")
+  })
+})
+
+describe("formatJournalLineSideAmount", () => {
+  it("returns blank for zero amounts", () => {
+    expect(formatJournalLineSideAmount("0")).toBe("")
+    expect(formatJournalLineSideAmount("0.00")).toBe("")
+    expect(formatJournalLineSideAmount("")).toBe("")
+  })
+
+  it("formats non-zero amounts like formatAmount", () => {
+    expect(formatJournalLineSideAmount("1000")).toMatch(/1,000\.00|1000\.00/)
+    expect(formatJournalLineSideAmount("2000")).toMatch(/2,000\.00|2000\.00/)
   })
 })
 

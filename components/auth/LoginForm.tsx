@@ -26,8 +26,9 @@ import {
   themeBtnPrimary,
   themeCard,
   themeInput,
-  themeLinkMuted,
-  themeMuted,
+  themeLabel,
+  themeLinkPrimary,
+  themeTextSecondary,
 } from "@/lib/theme/theme-classes"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
@@ -384,7 +385,7 @@ export function LoginForm() {
 
       <div className={themeCard} aria-busy={busy}>
         <h1 className="text-xl font-semibold">เข้าสู่ระบบ</h1>
-        <p className={`mt-2 text-sm ${themeMuted}`}>
+        <p className={`mt-2 text-sm ${themeTextSecondary}`}>
           รหัสพนักงาน → รหัสสาขา → รหัสผ่าน
         </p>
 
@@ -466,7 +467,7 @@ export function LoginForm() {
           ) : null}
 
           <label className="block text-sm" htmlFor="login-password">
-            <span className="font-medium">รหัสผ่าน</span>
+            <span className={themeLabel}>รหัสผ่าน</span>
             <div className="relative">
               <input
                 ref={passwordRef}
@@ -531,7 +532,7 @@ export function LoginForm() {
           type="button"
           onClick={() => void onLogout()}
           disabled={busy}
-          className={`mt-6 text-sm ${themeLinkMuted}`}
+          className={`mt-6 text-sm ${themeLinkPrimary}`}
         >
           ออกจากระบบ
         </button>

@@ -1,4 +1,5 @@
 import { rowsToCsvTable } from "./csv"
+import { formatAccountDisplay } from "./format-account"
 import type { BalanceSheetResult, BalanceSheetRow } from "./types"
 
 export type BalanceSheetFilter = {
@@ -42,22 +43,26 @@ export async function fetchBalanceSheet(
 
 function sectionRows(label: string, rows: BalanceSheetRow[]): string[][] {
   if (rows.length === 0) {
-    return [[`${label}`, "", "", "0"]]
+    return [[`${label}`, "", "0"]]
   }
-  return rows.map((row) => [label, row.accountCode, row.accountName, row.amount])
+  return rows.map((row) => [
+    label,
+    formatAccountDisplay(row.accountCode, row.accountName),
+    row.amount,
+  ])
 }
 
 export function balanceSheetToCsv(result: BalanceSheetResult): string {
-  const headers = ["Section", "Account Code", "Account Name", "Amount"] as const
+  const headers = ["Section", "Account", "Amount"] as const
   const bodyRows = [
     ...sectionRows("Assets", result.assets),
-    ["Assets", "", "TOTAL", result.totalAssets],
+    ["Assets", "TOTAL", result.totalAssets],
     ...sectionRows("Liabilities", result.liabilities),
-    ["Liabilities", "", "TOTAL", result.totalLiabilities],
+    ["Liabilities", "TOTAL", result.totalLiabilities],
     ...sectionRows("Equity", result.equity),
-    ["Equity", "", "TOTAL", result.totalEquity],
-    ["", "", "Liabilities + Equity", result.totalLiabilitiesAndEquity],
-    ["", "", "Difference (Assets - L+E)", result.balanceDifference],
+    ["Equity", "TOTAL", result.totalEquity],
+    ["", "Liabilities + Equity", result.totalLiabilitiesAndEquity],
+    ["", "Difference (Assets - L+E)", result.balanceDifference],
   ]
 
   const table = rowsToCsvTable(headers, bodyRows)

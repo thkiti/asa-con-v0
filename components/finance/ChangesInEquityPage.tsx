@@ -8,6 +8,17 @@ import {
 } from "@/lib/finance-ui/changes-in-equity"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { ChangesInEquityResult, ChangesInEquityRowKey } from "@/lib/finance-ui/types"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeAccountName,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+  financeTotalRow,
+  financeTotalRowStrong,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 type FilterMode = "period" | "dateRange"
 
@@ -21,13 +32,13 @@ function profitSourceLabel(source: ChangesInEquityResult["profitSource"]): strin
 function rowClassName(rowKey: ChangesInEquityRowKey, isBalanced: boolean): string {
   if (rowKey === "RECONCILIATION_CHECK") {
     return isBalanced
-      ? "border-t border-zinc-300 bg-zinc-50 font-medium"
-      : "border-t border-zinc-300 bg-amber-50 font-medium text-amber-950"
+      ? `${financeTotalRow} bg-zinc-50 font-medium`
+      : "bg-amber-50 font-medium text-amber-950"
   }
   if (rowKey === "CLOSING") {
-    return "border-t border-zinc-200 font-semibold"
+    return financeTotalRowStrong
   }
-  return "border-b border-zinc-100"
+  return ""
 }
 
 export function ChangesInEquityPage() {
@@ -235,35 +246,36 @@ export function ChangesInEquityPage() {
           {result.columns.length === 0 ? (
             <p className="text-sm text-zinc-500">No equity account activity in scope.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div className={financeTableScroll}>
+              <table className={financeTable}>
                 <thead>
-                  <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                    <th className="px-2 py-2">Row</th>
+                  <tr>
+                    <th className={financeTh}>Row</th>
                     {result.columns.map((column) => (
-                      <th key={column.accountCode} className="px-2 py-2 text-right">
-                        <div className="font-mono text-xs">{column.accountCode}</div>
-                        <div className="font-normal text-zinc-600">{column.accountName}</div>
+                      <th key={column.accountCode} className={financeTh}>
+                        <FinanceAccountDisplay
+                          accountCode={column.accountCode}
+                          accountName={column.accountName}
+                          data-testid={`cie-column-account-${column.accountCode}`}
+                        />
                       </th>
                     ))}
-                    <th className="px-2 py-2 text-right">Total</th>
+                    <th className={financeThRight}>Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {result.rows.map((row) => (
                     <tr key={row.rowKey} className={rowClassName(row.rowKey, result.reconciliation.isBalanced)}>
-                      <td className="px-2 py-2">{row.label}</td>
+                      <td className={financeAccountName}>{row.label}</td>
                       {result.columns.map((column) => (
                         <td
                           key={`${row.rowKey}-${column.accountCode}`}
-                          className="px-2 py-2 text-right tabular-nums"
+                          className={financeNumber}
                         >
                           {formatAmount(row.amounts[column.accountCode] ?? "0")}
                         </td>
                       ))}
-                      <td className="px-2 py-2 text-right tabular-nums">
-                        {formatAmount(row.total)}
-                      </td>
+                      <td className={financeNumber}>{formatAmount(row.total)}</td>
                     </tr>
                   ))}
                 </tbody>

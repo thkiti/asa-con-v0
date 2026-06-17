@@ -1,4 +1,5 @@
 import { rowsToCsvTable } from "./csv"
+import { formatAccountDisplay } from "./format-account"
 import type { ChangesInEquityResult } from "./types"
 
 export type ChangesInEquityFilter = {
@@ -39,8 +40,8 @@ export async function fetchChangesInEquity(
 }
 
 export function changesInEquityToCsv(result: ChangesInEquityResult): string {
-  const accountHeaders = result.columns.map(
-    (column) => `${column.accountCode} ${column.accountName}`
+  const accountHeaders = result.columns.map((column) =>
+    formatAccountDisplay(column.accountCode, column.accountName)
   )
   const headers = ["Row", ...accountHeaders, "Total"] as const
   const bodyRows = result.rows.map((row) => [

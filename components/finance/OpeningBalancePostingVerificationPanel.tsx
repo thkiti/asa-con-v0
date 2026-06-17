@@ -5,6 +5,16 @@ import { useEffect, useState } from "react"
 import { formatAmount } from "@/lib/finance-ui/format"
 import { fetchOpeningBalancePostingVerification } from "@/lib/finance-ui/opening-balance"
 import type { ManualJournalEntryPostingVerification } from "@/lib/finance/manual-journal-entry/manual-journal-entry-posting-verification-types"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeAccountName,
+  financeNumber,
+  financeTableCompact,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type OpeningBalancePostingVerificationPanelProps = {
   entryId: string
@@ -103,7 +113,7 @@ export function OpeningBalancePostingVerificationPanel({
         <p className="text-sm">
           <Link
             href={`/finance/journal-entries/${postedJournalEntryId}`}
-            className="underline text-zinc-700"
+            className={`text-sm ${themeLinkMuted}`}
             data-testid="opb-verification-journal-link"
           >
             View posted GL journal
@@ -114,34 +124,31 @@ export function OpeningBalancePostingVerificationPanel({
       ) : null}
 
       {verification.accountChecks.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-xs">
+        <div className={financeTableScroll}>
+          <table className={financeTableCompact}>
             <thead>
-              <tr className="border-b border-emerald-200 text-left text-zinc-600">
-                <th className="px-2 py-1">Account</th>
-                <th className="px-2 py-1 text-right">Entry Dr</th>
-                <th className="px-2 py-1 text-right">Entry Cr</th>
-                <th className="px-2 py-1 text-right">GL closing</th>
-                <th className="px-2 py-1">In GL</th>
+              <tr>
+                <th className={financeTh}>Account</th>
+                <th className={financeThRight}>Entry Dr</th>
+                <th className={financeThRight}>Entry Cr</th>
+                <th className={financeThRight}>GL closing</th>
+                <th className={financeTh}>In GL</th>
               </tr>
             </thead>
             <tbody>
               {verification.accountChecks.map((row) => (
-                <tr key={row.accountCode} className="border-b border-emerald-100">
-                  <td className="px-2 py-1 font-mono">
-                    {row.accountCode}{" "}
-                    <span className="font-sans text-zinc-500">{row.accountName}</span>
+                <tr key={row.accountCode}>
+                  <td>
+                    <FinanceAccountDisplay
+                      accountCode={row.accountCode}
+                      accountName={row.accountName}
+                      data-testid={`opb-verification-account-${row.accountCode}`}
+                    />
                   </td>
-                  <td className="px-2 py-1 text-right tabular-nums">
-                    {formatAmount(row.entryDebit)}
-                  </td>
-                  <td className="px-2 py-1 text-right tabular-nums">
-                    {formatAmount(row.entryCredit)}
-                  </td>
-                  <td className="px-2 py-1 text-right tabular-nums">
-                    {formatAmount(row.closingBalance)}
-                  </td>
-                  <td className="px-2 py-1">
+                  <td className={financeNumber}>{formatAmount(row.entryDebit)}</td>
+                  <td className={financeNumber}>{formatAmount(row.entryCredit)}</td>
+                  <td className={financeNumber}>{formatAmount(row.closingBalance)}</td>
+                  <td className={financeAccountName}>
                     {row.sourceRefMatches ? (
                       <span className="text-emerald-800">Yes</span>
                     ) : (

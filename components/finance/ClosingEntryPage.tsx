@@ -9,6 +9,16 @@ import {
   postClosingEntryForPeriod,
 } from "@/lib/finance-ui/closing-entry"
 import { PeriodStatusBadge } from "./PeriodStatusBadge"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import {
+  financeMemo,
+  financeNumber,
+  financeTable,
+  financeTableScroll,
+  financeTh,
+  financeThRight,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type ClosingEntryPageProps = {
   periodId: string
@@ -116,7 +126,7 @@ export function ClosingEntryPage({ periodId }: ClosingEntryPageProps) {
           </button>
           <Link
             href={`/finance/periods/${encodeURIComponent(periodId)}/close-readiness`}
-            className="rounded border border-zinc-300 px-3 py-2 text-sm hover:bg-white"
+            className={`rounded border border-zinc-300 px-3 py-2 text-sm hover:bg-white ${themeLinkMuted}`}
           >
             Close readiness
           </Link>
@@ -166,26 +176,29 @@ export function ClosingEntryPage({ periodId }: ClosingEntryPageProps) {
       </section>
 
       {simulation.lines.length > 0 ? (
-        <section className="overflow-x-auto rounded border border-zinc-200">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
+        <section className={`${financeTableScroll} rounded border border-zinc-200`}>
+          <table className={financeTable}>
+            <thead>
               <tr>
-                <th className="px-3 py-2">Account</th>
-                <th className="px-3 py-2">Debit</th>
-                <th className="px-3 py-2">Credit</th>
-                <th className="px-3 py-2">Reason</th>
+                <th className={financeTh}>Account</th>
+                <th className={financeThRight}>Debit</th>
+                <th className={financeThRight}>Credit</th>
+                <th className={financeTh}>Reason</th>
               </tr>
             </thead>
             <tbody>
               {simulation.lines.map((line, index) => (
-                <tr key={`${line.accountCode}-${index}`} className="border-b border-zinc-100">
-                  <td className="px-3 py-2">
-                    <span className="font-medium">{line.accountCode}</span>
-                    <span className="ml-2 text-zinc-600">{line.accountName}</span>
+                <tr key={`${line.accountCode}-${index}`}>
+                  <td>
+                    <FinanceAccountDisplay
+                      accountCode={line.accountCode}
+                      accountName={line.accountName}
+                      data-testid={`closing-entry-account-${line.accountCode}-${index}`}
+                    />
                   </td>
-                  <td className="px-3 py-2">{line.debit}</td>
-                  <td className="px-3 py-2">{line.credit}</td>
-                  <td className="px-3 py-2 text-zinc-600">{line.reason}</td>
+                  <td className={financeNumber}>{line.debit}</td>
+                  <td className={financeNumber}>{line.credit}</td>
+                  <td className={financeMemo}>{line.reason}</td>
                 </tr>
               ))}
             </tbody>
