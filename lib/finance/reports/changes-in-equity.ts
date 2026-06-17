@@ -62,7 +62,7 @@ async function resolvePeriodMeta(
   filter: ChangesInEquityFilter
 ): Promise<BalanceSheetPeriodMeta> {
   const base: BalanceSheetPeriodMeta = {
-    branchId: filter.branchId,
+    legalEntityCode: filter.legalEntityCode,
     periodKey: filter.periodKey,
     from: filter.from,
     to: filter.to,
@@ -73,7 +73,10 @@ async function resolvePeriodMeta(
   }
 
   const period = await prisma.accountingPeriod.findUnique({
-    where: accountingPeriodUniqueWhere({ periodKey: filter.periodKey }),
+    where: accountingPeriodUniqueWhere({
+      periodKey: filter.periodKey,
+      legalEntityCode: filter.legalEntityCode,
+    }),
     select: { id: true, status: true },
   })
 
@@ -90,10 +93,11 @@ async function resolvePeriodMeta(
 
 async function resolvePeriodExists(
   prisma: ChangesInEquityPrisma,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: ChangesInEquityFilter["legalEntityCode"]
 ): Promise<{ exists: boolean; periodId: string | null }> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: accountingPeriodUniqueWhere({ periodKey }),
+    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
     select: { id: true },
   })
   return { exists: period != null, periodId: period?.id ?? null }
@@ -341,7 +345,11 @@ export async function getChangesInEquity(
   const period = await resolvePeriodMeta(prisma, filter)
 
   if (filter.periodKey) {
-    const { exists } = await resolvePeriodExists(prisma, filter.periodKey)
+    const { exists } = await resolvePeriodExists(
+      prisma,
+      filter.periodKey,
+      filter.legalEntityCode
+    )
     if (!exists) {
       return emptyResult(filter, period)
     }

@@ -1,3 +1,4 @@
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import type { PrismaClient } from "@/generated/prisma/client"
 import { addMoney, toMoney, ZERO } from "@/lib/finance/decimal"
 import { getGeneralLedger } from "@/lib/finance/reports/general-ledger"
@@ -96,12 +97,14 @@ export async function getManualJournalEntryPostingVerification(
 
   const periodKey = periodKeyFromDate(entry.entryDate)
   const trialBalance = await getTrialBalance(prisma, {
-    branchId: entry.branchId,
+    legalEntityCode: parseDocumentEntityCode(entry.legalEntityCode) ?? "AS",
     periodKey,
   })
 
   const accountCodes = entry.lines.map((line) => line.glAccount.code)
+  const entityCode = parseDocumentEntityCode(entry.legalEntityCode) ?? "AS"
   const generalLedger = await getGeneralLedger(prisma, {
+    legalEntityCode: entityCode,
     branchId: entry.branchId,
     periodKey,
     accountCodes,

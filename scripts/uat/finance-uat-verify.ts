@@ -50,11 +50,12 @@ async function main() {
   }
 
   if (branch) {
-    const filter = { branchId: branch.id, periodKey }
+    const entityFilter = { legalEntityCode: "AS" as const, periodKey }
+    const plFilter = { legalEntityCode: "AS" as const, branchId: branch.id, periodKey }
     const [tb, bs, pl] = await Promise.all([
-      getTrialBalance(prisma, filter),
-      getBalanceSheet(prisma, filter),
-      getProfitLoss(prisma, filter),
+      getTrialBalance(prisma, entityFilter),
+      getBalanceSheet(prisma, entityFilter),
+      getProfitLoss(prisma, plFilter),
     ])
     const hasActivity = tb.rows.some(
       (r) => r.totalDebit !== "0" || r.totalCredit !== "0" || r.signedBalance !== "0"

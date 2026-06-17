@@ -25,10 +25,11 @@ const ACCOUNT_TYPE_ORDER: Record<GlAccountType, number> = {
 
 async function resolvePeriodId(
   prisma: TrialBalancePrisma,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: TrialBalanceFilter["legalEntityCode"]
 ): Promise<string | null> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: accountingPeriodUniqueWhere({ periodKey }),
+    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
     select: { id: true },
   })
   return period?.id ?? null
@@ -39,7 +40,7 @@ function buildJournalEntryWhere(
   periodId: string | null
 ): Prisma.JournalEntryWhereInput {
   const where: Prisma.JournalEntryWhereInput = {
-    branchId: filter.branchId,
+    legalEntityCode: filter.legalEntityCode,
   }
 
   if (periodId) {
@@ -74,7 +75,11 @@ export async function getTrialBalance(
 ): Promise<TrialBalanceResult> {
   let periodId: string | null = null
   if (filter.periodKey) {
-    periodId = await resolvePeriodId(prisma, filter.periodKey)
+    periodId = await resolvePeriodId(
+      prisma,
+      filter.periodKey,
+      filter.legalEntityCode
+    )
     if (!periodId) {
       return {
         filter,

@@ -1,4 +1,6 @@
 ﻿import type { AccountingPeriodStatus, PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import { buildClosingEntryLines } from "./closing-entry"
 import { getActiveClosingEntry } from "./closing-entry-status"
 import { buildCloseChecklist, toCloseChecklistSnapshotRef } from "./close-checklist"
@@ -24,9 +26,21 @@ export type CloseReadinessChecklistPrisma = Pick<
 export type CloseReadinessPeriodInput = {
   id: string
   branchId: string
+  legalEntityCode: string
   periodKey: string
   status: AccountingPeriodStatus
   closedAt: Date | null
+}
+
+function resolvePeriodEntityCode(period: CloseReadinessPeriodInput): DocumentEntityCode {
+  const code = parseDocumentEntityCode(period.legalEntityCode)
+  if (!code) {
+    throw new FinancePostingError(
+      `Invalid legal entity on period ${period.periodKey}`,
+      "VALIDATION_ERROR"
+    )
+  }
+  return code
 }
 
 export type CloseReadinessResult = CloseChecklistResult & {
@@ -44,6 +58,7 @@ async function loadClosingEntryChecklistContext(
   period: CloseReadinessPeriodInput
 ): Promise<CloseChecklistClosingEntryContext> {
   const profitLoss = await getProfitLoss(prisma, {
+    legalEntityCode: resolvePeriodEntityCode(period),
     branchId: period.branchId,
     periodKey: period.periodKey,
   })

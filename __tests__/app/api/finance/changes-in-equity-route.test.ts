@@ -4,6 +4,10 @@ import { getChangesInEquity } from "@/lib/finance/reports/changes-in-equity"
 import { parseChangesInEquityFilter } from "@/lib/finance/reports/report-filter"
 import { ReportError } from "@/lib/reporting/report-errors"
 
+jest.mock("@/lib/finance/reports/report-session", () => ({
+  resolveReportSessionLegalEntityCode: jest.fn().mockResolvedValue("AS"),
+}))
+
 jest.mock("@/lib/finance/reports/changes-in-equity", () => ({
   getChangesInEquity: jest.fn(),
 }))
@@ -23,24 +27,33 @@ function params(input: Record<string, string>): { get: (name: string) => string 
 }
 
 describe("parseChangesInEquityFilter", () => {
+  const legalEntityCode = "AS" as const
+
   it("requires branchId", () => {
     expect(() =>
-      parseChangesInEquityFilter(params({ periodKey: "2026-05" }))
+      parseChangesInEquityFilter(params({ periodKey: "2026-05" }), legalEntityCode)
     ).toThrow(ReportError)
   })
 
   it("accepts period scope", () => {
     const filter = parseChangesInEquityFilter(
-      params({ branchId: "branch-1", periodKey: "2026-05" })
+      params({ branchId: "branch-1", periodKey: "2026-05" }),
+      legalEntityCode
     )
-    expect(filter).toEqual({ branchId: "branch-1", periodKey: "2026-05" })
+    expect(filter).toEqual({
+      legalEntityCode: "AS",
+      branchId: "branch-1",
+      periodKey: "2026-05",
+    })
   })
 
   it("accepts date range scope", () => {
     const filter = parseChangesInEquityFilter(
-      params({ branchId: "branch-1", from: "2026-05-01", to: "2026-05-31" })
+      params({ branchId: "branch-1", from: "2026-05-01", to: "2026-05-31" }),
+      legalEntityCode
     )
     expect(filter).toEqual({
+      legalEntityCode: "AS",
       branchId: "branch-1",
       from: "2026-05-01",
       to: "2026-05-31",
@@ -55,8 +68,8 @@ describe("GET /api/finance/reports/changes-in-equity", () => {
 
   it("parses filter, calls domain, and returns JSON", async () => {
     const dto = {
-      filter: { branchId: "branch-1", periodKey: "2026-05" },
-      period: { branchId: "branch-1", periodKey: "2026-05" },
+      filter: { legalEntityCode: "AS", branchId: "branch-1", periodKey: "2026-05" },
+      period: { legalEntityCode: "AS", periodKey: "2026-05" },
       columns: [],
       rows: [],
       profitForPeriod: "0",
@@ -81,7 +94,7 @@ describe("GET /api/finance/reports/changes-in-equity", () => {
     await expect(res.json()).resolves.toEqual(dto)
     expect(mockGetChangesInEquity).toHaveBeenCalledWith(
       expect.objectContaining({ mocked: true }),
-      { branchId: "branch-1", periodKey: "2026-05" }
+      { legalEntityCode: "AS", branchId: "branch-1", periodKey: "2026-05" }
     )
   })
 

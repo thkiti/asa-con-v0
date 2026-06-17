@@ -1,10 +1,7 @@
 import type { GlAccountType } from "@/generated/prisma/client"
+import type { FinanceReportScope } from "./report-filter"
 
-export type TrialBalanceFilter = {
-  branchId: string
-  periodKey?: string
-  from?: string
-  to?: string
+export type TrialBalanceFilter = FinanceReportScope & {
   hideZeroBalances?: boolean
 }
 

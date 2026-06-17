@@ -30,7 +30,7 @@ async function resolvePeriodMeta(
   filter: BalanceSheetFilter
 ): Promise<BalanceSheetPeriodMeta> {
   const base: BalanceSheetPeriodMeta = {
-    branchId: filter.branchId,
+    legalEntityCode: filter.legalEntityCode,
     periodKey: filter.periodKey,
     from: filter.from,
     to: filter.to,
@@ -43,6 +43,7 @@ async function resolvePeriodMeta(
   const period = await prisma.accountingPeriod.findUnique({
     where: accountingPeriodUniqueWhere({
       periodKey: filter.periodKey,
+      legalEntityCode: filter.legalEntityCode,
     }),
     select: { id: true, status: true },
   })

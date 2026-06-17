@@ -1,7 +1,8 @@
 import type { GlAccountType } from "@/generated/prisma/client"
 
-export type GeneralLedgerFilter = {
-  branchId: string
+import type { BranchScopedReportFilter } from "./report-filter"
+
+export type GeneralLedgerFilter = BranchScopedReportFilter & {
   periodKey?: string
   from?: string
   to?: string

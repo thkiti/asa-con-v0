@@ -82,7 +82,7 @@ describe("getProfitLoss", () => {
     const { tx } = createFinanceMockTx(branchId)
     await seedPeriod(tx, branchId, "2026-05")
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
 
     expect(result.revenue).toEqual([])
     expect(result.expenses).toEqual([])
@@ -106,7 +106,7 @@ describe("getProfitLoss", () => {
       ],
     })
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
 
     expect(result.revenue).toHaveLength(1)
     expect(result.revenue[0]).toMatchObject({
@@ -134,7 +134,7 @@ describe("getProfitLoss", () => {
       ],
     })
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
 
     expect(result.revenue).toEqual([])
     expect(result.expenses).toHaveLength(1)
@@ -167,7 +167,7 @@ describe("getProfitLoss", () => {
       ],
     })
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
 
     expect(result.totalRevenue).toBe("1000")
     expect(result.totalExpense).toBe("300")
@@ -202,7 +202,7 @@ describe("getProfitLoss", () => {
       ],
     })
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
 
     expect(result.totalRevenue).toBe("200")
     expect(result.netIncome).toBe("200")
@@ -233,7 +233,7 @@ describe("getProfitLoss", () => {
       ],
     })
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
     expect(result.totalRevenue).toBe("100")
   })
 
@@ -295,7 +295,7 @@ describe("getProfitLoss", () => {
       ],
     })
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
     expect(result.netIncome).toBe("0")
     expect(netIncomeLabel(result.netIncome)).toBe("Break Even")
   })
@@ -325,7 +325,7 @@ describe("getProfitLoss", () => {
       ],
     })
 
-    const result = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
     expect(result.netIncome).toBe("-150")
     expect(netIncomeLabel(result.netIncome)).toBe("Loss")
   })
@@ -334,7 +334,7 @@ describe("getProfitLoss", () => {
 describe("profitLossToCsv", () => {
   it("maps revenue, expense, and summary rows", () => {
     const csv = profitLossToCsv({
-      filter: { branchId: "branch-1", periodKey: "2026-05" },
+      filter: { legalEntityCode: "AS", branchId: "branch-1", periodKey: "2026-05" },
       revenue: [{ accountCode: "4000", accountName: "Revenue", amount: "1000" }],
       expenses: [{ accountCode: "5000", accountName: "COGS", amount: "300" }],
       totalRevenue: "1000",

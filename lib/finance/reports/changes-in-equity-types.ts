@@ -1,11 +1,8 @@
 import type { BalanceSheetPeriodMeta } from "./balance-sheet-types"
 
-export type ChangesInEquityFilter = {
-  branchId: string
-  periodKey?: string
-  from?: string
-  to?: string
-}
+import type { BranchScopedReportFilter } from "./report-filter"
+
+export type ChangesInEquityFilter = BranchScopedReportFilter
 
 export type ChangesInEquityRowKey =
   | "OPENING"

@@ -1,5 +1,6 @@
 import { ReportError } from "@/lib/reporting/report-errors"
 import { normalizeDateRange, type NormalizedDateRange } from "@/lib/reporting/date-range"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import type { GeneralLedgerFilter } from "./general-ledger-types"
 import type { BalanceSheetFilter } from "./balance-sheet-types"
 import type { ProfitLossFilter } from "./profit-loss-types"
@@ -11,10 +12,15 @@ import type { TrialBalanceFilter } from "./trial-balance-types"
 const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
 
 export type FinanceReportScope = {
-  branchId: string
+  legalEntityCode: DocumentEntityCode
+  branchId?: string
   periodKey?: string
   from?: string
   to?: string
+}
+
+export type BranchScopedReportFilter = FinanceReportScope & {
+  branchId: string
 }
 
 export type ResolvedReportDateRange = {
@@ -23,13 +29,21 @@ export type ResolvedReportDateRange = {
   range: NormalizedDateRange
 }
 
-function parseFinanceReportScope(params: ReportFilterParams): FinanceReportScope {
-  const branchId = params.get("branchId")?.trim() ?? ""
+type ScopeParseOptions = {
+  requireBranchId?: boolean
+}
+
+function parseFinanceReportScope(
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode,
+  options?: ScopeParseOptions
+): FinanceReportScope {
+  const branchId = params.get("branchId")?.trim() || undefined
   const periodKey = params.get("periodKey")?.trim() || undefined
   const from = params.get("from")?.trim() || undefined
   const to = params.get("to")?.trim() || undefined
 
-  if (!branchId) {
+  if (options?.requireBranchId && !branchId) {
     throw new ReportError("branchId is required", "EMPTY_FILTER")
   }
 
@@ -54,7 +68,7 @@ function parseFinanceReportScope(params: ReportFilterParams): FinanceReportScope
     if (!PERIOD_KEY_PATTERN.test(periodKey!)) {
       throw new ReportError("periodKey must be YYYY-MM", "INVALID_FILTER")
     }
-    return { branchId, periodKey }
+    return { legalEntityCode, branchId, periodKey }
   }
 
   if (!from || !to) {
@@ -62,7 +76,7 @@ function parseFinanceReportScope(params: ReportFilterParams): FinanceReportScope
   }
 
   normalizeDateRange({ from, to })
-  return { branchId, from, to }
+  return { legalEntityCode, branchId, from, to }
 }
 
 export function periodKeyToReportDateRange(periodKey: string): ResolvedReportDateRange {
@@ -137,18 +151,27 @@ export function parseHideZeroBalances(value: string | null | undefined): boolean
   return raw === "true" || raw === "1" || raw === "yes"
 }
 
-export function parseTrialBalanceFilter(params: ReportFilterParams): TrialBalanceFilter {
-  const scope = parseFinanceReportScope(params)
+export function parseTrialBalanceFilter(
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode
+): TrialBalanceFilter {
+  const scope = parseFinanceReportScope(params, legalEntityCode)
   const hideZeroBalances = parseHideZeroBalances(params.get("hideZeroBalances"))
   return { ...scope, hideZeroBalances }
 }
 
-export function parseGeneralLedgerFilter(params: ReportFilterParams): GeneralLedgerFilter {
-  const scope = parseFinanceReportScope(params)
+export function parseGeneralLedgerFilter(
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode
+): GeneralLedgerFilter {
+  const scope = parseFinanceReportScope(params, legalEntityCode, {
+    requireBranchId: true,
+  })
   const accountCodes = parseAccountCodes(params)
   const accountIds = parseAccountIds(params)
   return {
     ...scope,
+    branchId: scope.branchId!,
     accountId: accountIds?.length === 1 ? accountIds[0] : undefined,
     accountIds: accountIds && accountIds.length > 1 ? accountIds : undefined,
     accountCode: accountCodes?.length === 1 ? accountCodes[0] : undefined,
@@ -156,28 +179,51 @@ export function parseGeneralLedgerFilter(params: ReportFilterParams): GeneralLed
   }
 }
 
-export function parseProfitLossFilter(params: ReportFilterParams): ProfitLossFilter {
-  return parseFinanceReportScope(params)
+export function parseProfitLossFilter(
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode
+): ProfitLossFilter {
+  const scope = parseFinanceReportScope(params, legalEntityCode, {
+    requireBranchId: true,
+  })
+  return { ...scope, branchId: scope.branchId! }
 }
 
-export function parseBalanceSheetFilter(params: ReportFilterParams): BalanceSheetFilter {
-  const scope = parseFinanceReportScope(params)
+export function parseBalanceSheetFilter(
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode
+): BalanceSheetFilter {
+  const scope = parseFinanceReportScope(params, legalEntityCode)
   const hideZeroBalances = parseHideZeroBalances(params.get("hideZeroBalances"))
   return { ...scope, hideZeroBalances }
 }
 
 export function parseRetainedEarningsFilter(
-  params: ReportFilterParams
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode
 ): RetainedEarningsFilter {
-  return parseFinanceReportScope(params)
+  const scope = parseFinanceReportScope(params, legalEntityCode, {
+    requireBranchId: true,
+  })
+  return { ...scope, branchId: scope.branchId! }
 }
 
 export function parseChangesInEquityFilter(
-  params: ReportFilterParams
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode
 ): ChangesInEquityFilter {
-  return parseFinanceReportScope(params)
+  const scope = parseFinanceReportScope(params, legalEntityCode, {
+    requireBranchId: true,
+  })
+  return { ...scope, branchId: scope.branchId! }
 }
 
-export function parseCashFlowFilter(params: ReportFilterParams): CashFlowFilter {
-  return parseFinanceReportScope(params)
+export function parseCashFlowFilter(
+  params: ReportFilterParams,
+  legalEntityCode: DocumentEntityCode
+): CashFlowFilter {
+  const scope = parseFinanceReportScope(params, legalEntityCode, {
+    requireBranchId: true,
+  })
+  return { ...scope, branchId: scope.branchId! }
 }

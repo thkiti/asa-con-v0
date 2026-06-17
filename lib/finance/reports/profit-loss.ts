@@ -17,10 +17,11 @@ export type ProfitLossPrisma = Pick<
 
 async function resolvePeriodExists(
   prisma: ProfitLossPrisma,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: ProfitLossFilter["legalEntityCode"]
 ): Promise<boolean> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: accountingPeriodUniqueWhere({ periodKey }),
+    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
     select: { id: true },
   })
   return period != null
@@ -51,7 +52,11 @@ export async function getProfitLoss(
   filter: ProfitLossFilter
 ): Promise<ProfitLossResult> {
   if (filter.periodKey) {
-    const periodExists = await resolvePeriodExists(prisma, filter.periodKey)
+    const periodExists = await resolvePeriodExists(
+      prisma,
+      filter.periodKey,
+      filter.legalEntityCode
+    )
     if (!periodExists) {
       return {
         filter,

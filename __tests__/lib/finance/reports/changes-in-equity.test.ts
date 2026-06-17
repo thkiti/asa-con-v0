@@ -50,12 +50,17 @@ function seedEquityChart(state: ReturnType<typeof createFinanceMockTx>["state"])
 
 describe("getChangesInEquity", () => {
   const branchId = "branch-1"
+  const legalEntityCode = "AS" as const
   const periodKey = "2026-05"
 
   it("returns empty sections for unknown period", async () => {
     const { tx } = createFinanceMockTx(branchId)
 
-    const result = await getChangesInEquity(tx, { branchId, periodKey: "2099-01" })
+    const result = await getChangesInEquity(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2099-01",
+    })
 
     expect(result.columns).toEqual([])
     expect(result.rows).toEqual([])
@@ -78,7 +83,7 @@ describe("getChangesInEquity", () => {
       ],
     })
 
-    const result = await getChangesInEquity(tx, { branchId, periodKey })
+    const result = await getChangesInEquity(tx, { legalEntityCode, branchId, periodKey })
 
     const opening = rowByKey(result.rows, "OPENING")
     expect(opening.amounts[RETAINED_EARNINGS_ACCOUNT_CODE]).toBe("100000")
@@ -107,7 +112,7 @@ describe("getChangesInEquity", () => {
       expenseAmount: "0",
     })
 
-    const result = await getChangesInEquity(tx, { branchId, periodKey })
+    const result = await getChangesInEquity(tx, { legalEntityCode, branchId, periodKey })
 
     expect(result.profitSource).toBe("PROFIT_LOSS")
     expect(result.profitForPeriod).toBe("50000")
@@ -157,7 +162,7 @@ describe("getChangesInEquity", () => {
       periodKey,
     })
 
-    const result = await getChangesInEquity(tx, { branchId, periodKey })
+    const result = await getChangesInEquity(tx, { legalEntityCode, branchId, periodKey })
 
     expect(result.profitSource).toBe("CLOSING_ENTRY")
     expect(result.profitForPeriod).toBe("400")
@@ -210,7 +215,7 @@ describe("getChangesInEquity", () => {
       periodKey,
     })
 
-    const result = await getChangesInEquity(tx, { branchId, periodKey })
+    const result = await getChangesInEquity(tx, { legalEntityCode, branchId, periodKey })
 
     const other = rowByKey(result.rows, "OTHER_CHANGES")
     expect(other.amounts[RETAINED_EARNINGS_ACCOUNT_CODE]).toBe("-30000")
@@ -237,7 +242,7 @@ describe("getChangesInEquity", () => {
       ],
     })
 
-    const result = await getChangesInEquity(tx, { branchId, periodKey })
+    const result = await getChangesInEquity(tx, { legalEntityCode, branchId, periodKey })
 
     expect(result.columns.some((column) => column.accountCode === "101")).toBe(true)
     const profitRow = rowByKey(result.rows, "PROFIT_FOR_PERIOD")

@@ -8,6 +8,7 @@ import {
 } from "@/lib/finance-ui/balance-sheet"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { BalanceSheetResult, BalanceSheetRow } from "@/lib/finance-ui/types"
+import { formatEntityShort } from "@/lib/legal-entity/display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
   financeAccount,
@@ -79,7 +80,6 @@ function SectionTable({
 
 export function BalanceSheetPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [branchId, setBranchId] = useState("branch-1")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -95,14 +95,13 @@ export function BalanceSheetPage() {
 
   const buildFilter = useCallback((): BalanceSheetFilter => {
     const base: BalanceSheetFilter = {
-      branchId: branchId.trim(),
       hideZeroBalances,
     }
     if (filterMode === "period") {
       return { ...base, periodKey: periodKey.trim() }
     }
     return { ...base, from: from.trim(), to: to.trim() }
-  }, [branchId, filterMode, from, hideZeroBalances, periodKey, to])
+  }, [filterMode, from, hideZeroBalances, periodKey, to])
 
   async function handleRefresh() {
     setLoading(true)
@@ -123,7 +122,10 @@ export function BalanceSheetPage() {
     const scope =
       result.filter.periodKey ??
       `${result.filter.from ?? ""}_${result.filter.to ?? ""}`.replace(/__/g, "")
-    downloadBalanceSheetCsv(result, `balance-sheet-${result.filter.branchId}-${scope}.csv`)
+    downloadBalanceSheetCsv(
+      result,
+      `balance-sheet-${formatEntityShort(result.filter.legalEntityCode)}-${scope}.csv`
+    )
   }
 
   function handlePrint() {
@@ -139,15 +141,6 @@ export function BalanceSheetPage() {
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch</span>
-            <input
-              className="rounded border border-zinc-300 px-2 py-1"
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            />
-          </label>
-
           <fieldset className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Scope</span>
             <div className="flex gap-3">
@@ -247,7 +240,7 @@ export function BalanceSheetPage() {
         <section className="balance-sheet-report space-y-8">
           <div className="space-y-1 text-sm text-zinc-600 print:text-black">
             <p>
-              Branch {result.period.branchId}
+              {formatEntityShort(result.period.legalEntityCode)}
               {result.period.periodKey
                 ? ` · Period ${result.period.periodKey}`
                 : result.period.from && result.period.to

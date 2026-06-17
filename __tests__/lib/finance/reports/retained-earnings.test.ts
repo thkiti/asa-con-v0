@@ -117,27 +117,39 @@ describe("retained earnings account identification", () => {
 })
 
 describe("parseRetainedEarningsFilter", () => {
+  const legalEntityCode = "AS" as const
+
   it("requires branchId", () => {
     expect(() =>
-      parseRetainedEarningsFilter(params({ periodKey: "2026-05" }))
+      parseRetainedEarningsFilter(params({ periodKey: "2026-05" }), legalEntityCode)
     ).toThrow(ReportError)
   })
 
   it("accepts period scope", () => {
     const filter = parseRetainedEarningsFilter(
-      params({ branchId: "branch-1", periodKey: "2026-05" })
+      params({ branchId: "branch-1", periodKey: "2026-05" }),
+      legalEntityCode
     )
-    expect(filter).toEqual({ branchId: "branch-1", periodKey: "2026-05" })
+    expect(filter).toEqual({
+      legalEntityCode: "AS",
+      branchId: "branch-1",
+      periodKey: "2026-05",
+    })
   })
 })
 
 describe("getRetainedEarnings", () => {
   const branchId = "branch-1"
+  const legalEntityCode = "AS" as const
 
   it("returns zeroed bridge for unknown period", async () => {
     const { tx } = createFinanceMockTx(branchId)
 
-    const result = await getRetainedEarnings(tx, { branchId, periodKey: "2099-01" })
+    const result = await getRetainedEarnings(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2099-01",
+    })
 
     expect(result.postedRetainedEarnings).toBe("0")
     expect(result.currentNetIncome).toBe("0")
@@ -173,8 +185,15 @@ describe("getRetainedEarnings", () => {
       ],
     })
 
-    const result = await getRetainedEarnings(tx, { branchId, periodKey: "2026-05" })
-    const profitLoss = await getProfitLoss(tx, { branchId, periodKey: "2026-05" })
+    const result = await getRetainedEarnings(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2026-05" })
+    const profitLoss = await getProfitLoss(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2026-05",
+    })
 
     expect(result.postedRetainedEarnings).toBe("1500000")
     expect(result.otherEquityTotal).toBe("200000")
@@ -205,7 +224,10 @@ describe("getRetainedEarnings", () => {
       ],
     })
 
-    const result = await getRetainedEarnings(tx, { branchId, periodKey: "2026-06" })
+    const result = await getRetainedEarnings(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2026-06" })
 
     expect(result.postedRetainedEarnings).toBe("0")
     expect(result.currentNetIncome).toBe("500")
@@ -231,7 +253,10 @@ describe("getRetainedEarnings", () => {
       ],
     })
 
-    const result = await getRetainedEarnings(tx, { branchId, periodKey: "2026-07" })
+    const result = await getRetainedEarnings(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2026-07" })
 
     expect(result.currentNetIncome).toBe("-300")
     expect(result.adjustedRetainedEarnings).toBe("-300")
@@ -254,7 +279,10 @@ describe("getRetainedEarnings", () => {
       ],
     })
 
-    const result = await getRetainedEarnings(tx, { branchId, periodKey: "2026-08" })
+    const result = await getRetainedEarnings(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2026-08" })
 
     expect(result.postedRetainedEarnings).toBe("-100")
     expect(result.warnings.some((w) => w.code === "NEGATIVE_RETAINED_EARNINGS")).toBe(true)
@@ -283,7 +311,10 @@ describe("getRetainedEarnings", () => {
       ],
     })
 
-    const result = await getRetainedEarnings(tx, { branchId, periodKey: "2026-09" })
+    const result = await getRetainedEarnings(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2026-09" })
 
     expect(result.retainedEarningsAccounts).toHaveLength(0)
     expect(result.warnings.some((w) => w.code === "NO_RETAINED_EARNINGS_ACCOUNT")).toBe(true)
@@ -312,7 +343,10 @@ describe("getRetainedEarnings", () => {
     })
 
     const before = state.journalEntries.length
-    const result = await getRetainedEarnings(tx, { branchId, periodKey: "2026-04" })
+    const result = await getRetainedEarnings(tx, {
+      legalEntityCode,
+      branchId,
+      periodKey: "2026-04" })
     const after = state.journalEntries.length
 
     expect(after).toBe(before)
@@ -324,8 +358,8 @@ describe("getRetainedEarnings", () => {
 describe("retainedEarningsToCsv", () => {
   it("includes bridge and reconciliation rows", () => {
     const csv = retainedEarningsToCsv({
-      filter: { branchId: "branch-1", periodKey: "2026-05" },
-      period: { branchId: "branch-1", periodKey: "2026-05" },
+      filter: { legalEntityCode: "AS", branchId: "branch-1", periodKey: "2026-05" },
+      period: { legalEntityCode: "AS", periodKey: "2026-05" },
       retainedEarningsAccounts: [
         { accountCode: "301", accountName: "Retained earnings", amount: "1500000" },
       ],

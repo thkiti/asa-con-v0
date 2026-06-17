@@ -14,7 +14,7 @@ jest.mock("@/lib/finance/reports/trial-balance", () => ({
 
 jest.mock("@/lib/finance/reports/general-ledger", () => ({
   getGeneralLedger: jest.fn().mockResolvedValue({
-    filter: { branchId: "branch-1", periodKey: "2026-01" },
+    filter: { legalEntityCode: "AS", periodKey: "2026-01" },
     accounts: [
       {
         accountCode: "1100",

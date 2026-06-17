@@ -50,7 +50,7 @@ async function resolvePeriodMeta(
   filter: CashFlowFilter
 ): Promise<BalanceSheetPeriodMeta> {
   const base: BalanceSheetPeriodMeta = {
-    branchId: filter.branchId,
+    legalEntityCode: filter.legalEntityCode,
     periodKey: filter.periodKey,
     from: filter.from,
     to: filter.to,
@@ -61,7 +61,10 @@ async function resolvePeriodMeta(
   }
 
   const period = await prisma.accountingPeriod.findUnique({
-    where: accountingPeriodUniqueWhere({ periodKey: filter.periodKey }),
+    where: accountingPeriodUniqueWhere({
+      periodKey: filter.periodKey,
+      legalEntityCode: filter.legalEntityCode,
+    }),
     select: { id: true, status: true },
   })
 
@@ -244,7 +247,10 @@ export async function getCashFlow(
 
   if (filter.periodKey) {
     const exists = await prisma.accountingPeriod.findUnique({
-      where: accountingPeriodUniqueWhere({ periodKey: filter.periodKey }),
+      where: accountingPeriodUniqueWhere({
+        periodKey: filter.periodKey,
+        legalEntityCode: filter.legalEntityCode,
+      }),
       select: { id: true },
     })
     if (!exists) {

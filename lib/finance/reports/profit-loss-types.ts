@@ -1,9 +1,6 @@
-export type ProfitLossFilter = {
-  branchId: string
-  periodKey?: string
-  from?: string
-  to?: string
-}
+import type { BranchScopedReportFilter } from "./report-filter"
+
+export type ProfitLossFilter = BranchScopedReportFilter
 
 export type ProfitLossRow = {
   accountCode: string

@@ -77,12 +77,13 @@ async function seedPeriod(
 
 describe("getCashFlow", () => {
   const branchId = "branch-1"
+  const legalEntityCode = "AS" as const
   const periodKey = "2026-05"
 
   it("returns empty result for unknown period", async () => {
     const { tx } = createFinanceMockTx(branchId)
 
-    const result = await getCashFlow(tx, { branchId, periodKey: "2099-01" })
+    const result = await getCashFlow(tx, { legalEntityCode, branchId, periodKey: "2099-01" })
 
     expect(result.netChangeInCash).toBe("0")
     expect(result.sections.operating.lines).toHaveLength(0)
@@ -93,7 +94,7 @@ describe("getCashFlow", () => {
     const { tx, state } = createFinanceMockTx(branchId)
     await seedPeriod(tx, branchId, periodKey)
 
-    const result = await getCashFlow(tx, { branchId, periodKey })
+    const result = await getCashFlow(tx, { legalEntityCode, branchId, periodKey })
 
     const pendingWarnings = result.warnings.filter((w) => w.code === "PENDING_MAPPING")
     expect(pendingWarnings).toHaveLength(PENDING_CASH_FLOW_MAPPINGS.length)
@@ -114,7 +115,7 @@ describe("getCashFlow", () => {
       ],
     })
 
-    const result = await getCashFlow(tx, { branchId, periodKey })
+    const result = await getCashFlow(tx, { legalEntityCode, branchId, periodKey })
 
     expect(result.netIncome).toBe("1000")
     expect(result.netChangeInCash).toBe("1000")
@@ -151,7 +152,7 @@ describe("getCashFlow", () => {
       ],
     })
 
-    const result = await getCashFlow(tx, { branchId, periodKey })
+    const result = await getCashFlow(tx, { legalEntityCode, branchId, periodKey })
 
     const inventoryLine = result.sections.operating.lines.find((line) =>
       line.key.startsWith("WC_ASSET_")
@@ -190,7 +191,7 @@ describe("getCashFlow", () => {
       ],
     })
 
-    const result = await getCashFlow(tx, { branchId, periodKey })
+    const result = await getCashFlow(tx, { legalEntityCode, branchId, periodKey })
 
     expect(
       result.warnings.some(
@@ -227,7 +228,7 @@ describe("getCashFlow", () => {
       ],
     })
 
-    const result = await getCashFlow(tx, { branchId, periodKey })
+    const result = await getCashFlow(tx, { legalEntityCode, branchId, periodKey })
 
     expect(toMoney(result.sections.financing.subtotal).gt(0)).toBe(true)
     expect(result.cashReconciliation.isReconciled).toBe(true)

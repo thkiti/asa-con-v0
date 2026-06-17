@@ -4,6 +4,10 @@ import { getGeneralLedger } from "@/lib/finance/reports/general-ledger"
 import { parseGeneralLedgerFilter } from "@/lib/finance/reports/report-filter"
 import { ReportError } from "@/lib/reporting/report-errors"
 
+jest.mock("@/lib/finance/reports/report-session", () => ({
+  resolveReportSessionLegalEntityCode: jest.fn().mockResolvedValue("AS"),
+}))
+
 jest.mock("@/lib/finance/reports/general-ledger", () => ({
   getGeneralLedger: jest.fn(),
 }))
@@ -28,17 +32,24 @@ function params(
 }
 
 describe("parseGeneralLedgerFilter", () => {
+  const legalEntityCode = "AS" as const
+
   it("requires branchId", () => {
     expect(() =>
-      parseGeneralLedgerFilter(params({ periodKey: "2026-05", accountCode: "1100" }))
+      parseGeneralLedgerFilter(
+        params({ periodKey: "2026-05", accountCode: "1100" }),
+        legalEntityCode
+      )
     ).toThrow(ReportError)
   })
 
   it("accepts period scope with accountCode", () => {
     const filter = parseGeneralLedgerFilter(
-      params({ branchId: "branch-1", periodKey: "2026-05", accountCode: "1100" })
+      params({ branchId: "branch-1", periodKey: "2026-05", accountCode: "1100" }),
+      legalEntityCode
     )
     expect(filter).toEqual({
+      legalEntityCode: "AS",
       branchId: "branch-1",
       periodKey: "2026-05",
       accountCode: "1100",
@@ -52,9 +63,11 @@ describe("parseGeneralLedgerFilter", () => {
         from: "2026-05-01",
         to: "2026-05-31",
         accountId: "acct-1",
-      })
+      }),
+      legalEntityCode
     )
     expect(filter).toEqual({
+      legalEntityCode: "AS",
       branchId: "branch-1",
       from: "2026-05-01",
       to: "2026-05-31",
@@ -67,9 +80,11 @@ describe("parseGeneralLedgerFilter", () => {
       params(
         { branchId: "branch-1", periodKey: "2026-05" },
         { accountCodes: ["1100", "4000"] }
-      )
+      ),
+      legalEntityCode
     )
     expect(filter).toEqual({
+      legalEntityCode: "AS",
       branchId: "branch-1",
       periodKey: "2026-05",
       accountCodes: ["1100", "4000"],
@@ -78,9 +93,14 @@ describe("parseGeneralLedgerFilter", () => {
 
   it("allows all-accounts scope when no account filter is provided", () => {
     const filter = parseGeneralLedgerFilter(
-      params({ branchId: "branch-1", periodKey: "2026-05" })
+      params({ branchId: "branch-1", periodKey: "2026-05" }),
+      legalEntityCode
     )
-    expect(filter).toEqual({ branchId: "branch-1", periodKey: "2026-05" })
+    expect(filter).toEqual({
+      legalEntityCode: "AS",
+      branchId: "branch-1",
+      periodKey: "2026-05",
+    })
   })
 })
 
@@ -92,6 +112,7 @@ describe("GET /api/finance/reports/general-ledger", () => {
   it("parses filter, calls domain, and returns JSON", async () => {
     const dto = {
       filter: {
+        legalEntityCode: "AS",
         branchId: "branch-1",
         periodKey: "2026-05",
         accountCode: "1100",
@@ -110,6 +131,7 @@ describe("GET /api/finance/reports/general-ledger", () => {
     expect(mockGetGeneralLedger).toHaveBeenCalledWith(
       expect.objectContaining({ mocked: true }),
       {
+        legalEntityCode: "AS",
         branchId: "branch-1",
         periodKey: "2026-05",
         accountCode: "1100",

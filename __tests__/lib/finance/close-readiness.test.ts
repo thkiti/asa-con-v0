@@ -50,6 +50,7 @@ describe("getCloseReadinessByPeriodId", () => {
     const prisma = buildPrisma({
       id: "period-1",
       branchId: "branch-1",
+      legalEntityCode: "AS",
       periodKey: "2026-05",
       status: AccountingPeriodStatus.OPEN,
       openedAt,

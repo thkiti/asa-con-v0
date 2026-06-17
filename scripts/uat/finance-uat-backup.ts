@@ -11,6 +11,8 @@ config({ path: ".env.local" })
 import fs from "fs"
 import path from "path"
 
+import { LEGAL_ENTITY_CODES } from "@/lib/legal-entity/constants"
+import { formatEntityShort } from "@/lib/legal-entity/display"
 import { getBalanceSheet } from "@/lib/finance/reports/balance-sheet"
 import { getProfitLoss } from "@/lib/finance/reports/profit-loss"
 import { getTrialBalance } from "@/lib/finance/reports/trial-balance"
@@ -67,15 +69,14 @@ async function main() {
   const periodKey = new Date().toISOString().slice(0, 7)
   const reportExports: Record<string, unknown> = {}
 
-  for (const branch of branches) {
-    const filter = { branchId: branch.id, periodKey }
-    const [trialBalance, balanceSheet, profitLoss] = await Promise.all([
-      getTrialBalance(prisma, filter),
-      getBalanceSheet(prisma, filter),
-      getProfitLoss(prisma, filter),
+  for (const code of LEGAL_ENTITY_CODES) {
+    const entityFilter = { legalEntityCode: code, periodKey }
+    const [trialBalance, balanceSheet] = await Promise.all([
+      getTrialBalance(prisma, entityFilter),
+      getBalanceSheet(prisma, entityFilter),
     ])
 
-    const prefix = `${branch.code}-${periodKey}`
+    const prefix = `${formatEntityShort(code)}-${periodKey}`
     fs.writeFileSync(
       path.join(OUT_DIR, `${prefix}-trial-balance.csv`),
       trialBalanceToCsv(trialBalance)
@@ -83,10 +84,6 @@ async function main() {
     fs.writeFileSync(
       path.join(OUT_DIR, `${prefix}-balance-sheet.csv`),
       balanceSheetToCsv(balanceSheet)
-    )
-    fs.writeFileSync(
-      path.join(OUT_DIR, `${prefix}-profit-loss.csv`),
-      profitLossToCsv(profitLoss)
     )
 
     reportExports[prefix] = {
@@ -102,6 +99,22 @@ async function main() {
         totalEquity: balanceSheet.totalEquity,
         isBalanced: balanceSheet.isBalanced,
       },
+    }
+  }
+
+  for (const branch of branches) {
+    const filter = { legalEntityCode: "AS" as const, branchId: branch.id, periodKey }
+    const profitLoss = await getProfitLoss(prisma, filter)
+
+    const prefix = `${branch.code}-${periodKey}`
+    fs.writeFileSync(
+      path.join(OUT_DIR, `${prefix}-profit-loss.csv`),
+      profitLossToCsv(profitLoss)
+    )
+
+    const existing = (reportExports[prefix] as Record<string, unknown> | undefined) ?? {}
+    reportExports[prefix] = {
+      ...existing,
       profitLoss: {
         totalRevenue: profitLoss.totalRevenue,
         totalExpense: profitLoss.totalExpense,

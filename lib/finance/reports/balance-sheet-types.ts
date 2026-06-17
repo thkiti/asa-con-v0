@@ -1,10 +1,8 @@
 import type { AccountingPeriodStatus } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import type { FinanceReportScope } from "./report-filter"
 
-export type BalanceSheetFilter = {
-  branchId: string
-  periodKey?: string
-  from?: string
-  to?: string
+export type BalanceSheetFilter = FinanceReportScope & {
   hideZeroBalances?: boolean
 }
 
@@ -15,7 +13,7 @@ export type BalanceSheetRow = {
 }
 
 export type BalanceSheetPeriodMeta = {
-  branchId: string
+  legalEntityCode: DocumentEntityCode
   periodKey?: string
   periodId?: string
   periodStatus?: AccountingPeriodStatus

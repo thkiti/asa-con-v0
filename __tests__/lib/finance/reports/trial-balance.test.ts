@@ -26,6 +26,7 @@ function seedJournal(
     branchId: string
     periodId: string
     date: Date
+    legalEntityCode?: string
     lines: { code: string; debit: string; credit: string }[]
   }
 ) {
@@ -34,6 +35,7 @@ function seedJournal(
     voucherId: `voucher-${input.id}`,
     date: input.date,
     branchId: input.branchId,
+    legalEntityCode: input.legalEntityCode ?? "AS",
     periodId: input.periodId,
     postedAt: new Date(),
     createdAt: new Date(),
@@ -60,12 +62,14 @@ function seedJournal(
 async function seedPeriod(
   tx: ReturnType<typeof createFinanceMockTx>["tx"],
   branchId: string,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: string = "AS"
 ) {
   return tx.accountingPeriod.create({
     data: {
       branchId,
       periodKey,
+      legalEntityCode,
       status: AccountingPeriodStatus.OPEN,
     },
   })
@@ -95,21 +99,23 @@ describe("balance-helpers", () => {
 })
 
 describe("parseTrialBalanceFilter", () => {
-  it("requires branchId", () => {
-    expect(() =>
-      parseTrialBalanceFilter(params({ periodKey: "2026-05" }))
-    ).toThrow(ReportError)
+  const legalEntityCode = "AS" as const
+
+  it("requires periodKey or date range", () => {
+    expect(() => parseTrialBalanceFilter(params({}), legalEntityCode)).toThrow(
+      ReportError
+    )
   })
 
   it("rejects mixing periodKey and date range", () => {
     expect(() =>
       parseTrialBalanceFilter(
         params({
-          branchId: "branch-1",
           periodKey: "2026-05",
           from: "2026-05-01",
           to: "2026-05-31",
-        })
+        }),
+        legalEntityCode
       )
     ).toThrow(ReportError)
   })
@@ -117,11 +123,12 @@ describe("parseTrialBalanceFilter", () => {
 
 describe("getTrialBalance", () => {
   const branchId = "branch-1"
+  const legalEntityCode = "AS" as const
 
   it("returns empty balanced result for unknown period", async () => {
     const { tx } = createFinanceMockTx(branchId)
     const result = await getTrialBalance(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2099-01",
     })
     expect(result.rows).toHaveLength(0)
@@ -135,7 +142,7 @@ describe("getTrialBalance", () => {
     await seedPeriod(tx, branchId, "2026-05")
 
     const result = await getTrialBalance(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
     })
 
@@ -160,7 +167,7 @@ describe("getTrialBalance", () => {
     })
 
     const result = await getTrialBalance(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
     })
 
@@ -203,7 +210,7 @@ describe("getTrialBalance", () => {
     })
 
     const result = await getTrialBalance(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
     })
 
@@ -212,7 +219,7 @@ describe("getTrialBalance", () => {
     expect(result.isBalanced).toBe(true)
   })
 
-  it("filters by branch", async () => {
+  it("aggregates all branches under legal entity", async () => {
     const { tx, state } = createFinanceMockTx(branchId)
     const period = await seedPeriod(tx, branchId, "2026-05")
 
@@ -237,9 +244,44 @@ describe("getTrialBalance", () => {
       ],
     })
 
-    const result = await getTrialBalance(tx, { branchId, periodKey: "2026-05" })
-    expect(result.totalDebits).toBe("100")
-    expect(result.totalCredits).toBe("100")
+    const result = await getTrialBalance(tx, { legalEntityCode, periodKey: "2026-05" })
+    expect(result.totalDebits).toBe("1099")
+    expect(result.totalCredits).toBe("1099")
+  })
+
+  it("scopes by legal entity", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const asPeriod = await seedPeriod(tx, branchId, "2026-05", "AS")
+    const adPeriod = await seedPeriod(tx, branchId, "2026-05", "AD")
+
+    seedJournal(state, {
+      id: "journal-as",
+      branchId,
+      periodId: asPeriod.id,
+      legalEntityCode: "AS",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "100", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "100" },
+      ],
+    })
+    seedJournal(state, {
+      id: "journal-ad",
+      branchId,
+      periodId: adPeriod.id,
+      legalEntityCode: "AD",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "500", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "500" },
+      ],
+    })
+
+    const asResult = await getTrialBalance(tx, { legalEntityCode: "AS", periodKey: "2026-05" })
+    const adResult = await getTrialBalance(tx, { legalEntityCode: "AD", periodKey: "2026-05" })
+
+    expect(asResult.totalDebits).toBe("100")
+    expect(adResult.totalDebits).toBe("500")
   })
 
   it("filters by date range", async () => {
@@ -267,7 +309,7 @@ describe("getTrialBalance", () => {
     })
 
     const result = await getTrialBalance(tx, {
-      branchId,
+      legalEntityCode,
       from: "2026-05-01",
       to: "2026-05-31",
     })
@@ -296,7 +338,7 @@ describe("getTrialBalance", () => {
       periodKey: "2026-05",
     })
     const hidden = await getTrialBalance(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
       hideZeroBalances: true,
     })
@@ -324,7 +366,7 @@ describe("getTrialBalance", () => {
     })
 
     const result = await getTrialBalance(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
     })
 
@@ -346,7 +388,7 @@ describe("getTrialBalance", () => {
     const { tx } = createFinanceMockTx(branchId)
     await seedPeriod(tx, branchId, "2026-05")
 
-    const result = await getTrialBalance(tx, { branchId, periodKey: "2026-05" })
+    const result = await getTrialBalance(tx, { legalEntityCode, periodKey: "2026-05" })
     const types = result.rows.map((row) => row.accountType)
     const sortedTypes = [...types].sort(
       (a, b) =>

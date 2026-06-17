@@ -4,11 +4,13 @@ export const dynamic = "force-dynamic"
 import { financeErrorResponse } from "@/app/api/finance/shared/finance-api-errors"
 import { getGeneralLedger } from "@/lib/finance/reports/general-ledger"
 import { parseGeneralLedgerFilter } from "@/lib/finance/reports/report-filter"
+import { resolveReportSessionLegalEntityCode } from "@/lib/finance/reports/report-session"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    const filter = parseGeneralLedgerFilter(req.nextUrl.searchParams)
+    const legalEntityCode = await resolveReportSessionLegalEntityCode()
+    const filter = parseGeneralLedgerFilter(req.nextUrl.searchParams, legalEntityCode)
     const result = await getGeneralLedger(prisma, filter)
     return NextResponse.json(result)
   } catch (err: unknown) {

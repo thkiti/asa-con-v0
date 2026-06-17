@@ -1,9 +1,10 @@
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { rowsToCsvTable } from "./csv"
 import { formatAccountDisplay } from "./format-account"
 import type { TrialBalanceResult, TrialBalanceRow } from "./types"
 
 export type TrialBalanceFilter = {
-  branchId: string
+  legalEntityCode?: DocumentEntityCode
   periodKey?: string
   from?: string
   to?: string
@@ -12,7 +13,6 @@ export type TrialBalanceFilter = {
 
 function buildQuery(filter: TrialBalanceFilter): string {
   const params = new URLSearchParams()
-  params.set("branchId", filter.branchId.trim())
   if (filter.periodKey?.trim()) params.set("periodKey", filter.periodKey.trim())
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())

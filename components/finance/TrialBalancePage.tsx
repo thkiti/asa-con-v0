@@ -8,6 +8,7 @@ import {
 } from "@/lib/finance-ui/trial-balance"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { TrialBalanceResult } from "@/lib/finance-ui/types"
+import { formatEntityShort } from "@/lib/legal-entity/display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
   financeAccount,
@@ -25,7 +26,6 @@ type FilterMode = "period" | "dateRange"
 
 export function TrialBalancePage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [branchId, setBranchId] = useState("branch-1")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -41,14 +41,13 @@ export function TrialBalancePage() {
 
   const buildFilter = useCallback((): TrialBalanceFilter => {
     const base: TrialBalanceFilter = {
-      branchId: branchId.trim(),
       hideZeroBalances,
     }
     if (filterMode === "period") {
       return { ...base, periodKey: periodKey.trim() }
     }
     return { ...base, from: from.trim(), to: to.trim() }
-  }, [branchId, filterMode, from, hideZeroBalances, periodKey, to])
+  }, [filterMode, from, hideZeroBalances, periodKey, to])
 
   async function handleRefresh() {
     setLoading(true)
@@ -69,7 +68,10 @@ export function TrialBalancePage() {
     const scope =
       result.filter.periodKey ??
       `${result.filter.from ?? ""}_${result.filter.to ?? ""}`.replace(/__/g, "")
-    downloadTrialBalanceCsv(result, `trial-balance-${result.filter.branchId}-${scope}.csv`)
+    downloadTrialBalanceCsv(
+      result,
+      `trial-balance-${formatEntityShort(result.filter.legalEntityCode)}-${scope}.csv`
+    )
   }
 
   function handlePrint() {
@@ -85,15 +87,6 @@ export function TrialBalancePage() {
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch</span>
-            <input
-              className="rounded border border-zinc-300 px-2 py-1"
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            />
-          </label>
-
           <fieldset className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Scope</span>
             <div className="flex gap-3">
@@ -205,7 +198,7 @@ export function TrialBalancePage() {
           </div>
 
           <p className="text-sm text-zinc-600">
-            Branch {result.filter.branchId}
+            {formatEntityShort(result.filter.legalEntityCode)}
             {result.filter.periodKey
               ? ` · Period ${result.filter.periodKey}`
               : result.filter.from && result.filter.to

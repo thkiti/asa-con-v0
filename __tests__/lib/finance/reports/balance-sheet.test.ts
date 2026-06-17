@@ -25,6 +25,7 @@ function seedJournal(
     branchId: string
     periodId: string
     date: Date
+    legalEntityCode?: string
     lines: { code: string; debit: string; credit: string }[]
   }
 ) {
@@ -33,6 +34,7 @@ function seedJournal(
     voucherId: `voucher-${input.id}`,
     date: input.date,
     branchId: input.branchId,
+    legalEntityCode: input.legalEntityCode ?? "AS",
     periodId: input.periodId,
     postedAt: new Date(),
     createdAt: new Date(),
@@ -60,12 +62,14 @@ async function seedPeriod(
   tx: ReturnType<typeof createFinanceMockTx>["tx"],
   branchId: string,
   periodKey: string,
-  status: AccountingPeriodStatus = AccountingPeriodStatus.OPEN
+  status: AccountingPeriodStatus = AccountingPeriodStatus.OPEN,
+  legalEntityCode: string = "AS"
 ) {
   return tx.accountingPeriod.create({
     data: {
       branchId,
       periodKey,
+      legalEntityCode,
       status,
     },
   })
@@ -94,20 +98,19 @@ describe("balance sheet helpers", () => {
 })
 
 describe("parseBalanceSheetFilter", () => {
-  it("requires branchId", () => {
-    expect(() =>
-      parseBalanceSheetFilter(params({ periodKey: "2026-05" }))
-    ).toThrow(ReportError)
+  it("requires periodKey or date range", () => {
+    expect(() => parseBalanceSheetFilter(params({}), "AS")).toThrow(ReportError)
   })
 })
 
 describe("getBalanceSheet", () => {
   const branchId = "branch-1"
+  const legalEntityCode = "AS" as const
 
   it("returns empty sections for unknown period", async () => {
     const { tx } = createFinanceMockTx(branchId)
 
-    const result = await getBalanceSheet(tx, { branchId, periodKey: "2099-01" })
+    const result = await getBalanceSheet(tx, { legalEntityCode, periodKey: "2099-01" })
 
     expect(result.assets).toEqual([])
     expect(result.liabilities).toEqual([])
@@ -134,7 +137,7 @@ describe("getBalanceSheet", () => {
     })
 
     const result = await getBalanceSheet(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
       hideZeroBalances: true,
     })
@@ -166,7 +169,7 @@ describe("getBalanceSheet", () => {
     })
 
     const result = await getBalanceSheet(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
       hideZeroBalances: true,
     })
@@ -196,12 +199,12 @@ describe("getBalanceSheet", () => {
     })
 
     const hidden = await getBalanceSheet(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
       hideZeroBalances: true,
     })
     const shown = await getBalanceSheet(tx, {
-      branchId,
+      legalEntityCode,
       periodKey: "2026-05",
       hideZeroBalances: false,
     })
@@ -232,7 +235,7 @@ describe("getBalanceSheet", () => {
     })
 
     const before = state.journalEntries.length
-    const result = await getBalanceSheet(tx, { branchId, periodKey: "2026-04" })
+    const result = await getBalanceSheet(tx, { legalEntityCode, periodKey: "2026-04" })
     const after = state.journalEntries.length
 
     expect(after).toBe(before)
@@ -256,7 +259,7 @@ describe("getBalanceSheet", () => {
       ],
     })
 
-    const result = await getBalanceSheet(tx, { branchId, periodKey: "2026-06" })
+    const result = await getBalanceSheet(tx, { legalEntityCode, periodKey: "2026-06" })
 
     expect(result.isBalanced).toBe(false)
     expect(result.balanceDifference).toBe("200")
@@ -277,7 +280,7 @@ describe("getBalanceSheet", () => {
       ],
     })
 
-    const result = await getBalanceSheet(tx, { branchId, periodKey: "2026-07" })
+    const result = await getBalanceSheet(tx, { legalEntityCode, periodKey: "2026-07" })
     const ap = result.liabilities.find(
       (row) => row.accountCode === DEFAULT_ACCOUNT_CODES.AP
     )
@@ -290,8 +293,8 @@ describe("getBalanceSheet", () => {
 describe("balanceSheetToCsv", () => {
   it("serializes balanced statement", () => {
     const csv = balanceSheetToCsv({
-      filter: { branchId: "branch-1", periodKey: "2026-05" },
-      period: { branchId: "branch-1", periodKey: "2026-05" },
+      filter: { legalEntityCode: "AS", periodKey: "2026-05" },
+      period: { legalEntityCode: "AS", periodKey: "2026-05" },
       assets: [{ accountCode: "1000", accountName: "Cash", amount: "100" }],
       liabilities: [],
       equity: [{ accountCode: "3000", accountName: "Equity", amount: "100" }],

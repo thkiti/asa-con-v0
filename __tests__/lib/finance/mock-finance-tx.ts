@@ -1176,6 +1176,7 @@ export function createFinanceMockTx(branchId = "branch-1") {
           glAccountId?: string | { in: string[] }
           journalEntry?: {
             branchId?: string
+            legalEntityCode?: string
             periodId?: string
             date?: { gte?: Date; lt?: Date; lte?: Date }
           }
@@ -1196,6 +1197,12 @@ export function createFinanceMockTx(branchId = "branch-1") {
             if (
               where.journalEntry.branchId &&
               entry.branchId !== where.journalEntry.branchId
+            ) {
+              return false
+            }
+            if (
+              where.journalEntry.legalEntityCode &&
+              (entry.legalEntityCode ?? "AS") !== where.journalEntry.legalEntityCode
             ) {
               return false
             }

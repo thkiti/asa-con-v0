@@ -168,7 +168,7 @@ async function seedOpenPeriod(
   pKey: string
 ) {
   return tx.accountingPeriod.create({
-    data: { branchId: bId, periodKey: pKey, status: AccountingPeriodStatus.OPEN },
+    data: { branchId: bId, periodKey: pKey, legalEntityCode: "AS", status: AccountingPeriodStatus.OPEN },
   })
 }
 
@@ -247,6 +247,7 @@ describe("close gate enforcement guarantees", () => {
         {
           id: "period-1",
           branchId,
+          legalEntityCode: "AS",
           periodKey,
           status: AccountingPeriodStatus.OPEN,
           closedAt: null,

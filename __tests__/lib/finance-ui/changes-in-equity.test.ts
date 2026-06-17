@@ -3,8 +3,8 @@ import { changesInEquityToCsv } from "@/lib/finance-ui/changes-in-equity"
 describe("changesInEquityToCsv", () => {
   it("serializes matrix rows and metadata", () => {
     const csv = changesInEquityToCsv({
-      filter: { branchId: "branch-1", periodKey: "2026-05" },
-      period: { branchId: "branch-1", periodKey: "2026-05" },
+      filter: { legalEntityCode: "AS", branchId: "branch-1", periodKey: "2026-05" },
+      period: { legalEntityCode: "AS", periodKey: "2026-05" },
       columns: [
         { accountCode: "301", accountName: "Retained Earnings" },
         { accountCode: "1", accountName: "Share capital" },

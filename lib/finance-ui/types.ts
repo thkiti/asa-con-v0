@@ -229,7 +229,7 @@ export type TrialBalanceRow = {
 
 export type TrialBalanceResult = {
   filter: {
-    branchId: string
+    legalEntityCode: string
     periodKey?: string
     from?: string
     to?: string
@@ -250,14 +250,14 @@ export type BalanceSheetRow = {
 
 export type BalanceSheetResult = {
   filter: {
-    branchId: string
+    legalEntityCode: string
     periodKey?: string
     from?: string
     to?: string
     hideZeroBalances?: boolean
   }
   period: {
-    branchId: string
+    legalEntityCode: string
     periodKey?: string
     periodId?: string
     periodStatus?: string

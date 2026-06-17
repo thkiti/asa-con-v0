@@ -42,6 +42,7 @@ function seedJournal(
     voucherId,
     date: input.date,
     branchId: input.branchId,
+    legalEntityCode: "AS",
     periodId: input.periodId,
     postedAt: input.date,
     createdAt: input.date,
@@ -74,6 +75,7 @@ async function seedPeriod(
     data: {
       branchId,
       periodKey,
+      legalEntityCode: "AS",
       status: AccountingPeriodStatus.OPEN,
     },
   })
@@ -81,12 +83,14 @@ async function seedPeriod(
 
 describe("getGeneralLedger", () => {
   const branchId = "branch-1"
+  const legalEntityCode = "AS" as const
 
   it("returns empty account with no transactions when period has no activity", async () => {
     const { tx } = createFinanceMockTx(branchId)
     await seedPeriod(tx, branchId, "2026-05")
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.CASH,
@@ -117,6 +121,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       from: "2026-05-01",
       to: "2026-05-31",
@@ -156,6 +161,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.CASH,
@@ -202,6 +208,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.CASH,
@@ -230,6 +237,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCodes: [DEFAULT_ACCOUNT_CODES.CASH, DEFAULT_ACCOUNT_CODES.REVENUE],
@@ -268,6 +276,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.CASH,
@@ -291,7 +300,10 @@ describe("getGeneralLedger", () => {
       ],
     })
 
-    const filter = { branchId, periodKey: "2026-05" as const }
+    const filter = {
+      branchId,
+      periodKey: "2026-05" as const,
+    }
     const [ledger, trialBalance] = await Promise.all([
       getGeneralLedger(tx, { ...filter, accountCode: DEFAULT_ACCOUNT_CODES.CASH }),
       getTrialBalance(tx, filter),
@@ -332,7 +344,12 @@ describe("getGeneralLedger", () => {
       ],
     })
 
-    const filter = { branchId, from: "2026-05-01", to: "2026-05-31" }
+    const filter = {
+      legalEntityCode,
+      branchId,
+      from: "2026-05-01",
+      to: "2026-05-31",
+    }
     const [ledger, trialBalance] = await Promise.all([
       getGeneralLedger(tx, { ...filter, accountCode: DEFAULT_ACCOUNT_CODES.CASH }),
       getTrialBalance(tx, filter),
@@ -380,6 +397,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCodes: [
@@ -428,6 +446,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountId: cashAccount.id,
@@ -457,6 +476,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.CASH,
@@ -487,6 +507,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.REVENUE,
@@ -516,6 +537,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.AP,
@@ -564,6 +586,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       from: "2026-05-01",
       to: "2026-05-31",
@@ -604,6 +627,7 @@ describe("getGeneralLedger", () => {
     })
 
     const result = await getGeneralLedger(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
       accountCode: DEFAULT_ACCOUNT_CODES.CASH,

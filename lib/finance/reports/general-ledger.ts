@@ -37,10 +37,11 @@ type PeriodLineRow = {
 
 async function resolvePeriodExists(
   prisma: GeneralLedgerPrisma,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: GeneralLedgerFilter["legalEntityCode"]
 ): Promise<boolean> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: accountingPeriodUniqueWhere({ periodKey }),
+    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
     select: { id: true },
   })
   return period != null
@@ -147,7 +148,11 @@ export async function getGeneralLedger(
   filter: GeneralLedgerFilter
 ): Promise<GeneralLedgerResult> {
   if (filter.periodKey) {
-    const periodExists = await resolvePeriodExists(prisma, filter.periodKey)
+    const periodExists = await resolvePeriodExists(
+      prisma,
+      filter.periodKey,
+      filter.legalEntityCode
+    )
     if (!periodExists) {
       return { filter, accounts: [] }
     }

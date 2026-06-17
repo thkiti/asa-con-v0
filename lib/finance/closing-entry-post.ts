@@ -18,6 +18,8 @@ import { ZERO } from "./decimal"
 import { FinancePostingError } from "./posting-errors"
 import { postClosingEntryVoucher } from "./posting"
 import type { ManualJournalLineInput } from "./posting-types"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { periodKeyToReportDateRange } from "./reports/report-filter"
 import { getProfitLoss } from "./reports/profit-loss"
 
@@ -41,6 +43,14 @@ export type PreviewClosingEntryInput = {
   periodId: string
   branchId: string
   periodKey: string
+}
+
+function resolvePeriodEntityCode(legalEntityCode: string): DocumentEntityCode {
+  const code = parseDocumentEntityCode(legalEntityCode)
+  if (!code) {
+    throw new FinancePostingError("Invalid legal entity on accounting period", "VALIDATION_ERROR")
+  }
+  return code
 }
 
 function mapSimulationToJournalLines(
@@ -77,6 +87,7 @@ export async function previewClosingEntry(
   }
 
   const profitLoss = await getProfitLoss(prisma, {
+    legalEntityCode: resolvePeriodEntityCode(period.legalEntityCode),
     branchId: input.branchId,
     periodKey: input.periodKey,
   })
@@ -151,6 +162,7 @@ export async function postClosingEntry(
   }
 
   const profitLoss = await getProfitLoss(tx, {
+    legalEntityCode: resolvePeriodEntityCode(period.legalEntityCode),
     branchId: input.branchId,
     periodKey: input.periodKey,
   })

@@ -1,11 +1,8 @@
 import type { BalanceSheetPeriodMeta } from "./balance-sheet-types"
 
-export type CashFlowFilter = {
-  branchId: string
-  periodKey?: string
-  from?: string
-  to?: string
-}
+import type { BranchScopedReportFilter } from "./report-filter"
+
+export type CashFlowFilter = BranchScopedReportFilter
 
 export type CashFlowLineSource =
   | "PROFIT_LOSS"
