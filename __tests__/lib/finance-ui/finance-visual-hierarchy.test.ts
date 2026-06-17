@@ -27,6 +27,10 @@ describe("finance visual hierarchy tokens", () => {
       /span\.finance-account \.finance-account-code-part[\s\S]*font-variant-numeric: tabular-nums/
     )
     expect(css).toMatch(/\.finance-table thead th[\s\S]*position: sticky/)
+    expect(css).toMatch(/\.finance-report-sticky-context[\s\S]*position: sticky/)
+    expect(css).toMatch(
+      /\.finance-report-view \.finance-table thead th[\s\S]*top: var\(--finance-report-sticky-context-height\)/
+    )
     expect(css).toMatch(/\.finance-table td\.finance-number[\s\S]*text-align: right/)
     expect(css).toMatch(/span\.finance-account \.finance-account-separator[\s\S]*white-space: pre/)
     expect(css).toMatch(/\.finance-table td\.finance-number input[\s\S]*width: 100%/)

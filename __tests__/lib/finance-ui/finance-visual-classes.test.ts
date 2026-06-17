@@ -1,6 +1,8 @@
 import {
   financeAccountCode,
   financeNumber,
+  financeReportStickyContext,
+  financeReportView,
   financeTable,
   financeTableScroll,
   financeTextPrimary,
@@ -13,5 +15,7 @@ describe("finance visual standard classes", () => {
     expect(financeTextPrimary).toBe("finance-text-primary")
     expect(financeAccountCode).toContain("finance-account-code")
     expect(financeNumber).toContain("finance-number")
+    expect(financeReportView).toBe("finance-report-view")
+    expect(financeReportStickyContext).toBe("finance-report-sticky-context")
   })
 })

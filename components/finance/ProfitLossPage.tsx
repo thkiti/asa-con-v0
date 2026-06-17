@@ -9,6 +9,12 @@ import {
 } from "@/lib/finance-ui/profit-loss"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { ProfitLossResult } from "@/lib/finance-ui/types"
+import { FinanceReportStickyContext } from "@/components/finance/FinanceReportStickyContext"
+import { FinanceReportView } from "@/components/finance/FinanceReportView"
+import {
+  FINANCE_REPORT_TITLES,
+  formatFinanceReportPeriodLabel,
+} from "@/lib/finance-ui/finance-report-display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
   financeAccount,
@@ -19,8 +25,10 @@ import {
   financeThRight,
   financeTotalLabel,
   financeTotalRowStrong,
+  financeReportSection,
   financeTotalValue,
 } from "@/lib/finance-ui/finance-visual-classes"
+import { formatEntityShort } from "@/lib/legal-entity/display"
 
 type FilterMode = "period" | "dateRange"
 
@@ -36,7 +44,7 @@ function SectionTable({
   totalAmount: string
 }) {
   return (
-    <section className="space-y-2">
+    <section className={financeReportSection}>
       <h2 className="text-lg font-medium text-zinc-900">{title}</h2>
       {rows.length === 0 ? (
         <p className="text-sm text-zinc-500">No {title.toLowerCase()} activity in scope.</p>
@@ -234,15 +242,19 @@ export function ProfitLossPage() {
       </section>
 
       {result ? (
-        <div className="profit-loss-report space-y-8">
-          <p className="text-sm text-zinc-600 print:text-black">
-            Branch {result.filter.branchId}
-            {result.filter.periodKey
-              ? ` · Period ${result.filter.periodKey}`
-              : result.filter.from && result.filter.to
-                ? ` · ${result.filter.from} to ${result.filter.to}`
-                : null}
-          </p>
+        <FinanceReportView reportClassName="profit-loss-report">
+          <FinanceReportStickyContext
+            entityLabel={formatEntityShort(result.filter.legalEntityCode)}
+            reportTitle={FINANCE_REPORT_TITLES.profitLoss}
+            periodLabel={formatFinanceReportPeriodLabel(result.filter)}
+            status={{
+              kind: "neutral",
+              label: `Net income: ${formatAmount(result.netIncome)}${
+                incomeLabel ? ` (${incomeLabel})` : ""
+              }`,
+            }}
+            detailLine={`Branch ${result.filter.branchId}`}
+          />
 
           <SectionTable
             title="Revenue"
@@ -285,7 +297,7 @@ export function ProfitLossPage() {
               </div>
             </dl>
           </section>
-        </div>
+        </FinanceReportView>
       ) : null}
 
       <style jsx global>{`

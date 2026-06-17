@@ -9,6 +9,12 @@ import {
 } from "@/lib/finance-ui/general-ledger"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
+import { FinanceReportStickyContext } from "@/components/finance/FinanceReportStickyContext"
+import { FinanceReportView } from "@/components/finance/FinanceReportView"
+import {
+  FINANCE_REPORT_TITLES,
+  formatFinanceReportPeriodLabel,
+} from "@/lib/finance-ui/finance-report-display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
   financeMemo,
@@ -17,8 +23,10 @@ import {
   financeTableScroll,
   financeTh,
   financeThRight,
+  financeReportSection,
   financeTextMuted,
 } from "@/lib/finance-ui/finance-visual-classes"
+import { formatEntityShort } from "@/lib/legal-entity/display"
 import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type FilterMode = "period" | "dateRange"
@@ -207,16 +215,15 @@ export function GeneralLedgerPage() {
       </section>
 
       {result ? (
-        <div className="general-ledger-report space-y-8">
-          <p className="text-sm text-zinc-600 print:text-black">
-            Branch {result.filter.branchId}
-            {result.filter.periodKey
-              ? ` · Period ${result.filter.periodKey}`
-              : result.filter.from && result.filter.to
-                ? ` · ${result.filter.from} to ${result.filter.to}`
-                : null}
-            {result.filter.accountCode ? ` · Account ${result.filter.accountCode}` : null}
-          </p>
+        <FinanceReportView reportClassName="general-ledger-report">
+          <FinanceReportStickyContext
+            entityLabel={formatEntityShort(result.filter.legalEntityCode)}
+            reportTitle={FINANCE_REPORT_TITLES.generalLedger}
+            periodLabel={formatFinanceReportPeriodLabel(result.filter)}
+            detailLine={`Branch ${result.filter.branchId}${
+              result.filter.accountCode ? ` · Account ${result.filter.accountCode}` : ""
+            }`}
+          />
 
           {result.accounts.length === 0 ? (
             <p className="text-sm text-zinc-500">No accounts in scope.</p>
@@ -225,7 +232,7 @@ export function GeneralLedgerPage() {
           {result.accounts.map((account) => (
             <section
               key={account.accountCode}
-              className="general-ledger-account break-inside-avoid border-t border-zinc-300 pt-4"
+              className={`${financeReportSection} general-ledger-account break-inside-avoid border-t border-zinc-300 pt-4`}
             >
               <header className="space-y-1">
                 <h2 className="text-lg font-medium text-zinc-900">
@@ -299,7 +306,7 @@ export function GeneralLedgerPage() {
               </p>
             </section>
           ))}
-        </div>
+        </FinanceReportView>
       ) : null}
 
       <style jsx global>{`

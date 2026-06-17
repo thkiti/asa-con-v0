@@ -186,6 +186,7 @@ export type GeneralLedgerAccount = {
 
 export type GeneralLedgerResult = {
   filter: {
+    legalEntityCode?: string
     branchId: string
     periodKey?: string
     from?: string
@@ -206,6 +207,7 @@ export type ProfitLossRow = {
 
 export type ProfitLossResult = {
   filter: {
+    legalEntityCode?: string
     branchId: string
     periodKey?: string
     from?: string

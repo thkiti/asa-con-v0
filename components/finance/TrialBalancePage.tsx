@@ -8,7 +8,12 @@ import {
 } from "@/lib/finance-ui/trial-balance"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { TrialBalanceResult } from "@/lib/finance-ui/types"
-import { formatEntityShort } from "@/lib/legal-entity/display"
+import { FinanceReportStickyContext } from "@/components/finance/FinanceReportStickyContext"
+import { FinanceReportView } from "@/components/finance/FinanceReportView"
+import {
+  FINANCE_REPORT_TITLES,
+  formatFinanceReportPeriodLabel,
+} from "@/lib/finance-ui/finance-report-display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
   financeAccount,
@@ -20,7 +25,9 @@ import {
   financeTotalLabel,
   financeTotalRowStrong,
   financeTotalValue,
+  financeReportSection,
 } from "@/lib/finance-ui/finance-visual-classes"
+import { formatEntityShort } from "@/lib/legal-entity/display"
 
 type FilterMode = "period" | "dateRange"
 
@@ -183,31 +190,20 @@ export function TrialBalancePage() {
       </section>
 
       {result ? (
-        <section className="trial-balance-report space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-medium text-zinc-900">Trial Balance</h2>
-            <p
-              className={
-                result.isBalanced
-                  ? "text-sm font-medium text-emerald-700"
-                  : "text-sm font-medium text-amber-700"
-              }
-            >
-              {result.isBalanced ? "✓ Balanced" : "⚠ Out of Balance"}
-            </p>
-          </div>
+        <FinanceReportView reportClassName="trial-balance-report">
+          <FinanceReportStickyContext
+            entityLabel={formatEntityShort(result.filter.legalEntityCode)}
+            reportTitle={FINANCE_REPORT_TITLES.trialBalance}
+            periodLabel={formatFinanceReportPeriodLabel(result.filter)}
+            status={{
+              kind: result.isBalanced ? "balanced" : "unbalanced",
+              label: result.isBalanced ? "✓ Balanced" : "⚠ Out of Balance",
+            }}
+          />
 
-          <p className="text-sm text-zinc-600">
-            {formatEntityShort(result.filter.legalEntityCode)}
-            {result.filter.periodKey
-              ? ` · Period ${result.filter.periodKey}`
-              : result.filter.from && result.filter.to
-                ? ` · ${result.filter.from} to ${result.filter.to}`
-                : null}
-          </p>
-
-          <div className={financeTableScroll}>
-            <table className={financeTable}>
+          <div className={financeReportSection}>
+            <div className={financeTableScroll}>
+              <table className={financeTable}>
               <thead>
                 <tr>
                   <th className={financeTh}>Account</th>
@@ -250,8 +246,9 @@ export function TrialBalancePage() {
               </tfoot>
             </table>
           </div>
+          </div>
 
-          <dl className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <dl className={`${financeReportSection} grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4`}>
             <div>
               <dt className="text-zinc-500">Total Debit</dt>
               <dd className="tabular-nums">{formatAmount(result.totalDebits)}</dd>
@@ -269,7 +266,7 @@ export function TrialBalancePage() {
               <dd>{result.isBalanced ? "✓ Balanced" : "⚠ Out of Balance"}</dd>
             </div>
           </dl>
-        </section>
+        </FinanceReportView>
       ) : null}
 
       <style jsx global>{`

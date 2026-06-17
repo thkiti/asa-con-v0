@@ -42,6 +42,14 @@ export const financeTotalValue = `finance-total-value ${numericCell} px-2 py-2`
 export const financeDocumentContainer = "finance-document-container"
 export const financeReportContainer = "finance-report-container"
 
+export const financeReportView = "finance-report-view"
+export const financeReportStickyContext = "finance-report-sticky-context"
+export const financeReportStickyTitle = "finance-report-sticky-title"
+export const financeReportStickyPeriod = "finance-report-sticky-period"
+export const financeReportStickyStatus = "finance-report-sticky-status"
+export const financeReportStickyDetail = "finance-report-sticky-detail"
+export const financeReportSection = "finance-report-section"
+
 export const financeAuditLine = "finance-audit-line"
 export const financeDescriptionLine = "finance-description-line"
 export const financeDescriptionLabel = "finance-description-label"

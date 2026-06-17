@@ -8,6 +8,12 @@ import {
 } from "@/lib/finance-ui/balance-sheet"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { BalanceSheetResult, BalanceSheetRow } from "@/lib/finance-ui/types"
+import { FinanceReportStickyContext } from "@/components/finance/FinanceReportStickyContext"
+import { FinanceReportView } from "@/components/finance/FinanceReportView"
+import {
+  FINANCE_REPORT_TITLES,
+  formatFinanceReportPeriodLabel,
+} from "@/lib/finance-ui/finance-report-display"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
@@ -19,6 +25,7 @@ import {
   financeThRight,
   financeTotalLabel,
   financeTotalRowStrong,
+  financeReportSection,
   financeTotalValue,
 } from "@/lib/finance-ui/finance-visual-classes"
 
@@ -36,7 +43,7 @@ function SectionTable({
   totalAmount: string
 }) {
   return (
-    <section className="space-y-2">
+    <section className={financeReportSection}>
       <h2 className="text-lg font-medium text-zinc-900">{title}</h2>
       {rows.length === 0 ? (
         <p className="text-sm text-zinc-500">No {title.toLowerCase()} balances in scope.</p>
@@ -237,31 +244,18 @@ export function BalanceSheetPage() {
       </section>
 
       {result ? (
-        <section className="balance-sheet-report space-y-8">
-          <div className="space-y-1 text-sm text-zinc-600 print:text-black">
-            <p>
-              {formatEntityShort(result.period.legalEntityCode)}
-              {result.period.periodKey
-                ? ` · Period ${result.period.periodKey}`
-                : result.period.from && result.period.to
-                  ? ` · ${result.period.from} to ${result.period.to}`
-                  : null}
-              {result.period.periodStatus
-                ? ` · Status ${result.period.periodStatus}`
-                : null}
-            </p>
-            <p
-              className={
-                result.isBalanced
-                  ? "font-medium text-emerald-800"
-                  : "font-medium text-amber-800"
-              }
-            >
-              {result.isBalanced
-                ? "Balanced — total assets equal liabilities plus equity."
-                : `Out of balance — difference ${formatAmount(result.balanceDifference)}.`}
-            </p>
-          </div>
+        <FinanceReportView reportClassName="balance-sheet-report">
+          <FinanceReportStickyContext
+            entityLabel={formatEntityShort(result.period.legalEntityCode)}
+            reportTitle={FINANCE_REPORT_TITLES.balanceSheet}
+            periodLabel={formatFinanceReportPeriodLabel(result.period)}
+            status={{
+              kind: result.isBalanced ? "balanced" : "unbalanced",
+              label: result.isBalanced
+                ? "✓ Balanced"
+                : `⚠ Out of balance — ${formatAmount(result.balanceDifference)}`,
+            }}
+          />
 
           <SectionTable
             title="Assets"
@@ -296,7 +290,7 @@ export function BalanceSheetPage() {
               </span>
             </div>
           </section>
-        </section>
+        </FinanceReportView>
       ) : null}
 
       <style jsx global>{`
