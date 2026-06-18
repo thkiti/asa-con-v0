@@ -13,6 +13,7 @@ export const ManualJournalEntryErrorCodes = {
   OPB_DUPLICATE_POSTED: "OPB_DUPLICATE_POSTED",
   PDF_MISSING: "PDF_MISSING",
   PDF_METADATA_INCOMPLETE: "PDF_METADATA_INCOMPLETE",
+  PDF_FONT_MISSING: "PDF_FONT_MISSING",
 } as const
 
 export type ManualJournalEntryErrorCode =

@@ -28,10 +28,7 @@ export async function renderManualJournalEntryPdf(
   const doc = new PDFDocument({ margin: 40, size: "A4" })
   const bufferPromise = renderPdfToBuffer(doc)
 
-  const fontPath = await resolveThaiFontPathForPdf()
-  if (fontPath) {
-    doc.font(fontPath)
-  }
+  doc.font(await resolveThaiFontPathForPdf())
 
   const header = buildManualJournalPdfHeaderLines(snapshot)
 
