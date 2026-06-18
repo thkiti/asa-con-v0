@@ -75,7 +75,7 @@ export async function GET(req: NextRequest, context: Context) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `${disposition}; filename="${fileName}"`,
-        "Cache-Control": "private, max-age=3600",
+        "Cache-Control": "private, no-store",
       },
     })
   } catch (err: unknown) {
