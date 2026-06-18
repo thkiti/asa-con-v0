@@ -219,5 +219,5 @@ export async function postManualJournalEntry(
   }
 
   if (input.tx) return run(input.tx)
-  return prisma.$transaction(run)
+  return prisma.$transaction(run, { timeout: 30_000 })
 }
