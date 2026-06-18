@@ -86,6 +86,7 @@ function periodRow(overrides: {
   return {
     id: "period-1",
     periodKey: "2026-05",
+    legalEntityCode: "AS",
     branchId: "branch-1",
     status: overrides.status ?? AccountingPeriodStatus.OPEN,
     openedAt,
@@ -101,6 +102,7 @@ function periodDto(overrides: {
   return {
     id: "period-1",
     periodKey: "2026-05",
+    legalEntityCode: "AS",
     branchId: "branch-1",
     branchName: "Main Shop",
     status: overrides.status ?? AccountingPeriodStatus.OPEN,
@@ -112,13 +114,14 @@ function periodDto(overrides: {
 describe("GET finance/periods", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockGetSession.mockResolvedValue(authorizedSession)
   })
 
-  it("calls listAccountingPeriods and returns periods DTO", async () => {
+  it("calls listAccountingPeriods scoped to session legal entity", async () => {
     mockList.mockResolvedValue([periodDto()])
 
     const req = new NextRequest(
-      "http://localhost/api/finance/periods?branchId=branch-1"
+      "http://localhost/api/finance/periods?periodKey=2026-05"
     )
     const res = await GET(req)
 
@@ -132,21 +135,21 @@ describe("GET finance/periods", () => {
       ],
     })
     expect(mockList).toHaveBeenCalledWith(prisma, {
-      branchId: "branch-1",
-      periodKey: undefined,
+      legalEntityCode: "AS",
+      periodKey: "2026-05",
       status: undefined,
     })
   })
 
-  it("omits branchId filter when query param is blank", async () => {
+  it("ignores deprecated branchId query param", async () => {
     mockList.mockResolvedValue([])
 
-    const req = new NextRequest("http://localhost/api/finance/periods?branchId=  ")
+    const req = new NextRequest("http://localhost/api/finance/periods?branchId=branch-1")
     const res = await GET(req)
 
     expect(res.status).toBe(200)
     expect(mockList).toHaveBeenCalledWith(prisma, {
-      branchId: undefined,
+      legalEntityCode: "AS",
       periodKey: undefined,
       status: undefined,
     })
@@ -156,16 +159,26 @@ describe("GET finance/periods", () => {
     mockList.mockResolvedValue([])
 
     const req = new NextRequest(
-      "http://localhost/api/finance/periods?branchId=branch-1&periodKey=2026-05&status=soft_closed"
+      "http://localhost/api/finance/periods?periodKey=2026-05&status=soft_closed"
     )
     const res = await GET(req)
 
     expect(res.status).toBe(200)
     expect(mockList).toHaveBeenCalledWith(prisma, {
-      branchId: "branch-1",
+      legalEntityCode: "AS",
       periodKey: "2026-05",
       status: AccountingPeriodStatus.SOFT_CLOSED,
     })
+  })
+
+  it("returns 401 when session is missing", async () => {
+    mockGetSession.mockResolvedValue(null)
+
+    const req = new NextRequest("http://localhost/api/finance/periods")
+    const res = await GET(req)
+
+    expect(res.status).toBe(401)
+    expect(mockList).not.toHaveBeenCalled()
   })
 
   it("returns 400 for invalid status filter", async () => {
@@ -195,7 +208,7 @@ describe("POST finance/periods", () => {
 
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "POST",
-      body: JSON.stringify({ branchId: "branch-1", periodKey: "2026-05" }),
+      body: JSON.stringify({ periodKey: "2026-05" }),
     })
     const res = await POST(req)
 
@@ -213,7 +226,7 @@ describe("POST finance/periods", () => {
 
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "POST",
-      body: JSON.stringify({ branchId: "branch-1", periodKey: "2026-05" }),
+      body: JSON.stringify({ periodKey: "2026-05" }),
     })
     const res = await POST(req)
 
@@ -226,7 +239,6 @@ describe("POST finance/periods", () => {
     })
     expect(mockTransaction).toHaveBeenCalledTimes(1)
     expect(mockBootstrap).toHaveBeenCalledWith(prisma, {
-      branchId: "branch-1",
       periodKey: "2026-05",
       legalEntityCode: "AS",
     })
@@ -252,7 +264,7 @@ describe("POST finance/periods", () => {
     expect(mockBootstrap).toHaveBeenCalledTimes(1)
   })
 
-  it("returns 400 when branchId or periodKey is missing", async () => {
+  it("returns 400 when periodKey is missing", async () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "POST",
       body: JSON.stringify({ branchId: "branch-1" }),
@@ -261,7 +273,7 @@ describe("POST finance/periods", () => {
 
     expect(res.status).toBe(400)
     await expect(res.json()).resolves.toEqual({
-      error: "branchId and periodKey are required",
+      error: "periodKey is required",
       code: "VALIDATION_ERROR",
     })
     expect(mockTransaction).not.toHaveBeenCalled()
@@ -284,12 +296,12 @@ describe("PATCH finance/periods", () => {
       staffId: "staff-2",
       name: "Shop Staff",
       branchId: "branch-1",
+      documentEntityCode: "AS",
     })
 
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "SOFT_CLOSE",
       }),
@@ -311,6 +323,7 @@ describe("PATCH finance/periods", () => {
       staffId: "staff-3",
       name: "Admin User",
       branchId: "branch-1",
+      documentEntityCode: "AS",
     })
     mockClose.mockResolvedValue(
       periodRow({ status: "SOFT_CLOSED", closedAt: new Date("2026-05-31T23:59:59.000Z") })
@@ -322,7 +335,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "SOFT_CLOSE",
       }),
@@ -344,7 +356,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "SOFT_CLOSE",
       }),
@@ -363,7 +374,6 @@ describe("PATCH finance/periods", () => {
       },
     })
     expect(mockClose).toHaveBeenCalledWith(prisma, {
-      branchId: "branch-1",
       periodKey: "2026-05",
       legalEntityCode: "AS",
       mode: "SOFT",
@@ -381,7 +391,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "HARD_CLOSE",
       }),
@@ -390,7 +399,6 @@ describe("PATCH finance/periods", () => {
 
     expect(res.status).toBe(200)
     expect(mockClose).toHaveBeenCalledWith(prisma, {
-      branchId: "branch-1",
       periodKey: "2026-05",
       legalEntityCode: "AS",
       mode: "HARD",
@@ -423,7 +431,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "HARD_CLOSE",
       }),
@@ -461,7 +468,6 @@ describe("PATCH finance/periods", () => {
       const req = new NextRequest("http://localhost/api/finance/periods", {
         method: "PATCH",
         body: JSON.stringify({
-          branchId: "branch-1",
           periodKey: "2026-05",
           action: "HARD_CLOSE",
         }),
@@ -476,7 +482,6 @@ describe("PATCH finance/periods", () => {
         blockers: gateErr.blockers,
       })
       expect(mockClose).toHaveBeenCalledWith(prisma, {
-        branchId: "branch-1",
         periodKey: "2026-05",
         legalEntityCode: "AS",
         mode: "HARD",
@@ -511,7 +516,6 @@ describe("PATCH finance/periods", () => {
       const req = new NextRequest("http://localhost/api/finance/periods", {
         method: "PATCH",
         body: JSON.stringify({
-          branchId: "branch-1",
           periodKey: "2026-05",
           action: "HARD_CLOSE",
         }),
@@ -542,7 +546,6 @@ describe("PATCH finance/periods", () => {
       const req = new NextRequest("http://localhost/api/finance/periods", {
         method: "PATCH",
         body: JSON.stringify({
-          branchId: "branch-1",
           periodKey: "2026-05",
           action: "HARD_CLOSE",
         }),
@@ -567,7 +570,6 @@ describe("PATCH finance/periods", () => {
       const req = new NextRequest("http://localhost/api/finance/periods", {
         method: "PATCH",
         body: JSON.stringify({
-          branchId: "branch-1",
           periodKey: "2026-05",
           action: "SOFT_CLOSE",
         }),
@@ -576,7 +578,6 @@ describe("PATCH finance/periods", () => {
 
       expect(res.status).toBe(200)
       expect(mockClose).toHaveBeenCalledWith(prisma, {
-        branchId: "branch-1",
         periodKey: "2026-05",
         legalEntityCode: "AS",
         mode: "SOFT",
@@ -591,7 +592,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "REOPEN",
         reason: "Resume month-end",
@@ -603,7 +603,6 @@ describe("PATCH finance/periods", () => {
     expect(mockReopen).toHaveBeenCalledWith(
       prisma,
       expect.objectContaining({
-        branchId: "branch-1",
         periodKey: "2026-05",
         legalEntityCode: "AS",
         reason: "Resume month-end",
@@ -626,7 +625,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "REOPEN",
       }),
@@ -648,7 +646,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "REOPEN",
         reason: "Should require approval",
@@ -667,7 +664,6 @@ describe("PATCH finance/periods", () => {
     const req = new NextRequest("http://localhost/api/finance/periods", {
       method: "PATCH",
       body: JSON.stringify({
-        branchId: "branch-1",
         periodKey: "2026-05",
         action: "FREEZE",
       }),
@@ -678,6 +674,23 @@ describe("PATCH finance/periods", () => {
     await expect(res.json()).resolves.toEqual({
       error: "Invalid action",
       code: "INVALID_ACTION",
+    })
+    expect(mockTransaction).not.toHaveBeenCalled()
+  })
+
+  it("returns 400 when periodKey is missing", async () => {
+    const req = new NextRequest("http://localhost/api/finance/periods", {
+      method: "PATCH",
+      body: JSON.stringify({
+        action: "SOFT_CLOSE",
+      }),
+    })
+    const res = await PATCH(req)
+
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "periodKey and action are required",
+      code: "VALIDATION_ERROR",
     })
     expect(mockTransaction).not.toHaveBeenCalled()
   })

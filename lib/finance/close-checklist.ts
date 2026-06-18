@@ -132,12 +132,10 @@ export function hasDashboardDomain(
 export function snapshotScopeMatchesPeriod(
   snapshot: ReconciliationSnapshotHeader,
   period: CloseChecklistInput["period"]
-): { branchMatch: boolean; periodKeyMatch: boolean } {
-  const branchMatch =
-    snapshot.branchId === null || snapshot.branchId === period.branchId
+): { periodKeyMatch: boolean } {
   const periodKeyMatch =
     snapshot.periodKey === null || snapshot.periodKey === period.periodKey
-  return { branchMatch, periodKeyMatch }
+  return { periodKeyMatch }
 }
 
 export function detectSnapshotHeaderDrift(
@@ -332,17 +330,6 @@ export function evaluateCloseBlockerRules(
       snapshotRefs(snapshotRef.id, period)
     )
   )
-
-  if (!scopeMatch.branchMatch) {
-    items.push(
-      makeChecklistItem(
-        "snapshot-branch-mismatch",
-        "Snapshot branch does not match period",
-        `Snapshot branch ${latestSnapshot.branchId ?? "unknown"} does not match period branch ${period.branchId}.`,
-        snapshotRefs(latestSnapshot.id, period)
-      )
-    )
-  }
 
   if (!scopeMatch.periodKeyMatch) {
     items.push(

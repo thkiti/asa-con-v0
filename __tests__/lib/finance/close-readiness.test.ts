@@ -170,7 +170,6 @@ describe("getCloseReadinessByPeriodId", () => {
     expect(prisma.accountingPeriod.update).not.toHaveBeenCalled()
     expect(prisma.reconciliationSnapshot.create).not.toHaveBeenCalled()
     expect(mockFindSnapshotsForPeriod).toHaveBeenCalledWith(prisma, {
-      branchId: "branch-1",
       periodKey: "2026-05",
     })
   })

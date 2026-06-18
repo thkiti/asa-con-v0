@@ -8,7 +8,7 @@ Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.
 
 ## 1. Purpose
 
-Accounting periods gate when finance vouchers may be posted. Each branch has one row per `periodKey` (`YYYY-MM`). Posting orchestrators (POS checkout, stock document post) join the caller's outer transaction and call finance posting; finance refuses writes when the period is not `OPEN`.
+Accounting periods gate when finance vouchers may be posted. Each legal entity has one row per `periodKey` (`YYYY-MM`). Posting orchestrators (POS checkout, stock document post) join the caller's outer transaction and call finance posting; finance refuses writes when the period is not `OPEN`.
 
 Period **creation** and **close/reopen** are admin workflows — not side effects of posting.
 
@@ -75,7 +75,7 @@ sequenceDiagram
   Orch->>Tx: begin
   Orch->>Orch: operational writes
   Orch->>Fin: postSaleVoucher / postStockDocumentVoucher
-  Fin->>Period: branchId + postingDate
+  Fin->>Period: legalEntityCode + postingDate
   alt status OPEN
     Period-->>Fin: period row
     Fin-->>Orch: voucher + journal
@@ -323,7 +323,7 @@ flowchart TD
 
 | Layer | Module | Role |
 |-------|--------|------|
-| **Primary gate** | [`lib/finance/posting-period.ts`](../lib/finance/posting-period.ts) | `assertPostingPeriodOpen(tx, branchId, postingDate)` — authoritative check before any voucher write in `postOperationalVoucher` |
+| **Primary gate** | [`lib/finance/posting-period.ts`](../lib/finance/posting-period.ts) | `assertPostingPeriodOpen(tx, postingDate, legalEntityCode)` — authoritative check before any voucher write in `postOperationalVoucher` |
 | **Defense in depth** | [`lib/finance/voucher.ts`](../lib/finance/voucher.ts) | `assertPeriodOpen(period.status)` on the period row already loaded by `periodId` — blocks direct calls to `createVoucherWithLines` with a closed period |
 | **Low-level writers** | `voucher.ts`, [`journal.ts`](../lib/finance/journal.ts) | Only modules that call `voucher.create` / `journalEntry.create`; not exported from [`lib/finance/index.ts`](../lib/finance/index.ts) barrel |
 

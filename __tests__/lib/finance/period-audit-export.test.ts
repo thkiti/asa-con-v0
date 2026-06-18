@@ -96,7 +96,6 @@ describe("period-audit-export (22B)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,
@@ -148,7 +147,6 @@ describe("period-audit-export (22B)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,

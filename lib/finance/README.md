@@ -8,7 +8,7 @@ Finance posting kernel (Phase 7+) and accounting period lifecycle (Phase 15).
 - **One voucher → one journal:** each posted `Voucher` maps to exactly one `JournalEntry`.
 - **No nested transactions:** this module does not call `$transaction`.
 - **Derived domain only:** no stock or sale mutations; account mapping lives in `account-map.ts`.
-- **Idempotency:** `(refType, refId)` on `Voucher`; period bootstrap is idempotent on `(branchId, periodKey)`.
+- **Idempotency:** `(refType, refId)` on `Voucher`; period bootstrap is idempotent on `(legalEntityCode, periodKey)`.
 - **Posting gate:** `assertPostingPeriodOpen` — only `OPEN` periods accept vouchers; no auto-bootstrap in posting.
 
 ## Period modules (Phase 15)

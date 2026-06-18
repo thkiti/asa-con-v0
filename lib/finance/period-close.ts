@@ -12,7 +12,6 @@ import { FinancePostingError } from "./posting-errors"
 import { accountingPeriodUniqueWhere } from "./period-lookup"
 
 type PeriodCloseInput = {
-  branchId: string
   periodKey: string
   legalEntityCode?: DocumentEntityCode | null
   mode: "SOFT" | "HARD"
@@ -20,7 +19,6 @@ type PeriodCloseInput = {
 }
 
 type PeriodReopenInput = {
-  branchId: string
   periodKey: string
   legalEntityCode?: DocumentEntityCode | null
   reason: string
@@ -31,7 +29,7 @@ type PeriodReopenInput = {
 
 async function findAccountingPeriod(
   tx: Prisma.TransactionClient,
-  input: { branchId: string; periodKey: string; legalEntityCode?: DocumentEntityCode | null }
+  input: { periodKey: string; legalEntityCode?: DocumentEntityCode | null }
 ): Promise<NonNullable<Awaited<ReturnType<typeof tx.accountingPeriod.findUnique>>>> {
   const period = await tx.accountingPeriod.findUnique({
     where: accountingPeriodUniqueWhere({

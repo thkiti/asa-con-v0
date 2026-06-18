@@ -262,6 +262,7 @@ function buildBlockerLinkReadiness(
     },
     period: {
       id: context.periodId ?? "",
+      legalEntityCode: "AS",
       branchId,
       periodKey,
       status: "OPEN" as CloseChecklistPeriodInput["status"],

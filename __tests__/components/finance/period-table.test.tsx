@@ -6,6 +6,7 @@ const samplePeriods: AccountingPeriodRow[] = [
   {
     id: "period-1",
     periodKey: "2026-05",
+    legalEntityCode: "AS",
     branchId: "branch-1",
     branchName: "Main Shop",
     status: "OPEN",
@@ -15,6 +16,7 @@ const samplePeriods: AccountingPeriodRow[] = [
   {
     id: "period-2",
     periodKey: "2026-04",
+    legalEntityCode: "AS",
     branchId: "branch-1",
     branchName: "Main Shop",
     status: "HARD_CLOSED",
@@ -27,7 +29,7 @@ describe("PeriodTable", () => {
   it("renders period rows with status badges", () => {
     const html = renderToStaticMarkup(<PeriodTable periods={samplePeriods} />)
     expect(html).toContain("2026-05")
-    expect(html).toContain("Main Shop")
+    expect(html).toContain("AS")
     expect(html).toContain("Open")
     expect(html).toContain("Hard closed")
     expect(html).toContain("bg-green-100")

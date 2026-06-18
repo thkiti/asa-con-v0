@@ -37,7 +37,6 @@ export async function POST(_req: NextRequest, context: Context) {
     const result = await prisma.$transaction((tx) =>
       postClosingEntry(tx, {
         periodId: period.id,
-        branchId: period.branchId,
         periodKey: period.periodKey,
       })
     )

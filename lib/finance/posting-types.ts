@@ -124,4 +124,5 @@ export type PostClosingEntryVoucherInput = {
   refId: string
   lines: ManualJournalLineInput[]
   description?: string | null
+  legalEntityCode?: DocumentEntityCode | null
 }

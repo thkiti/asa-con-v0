@@ -127,7 +127,6 @@ describe("period-reopen-control (21A)", () => {
     })
 
     const reopened = await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Correct prior close",
       reopenedBy: hoAdminActor,
@@ -144,17 +143,16 @@ describe("period-reopen-control (21A)", () => {
     })
 
     await expect(
-      assertPostingPeriodOpen(tx, branchId, postingDate)
+      assertPostingPeriodOpen(tx, postingDate)
     ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
   })
 
   it("SOFT_CLOSED → OPEN creates reopen evidence and allows posting", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
-    await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
     const reopened = await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Resume month-end work",
       reopenedBy: defaultClosedBy,
@@ -169,7 +167,7 @@ describe("period-reopen-control (21A)", () => {
       reason: "Resume month-end work",
     })
 
-    await expect(assertPostingPeriodOpen(tx, branchId, postingDate)).resolves.toMatchObject({
+    await expect(assertPostingPeriodOpen(tx, postingDate)).resolves.toMatchObject({
       status: AccountingPeriodStatus.OPEN,
     })
 
@@ -188,11 +186,10 @@ describe("period-reopen-control (21A)", () => {
   it("rejects missing reason on reopen", async () => {
     const { tx } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
-    await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
     await expect(
       reopenAccountingPeriod(tx, {
-        branchId,
         periodKey,
         reason: "  ",
         reopenedBy: defaultClosedBy,
@@ -212,7 +209,6 @@ describe("period-reopen-control (21A)", () => {
 
     await expect(
       reopenAccountingPeriod(tx, {
-        branchId,
         periodKey,
         reason: "Should fail",
         reopenedBy: defaultClosedBy,
@@ -234,7 +230,6 @@ describe("period-reopen-control (21A)", () => {
     })
 
     await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Admin unlock",
       reopenedBy: hoAdminActor,
@@ -257,18 +252,16 @@ describe("period-reopen-control (21A)", () => {
     const firstEvidence = { ...state.accountingPeriodCloseEvidence[0]! }
 
     await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Hard reopen",
       reopenedBy: hoAdminActor,
     })
     await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Soft reopen",
       reopenedBy: defaultClosedBy,
     })
-    await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
     mockBuildChecklist.mockClear()
 
     await closeAccountingPeriod(tx, {
@@ -289,7 +282,6 @@ describe("period-reopen-control (21A)", () => {
     const created = await seedOpenPeriod(tx, branchId, periodKey)
 
     await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "noop",
       reopenedBy: defaultClosedBy,
@@ -323,7 +315,7 @@ describe("period-reopen-control (21A)", () => {
     const { tx, state } = createFinanceMockTx()
     const period = await seedOpenPeriod(tx, branchId, periodKey)
 
-    await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
     await closeAccountingPeriod(tx, {
       branchId,
       periodKey,
@@ -342,12 +334,11 @@ describe("period-reopen-control (21A)", () => {
     })
 
     await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Soft reopen 1",
       reopenedBy: defaultClosedBy,
     })
-    await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
     await closeAccountingPeriod(tx, {
       branchId,
       periodKey,

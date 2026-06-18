@@ -184,7 +184,6 @@ export async function postManualJournalEntry(
     await assertCanPostManualJournalEntry(tx, entry)
     await assertPostingPeriodOpen(
       tx,
-      entry.branchId,
       entry.entryDate,
       entry.legalEntityCode as DocumentEntityCode
     )

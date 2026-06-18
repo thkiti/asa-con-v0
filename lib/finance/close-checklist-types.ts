@@ -32,6 +32,7 @@ export type CloseChecklistItem = {
 
 export type CloseChecklistPeriodInput = {
   id: string
+  legalEntityCode: string
   branchId: string
   periodKey: string
   status: AccountingPeriodStatus

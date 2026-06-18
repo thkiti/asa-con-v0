@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   fetchAccountingPeriods,
   fetchReopenRequests,
@@ -30,12 +30,10 @@ const STATUS_FILTER_OPTIONS: Array<"ALL" | AccountingPeriodStatus> = [
 ]
 
 export function PeriodAdminPage() {
-  const [branchFilter, setBranchFilter] = useState("ALL")
   const [statusFilter, setStatusFilter] = useState<"ALL" | AccountingPeriodStatus>(
     "ALL"
   )
   const [periodKeyFilter, setPeriodKeyFilter] = useState("")
-  const [createBranchId, setCreateBranchId] = useState("")
   const [createPeriodKey, setCreatePeriodKey] = useState("")
   const [periods, setPeriods] = useState<AccountingPeriodRow[]>([])
   const [sessionDisplay, setSessionDisplay] = useState<SessionDisplay | null>(
@@ -57,11 +55,6 @@ export function PeriodAdminPage() {
     Record<string, ReopenRequestDetail>
   >({})
 
-  const branchOptions = useMemo(() => {
-    const ids = [...new Set(periods.map((period) => period.branchId))].sort()
-    return ids
-  }, [periods])
-
   const loadPeriods = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -73,14 +66,10 @@ export function PeriodAdminPage() {
       }
 
       const filter: {
-        branchId?: string
         periodKey?: string
         status?: string
       } = {}
 
-      if (branchFilter !== "ALL") {
-        filter.branchId = branchFilter
-      }
       if (periodKey) {
         filter.periodKey = periodKey
       }
@@ -116,7 +105,7 @@ export function PeriodAdminPage() {
     } finally {
       setLoading(false)
     }
-  }, [branchFilter, periodKeyFilter, statusFilter])
+  }, [periodKeyFilter, statusFilter])
 
   useEffect(() => {
     void loadPeriods()
@@ -131,13 +120,8 @@ export function PeriodAdminPage() {
     setError(null)
     setActionError(null)
 
-    const branchId = createBranchId.trim()
     const periodKey = createPeriodKey.trim()
 
-    if (!branchId) {
-      setError("Branch ID is required to create a period")
-      return
-    }
     if (!PERIOD_KEY_PATTERN.test(periodKey)) {
       setError("Period key must match YYYY-MM")
       return
@@ -145,11 +129,8 @@ export function PeriodAdminPage() {
 
     setPendingAction(true)
     try {
-      const result = await postAccountingPeriod({ branchId, periodKey })
-      setMessage(
-        `Period ${result.period.periodKey} opened for branch ${result.period.branchId}`
-      )
-      setCreateBranchId("")
+      const result = await postAccountingPeriod({ periodKey })
+      setMessage(`Period ${result.period.periodKey} opened`)
       setCreatePeriodKey("")
       await loadPeriods()
     } catch (err) {
@@ -192,7 +173,6 @@ export function PeriodAdminPage() {
     setPendingAction(true)
     try {
       const result = await patchAccountingPeriod({
-        branchId: period.branchId,
         periodKey: period.periodKey,
         action,
         reason: options?.reason,
@@ -231,23 +211,7 @@ export function PeriodAdminPage() {
 
       <section className="space-y-4">
         <h2 className="text-sm font-medium text-zinc-900">Filters</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="block">
-            <span className="text-sm text-zinc-600">Branch</span>
-            <select
-              value={branchFilter}
-              onChange={(e) => setBranchFilter(e.target.value)}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-              disabled={controlsDisabled}
-            >
-              <option value="ALL">ALL</option>
-              {branchOptions.map((branchId) => (
-                <option key={branchId} value={branchId}>
-                  {branchId}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="block">
             <span className="text-sm text-zinc-600">Status</span>
             <select
@@ -292,17 +256,7 @@ export function PeriodAdminPage() {
       <section className="mt-8 space-y-4">
         <h2 className="text-sm font-medium text-zinc-900">Create / open period</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="block">
-            <span className="text-sm text-zinc-600">Branch ID</span>
-            <input
-              type="text"
-              value={createBranchId}
-              onChange={(e) => setCreateBranchId(e.target.value)}
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm"
-              disabled={controlsDisabled}
-            />
-          </label>
-          <label className="block">
+          <label className="block sm:col-span-2">
             <span className="text-sm text-zinc-600">Period key</span>
             <input
               type="text"

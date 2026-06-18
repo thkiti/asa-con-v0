@@ -42,6 +42,7 @@ export type AccountingPeriodStatus = "OPEN" | "SOFT_CLOSED" | "HARD_CLOSED"
 export type AccountingPeriodRow = {
   id: string
   periodKey: string
+  legalEntityCode: string
   branchId: string
   branchName: string
   status: AccountingPeriodStatus

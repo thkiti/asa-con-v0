@@ -53,10 +53,34 @@ async function loadPeriodDto(
   return row ? toAccountingPeriodListRow(row) : null
 }
 
+function resolveSessionLegalEntityCode(
+  session: NonNullable<Awaited<ReturnType<typeof getSession>>>
+): DocumentEntityCode {
+  return session.documentEntityCode
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const branchId = req.nextUrl.searchParams.get("branchId")?.trim() || undefined
+    const session = await getSession()
+    const legalEntityParam = req.nextUrl.searchParams.get("legalEntityCode")?.trim()
+    const branchIdParam = req.nextUrl.searchParams.get("branchId")?.trim()
     const periodKey = req.nextUrl.searchParams.get("periodKey")?.trim() || undefined
+
+    const legalEntityCode = (legalEntityParam ||
+      session?.documentEntityCode) as DocumentEntityCode | undefined
+
+    if (!legalEntityCode) {
+      return NextResponse.json(
+        { error: "Authentication required", code: "UNAUTHENTICATED" },
+        { status: 401 }
+      )
+    }
+
+    if (branchIdParam) {
+      console.warn(
+        "[finance/periods] branchId query param is deprecated and ignored; scope by legalEntityCode"
+      )
+    }
 
     const statusParam = req.nextUrl.searchParams.get("status")
     let status: AccountingPeriodStatus | undefined
@@ -72,7 +96,7 @@ export async function GET(req: NextRequest) {
     }
 
     const periods = await listAccountingPeriods(prisma, {
-      branchId,
+      legalEntityCode,
       periodKey,
       status,
     })
@@ -89,22 +113,28 @@ export async function POST(req: NextRequest) {
       periodKey?: unknown
     }
 
-    const branchId = String(body.branchId ?? "").trim()
     const periodKey = String(body.periodKey ?? "").trim()
+    const legacyBranchId = String(body.branchId ?? "").trim() || undefined
 
-    if (!branchId || !periodKey) {
+    if (!periodKey) {
       return NextResponse.json(
-        { error: "branchId and periodKey are required", code: "VALIDATION_ERROR" },
+        { error: "periodKey is required", code: "VALIDATION_ERROR" },
         { status: 400 }
+      )
+    }
+
+    if (legacyBranchId) {
+      console.warn(
+        "[finance/periods] branchId in POST body is deprecated and ignored; scope by session legalEntityCode"
       )
     }
 
     const session = await getSession()
     requirePeriodAdminActor(session)
-    const legalEntityCode = session!.documentEntityCode
+    const legalEntityCode = resolveSessionLegalEntityCode(session!)
 
     await prisma.$transaction(async (tx) => {
-      await bootstrapPeriodIfMissing(tx, { branchId, periodKey, legalEntityCode })
+      await bootstrapPeriodIfMissing(tx, { periodKey, legalEntityCode })
     })
 
     const period = await loadPeriodDto(prisma, periodKey, legalEntityCode)
@@ -133,14 +163,20 @@ export async function PATCH(req: NextRequest) {
       reason?: unknown
     }
 
-    const branchId = String(body.branchId ?? "").trim()
     const periodKey = String(body.periodKey ?? "").trim()
+    const legacyBranchId = String(body.branchId ?? "").trim() || undefined
     const action = parsePeriodAction(body.action)
 
-    if (!branchId || !periodKey || !body.action) {
+    if (!periodKey || !body.action) {
       return NextResponse.json(
-        { error: "branchId, periodKey, and action are required", code: "VALIDATION_ERROR" },
+        { error: "periodKey and action are required", code: "VALIDATION_ERROR" },
         { status: 400 }
+      )
+    }
+
+    if (legacyBranchId) {
+      console.warn(
+        "[finance/periods] branchId in PATCH body is deprecated and ignored; scope by session legalEntityCode"
       )
     }
 
@@ -153,11 +189,11 @@ export async function PATCH(req: NextRequest) {
 
     const session = await getSession()
     const actor = requirePeriodAdminActor(session)
-    const legalEntityCode = session!.documentEntityCode
+    const legalEntityCode = resolveSessionLegalEntityCode(session!)
 
-    async function resolvePeriodActor() {
+    async function resolvePeriodActor(branchIdHint?: string) {
       const staffId = await resolvePeriodAdminStaffId(prisma, actor.staffId, {
-        branchIdHint: branchId,
+        branchIdHint,
       })
       const staff = await prisma.staff.findUnique({
         where: { id: staffId },
@@ -172,7 +208,7 @@ export async function PATCH(req: NextRequest) {
 
     const periodActor =
       action === "HARD_CLOSE" || action === "REOPEN"
-        ? await resolvePeriodActor()
+        ? await resolvePeriodActor(legacyBranchId)
         : undefined
 
     const reason = String(body.reason ?? "").trim()
@@ -180,14 +216,12 @@ export async function PATCH(req: NextRequest) {
     await prisma.$transaction(async (tx) => {
       if (action === "SOFT_CLOSE") {
         await closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           legalEntityCode,
           mode: "SOFT",
         })
       } else if (action === "HARD_CLOSE") {
         await closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           legalEntityCode,
           mode: "HARD",
@@ -201,7 +235,6 @@ export async function PATCH(req: NextRequest) {
           assertDirectReopenAllowed(existing.status)
         }
         await reopenAccountingPeriod(tx, {
-          branchId,
           periodKey,
           legalEntityCode,
           reason,

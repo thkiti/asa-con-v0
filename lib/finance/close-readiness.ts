@@ -59,7 +59,6 @@ async function loadClosingEntryChecklistContext(
 ): Promise<CloseChecklistClosingEntryContext> {
   const profitLoss = await getProfitLoss(prisma, {
     legalEntityCode: resolvePeriodEntityCode(period),
-    branchId: period.branchId,
     periodKey: period.periodKey,
   })
 
@@ -93,7 +92,6 @@ export async function buildCloseReadinessWithSnapshotsForPeriod(
   period: CloseReadinessPeriodInput
 ): Promise<CloseReadinessWithSnapshots> {
   const snapshots = await findSnapshotsForPeriod(prisma, {
-    branchId: period.branchId,
     periodKey: period.periodKey,
   })
 
@@ -102,6 +100,7 @@ export async function buildCloseReadinessWithSnapshotsForPeriod(
   const checklist = buildCloseChecklist({
     period: {
       id: period.id,
+      legalEntityCode: period.legalEntityCode,
       branchId: period.branchId,
       periodKey: period.periodKey,
       status: period.status,
@@ -154,7 +153,6 @@ export async function getCloseReadinessByPeriodId(
   }
 
   const snapshots = await findSnapshotsForPeriod(prisma, {
-    branchId: period.branchId,
     periodKey: period.periodKey,
   })
 

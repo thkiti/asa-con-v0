@@ -51,7 +51,7 @@ export function PeriodTable({
         <thead>
           <tr className="border-b border-zinc-200 text-left text-zinc-600">
             <th className="px-3 py-2 font-medium">Period</th>
-            <th className="px-3 py-2 font-medium">Branch</th>
+            <th className="px-3 py-2 font-medium">Entity</th>
             <th className="px-3 py-2 font-medium">Status</th>
             <th className="px-3 py-2 font-medium">Opened</th>
             <th className="px-3 py-2 font-medium">Closed</th>
@@ -75,10 +75,7 @@ export function PeriodTable({
             periods.map((period) => (
               <tr key={period.id} className="border-b border-zinc-100">
                 <td className="px-3 py-2 font-medium">{period.periodKey}</td>
-                <td className="px-3 py-2">
-                  <span className="block">{period.branchName}</span>
-                  <span className="text-xs text-zinc-500">{period.branchId}</span>
-                </td>
+                <td className="px-3 py-2">{period.legalEntityCode}</td>
                 <td className="px-3 py-2">
                   <PeriodStatusBadge status={period.status} />
                 </td>

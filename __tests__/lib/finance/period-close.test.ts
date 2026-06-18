@@ -68,6 +68,7 @@ function gateReadyChecklist(): CloseChecklistResult {
     },
     period: {
       id: "period-1",
+      legalEntityCode: "AS",
       branchId,
       periodKey,
       status: AccountingPeriodStatus.OPEN,
@@ -80,6 +81,7 @@ function gateBlockedChecklist(): CloseChecklistResult {
   return buildCloseChecklist({
     period: {
       id: "period-1",
+      legalEntityCode: "AS",
       branchId,
       periodKey,
       status: AccountingPeriodStatus.OPEN,
@@ -130,7 +132,6 @@ describe("period-close", () => {
     await seedOpenPeriod(tx, branchId, periodKey)
 
     const closed = await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "SOFT",
     })
@@ -147,7 +148,6 @@ describe("period-close", () => {
     await seedOpenPeriod(tx, branchId, periodKey)
 
     const closed = await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
@@ -169,11 +169,10 @@ describe("period-close", () => {
   it("closes SOFT_CLOSED period to HARD_CLOSED when readiness passes", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
-    await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
     mockBuildChecklist.mockClear()
 
     const closed = await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
@@ -194,7 +193,6 @@ describe("period-close", () => {
       mockBuildChecklist.mockResolvedValue(mockReadySnapshots(checklist))
 
       await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -209,7 +207,7 @@ describe("period-close", () => {
       const { tx } = createFinanceMockTx()
       await seedOpenPeriod(tx, branchId, periodKey)
 
-      await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+      await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
       expect(spy).not.toHaveBeenCalled()
       expect(mockBuildChecklist).not.toHaveBeenCalled()
@@ -225,7 +223,6 @@ describe("period-close", () => {
 
       await expect(
         closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           mode: "HARD",
           closedBy: defaultClosedBy,
@@ -234,7 +231,6 @@ describe("period-close", () => {
 
       await expect(
         closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           mode: "HARD",
           closedBy: defaultClosedBy,
@@ -272,7 +268,6 @@ describe("period-close", () => {
       )
 
       const closed = await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -286,7 +281,6 @@ describe("period-close", () => {
       const { tx } = createFinanceMockTx()
       await seedOpenPeriod(tx, branchId, periodKey)
       await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -294,7 +288,6 @@ describe("period-close", () => {
       mockBuildChecklist.mockClear()
 
       await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -319,10 +312,9 @@ describe("period-close", () => {
   it("reopens SOFT_CLOSED period to OPEN with closedAt null", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
-    await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
     const reopened = await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Resume posting",
       reopenedBy: defaultReopenedBy,
@@ -339,14 +331,12 @@ describe("period-close", () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
     })
 
     const reopened = await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Admin hard reopen",
       reopenedBy: hoAdminReopenedBy,
@@ -360,12 +350,11 @@ describe("period-close", () => {
     const { tx } = createFinanceMockTx()
 
     await expect(
-      closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+      closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
     ).rejects.toMatchObject({ code: "PERIOD_NOT_FOUND" })
 
     await expect(
       reopenAccountingPeriod(tx, {
-        branchId,
         periodKey,
         reason: "test",
         reopenedBy: defaultReopenedBy,
@@ -378,9 +367,9 @@ describe("period-close", () => {
   it("is idempotent on SOFT close when already SOFT_CLOSED", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
-    const first = await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    const first = await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
-    const second = await closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+    const second = await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
     expect(second.id).toBe(first.id)
     expect(second.status).toBe(AccountingPeriodStatus.SOFT_CLOSED)
@@ -391,14 +380,12 @@ describe("period-close", () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
     const first = await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
     })
 
     const second = await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
@@ -415,7 +402,6 @@ describe("period-close", () => {
     const created = await seedOpenPeriod(tx, branchId, periodKey)
 
     const reopened = await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "noop",
       reopenedBy: defaultReopenedBy,
@@ -431,14 +417,13 @@ describe("period-close", () => {
     const { tx } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
     })
 
     await expect(
-      closeAccountingPeriod(tx, { branchId, periodKey, mode: "SOFT" })
+      closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
     ).rejects.toMatchObject({ code: "PERIOD_ALREADY_HARD_CLOSED" })
   })
 
@@ -447,7 +432,7 @@ describe("period-close", () => {
       const { tx } = createFinanceMockTx()
       await seedOpenPeriod(tx, branchId, periodKey)
 
-      const period = await assertPostingPeriodOpen(tx, branchId, postingDate)
+      const period = await assertPostingPeriodOpen(tx, postingDate)
 
       expect(period.status).toBe(AccountingPeriodStatus.OPEN)
     })
@@ -461,14 +446,13 @@ describe("period-close", () => {
         const { tx } = createFinanceMockTx()
         await seedOpenPeriod(tx, branchId, periodKey)
         await closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           mode,
           ...(mode === "HARD" ? { closedBy: defaultClosedBy } : {}),
         })
 
         await expect(
-          assertPostingPeriodOpen(tx, branchId, postingDate)
+          assertPostingPeriodOpen(tx, postingDate)
         ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
       }
     )
@@ -500,7 +484,6 @@ describe("period-close", () => {
         const { tx, state } = createFinanceMockTx()
         await seedOpenPeriod(tx, branchId, periodKey)
         await closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           mode,
           ...(mode === "HARD" ? { closedBy: defaultClosedBy } : {}),

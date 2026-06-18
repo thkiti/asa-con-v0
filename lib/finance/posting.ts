@@ -1,5 +1,6 @@
 ﻿import type { Prisma } from "@/generated/prisma/client"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import {
   buildJournalLineDraftsFromCodes,
   resolveAccountsForPosRefund,
@@ -100,7 +101,6 @@ export async function postOperationalVoucher(
 
   const period = await assertPostingPeriodOpen(
     tx,
-    input.branchId,
     input.date,
     input.legalEntityCode
   )
@@ -294,6 +294,7 @@ export async function postClosingEntryVoucher(
     tx: input.tx,
     branchId: input.branchId,
     date: input.date,
+    legalEntityCode: input.legalEntityCode,
     refType: FINANCE_REF_TYPES.PERIOD_CLOSING_ENTRY,
     refId: input.refId,
     refNo: `CE-${input.periodKey}`,
@@ -387,8 +388,8 @@ export async function postJournalReversal(
 
   const period = await assertPostingPeriodOpen(
     tx,
-    original.branchId,
-    input.reversalDate
+    input.reversalDate,
+    original.legalEntityCode as DocumentEntityCode
   )
 
   const reversalRefId = crypto.randomUUID()

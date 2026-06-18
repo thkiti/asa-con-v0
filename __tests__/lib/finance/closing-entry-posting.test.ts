@@ -28,7 +28,6 @@ describe("postClosingEntry", () => {
 
     const result = await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 
@@ -56,7 +55,6 @@ describe("postClosingEntry", () => {
 
     const result = await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 
@@ -72,7 +70,6 @@ describe("postClosingEntry", () => {
 
     const result = await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 
@@ -95,12 +92,10 @@ describe("postClosingEntry", () => {
 
     const first = await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
     const second = await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 
@@ -127,7 +122,6 @@ describe("postClosingEntry", () => {
 
     const first = await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 
@@ -140,7 +134,6 @@ describe("postClosingEntry", () => {
 
     const second = await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 

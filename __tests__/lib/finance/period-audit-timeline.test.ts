@@ -97,12 +97,10 @@ describe("period-audit-timeline (22A)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "SOFT",
     })
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,
@@ -126,7 +124,6 @@ describe("period-audit-timeline (22A)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,
@@ -145,7 +142,6 @@ describe("period-audit-timeline (22A)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,
@@ -177,7 +173,6 @@ describe("period-audit-timeline (22A)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,
@@ -206,7 +201,6 @@ describe("period-audit-timeline (22A)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,
@@ -234,7 +228,6 @@ describe("period-audit-timeline (22A)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "SOFT",
     })
@@ -250,14 +243,12 @@ describe("period-audit-timeline (22A)", () => {
     })
 
     await closeAccountingPeriod(tx, {
-      branchId,
       periodKey,
       mode: "HARD",
       closedBy: financeActor,
     })
 
     await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Direct soft reopen",
       reopenedBy: hoAdminActor,

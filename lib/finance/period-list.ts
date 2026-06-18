@@ -1,7 +1,9 @@
 import type { AccountingPeriodStatus, PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { resolvePeriodLegalEntityCode } from "./period-lookup"
 
 export type AccountingPeriodListFilter = {
-  branchId?: string
+  legalEntityCode?: DocumentEntityCode | null
   periodKey?: string
   status?: AccountingPeriodStatus
 }
@@ -9,6 +11,7 @@ export type AccountingPeriodListFilter = {
 export type AccountingPeriodListRow = {
   id: string
   periodKey: string
+  legalEntityCode: DocumentEntityCode
   branchId: string
   branchName: string
   status: AccountingPeriodStatus
@@ -19,6 +22,7 @@ export type AccountingPeriodListRow = {
 export type AccountingPeriodWithBranch = {
   id: string
   periodKey: string
+  legalEntityCode: string
   branchId: string
   status: AccountingPeriodStatus
   openedAt: Date
@@ -34,6 +38,7 @@ export function toAccountingPeriodListRow(
   return {
     id: row.id,
     periodKey: row.periodKey,
+    legalEntityCode: row.legalEntityCode as DocumentEntityCode,
     branchId: row.branchId,
     branchName: row.branch.name,
     status: row.status,
@@ -46,13 +51,15 @@ export async function listAccountingPeriods(
   prisma: PeriodListPrisma,
   filter?: AccountingPeriodListFilter
 ): Promise<AccountingPeriodListRow[]> {
-  const branchId = filter?.branchId?.trim()
+  const legalEntityCode = filter?.legalEntityCode
+    ? resolvePeriodLegalEntityCode(filter.legalEntityCode)
+    : undefined
   const periodKey = filter?.periodKey?.trim()
   const status = filter?.status
 
   const rows = await prisma.accountingPeriod.findMany({
     where: {
-      ...(branchId ? { branchId } : {}),
+      ...(legalEntityCode ? { legalEntityCode } : {}),
       ...(periodKey ? { periodKey } : {}),
       ...(status ? { status } : {}),
     },
@@ -61,7 +68,7 @@ export async function listAccountingPeriods(
         select: { name: true },
       },
     },
-    orderBy: [{ periodKey: "desc" }, { branchId: "asc" }],
+    orderBy: [{ periodKey: "desc" }, { legalEntityCode: "asc" }],
   })
 
   return rows.map(toAccountingPeriodListRow)

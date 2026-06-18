@@ -14,6 +14,7 @@ import {
   type PeriodCloseActorInput,
 } from "./close-evidence"
 import { reopenAccountingPeriod } from "./period-close"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import {
   getReopenApprovalPolicy,
   reopenApprovalRequired,
@@ -400,8 +401,8 @@ export async function approveReopenRequest(
   )
 
   await reopenAccountingPeriod(tx, {
-    branchId: period.branchId,
     periodKey: period.periodKey,
+    legalEntityCode: parseDocumentEntityCode(period.legalEntityCode) ?? undefined,
     reason: request.reason,
     reopenedBy: input.approvedBy,
     reopenRequestId: request.id,

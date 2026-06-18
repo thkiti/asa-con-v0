@@ -82,7 +82,6 @@ describe("closing entry API routes", () => {
     expect(res.status).toBe(200)
     expect(mockPreview).toHaveBeenCalledWith(prisma, {
       periodId: period.id,
-      branchId: period.branchId,
       periodKey: period.periodKey,
     })
     expect(mockTransaction).not.toHaveBeenCalled()

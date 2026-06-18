@@ -25,7 +25,6 @@ import { getProfitLoss } from "./reports/profit-loss"
 
 export type PostClosingEntryInput = {
   periodId: string
-  branchId: string
   periodKey: string
 }
 
@@ -41,7 +40,6 @@ export type ClosingEntryPreviewPrisma = Pick<
 
 export type PreviewClosingEntryInput = {
   periodId: string
-  branchId: string
   periodKey: string
 }
 
@@ -64,6 +62,18 @@ function mapSimulationToJournalLines(
   }))
 }
 
+function assertPeriodScope(
+  period: { id: string; periodKey: string },
+  input: { periodId: string; periodKey: string }
+): void {
+  if (period.id !== input.periodId || period.periodKey !== input.periodKey) {
+    throw new FinancePostingError(
+      "Closing entry period scope mismatch",
+      "VALIDATION_ERROR"
+    )
+  }
+}
+
 export async function previewClosingEntry(
   prisma: ClosingEntryPreviewPrisma,
   input: PreviewClosingEntryInput
@@ -79,16 +89,10 @@ export async function previewClosingEntry(
     )
   }
 
-  if (period.branchId !== input.branchId || period.periodKey !== input.periodKey) {
-    throw new FinancePostingError(
-      "Closing entry period scope mismatch",
-      "VALIDATION_ERROR"
-    )
-  }
+  assertPeriodScope(period, input)
 
   const profitLoss = await getProfitLoss(prisma, {
     legalEntityCode: resolvePeriodEntityCode(period.legalEntityCode),
-    branchId: input.branchId,
     periodKey: input.periodKey,
   })
 
@@ -110,7 +114,7 @@ export async function previewClosingEntry(
 
   return {
     periodKey: input.periodKey,
-    branchId: input.branchId,
+    branchId: period.branchId,
     periodId: input.periodId,
     periodStatus: period.status,
     simulation,
@@ -137,12 +141,7 @@ export async function postClosingEntry(
     )
   }
 
-  if (period.branchId !== input.branchId || period.periodKey !== input.periodKey) {
-    throw new FinancePostingError(
-      "Closing entry period scope mismatch",
-      "VALIDATION_ERROR"
-    )
-  }
+  assertPeriodScope(period, input)
 
   if (period.status !== AccountingPeriodStatus.OPEN) {
     throw new FinancePostingError("period closed", "PERIOD_CLOSED")
@@ -163,7 +162,6 @@ export async function postClosingEntry(
 
   const profitLoss = await getProfitLoss(tx, {
     legalEntityCode: resolvePeriodEntityCode(period.legalEntityCode),
-    branchId: input.branchId,
     periodKey: input.periodKey,
   })
 
@@ -206,13 +204,14 @@ export async function postClosingEntry(
 
   const posted = await postClosingEntryVoucher({
     tx,
-    branchId: input.branchId,
+    branchId: period.branchId,
     periodId: input.periodId,
     periodKey: input.periodKey,
     date: postingDate,
     refId,
     description: `Period closing entry ${input.periodKey}`,
     lines,
+    legalEntityCode: resolvePeriodEntityCode(period.legalEntityCode),
   })
 
   return {

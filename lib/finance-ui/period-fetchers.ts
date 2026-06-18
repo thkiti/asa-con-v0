@@ -27,6 +27,7 @@ import type { PeriodAction } from "./types"
 export type { PeriodAction }
 
 type PeriodListFilter = {
+  /** @deprecated Ignored by API — list is scoped to session legal entity */
   branchId?: string
   periodKey?: string
   status?: string
@@ -34,9 +35,6 @@ type PeriodListFilter = {
 
 function buildPeriodQuery(filter?: PeriodListFilter): string {
   const params = new URLSearchParams()
-  if (filter?.branchId?.trim()) {
-    params.set("branchId", filter.branchId.trim())
-  }
   if (filter?.periodKey?.trim()) {
     params.set("periodKey", filter.periodKey.trim())
   }
@@ -92,8 +90,9 @@ export function fetchAccountingPeriods(
 }
 
 export function postAccountingPeriod(body: {
-  branchId: string
   periodKey: string
+  /** @deprecated Ignored by API */
+  branchId?: string
 }): Promise<AccountingPeriodMutationResult> {
   return fetch("/api/finance/periods", {
     method: "POST",
@@ -106,10 +105,11 @@ export function postAccountingPeriod(body: {
 }
 
 export function patchAccountingPeriod(body: {
-  branchId: string
   periodKey: string
   action: PeriodAction
   reason?: string
+  /** @deprecated Ignored by API */
+  branchId?: string
 }): Promise<AccountingPeriodMutationResult> {
   return fetch("/api/finance/periods", {
     method: "PATCH",

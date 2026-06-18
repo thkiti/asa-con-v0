@@ -32,7 +32,6 @@ describe("closing entry reopen guard", () => {
 
     await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 
@@ -43,7 +42,6 @@ describe("closing entry reopen guard", () => {
 
     await expect(
       reopenAccountingPeriod(tx, {
-        branchId,
         periodKey,
         reason: "Need corrections",
         reopenedBy,
@@ -64,7 +62,6 @@ describe("closing entry reopen guard", () => {
 
     await postClosingEntry(tx, {
       periodId: period.id,
-      branchId,
       periodKey,
     })
 
@@ -99,7 +96,6 @@ describe("closing entry reopen guard", () => {
     })
 
     const reopened = await reopenAccountingPeriod(tx, {
-      branchId,
       periodKey,
       reason: "Approval granted",
       reopenedBy: {

@@ -1,6 +1,6 @@
-import type { BranchScopedReportFilter } from "./report-filter"
+import type { FinanceReportScope } from "./report-filter"
 
-export type ProfitLossFilter = BranchScopedReportFilter
+export type ProfitLossFilter = FinanceReportScope
 
 export type ProfitLossRow = {
   accountCode: string

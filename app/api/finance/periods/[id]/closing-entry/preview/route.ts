@@ -29,7 +29,6 @@ export async function GET(_req: NextRequest, context: Context) {
     const period = await loadPeriodOrThrow(id)
     const preview = await previewClosingEntry(prisma, {
       periodId: period.id,
-      branchId: period.branchId,
       periodKey: period.periodKey,
     })
     return NextResponse.json({ preview })

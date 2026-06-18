@@ -12,7 +12,6 @@ export function formatPeriodKey(date: Date): string {
 
 export async function assertPostingPeriodOpen(
   tx: Prisma.TransactionClient,
-  branchId: string,
   postingDate: Date,
   legalEntityCode?: DocumentEntityCode | null
 ): Promise<NonNullable<Awaited<ReturnType<typeof tx.accountingPeriod.findUnique>>>> {

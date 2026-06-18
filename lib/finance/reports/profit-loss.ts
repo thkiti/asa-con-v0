@@ -96,7 +96,8 @@ export async function getProfitLoss(
     where: {
       glAccountId: { in: accountIds },
       journalEntry: {
-        branchId: filter.branchId,
+        legalEntityCode: filter.legalEntityCode,
+        ...(filter.branchId ? { branchId: filter.branchId } : {}),
         date: {
           gte: range.start,
           lt: range.endExclusive,

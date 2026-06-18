@@ -40,7 +40,7 @@ export type ReconciliationSnapshotListFilter = {
 }
 
 export type ReconciliationSnapshotPeriodFilter = {
-  branchId: string
+  branchId?: string
   periodKey: string
   limit?: number
 }
@@ -176,14 +176,16 @@ export async function findSnapshotsForPeriod(
   prisma: ReconciliationSnapshotListPrisma,
   filter: ReconciliationSnapshotPeriodFilter
 ): Promise<SnapshotsForPeriodResult> {
-  const branchId = await resolveBranchId(prisma, filter.branchId)
+  const branchId = filter.branchId
+    ? await resolveBranchId(prisma, filter.branchId)
+    : undefined
   const periodKey = filter.periodKey.trim()
   const take = clampPeriodSnapshotLimit(filter.limit)
 
   const rows = await prisma.reconciliationSnapshot.findMany({
     where: {
-      branchId,
       periodKey,
+      ...(branchId ? { branchId } : {}),
     },
     orderBy: { createdAt: "desc" },
     take,

@@ -196,7 +196,6 @@ describe("close gate enforcement guarantees", () => {
 
       await expect(
         closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           mode: "HARD",
           closedBy: defaultClosedBy,
@@ -205,7 +204,6 @@ describe("close gate enforcement guarantees", () => {
 
       await expect(
         closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           mode: "HARD",
           closedBy: defaultClosedBy,
@@ -277,7 +275,6 @@ describe("close gate enforcement guarantees", () => {
       })
 
       const closed = await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -356,7 +353,6 @@ describe("close gate enforcement guarantees", () => {
       await seedOpenPeriod(tx, branchId, periodKey)
 
       const first = await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -364,7 +360,6 @@ describe("close gate enforcement guarantees", () => {
       mockFindSnapshots.mockClear()
 
       const second = await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -384,7 +379,6 @@ describe("close gate enforcement guarantees", () => {
       await seedOpenPeriod(tx, branchId, periodKey)
 
       const closed = await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "SOFT",
       })
@@ -404,7 +398,6 @@ describe("close gate enforcement guarantees", () => {
 
       await expect(
         closeAccountingPeriod(tx, {
-          branchId,
           periodKey,
           mode: "HARD",
           closedBy: defaultClosedBy,
@@ -421,7 +414,6 @@ describe("close gate enforcement guarantees", () => {
       await seedOpenPeriod(tx, branchId, periodKey)
 
       await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -437,14 +429,13 @@ describe("close gate enforcement guarantees", () => {
       await seedOpenPeriod(tx, branchId, periodKey)
 
       await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
       })
 
       expect(mockFindSnapshots).toHaveBeenCalledTimes(1)
-      expect(mockFindSnapshots).toHaveBeenCalledWith(tx, { branchId, periodKey })
+      expect(mockFindSnapshots).toHaveBeenCalledWith(tx, { periodKey })
       expect(mockRunReconciliation).not.toHaveBeenCalled()
     })
 
@@ -456,7 +447,6 @@ describe("close gate enforcement guarantees", () => {
       await seedOpenPeriod(tx, branchId, periodKey)
 
       await closeAccountingPeriod(tx, {
-        branchId,
         periodKey,
         mode: "SOFT",
       })

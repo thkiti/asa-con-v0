@@ -7,6 +7,7 @@ jest.mock("@/lib/finance-ui/period-fetchers", () => ({
       {
         id: "period-1",
         periodKey: "2026-05",
+        legalEntityCode: "AS",
         branchId: "branch-1",
         branchName: "Main Shop",
         status: "OPEN",
@@ -27,7 +28,7 @@ describe("PeriodAdminPage", () => {
   it("renders filters, create form, and loading state markup", () => {
     const html = renderToStaticMarkup(<PeriodAdminPage />)
     expect(html).toContain("Filters")
-    expect(html).toContain("Branch")
+    expect(html).not.toContain(">Branch<")
     expect(html).toContain("Status")
     expect(html).toContain("Period key")
     expect(html).toContain("Refresh")

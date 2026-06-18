@@ -19,7 +19,7 @@ describe("posting-period", () => {
       const { tx } = createFinanceMockTx()
 
       await expect(
-        assertPostingPeriodOpen(tx, "branch-1", new Date("2026-05-10T12:00:00.000Z"))
+        assertPostingPeriodOpen(tx, new Date("2026-05-10T12:00:00.000Z"))
       ).rejects.toMatchObject({ code: "PERIOD_NOT_OPENED" })
     })
 
@@ -31,6 +31,7 @@ describe("posting-period", () => {
       state.accountingPeriods.push({
         id: "period-closed",
         branchId: "branch-1",
+        legalEntityCode: "AS",
         periodKey: "2026-05",
         status,
         openedAt: new Date(),
@@ -38,7 +39,7 @@ describe("posting-period", () => {
       })
 
       await expect(
-        assertPostingPeriodOpen(tx, "branch-1", new Date("2026-05-10T12:00:00.000Z"))
+        assertPostingPeriodOpen(tx, new Date("2026-05-10T12:00:00.000Z"))
       ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
     })
 
@@ -54,12 +55,34 @@ describe("posting-period", () => {
 
       const period = await assertPostingPeriodOpen(
         tx,
-        "branch-1",
         new Date("2026-05-10T12:00:00.000Z")
       )
 
       expect(period.id).toBe(created.id)
       expect(period.status).toBe(AccountingPeriodStatus.OPEN)
+    })
+
+    it("scopes lookup by legalEntityCode", async () => {
+      const { tx } = createFinanceMockTx()
+      await tx.accountingPeriod.create({
+        data: {
+          branchId: "branch-1",
+          legalEntityCode: "AD",
+          periodKey: "2026-05",
+          status: AccountingPeriodStatus.OPEN,
+        },
+      })
+
+      await expect(
+        assertPostingPeriodOpen(tx, new Date("2026-05-10T12:00:00.000Z"), "AS")
+      ).rejects.toMatchObject({ code: "PERIOD_NOT_OPENED" })
+
+      const period = await assertPostingPeriodOpen(
+        tx,
+        new Date("2026-05-10T12:00:00.000Z"),
+        "AD"
+      )
+      expect(period.legalEntityCode).toBe("AD")
     })
   })
 })

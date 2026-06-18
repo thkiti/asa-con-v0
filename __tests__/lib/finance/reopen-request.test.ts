@@ -140,7 +140,7 @@ describe("reopen-request (21B)", () => {
     })
 
     await expect(
-      assertPostingPeriodOpen(tx, branchId, postingDate)
+      assertPostingPeriodOpen(tx, postingDate)
     ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
   })
 
