@@ -16,6 +16,7 @@ import type {
   ManualJournalEntryListResult,
   ManualJournalEntryRead,
 } from "./manual-journal-entry-read-types"
+import { isManualJournalPdfReadable } from "./manual-journal-entry-pdf-readiness"
 
 export type ManualJournalEntryReadPrisma = Pick<
   PrismaClient,
@@ -135,7 +136,13 @@ function mapEntry(
     postedJournalEntryId: entry.postedJournalEntryId,
     reversalJournalEntryId: entry.reversalJournalEntryId,
     pdfPath: entry.pdfPath,
+    pdfBlobUrl: entry.pdfBlobUrl ?? null,
     pdfGeneratedAt: toIso(entry.pdfGeneratedAt),
+    pdfSnapshotReady: isManualJournalPdfReadable({
+      status: entry.status,
+      pdfPath: entry.pdfPath,
+      pdfBlobUrl: entry.pdfBlobUrl,
+    }),
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
     lines,
@@ -167,6 +174,7 @@ function mapListItem(
     postedJournalEntryId: string | null
     reversalJournalEntryId: string | null
     pdfPath: string | null
+    pdfBlobUrl: string | null
     pdfGeneratedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -197,7 +205,13 @@ function mapListItem(
     postedJournalEntryId: entry.postedJournalEntryId,
     reversalJournalEntryId: entry.reversalJournalEntryId,
     pdfPath: entry.pdfPath,
+    pdfBlobUrl: entry.pdfBlobUrl ?? null,
     pdfGeneratedAt: toIso(entry.pdfGeneratedAt),
+    pdfSnapshotReady: isManualJournalPdfReadable({
+      status: entry.status,
+      pdfPath: entry.pdfPath,
+      pdfBlobUrl: entry.pdfBlobUrl,
+    }),
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
     lineCount: entry._count.lines,

@@ -27,6 +27,7 @@ import {
   deleteDraftManualJournalEntry,
   fetchManualJournalEntry,
   postManualJournalEntry,
+  retryManualJournalEntryPdf,
   submitManualJournalEntry,
   updateManualJournalEntryDraft,
   buildManualJournalEntryPdfUrl,
@@ -165,6 +166,7 @@ export function ManualJournalEntryEditorPage({
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [pdfError, setPdfError] = useState<string | null>(null)
 
   const [entry, setEntry] = useState<ManualJournalEntryRead | null>(seed.entry)
   const [branchId, setBranchId] = useState(seed.branchId)
@@ -359,6 +361,7 @@ export function ManualJournalEntryEditorPage({
     }
     setError(null)
     setStatusMessage(null)
+    setPdfError(null)
     setBusyAction("Post")
     try {
       const result = await postManualJournalEntry(entry.id)
@@ -366,6 +369,7 @@ export function ManualJournalEntryEditorPage({
       if (result.pdfStatus === "ready") {
         setStatusMessage("Post completed. PDF snapshot is ready.")
       } else {
+        setPdfError(result.pdfError ?? null)
         setStatusMessage(
           "Post completed. PDF snapshot is pending — use Retry PDF when storage is available."
         )
@@ -381,13 +385,15 @@ export function ManualJournalEntryEditorPage({
     if (!entry) return
     setError(null)
     setStatusMessage(null)
+    setPdfError(null)
     setBusyAction("Retry PDF")
     try {
-      const result = await postManualJournalEntry(entry.id)
+      const result = await retryManualJournalEntryPdf(entry.id)
       applyEntry(result.entry)
       if (result.pdfStatus === "ready") {
         setStatusMessage("PDF snapshot generated.")
       } else {
+        setPdfError(result.pdfError ?? "PDF snapshot is still pending / repair needed.")
         setStatusMessage("PDF snapshot is still pending / repair needed.")
       }
     } catch (err) {
@@ -880,7 +886,7 @@ export function ManualJournalEntryEditorPage({
 
         {isPosted ? (
           <>
-            {entry?.pdfPath ? (
+            {entry?.pdfSnapshotReady ? (
               <>
                 <button
                   type="button"
@@ -907,6 +913,11 @@ export function ManualJournalEntryEditorPage({
                 >
                   PDF pending / repair needed
                 </p>
+                {pdfError ? (
+                  <p className="text-sm text-red-700" data-testid="pdf-error-message">
+                    {pdfError}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   className="rounded border border-amber-400 px-4 py-2 text-sm text-amber-900 disabled:opacity-50"

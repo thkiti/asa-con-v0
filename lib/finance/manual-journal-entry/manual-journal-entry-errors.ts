@@ -12,6 +12,7 @@ export const ManualJournalEntryErrorCodes = {
   OPB_PL_ACCOUNT_NOT_ALLOWED: "OPB_PL_ACCOUNT_NOT_ALLOWED",
   OPB_DUPLICATE_POSTED: "OPB_DUPLICATE_POSTED",
   PDF_MISSING: "PDF_MISSING",
+  PDF_METADATA_INCOMPLETE: "PDF_METADATA_INCOMPLETE",
 } as const
 
 export type ManualJournalEntryErrorCode =

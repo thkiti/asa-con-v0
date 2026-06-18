@@ -5,6 +5,7 @@ import {
   fetchManualJournalEntries,
   fetchManualJournalEntry,
   postManualJournalEntry,
+  retryManualJournalEntryPdf,
   submitManualJournalEntry,
   updateManualJournalEntryDraft,
 } from "@/lib/finance-ui/manual-journal-entries"
@@ -123,6 +124,12 @@ describe("manual-journal-entries UI fetchers", () => {
     })
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/finance/manual-journal-entries/entry-1/post",
+      { method: "POST" }
+    )
+
+    await retryManualJournalEntryPdf("entry-1")
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/finance/manual-journal-entries/entry-1/pdf/retry",
       { method: "POST" }
     )
 

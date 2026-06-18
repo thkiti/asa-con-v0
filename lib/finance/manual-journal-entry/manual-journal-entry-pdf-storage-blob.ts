@@ -14,7 +14,7 @@ function blobPutOptions() {
   const auth = getBlobAuthConfig()
   const options = {
     access: "public" as const,
-    allowOverwrite: false,
+    allowOverwrite: true,
     contentType: "application/pdf",
     addRandomSuffix: false,
   }

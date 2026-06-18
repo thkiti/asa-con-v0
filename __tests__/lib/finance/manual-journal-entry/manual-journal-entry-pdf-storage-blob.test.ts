@@ -38,9 +38,29 @@ describe("manual-journal-entry-pdf-storage (blob)", () => {
 
     const stored = await storeManualJournalPdf(entryId, buffer, "blob")
 
-    expect(mockPut).toHaveBeenCalled()
+    expect(mockPut).toHaveBeenCalledWith(
+      `manual-journal/${entryId}.pdf`,
+      buffer,
+      expect.objectContaining({ allowOverwrite: true })
+    )
     expect(stored.pdfPath).toBe(`manual-journal/${entryId}.pdf`)
     expect(stored.pdfBlobUrl).toBe("https://blob.example/manual-journal/entry.pdf")
+  })
+
+  it("allows retry upload when blob pathname already exists", async () => {
+    mockPut.mockResolvedValue({
+      pathname: `manual-journal/${entryId}.pdf`,
+      url: "https://blob.example/manual-journal/entry.pdf",
+    })
+
+    const buffer = Buffer.from("%PDF-1.4 blob")
+    await storeManualJournalPdf(entryId, buffer, "blob")
+    await storeManualJournalPdf(entryId, buffer, "blob")
+
+    expect(mockPut).toHaveBeenCalledTimes(2)
+    expect(mockPut.mock.calls[1]?.[2]).toEqual(
+      expect.objectContaining({ allowOverwrite: true })
+    )
   })
 
   it("reads PDF from stored Blob URL without re-rendering", async () => {
@@ -76,7 +96,8 @@ describe("manual-journal-entry-pdf-storage (blob)", () => {
     ).rejects.toMatchObject({ code: ManualJournalEntryErrorCodes.PDF_MISSING })
   })
 
-  it("returns PDF_MISSING on blob backend when pdfBlobUrl is absent", async () => {
+  it("returns PDF_METADATA_INCOMPLETE on blob backend when pdfBlobUrl is absent and store id missing", async () => {
+    delete process.env.BLOB_STORE_ID
     await expect(
       readStoredManualJournalPdf(
         {
@@ -85,6 +106,31 @@ describe("manual-journal-entry-pdf-storage (blob)", () => {
         },
         "blob"
       )
-    ).rejects.toMatchObject({ code: ManualJournalEntryErrorCodes.PDF_MISSING })
+    ).rejects.toMatchObject({
+      code: ManualJournalEntryErrorCodes.PDF_METADATA_INCOMPLETE,
+    })
+  })
+
+  it("reads blob PDF using derived URL when pdfBlobUrl is absent", async () => {
+    process.env.BLOB_STORE_ID = "store_qqMba5XFbpW5TXcp"
+    const buffer = Buffer.from("%PDF-1.4 blob")
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () =>
+        buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+    }) as unknown as typeof fetch
+
+    const readBack = await readStoredManualJournalPdf(
+      {
+        pdfPath: `manual-journal/${entryId}.pdf`,
+        pdfBlobUrl: null,
+      },
+      "blob"
+    )
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      `https://qqmba5xfbpw5txcp.public.blob.vercel-storage.com/manual-journal/${entryId}.pdf`
+    )
+    expect(Buffer.from(readBack).toString()).toBe(buffer.toString())
   })
 })

@@ -89,6 +89,19 @@ export async function attachManualJournalEntryPdfFromSnapshot(
   }
 }
 
+export async function retryManualJournalEntryPdfAttach(
+  entryId: string
+): Promise<AttachManualJournalEntryPdfResult> {
+  const snapshot = await loadPostedManualJournalEntryPdfSnapshot(prisma, entryId)
+  if (!snapshot) {
+    return {
+      ok: false,
+      error: "PDF snapshot is only available for fully posted manual journal entries",
+    }
+  }
+  return attachManualJournalEntryPdfFromSnapshot(entryId, snapshot)
+}
+
 export async function loadPostedManualJournalEntryPdfSnapshot(
   tx: Pick<Prisma.TransactionClient, "manualJournalEntry" | "voucher">,
   entryId: string

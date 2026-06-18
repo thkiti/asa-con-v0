@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit"
+import { buildManualJournalPdfHeaderLines } from "./manual-journal-entry-pdf-header"
 import type { ManualJournalEntryPdfSnapshot } from "./manual-journal-entry-pdf-snapshot-types"
 import { resolveThaiFontPathForPdf } from "./pdf-font"
 
@@ -32,28 +33,21 @@ export async function renderManualJournalEntryPdf(
     doc.font(fontPath)
   }
 
-  doc.fontSize(14).text(snapshot.entryTypeLabel, { align: "center" })
-  doc.moveDown(0.3)
-  doc.fontSize(11).text(snapshot.entryNo, { align: "center" })
-  doc.moveDown()
+  const header = buildManualJournalPdfHeaderLines(snapshot)
 
-  const meta: Array<[string, string]> = [
-    ["Entry date", snapshot.entryDate],
-    ["Legal entity", snapshot.legalEntityCode],
-    ["Branch", snapshot.branchId],
-    ...(snapshot.refNo ? [["Reference", snapshot.refNo] as [string, string]] : []),
-    ...(snapshot.description ? [["Description", snapshot.description] as [string, string]] : []),
-    ["Voucher no.", snapshot.postedVoucherNo],
-    ["Posted at", snapshot.postedAt],
-    ["Posted by", snapshot.postedByStaffId],
-  ]
+  doc.fillColor("#000").fontSize(10)
+  doc.text(header.row1)
+  doc.moveDown(0.15)
+  doc.text(header.row2)
+  doc.moveDown(0.15)
+  doc.text(header.row3)
 
-  doc.fontSize(9)
-  for (const [label, value] of meta) {
-    doc.text(`${label}: ${value}`)
+  if (header.description) {
+    doc.moveDown(0.35)
+    doc.fontSize(9).text(`Description: ${header.description}`)
   }
 
-  doc.moveDown()
+  doc.moveDown(0.45)
   doc.fontSize(8).text("Line  Account   Name                    Debit        Credit       Memo")
   doc.moveDown(0.2)
 
@@ -75,7 +69,7 @@ export async function renderManualJournalEntryPdf(
   )
   doc.moveDown()
   doc.fontSize(7).fillColor("#666").text(
-    `Immutable posted snapshot (v${snapshot.snapshotVersion}). Journal entry ${snapshot.postedJournalEntryId}`
+    `Voucher ${snapshot.postedVoucherNo} • Posted by ${snapshot.postedByStaffId} • Immutable snapshot (v${snapshot.snapshotVersion}) • Journal ${snapshot.postedJournalEntryId}`
   )
 
   doc.end()

@@ -16,6 +16,7 @@ import {
   resolveLocalManualJournalPdfAbsolutePath,
   writeLocalManualJournalPdfFile,
 } from "./manual-journal-entry-pdf-storage-local"
+import { resolveManualJournalPdfBlobUrl } from "./manual-journal-entry-pdf-blob-url"
 import { buildManualJournalPdfPathname } from "./manual-journal-entry-pdf-path"
 
 export type {
@@ -53,10 +54,24 @@ export async function readStoredManualJournalPdf(
   ref: ManualJournalPdfReadRef,
   backend: ManualJournalPdfStorageBackend = resolveManualJournalPdfStorageBackend()
 ): Promise<Buffer> {
-  if (ref.pdfBlobUrl?.trim()) {
-    return readBlobManualJournalPdfFile(ref)
+  const resolvedBlobUrl = resolveManualJournalPdfBlobUrl(
+    ref.pdfPath,
+    ref.pdfBlobUrl
+  )
+  if (resolvedBlobUrl) {
+    return readBlobManualJournalPdfFile({
+      pdfPath: ref.pdfPath,
+      pdfBlobUrl: resolvedBlobUrl,
+    })
   }
   if (backend === "blob") {
+    if (String(ref.pdfPath ?? "").trim()) {
+      throw new ManualJournalEntryError(
+        "Manual journal PDF snapshot metadata is incomplete (missing Blob URL)",
+        ManualJournalEntryErrorCodes.PDF_METADATA_INCOMPLETE,
+        404
+      )
+    }
     throw new ManualJournalEntryError(
       "Manual journal PDF snapshot file is missing from Blob storage",
       ManualJournalEntryErrorCodes.PDF_MISSING,

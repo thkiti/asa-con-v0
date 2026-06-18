@@ -50,7 +50,9 @@ export type ManualJournalEntryRead = {
   postedJournalEntryId: string | null
   reversalJournalEntryId: string | null
   pdfPath: string | null
+  pdfBlobUrl: string | null
   pdfGeneratedAt: string | null
+  pdfSnapshotReady: boolean
   createdAt: string
   updatedAt: string
   lines: ManualJournalEntryLineRead[]

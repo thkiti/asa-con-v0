@@ -9,15 +9,12 @@ import {
 } from "@/lib/auth"
 import { getManualJournalEntryById } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read"
 import { attachManualJournalEntryPdfFromSnapshot } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf"
+import { buildManualJournalPdfApiPayload } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-readiness"
 import { postManualJournalEntry } from "@/lib/finance/manual-journal-entry/manual-journal-entry-post"
 import { prisma } from "@/lib/shared/prisma"
 
 type Context = {
   params: Promise<{ id: string }>
-}
-
-function resolvePdfStatus(entry: { pdfPath: string | null }): "ready" | "pending" {
-  return entry.pdfPath ? "ready" : "pending"
 }
 
 export async function POST(_req: NextRequest, context: Context) {
@@ -29,14 +26,15 @@ export async function POST(_req: NextRequest, context: Context) {
       postedByStaffId: actor.staffId,
     })
 
+    let attachResult = null
     if (pdfSnapshot && !entry.pdfPath) {
-      await attachManualJournalEntryPdfFromSnapshot(id, pdfSnapshot)
+      attachResult = await attachManualJournalEntryPdfFromSnapshot(id, pdfSnapshot)
     }
 
     const fresh = await getManualJournalEntryById(prisma, id)
     return NextResponse.json({
       entry: fresh,
-      pdfStatus: resolvePdfStatus(fresh),
+      ...buildManualJournalPdfApiPayload(fresh, attachResult),
     })
   } catch (err: unknown) {
     return manualJournalEntryErrorResponse(err, "POST manual-journal-entries/[id]/post")

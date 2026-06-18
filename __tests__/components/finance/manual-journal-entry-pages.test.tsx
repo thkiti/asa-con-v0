@@ -99,6 +99,10 @@ function baseEntry(overrides: Record<string, unknown> = {}) {
     postedVoucherId: null,
     postedJournalEntryId: null,
     reversalJournalEntryId: null,
+    pdfPath: null,
+    pdfBlobUrl: null,
+    pdfGeneratedAt: null,
+    pdfSnapshotReady: false,
     createdAt: "2026-06-14T12:00:00.000Z",
     updatedAt: "2026-06-14T12:00:00.000Z",
     lines: [
@@ -245,6 +249,7 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
             postedJournalEntryId: "journal-1",
             pdfPath: "manual-journal/entry-1.pdf",
             pdfGeneratedAt: "2026-06-14T15:01:00.000Z",
+            pdfSnapshotReady: true,
           })
         )}
       />
@@ -252,6 +257,27 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).toContain("data-testid=\"action-view-pdf\"")
     expect(html).toContain("data-testid=\"action-download-pdf\"")
     expect(html).not.toContain("data-testid=\"pdf-pending-message\"")
+  })
+
+  it("shows pending when pdfPath exists but snapshot is not readable", () => {
+    const html = renderToStaticMarkup(
+      <ManualJournalEntryEditorPage
+        mode="edit"
+        entryId="entry-1"
+        initialEntry={asEntry(
+          baseEntry({
+            status: "POSTED",
+            postedAt: "2026-06-14T15:00:00.000Z",
+            postedJournalEntryId: "journal-1",
+            pdfPath: "manual-journal/entry-1.pdf",
+            pdfGeneratedAt: "2026-06-14T15:01:00.000Z",
+            pdfSnapshotReady: false,
+          })
+        )}
+      />
+    )
+    expect(html).toContain("data-testid=\"pdf-pending-message\"")
+    expect(html).not.toContain("data-testid=\"action-view-pdf\"")
   })
 
   it("renders CANCELLED read-only", () => {

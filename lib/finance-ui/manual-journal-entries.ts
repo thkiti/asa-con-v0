@@ -164,6 +164,7 @@ export async function postManualJournalEntry(
 ): Promise<{
   entry: ManualJournalEntryRead
   pdfStatus: "ready" | "pending"
+  pdfError?: string
 }> {
   const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/post`, {
     method: "POST",
@@ -172,10 +173,40 @@ export async function postManualJournalEntry(
   const body = (await res.json()) as {
     entry: ManualJournalEntryRead
     pdfStatus?: "ready" | "pending"
+    pdfError?: string
   }
   return {
     entry: body.entry,
-    pdfStatus: body.pdfStatus ?? (body.entry.pdfPath ? "ready" : "pending"),
+    pdfStatus:
+      body.pdfStatus ??
+      (body.entry.pdfSnapshotReady ? "ready" : "pending"),
+    pdfError: body.pdfError,
+  }
+}
+
+export async function retryManualJournalEntryPdf(
+  entryId: string
+): Promise<{
+  entry: ManualJournalEntryRead
+  pdfStatus: "ready" | "pending"
+  pdfError?: string
+}> {
+  const res = await fetch(
+    `${BASE}/${encodeURIComponent(entryId)}/pdf/retry`,
+    { method: "POST" }
+  )
+  if (!res.ok) throw new Error(await parseError(res))
+  const body = (await res.json()) as {
+    entry: ManualJournalEntryRead
+    pdfStatus?: "ready" | "pending"
+    pdfError?: string
+  }
+  return {
+    entry: body.entry,
+    pdfStatus:
+      body.pdfStatus ??
+      (body.entry.pdfSnapshotReady ? "ready" : "pending"),
+    pdfError: body.pdfError,
   }
 }
 

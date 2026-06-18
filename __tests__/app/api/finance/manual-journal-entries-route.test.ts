@@ -110,7 +110,9 @@ const sampleEntry = {
   postedJournalEntryId: null,
   reversalJournalEntryId: null,
   pdfPath: null,
+  pdfBlobUrl: null,
   pdfGeneratedAt: null,
+  pdfSnapshotReady: false,
   createdAt: "2026-06-14T12:00:00.000Z",
   updatedAt: "2026-06-14T12:00:00.000Z",
   lines: [
@@ -328,7 +330,7 @@ describe("manual journal entries API routes", () => {
 
     it("POST post", async () => {
       mockPost.mockResolvedValue({
-        entry: { ...sampleEntry, status: "POSTED", pdfPath: null },
+        entry: { ...sampleEntry, status: "POSTED", pdfPath: null, pdfSnapshotReady: false },
         pdfSnapshot: { entryId: "entry-1" },
       })
       mockAttachPdf.mockResolvedValue({ ok: true })
@@ -336,6 +338,8 @@ describe("manual journal entries API routes", () => {
         ...sampleEntry,
         status: "POSTED",
         pdfPath: "manual-journal/entry-1.pdf",
+        pdfBlobUrl: null,
+        pdfSnapshotReady: true,
       })
       const res = await postRoute(
         new NextRequest("http://localhost/api/finance/manual-journal-entries/entry-1/post", {
@@ -354,8 +358,46 @@ describe("manual journal entries API routes", () => {
           ...sampleEntry,
           status: "POSTED",
           pdfPath: "manual-journal/entry-1.pdf",
+          pdfBlobUrl: null,
+          pdfSnapshotReady: true,
         },
         pdfStatus: "ready",
+      })
+    })
+
+    it("POST post surfaces pdfError when attach fails", async () => {
+      mockPost.mockResolvedValue({
+        entry: { ...sampleEntry, status: "POSTED", pdfPath: null, pdfSnapshotReady: false },
+        pdfSnapshot: { entryId: "entry-1" },
+      })
+      mockAttachPdf.mockResolvedValue({
+        ok: false,
+        error: "Vercel Blob: This blob already exists",
+      })
+      mockGet.mockResolvedValue({
+        ...sampleEntry,
+        status: "POSTED",
+        pdfPath: null,
+        pdfBlobUrl: null,
+        pdfSnapshotReady: false,
+      })
+      const res = await postRoute(
+        new NextRequest("http://localhost/api/finance/manual-journal-entries/entry-1/post", {
+          method: "POST",
+        }),
+        context
+      )
+      expect(res.status).toBe(200)
+      await expect(res.json()).resolves.toEqual({
+        entry: {
+          ...sampleEntry,
+          status: "POSTED",
+          pdfPath: null,
+          pdfBlobUrl: null,
+          pdfSnapshotReady: false,
+        },
+        pdfStatus: "pending",
+        pdfError: "Vercel Blob: This blob already exists",
       })
     })
   })
