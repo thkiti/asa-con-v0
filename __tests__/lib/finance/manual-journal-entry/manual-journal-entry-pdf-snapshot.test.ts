@@ -13,6 +13,9 @@ describe("buildManualJournalEntryPdfSnapshot", () => {
         entryDate: new Date("2026-06-14T00:00:00.000Z"),
         description: "Opening",
         refNo: "REF-1",
+        createdAt: new Date("2026-06-14T08:00:00.000Z"),
+        submittedAt: new Date("2026-06-14T09:00:00.000Z"),
+        confirmedAt: new Date("2026-06-14T10:00:00.000Z"),
         postedAt: new Date("2026-06-15T10:00:00.000Z"),
         postedByStaffId: "staff-post",
         lines: [
@@ -45,5 +48,8 @@ describe("buildManualJournalEntryPdfSnapshot", () => {
     expect(snapshot.totalCredit).toBe("100")
     expect(snapshot.postedVoucherNo).toBe("V-001")
     expect(snapshot.lines[0]?.memo).toBe("cash")
+    expect(snapshot.createdAt).toBe("2026-06-14T08:00:00.000Z")
+    expect(snapshot.submittedAt).toBe("2026-06-14T09:00:00.000Z")
+    expect(snapshot.confirmedAt).toBe("2026-06-14T10:00:00.000Z")
   })
 })

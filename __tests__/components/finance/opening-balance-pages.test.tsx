@@ -189,6 +189,13 @@ describe("opening-balance pages", () => {
       />
     )
     expect(html).toContain('data-testid="opb-verification-loading"')
+    expect(html).toContain('data-testid="finance-document-audit-line"')
+    expect(html).toContain("Entry Date: 01.01.2026")
+    expect(html).toContain("Posted: 14.06.2026")
+    expect(html).not.toContain('data-testid="read-only-notice"')
+    expect(html).not.toContain('data-testid="field-branch-id"')
+    expect(html).not.toContain('data-testid="field-entry-date"')
+    expect(html).not.toContain('data-testid="opb-mode-banner"')
   })
 
   it("renders verification panel standalone", () => {

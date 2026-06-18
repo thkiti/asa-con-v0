@@ -200,7 +200,11 @@ export function ManualJournalEntryEditorPage({
   }
 
   const memoColSpan = canEditLines ? 2 : 1
-  const opbConfirmedDocumentLayout = openingBalanceMode && isConfirmed && entry != null
+  const documentViewLayout =
+    entry != null &&
+    (isPosted ||
+      isCancelled ||
+      (openingBalanceMode && isConfirmed))
 
   const applyEntry = useCallback((loaded: ManualJournalEntryRead) => {
     setEntry(loaded)
@@ -441,10 +445,10 @@ export function ManualJournalEntryEditorPage({
 
   return (
     <div
-      className={opbConfirmedDocumentLayout ? "space-y-4" : "space-y-6"}
+      className={documentViewLayout ? "space-y-4" : "space-y-6"}
       data-testid="manual-journal-entry-editor"
     >
-      {openingBalanceMode && !opbConfirmedDocumentLayout ? (
+      {openingBalanceMode && !documentViewLayout ? (
         <div
           className="rounded border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950"
           data-testid="opb-mode-banner"
@@ -454,13 +458,24 @@ export function ManualJournalEntryEditorPage({
         </div>
       ) : null}
 
-      {opbConfirmedDocumentLayout ? (
-        <OpeningBalanceConfirmedDocumentHeader
-          documentNo={documentNo}
-          entryDate={entryDate}
-          description={description}
-          entry={entry}
-        />
+      {documentViewLayout ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <OpeningBalanceConfirmedDocumentHeader
+            documentNo={documentNo}
+            entryDate={entryDate}
+            description={description}
+            entry={entry}
+          />
+          {entry.postedJournalEntryId ? (
+            <Link
+              href={`/finance/journal-entries/${entry.postedJournalEntryId}`}
+              className="text-sm text-zinc-600 underline"
+              data-testid="posted-journal-link"
+            >
+              View posted GL journal
+            </Link>
+          ) : null}
+        </div>
       ) : (
         <>
           <div className="flex flex-wrap items-start justify-between gap-3">

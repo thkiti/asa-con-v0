@@ -32,16 +32,12 @@ export async function renderManualJournalEntryPdf(
 
   const header = buildManualJournalPdfHeaderLines(snapshot)
 
-  doc.fillColor("#000").fontSize(10)
-  doc.text(header.row1)
-  doc.moveDown(0.15)
-  doc.text(header.row2)
-  doc.moveDown(0.15)
-  doc.text(header.row3)
+  doc.fillColor("#000").fontSize(9)
+  doc.text(header.auditLine)
 
   if (header.description) {
     doc.moveDown(0.35)
-    doc.fontSize(9).text(`Description: ${header.description}`)
+    doc.text(`Description: ${header.description}`)
   }
 
   doc.moveDown(0.45)

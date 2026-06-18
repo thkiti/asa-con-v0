@@ -23,6 +23,9 @@ export type ManualJournalEntryPdfSnapshot = {
   entryDate: string
   description: string | null
   refNo: string | null
+  createdAt: string
+  submittedAt: string | null
+  confirmedAt: string | null
   postedAt: string
   postedByStaffId: string
   postedVoucherId: string

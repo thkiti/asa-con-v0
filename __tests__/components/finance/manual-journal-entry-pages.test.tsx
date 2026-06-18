@@ -215,7 +215,7 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).not.toContain("data-testid=\"action-confirm\"")
   })
 
-  it("renders POSTED read-only with PDF pending when snapshot missing", () => {
+  it("renders POSTED document view with PDF pending when snapshot missing", () => {
     const html = renderToStaticMarkup(
       <ManualJournalEntryEditorPage
         mode="edit"
@@ -223,13 +223,21 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         initialEntry={asEntry(
           baseEntry({
             status: "POSTED",
+            submittedAt: "2026-06-14T13:00:00.000Z",
+            confirmedAt: "2026-06-14T14:00:00.000Z",
             postedAt: "2026-06-14T15:00:00.000Z",
             postedJournalEntryId: "journal-1",
           })
         )}
       />
     )
-    expect(html).toContain("read-only")
+    expect(html).toContain('data-testid="finance-document-audit-line"')
+    expect(html).toContain("Entry Date: 14.06.2026")
+    expect(html).toContain("Posted: 14.06.2026")
+    expect(html).not.toContain('data-testid="read-only-notice"')
+    expect(html).not.toContain('data-testid="field-branch-id"')
+    expect(html).not.toContain('data-testid="field-entry-date"')
+    expect(html).not.toContain('data-testid="field-description"')
     expect(html).not.toContain("data-testid=\"action-post\"")
     expect(html).not.toContain("data-testid=\"action-save\"")
     expect(html).toContain("posted-journal-link")
@@ -280,7 +288,7 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).not.toContain("data-testid=\"action-view-pdf\"")
   })
 
-  it("renders CANCELLED read-only", () => {
+  it("renders CANCELLED document view", () => {
     const html = renderToStaticMarkup(
       <ManualJournalEntryEditorPage
         mode="edit"
@@ -294,7 +302,10 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         )}
       />
     )
-    expect(html).toContain("read-only")
+    expect(html).toContain('data-testid="finance-document-audit-line"')
+    expect(html).toContain("Cancelled: 14.06.2026")
+    expect(html).not.toContain('data-testid="read-only-notice"')
+    expect(html).not.toContain('data-testid="field-branch-id"')
     expect(html).not.toContain("data-testid=\"action-cancel\"")
   })
 
