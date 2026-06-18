@@ -106,6 +106,13 @@ export type ApplyPostedStatusInput = {
   postedJournalEntryId?: string | null
 }
 
+export type ApplyPdfSnapshotInput = {
+  entryId: string
+  pdfPath: string
+  pdfGeneratedAt: Date
+  pdfBlobUrl?: string | null
+}
+
 export type ApplyCancelledStatusInput = {
   entryId: string
   cancelledByStaffId: string

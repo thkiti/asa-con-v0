@@ -29,6 +29,7 @@ import {
   postManualJournalEntry,
   submitManualJournalEntry,
   updateManualJournalEntryDraft,
+  buildManualJournalEntryPdfUrl,
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
 import { OpeningBalanceConfirmedDocumentHeader } from "@/components/finance/OpeningBalanceConfirmedDocumentHeader"
@@ -356,7 +357,49 @@ export function ManualJournalEntryEditorPage({
       setError("Entry must be balanced before post.")
       return
     }
-    await runWorkflow("Post", () => postManualJournalEntry(entry.id))
+    setError(null)
+    setStatusMessage(null)
+    setBusyAction("Post")
+    try {
+      const result = await postManualJournalEntry(entry.id)
+      applyEntry(result.entry)
+      if (result.pdfStatus === "ready") {
+        setStatusMessage("Post completed. PDF snapshot is ready.")
+      } else {
+        setStatusMessage(
+          "Post completed. PDF snapshot is pending — use Retry PDF when storage is available."
+        )
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Post failed")
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  async function handleRetryPdf() {
+    if (!entry) return
+    setError(null)
+    setStatusMessage(null)
+    setBusyAction("Retry PDF")
+    try {
+      const result = await postManualJournalEntry(entry.id)
+      applyEntry(result.entry)
+      if (result.pdfStatus === "ready") {
+        setStatusMessage("PDF snapshot generated.")
+      } else {
+        setStatusMessage("PDF snapshot is still pending / repair needed.")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "PDF retry failed")
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  function handleViewPdf() {
+    if (!entry) return
+    window.open(buildManualJournalEntryPdfUrl(entry.id, "inline"), "_blank", "noopener,noreferrer")
   }
 
   async function handleCancel() {
@@ -832,6 +875,49 @@ export function ManualJournalEntryEditorPage({
                 Confirm cancel
               </button>
             ) : null}
+          </>
+        ) : null}
+
+        {isPosted ? (
+          <>
+            {entry?.pdfPath ? (
+              <>
+                <button
+                  type="button"
+                  className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
+                  disabled={busyAction !== null}
+                  onClick={handleViewPdf}
+                  data-testid="action-view-pdf"
+                >
+                  View PDF
+                </button>
+                <a
+                  className="rounded border border-zinc-300 px-4 py-2 text-sm"
+                  href={buildManualJournalEntryPdfUrl(entry.id, "attachment")}
+                  data-testid="action-download-pdf"
+                >
+                  Download PDF
+                </a>
+              </>
+            ) : (
+              <>
+                <p
+                  className="text-sm text-amber-800"
+                  data-testid="pdf-pending-message"
+                >
+                  PDF pending / repair needed
+                </p>
+                <button
+                  type="button"
+                  className="rounded border border-amber-400 px-4 py-2 text-sm text-amber-900 disabled:opacity-50"
+                  disabled={busyAction !== null}
+                  onClick={() => void handleRetryPdf()}
+                  data-testid="action-retry-pdf"
+                >
+                  {busyAction === "Retry PDF" ? "Retrying…" : "Retry PDF"}
+                </button>
+              </>
+            )}
           </>
         ) : null}
       </div>

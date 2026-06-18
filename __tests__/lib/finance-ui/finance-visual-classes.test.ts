@@ -1,8 +1,7 @@
 import {
   financeAccountCode,
   financeNumber,
-  financeReportStickyContext,
-  financeReportView,
+  financeReportTable,
   financeTable,
   financeTableScroll,
   financeTextPrimary,
@@ -11,11 +10,10 @@ import {
 describe("finance visual standard classes", () => {
   it("exports stable class names for finance tables", () => {
     expect(financeTable).toBe("finance-table")
+    expect(financeReportTable).toBe("finance-table finance-report-table")
     expect(financeTableScroll).toContain("finance-table-scroll")
     expect(financeTextPrimary).toBe("finance-text-primary")
     expect(financeAccountCode).toContain("finance-account-code")
     expect(financeNumber).toContain("finance-number")
-    expect(financeReportView).toBe("finance-report-view")
-    expect(financeReportStickyContext).toBe("finance-report-sticky-context")
   })
 })

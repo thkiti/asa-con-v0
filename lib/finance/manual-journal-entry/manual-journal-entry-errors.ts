@@ -11,6 +11,7 @@ export const ManualJournalEntryErrorCodes = {
   UNBALANCED_ENTRY: "UNBALANCED_ENTRY",
   OPB_PL_ACCOUNT_NOT_ALLOWED: "OPB_PL_ACCOUNT_NOT_ALLOWED",
   OPB_DUPLICATE_POSTED: "OPB_DUPLICATE_POSTED",
+  PDF_MISSING: "PDF_MISSING",
 } as const
 
 export type ManualJournalEntryErrorCode =

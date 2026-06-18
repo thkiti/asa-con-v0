@@ -105,10 +105,10 @@ describe("manual-journal-entries UI fetchers", () => {
   })
 
   it("workflow POST helpers call correct paths", async () => {
-    const entry = { id: "entry-1" }
+    const entry = { id: "entry-1", pdfPath: "manual-journal/entry-1.pdf" }
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ entry }),
+      json: async () => ({ entry, pdfStatus: "ready" }),
     })
 
     await submitManualJournalEntry("entry-1")
@@ -117,7 +117,10 @@ describe("manual-journal-entries UI fetchers", () => {
       { method: "POST" }
     )
 
-    await postManualJournalEntry("entry-1")
+    await expect(postManualJournalEntry("entry-1")).resolves.toEqual({
+      entry,
+      pdfStatus: "ready",
+    })
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/finance/manual-journal-entries/entry-1/post",
       { method: "POST" }

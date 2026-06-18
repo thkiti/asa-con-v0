@@ -16,7 +16,12 @@ export type ManualJournalEntryRouteErrorResult = {
 }
 
 function statusForManualJournalEntryCode(code: string): number {
-  if (code === "ENTRY_NOT_FOUND") return 404
+  if (
+    code === "ENTRY_NOT_FOUND" ||
+    code === "PDF_MISSING"
+  ) {
+    return 404
+  }
   if (
     code === "INVALID_TRANSITION" ||
     code === "IMMUTABLE_ENTRY" ||

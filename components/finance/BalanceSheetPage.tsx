@@ -8,8 +8,6 @@ import {
 } from "@/lib/finance-ui/balance-sheet"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { BalanceSheetResult, BalanceSheetRow } from "@/lib/finance-ui/types"
-import { FinanceReportStickyContext } from "@/components/finance/FinanceReportStickyContext"
-import { FinanceReportView } from "@/components/finance/FinanceReportView"
 import {
   FINANCE_REPORT_TITLES,
   formatFinanceReportPeriodLabel,
@@ -18,8 +16,10 @@ import { formatEntityShort } from "@/lib/legal-entity/display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
   financeAccount,
+  financeDiffBalanced,
+  financeDiffUnbalanced,
   financeNumber,
-  financeTable,
+  financeReportTable,
   financeTableScroll,
   financeTh,
   financeThRight,
@@ -49,7 +49,7 @@ function SectionTable({
         <p className="text-sm text-zinc-500">No {title.toLowerCase()} balances in scope.</p>
       ) : (
         <div className={financeTableScroll}>
-          <table className={financeTable}>
+          <table className={financeReportTable}>
             <thead>
               <tr>
                 <th className={financeTh}>Account</th>
@@ -244,18 +244,25 @@ export function BalanceSheetPage() {
       </section>
 
       {result ? (
-        <FinanceReportView reportClassName="balance-sheet-report">
-          <FinanceReportStickyContext
-            entityLabel={formatEntityShort(result.period.legalEntityCode)}
-            reportTitle={FINANCE_REPORT_TITLES.balanceSheet}
-            periodLabel={formatFinanceReportPeriodLabel(result.period)}
-            status={{
-              kind: result.isBalanced ? "balanced" : "unbalanced",
-              label: result.isBalanced
+        <section className="balance-sheet-report" aria-label="Balance sheet results">
+          <header className={`${financeReportSection} space-y-1`}>
+            <p className="text-sm text-zinc-500">
+              {formatEntityShort(result.period.legalEntityCode)} •{" "}
+              {FINANCE_REPORT_TITLES.balanceSheet}
+            </p>
+            <p className="text-sm text-zinc-600">
+              {formatFinanceReportPeriodLabel(result.period)}
+            </p>
+            <p
+              className={`text-sm font-medium ${
+                result.isBalanced ? financeDiffBalanced : financeDiffUnbalanced
+              }`}
+            >
+              {result.isBalanced
                 ? "✓ Balanced"
-                : `⚠ Out of balance — ${formatAmount(result.balanceDifference)}`,
-            }}
-          />
+                : `⚠ Out of balance — ${formatAmount(result.balanceDifference)}`}
+            </p>
+          </header>
 
           <SectionTable
             title="Assets"
@@ -290,7 +297,7 @@ export function BalanceSheetPage() {
               </span>
             </div>
           </section>
-        </FinanceReportView>
+        </section>
       ) : null}
 
       <style jsx global>{`

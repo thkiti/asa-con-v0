@@ -9,8 +9,6 @@ import {
 } from "@/lib/finance-ui/general-ledger"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
-import { FinanceReportStickyContext } from "@/components/finance/FinanceReportStickyContext"
-import { FinanceReportView } from "@/components/finance/FinanceReportView"
 import {
   FINANCE_REPORT_TITLES,
   formatFinanceReportPeriodLabel,
@@ -19,7 +17,7 @@ import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDispla
 import {
   financeMemo,
   financeNumber,
-  financeTable,
+  financeReportTable,
   financeTableScroll,
   financeTh,
   financeThRight,
@@ -215,15 +213,20 @@ export function GeneralLedgerPage() {
       </section>
 
       {result ? (
-        <FinanceReportView reportClassName="general-ledger-report">
-          <FinanceReportStickyContext
-            entityLabel={formatEntityShort(result.filter.legalEntityCode)}
-            reportTitle={FINANCE_REPORT_TITLES.generalLedger}
-            periodLabel={formatFinanceReportPeriodLabel(result.filter)}
-            detailLine={`Branch ${result.filter.branchId}${
-              result.filter.accountCode ? ` · Account ${result.filter.accountCode}` : ""
-            }`}
-          />
+        <section className="general-ledger-report" aria-label="General ledger results">
+          <header className={`${financeReportSection} space-y-1`}>
+            <p className="text-sm text-zinc-500">
+              {formatEntityShort(result.filter.legalEntityCode)} •{" "}
+              {FINANCE_REPORT_TITLES.generalLedger}
+            </p>
+            <p className="text-sm text-zinc-600">
+              {formatFinanceReportPeriodLabel(result.filter)}
+            </p>
+            <p className="text-sm text-zinc-500">
+              Branch {result.filter.branchId}
+              {result.filter.accountCode ? ` · Account ${result.filter.accountCode}` : ""}
+            </p>
+          </header>
 
           {result.accounts.length === 0 ? (
             <p className="text-sm text-zinc-500">No accounts in scope.</p>
@@ -261,7 +264,7 @@ export function GeneralLedgerPage() {
                 <p className="mt-3 text-sm text-zinc-500">No period transactions.</p>
               ) : (
                 <div className={`mt-3 ${financeTableScroll}`}>
-                  <table className={financeTable}>
+                  <table className={financeReportTable}>
                     <thead>
                       <tr>
                         <th className={financeTh}>Date</th>
@@ -306,7 +309,7 @@ export function GeneralLedgerPage() {
               </p>
             </section>
           ))}
-        </FinanceReportView>
+        </section>
       ) : null}
 
       <style jsx global>{`

@@ -91,13 +91,15 @@ describe("manual-journal-entry-post", () => {
     await seedOpenPeriod(env.finance.tx, "branch-1")
     const confirmed = await createConfirmedEntry(env)
 
-    const posted = await postManualJournalEntry({
+    const { entry: posted, pdfSnapshot } = await postManualJournalEntry({
       tx: env.finance.tx as never,
       entryId: confirmed.id,
       postedByStaffId: "staff-post",
     })
 
     expect(posted.status).toBe("POSTED")
+    expect(pdfSnapshot).not.toBeNull()
+    expect(pdfSnapshot?.entryId).toBe(confirmed.id)
     expect(posted.postedByStaffId).toBe("staff-post")
     expect(posted.postedAt).toBeInstanceOf(Date)
     expect(posted.postedVoucherId).toBeTruthy()
@@ -116,12 +118,12 @@ describe("manual-journal-entry-post", () => {
     await seedOpenPeriod(env.finance.tx, "branch-1")
     const confirmed = await createConfirmedEntry(env)
 
-    const first = await postManualJournalEntry({
+    const { entry: first } = await postManualJournalEntry({
       tx: env.finance.tx as never,
       entryId: confirmed.id,
       postedByStaffId: "staff-post",
     })
-    const second = await postManualJournalEntry({
+    const { entry: second, pdfSnapshot } = await postManualJournalEntry({
       tx: env.finance.tx as never,
       entryId: confirmed.id,
       postedByStaffId: "staff-post",
@@ -130,6 +132,7 @@ describe("manual-journal-entry-post", () => {
     expect(second.status).toBe("POSTED")
     expect(second.postedVoucherId).toBe(first.postedVoucherId)
     expect(second.postedJournalEntryId).toBe(first.postedJournalEntryId)
+    expect(pdfSnapshot).not.toBeNull()
     expect(env.finance.state.vouchers).toHaveLength(1)
     expect(env.finance.state.journalEntries).toHaveLength(1)
   })

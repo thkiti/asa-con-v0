@@ -826,6 +826,11 @@ model ManualJournalEntry {
   postedJournalEntryId     String? @unique
   reversalJournalEntryId   String? @unique
 
+  /// Immutable PDF snapshot pathname (filesystem relative path or Blob pathname). Set once on POST.
+  pdfPath        String?
+  pdfBlobUrl     String?
+  pdfGeneratedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

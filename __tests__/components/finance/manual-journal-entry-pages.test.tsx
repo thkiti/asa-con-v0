@@ -47,6 +47,8 @@ jest.mock("@/lib/finance-ui/manual-journal-entries", () => ({
   confirmManualJournalEntry: jest.fn(),
   cancelManualJournalEntry: jest.fn(),
   postManualJournalEntry: jest.fn(),
+  buildManualJournalEntryPdfUrl: (entryId: string, disposition = "inline") =>
+    `/api/finance/manual-journal-entries/${entryId}/pdf?disposition=${disposition}`,
 }))
 
 jest.mock("@/lib/finance-ui/manual-journal-entry-session", () => ({
@@ -209,7 +211,7 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).not.toContain("data-testid=\"action-confirm\"")
   })
 
-  it("renders POSTED read-only without workflow actions", () => {
+  it("renders POSTED read-only with PDF pending when snapshot missing", () => {
     const html = renderToStaticMarkup(
       <ManualJournalEntryEditorPage
         mode="edit"
@@ -227,6 +229,29 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).not.toContain("data-testid=\"action-post\"")
     expect(html).not.toContain("data-testid=\"action-save\"")
     expect(html).toContain("posted-journal-link")
+    expect(html).toContain("data-testid=\"pdf-pending-message\"")
+    expect(html).toContain("data-testid=\"action-retry-pdf\"")
+  })
+
+  it("renders POSTED View/Download PDF when snapshot exists", () => {
+    const html = renderToStaticMarkup(
+      <ManualJournalEntryEditorPage
+        mode="edit"
+        entryId="entry-1"
+        initialEntry={asEntry(
+          baseEntry({
+            status: "POSTED",
+            postedAt: "2026-06-14T15:00:00.000Z",
+            postedJournalEntryId: "journal-1",
+            pdfPath: "manual-journal/entry-1.pdf",
+            pdfGeneratedAt: "2026-06-14T15:01:00.000Z",
+          })
+        )}
+      />
+    )
+    expect(html).toContain("data-testid=\"action-view-pdf\"")
+    expect(html).toContain("data-testid=\"action-download-pdf\"")
+    expect(html).not.toContain("data-testid=\"pdf-pending-message\"")
   })
 
   it("renders CANCELLED read-only", () => {

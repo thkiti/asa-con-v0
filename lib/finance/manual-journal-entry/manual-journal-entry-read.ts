@@ -134,6 +134,8 @@ function mapEntry(
     postedVoucherId: entry.postedVoucherId,
     postedJournalEntryId: entry.postedJournalEntryId,
     reversalJournalEntryId: entry.reversalJournalEntryId,
+    pdfPath: entry.pdfPath,
+    pdfGeneratedAt: toIso(entry.pdfGeneratedAt),
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
     lines,
@@ -164,6 +166,8 @@ function mapListItem(
     postedVoucherId: string | null
     postedJournalEntryId: string | null
     reversalJournalEntryId: string | null
+    pdfPath: string | null
+    pdfGeneratedAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: { lines: number }
@@ -192,6 +196,8 @@ function mapListItem(
     postedVoucherId: entry.postedVoucherId,
     postedJournalEntryId: entry.postedJournalEntryId,
     reversalJournalEntryId: entry.reversalJournalEntryId,
+    pdfPath: entry.pdfPath,
+    pdfGeneratedAt: toIso(entry.pdfGeneratedAt),
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
     lineCount: entry._count.lines,

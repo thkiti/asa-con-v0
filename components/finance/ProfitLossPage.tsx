@@ -9,8 +9,6 @@ import {
 } from "@/lib/finance-ui/profit-loss"
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { ProfitLossResult } from "@/lib/finance-ui/types"
-import { FinanceReportStickyContext } from "@/components/finance/FinanceReportStickyContext"
-import { FinanceReportView } from "@/components/finance/FinanceReportView"
 import {
   FINANCE_REPORT_TITLES,
   formatFinanceReportPeriodLabel,
@@ -19,7 +17,7 @@ import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDispla
 import {
   financeAccount,
   financeNumber,
-  financeTable,
+  financeReportTable,
   financeTableScroll,
   financeTh,
   financeThRight,
@@ -50,7 +48,7 @@ function SectionTable({
         <p className="text-sm text-zinc-500">No {title.toLowerCase()} activity in scope.</p>
       ) : (
         <div className={financeTableScroll}>
-          <table className={financeTable}>
+          <table className={financeReportTable}>
             <thead>
               <tr>
                 <th className={financeTh}>Account</th>
@@ -242,19 +240,21 @@ export function ProfitLossPage() {
       </section>
 
       {result ? (
-        <FinanceReportView reportClassName="profit-loss-report">
-          <FinanceReportStickyContext
-            entityLabel={formatEntityShort(result.filter.legalEntityCode)}
-            reportTitle={FINANCE_REPORT_TITLES.profitLoss}
-            periodLabel={formatFinanceReportPeriodLabel(result.filter)}
-            status={{
-              kind: "neutral",
-              label: `Net income: ${formatAmount(result.netIncome)}${
-                incomeLabel ? ` (${incomeLabel})` : ""
-              }`,
-            }}
-            detailLine={`Branch ${result.filter.branchId}`}
-          />
+        <section className="profit-loss-report" aria-label="Profit and loss results">
+          <header className={`${financeReportSection} space-y-1`}>
+            <p className="text-sm text-zinc-500">
+              {formatEntityShort(result.filter.legalEntityCode)} •{" "}
+              {FINANCE_REPORT_TITLES.profitLoss}
+            </p>
+            <p className="text-sm text-zinc-600">
+              {formatFinanceReportPeriodLabel(result.filter)}
+            </p>
+            <p className="text-sm font-medium text-zinc-700">
+              Net income: {formatAmount(result.netIncome)}
+              {incomeLabel ? ` (${incomeLabel})` : ""}
+            </p>
+            <p className="text-sm text-zinc-500">Branch {result.filter.branchId}</p>
+          </header>
 
           <SectionTable
             title="Revenue"
@@ -297,7 +297,7 @@ export function ProfitLossPage() {
               </div>
             </dl>
           </section>
-        </FinanceReportView>
+        </section>
       ) : null}
 
       <style jsx global>{`

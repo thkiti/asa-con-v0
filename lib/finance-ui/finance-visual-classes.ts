@@ -12,7 +12,9 @@ export const financeTextMuted = "finance-text-muted"
 
 export const financeTable = "finance-table"
 export const financeTableCompact = "finance-table finance-table--compact"
-/** Scroll wrapper for finance tables — enables horizontal scroll + sticky header */
+/** Finance report tables — sticky column header on vertical scroll */
+export const financeReportTable = "finance-table finance-report-table"
+/** Scroll wrapper for finance tables — horizontal scroll only */
 export const financeTableScroll = "finance-table-scroll overflow-x-auto"
 
 export const financeTh = "px-2 py-2"
@@ -42,12 +44,6 @@ export const financeTotalValue = `finance-total-value ${numericCell} px-2 py-2`
 export const financeDocumentContainer = "finance-document-container"
 export const financeReportContainer = "finance-report-container"
 
-export const financeReportView = "finance-report-view"
-export const financeReportStickyContext = "finance-report-sticky-context"
-export const financeReportStickyTitle = "finance-report-sticky-title"
-export const financeReportStickyPeriod = "finance-report-sticky-period"
-export const financeReportStickyStatus = "finance-report-sticky-status"
-export const financeReportStickyDetail = "finance-report-sticky-detail"
 export const financeReportSection = "finance-report-section"
 
 export const financeAuditLine = "finance-audit-line"

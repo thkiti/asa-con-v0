@@ -49,6 +49,8 @@ export type ManualJournalEntryRead = {
   postedVoucherId: string | null
   postedJournalEntryId: string | null
   reversalJournalEntryId: string | null
+  pdfPath: string | null
+  pdfGeneratedAt: string | null
   createdAt: string
   updatedAt: string
   lines: ManualJournalEntryLineRead[]

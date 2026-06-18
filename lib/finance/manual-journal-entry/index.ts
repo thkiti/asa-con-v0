@@ -31,7 +31,18 @@ export {
 export {
   postManualJournalEntry,
   financeRefTypeForManualJournalEntryType,
+  type PostManualJournalEntryResult,
 } from "./manual-journal-entry-post"
+export {
+  attachManualJournalEntryPdfFromSnapshot,
+  loadPostedManualJournalEntryPdfSnapshot,
+  type AttachManualJournalEntryPdfResult,
+} from "./manual-journal-entry-pdf"
+export { buildManualJournalEntryPdfSnapshot } from "./manual-journal-entry-pdf-snapshot"
+export type {
+  ManualJournalEntryPdfSnapshot,
+  ManualJournalEntryPdfSnapshotLine,
+} from "./manual-journal-entry-pdf-snapshot-types"
 export {
   cancelManualJournalEntry,
   confirmManualJournalEntry,
@@ -57,6 +68,7 @@ export {
 export {
   applyCancelledStatus,
   applyConfirmedStatus,
+  applyPdfSnapshot,
   applyPostedStatus,
   applySubmittedStatus,
 } from "./manual-journal-entry-status"
@@ -81,6 +93,7 @@ export type {
   AllocateManualJournalEntryNoInput,
   ApplyCancelledStatusInput,
   ApplyConfirmedStatusInput,
+  ApplyPdfSnapshotInput,
   ApplyPostedStatusInput,
   ApplySubmittedStatusInput,
   CreateManualJournalEntryDraftInput,

@@ -161,11 +161,28 @@ export async function cancelManualJournalEntry(
 
 export async function postManualJournalEntry(
   entryId: string
-): Promise<ManualJournalEntryRead> {
+): Promise<{
+  entry: ManualJournalEntryRead
+  pdfStatus: "ready" | "pending"
+}> {
   const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/post`, {
     method: "POST",
   })
   if (!res.ok) throw new Error(await parseError(res))
-  const body = (await res.json()) as { entry: ManualJournalEntryRead }
-  return body.entry
+  const body = (await res.json()) as {
+    entry: ManualJournalEntryRead
+    pdfStatus?: "ready" | "pending"
+  }
+  return {
+    entry: body.entry,
+    pdfStatus: body.pdfStatus ?? (body.entry.pdfPath ? "ready" : "pending"),
+  }
+}
+
+export function buildManualJournalEntryPdfUrl(
+  entryId: string,
+  disposition: "inline" | "attachment" = "inline"
+): string {
+  const params = new URLSearchParams({ disposition })
+  return `${BASE}/${encodeURIComponent(entryId)}/pdf?${params.toString()}`
 }

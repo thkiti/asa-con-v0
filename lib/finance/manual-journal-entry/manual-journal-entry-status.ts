@@ -7,6 +7,7 @@ import { assertTransitionAllowed } from "./manual-journal-entry-transition-polic
 import type {
   ApplyCancelledStatusInput,
   ApplyConfirmedStatusInput,
+  ApplyPdfSnapshotInput,
   ApplyPostedStatusInput,
   ApplySubmittedStatusInput,
   ManualJournalEntryWithLines,
@@ -110,6 +111,52 @@ export async function applyPostedStatus(
     },
     include: { lines: true },
   })
+}
+
+/**
+ * Sole writer for pdfPath / pdfGeneratedAt. Idempotent when snapshot already attached.
+ */
+export async function applyPdfSnapshot(
+  tx: Prisma.TransactionClient,
+  input: ApplyPdfSnapshotInput
+): Promise<ManualJournalEntryWithLines> {
+  const entry = await loadEntryWithLines(tx, input.entryId)
+  if (!entry) {
+    throw new ManualJournalEntryError(
+      "Manual journal entry not found",
+      ManualJournalEntryErrorCodes.ENTRY_NOT_FOUND,
+      404
+    )
+  }
+
+  if (entry.status !== "POSTED") {
+    throw new ManualJournalEntryError(
+      "PDF snapshot is only allowed for POSTED entries",
+      ManualJournalEntryErrorCodes.INVALID_TRANSITION
+    )
+  }
+
+  if (entry.pdfPath) {
+    return entry
+  }
+
+  try {
+    return await tx.manualJournalEntry.update({
+      where: { id: input.entryId, pdfPath: null },
+      data: {
+        pdfPath: input.pdfPath,
+        pdfGeneratedAt: input.pdfGeneratedAt,
+        pdfBlobUrl: input.pdfBlobUrl ?? null,
+      },
+      include: { lines: true },
+    })
+  } catch (err: unknown) {
+    const existing = await loadEntryWithLines(tx, input.entryId)
+    if (existing?.pdfPath) {
+      return existing
+    }
+    throw err
+  }
 }
 
 export async function applyCancelledStatus(

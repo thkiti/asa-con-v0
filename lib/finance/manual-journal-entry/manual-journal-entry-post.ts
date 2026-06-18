@@ -1,4 +1,4 @@
-import type { ManualJournalEntryType, Prisma } from "@/generated/prisma/client"
+import type { Prisma } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { toMoney } from "@/lib/finance/decimal"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
@@ -13,6 +13,8 @@ import {
   ManualJournalEntryError,
   ManualJournalEntryErrorCodes,
 } from "./manual-journal-entry-errors"
+import { buildManualJournalEntryPdfSnapshot } from "./manual-journal-entry-pdf-snapshot"
+import type { ManualJournalEntryPdfSnapshot } from "./manual-journal-entry-pdf-snapshot-types"
 import { applyPostedStatus } from "./manual-journal-entry-status"
 import type {
   ManualJournalEntryWithLines,
@@ -20,7 +22,10 @@ import type {
 } from "./manual-journal-entry-types"
 import { assertCanPostManualJournalEntry } from "./manual-journal-entry-validation"
 
-const ENTRY_TYPE_FINANCE_REF_TYPE: Record<ManualJournalEntryType, FinanceRefType> = {
+const ENTRY_TYPE_FINANCE_REF_TYPE: Record<
+  import("@/generated/prisma/client").ManualJournalEntryType,
+  FinanceRefType
+> = {
   MANUAL: FINANCE_REF_TYPES.MANUAL_JOURNAL,
   OPENING_BALANCE: FINANCE_REF_TYPES.OPENING_BALANCE_JOURNAL,
   ADJUSTMENT: FINANCE_REF_TYPES.ADJUSTMENT_JOURNAL,
@@ -30,9 +35,23 @@ const ENTRY_TYPE_FINANCE_REF_TYPE: Record<ManualJournalEntryType, FinanceRefType
 }
 
 export function financeRefTypeForManualJournalEntryType(
-  entryType: ManualJournalEntryType
+  entryType: import("@/generated/prisma/client").ManualJournalEntryType
 ): FinanceRefType {
   return ENTRY_TYPE_FINANCE_REF_TYPE[entryType]
+}
+
+export type PostManualJournalEntryResult = {
+  entry: ManualJournalEntryWithLines
+  /** Frozen POST-time snapshot for PDF attach; null when pdf already exists. */
+  pdfSnapshot: ManualJournalEntryPdfSnapshot | null
+}
+
+type EntryWithGlLines = ManualJournalEntryWithLines & {
+  lines: Array<
+    ManualJournalEntryWithLines["lines"][number] & {
+      glAccount: { code: string; name: string }
+    }
+  >
 }
 
 function journalLinesFromEntry(entry: ManualJournalEntryWithLines): JournalLineDraft[] {
@@ -46,13 +65,20 @@ function journalLinesFromEntry(entry: ManualJournalEntryWithLines): JournalLineD
     }))
 }
 
-async function loadEntryOrThrow(
+async function loadEntryWithGlAccountsOrThrow(
   tx: Prisma.TransactionClient,
   entryId: string
-): Promise<ManualJournalEntryWithLines> {
+): Promise<EntryWithGlLines> {
   const entry = await tx.manualJournalEntry.findUnique({
     where: { id: entryId },
-    include: { lines: { orderBy: { lineNo: "asc" } } },
+    include: {
+      lines: {
+        orderBy: { lineNo: "asc" },
+        include: {
+          glAccount: { select: { code: true, name: true } },
+        },
+      },
+    },
   })
 
   if (!entry) {
@@ -66,12 +92,40 @@ async function loadEntryOrThrow(
   return entry
 }
 
+function buildPdfSnapshotForPostedEntry(
+  entry: EntryWithGlLines,
+  posted: {
+    voucherId: string
+    voucherNo: string
+    journalEntryId: string
+  },
+  postedAt: Date,
+  postedByStaffId: string
+): ManualJournalEntryPdfSnapshot {
+  return buildManualJournalEntryPdfSnapshot(
+    {
+      id: entry.id,
+      entryNo: entry.entryNo,
+      entryType: entry.entryType,
+      branchId: entry.branchId,
+      legalEntityCode: entry.legalEntityCode,
+      entryDate: entry.entryDate,
+      description: entry.description,
+      refNo: entry.refNo,
+      postedAt,
+      postedByStaffId,
+      lines: entry.lines,
+    },
+    posted
+  )
+}
+
 /**
  * CONFIRMED → POSTED via finance posting kernel. Links voucher and journal on the entry.
  */
 export async function postManualJournalEntry(
   input: PostManualJournalEntryInput
-): Promise<ManualJournalEntryWithLines> {
+): Promise<PostManualJournalEntryResult> {
   const entryId = String(input.entryId ?? "").trim()
   const postedByStaffId = String(input.postedByStaffId ?? "").trim()
 
@@ -88,15 +142,43 @@ export async function postManualJournalEntry(
     )
   }
 
-  const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> => {
-    const entry = await loadEntryOrThrow(tx, entryId)
+  const run = async (tx: Prisma.TransactionClient): Promise<PostManualJournalEntryResult> => {
+    const entry = await loadEntryWithGlAccountsOrThrow(tx, entryId)
 
     if (
       entry.status === "POSTED" &&
       entry.postedVoucherId &&
       entry.postedJournalEntryId
     ) {
-      return entry
+      if (entry.pdfPath) {
+        return { entry, pdfSnapshot: null }
+      }
+
+      const voucher = await tx.voucher.findUnique({
+        where: { id: entry.postedVoucherId },
+        select: { id: true, voucherNo: true },
+      })
+      if (!voucher || !entry.postedAt) {
+        throw new ManualJournalEntryError(
+          "Posted manual journal entry is missing voucher metadata",
+          ManualJournalEntryErrorCodes.ENTRY_NOT_FOUND,
+          404
+        )
+      }
+
+      return {
+        entry,
+        pdfSnapshot: buildPdfSnapshotForPostedEntry(
+          entry,
+          {
+            voucherId: voucher.id,
+            voucherNo: voucher.voucherNo,
+            journalEntryId: entry.postedJournalEntryId,
+          },
+          entry.postedAt,
+          entry.postedByStaffId ?? postedByStaffId
+        ),
+      }
     }
 
     await assertCanPostManualJournalEntry(tx, entry)
@@ -119,12 +201,22 @@ export async function postManualJournalEntry(
       lines: journalLinesFromEntry(entry),
     })
 
-    return applyPostedStatus(tx, {
+    const postedEntry = await applyPostedStatus(tx, {
       entryId,
       postedByStaffId,
       postedVoucherId: posted.voucherId,
       postedJournalEntryId: posted.journalEntryId,
     })
+
+    const postedAt = postedEntry.postedAt ?? new Date()
+    const snapshot = buildPdfSnapshotForPostedEntry(
+      entry,
+      posted,
+      postedAt,
+      postedByStaffId
+    )
+
+    return { entry: postedEntry, pdfSnapshot: snapshot }
   }
 
   if (input.tx) return run(input.tx)

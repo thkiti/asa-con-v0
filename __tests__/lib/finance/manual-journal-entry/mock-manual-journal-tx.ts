@@ -139,6 +139,9 @@ export function createManualJournalMockTx(initialAccounts: GlAccountRow[]) {
           postedVoucherId: null,
           postedJournalEntryId: null,
           reversalJournalEntryId: null,
+          pdfPath: null,
+          pdfBlobUrl: null,
+          pdfGeneratedAt: null,
           createdAt,
           updatedAt: createdAt,
           lines: [],
@@ -188,17 +191,42 @@ export function createManualJournalMockTx(initialAccounts: GlAccountRow[]) {
         }
 
         const withLines = include?.lines
-          ? { ...entry, lines: entryLines(entry.id) }
+          ? {
+              ...entry,
+              lines: entryLines(entry.id).map((line) => {
+                const nestedInclude =
+                  typeof include.lines === "object" &&
+                  include.lines !== null &&
+                  "include" in include.lines
+                    ? (include.lines as { include?: { glAccount?: boolean } }).include
+                    : undefined
+                if (nestedInclude?.glAccount) {
+                  const account = accounts.find((row) => row.id === line.glAccountId)
+                  return {
+                    ...line,
+                    glAccount: {
+                      code: account?.code ?? line.glAccountId,
+                      name: account?.code ?? line.glAccountId,
+                    },
+                  }
+                }
+                return line
+              }),
+            }
           : { ...entry }
 
         return withLines
       }),
       update: jest.fn(async ({ where, data, include }: {
-        where: { id: string }
+        where: { id: string; pdfPath?: null }
         data: Partial<ManualJournalEntryWithLines>
         include?: { lines?: boolean }
       }) => {
-        const index = entries.findIndex((row) => row.id === where.id)
+        const index = entries.findIndex((row) => {
+          if (row.id !== where.id) return false
+          if (where.pdfPath === null && row.pdfPath != null) return false
+          return true
+        })
         if (index < 0) throw new Error("entry missing")
         entries[index] = {
           ...entries[index],
@@ -318,6 +346,9 @@ export function draftEntry(
     postedVoucherId: partial.postedVoucherId ?? null,
     postedJournalEntryId: partial.postedJournalEntryId ?? null,
     reversalJournalEntryId: partial.reversalJournalEntryId ?? null,
+    pdfPath: partial.pdfPath ?? null,
+    pdfBlobUrl: partial.pdfBlobUrl ?? null,
+    pdfGeneratedAt: partial.pdfGeneratedAt ?? null,
     createdAt: partial.createdAt ?? now,
     updatedAt: partial.updatedAt ?? now,
     lines: partial.lines ?? [],

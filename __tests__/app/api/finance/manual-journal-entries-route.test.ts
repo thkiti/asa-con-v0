@@ -32,6 +32,10 @@ jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-post", () => 
   postManualJournalEntry: jest.fn(),
 }))
 
+jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-pdf", () => ({
+  attachManualJournalEntryPdfFromSnapshot: jest.fn(),
+}))
+
 import fs from "fs"
 import path from "path"
 import { NextRequest } from "next/server"
@@ -55,6 +59,7 @@ import {
   listManualJournalEntries,
 } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read"
 import { postManualJournalEntry } from "@/lib/finance/manual-journal-entry/manual-journal-entry-post"
+import { attachManualJournalEntryPdfFromSnapshot } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf"
 import {
   cancelManualJournalEntry,
   confirmManualJournalEntry,
@@ -77,6 +82,7 @@ const mockSubmit = submitManualJournalEntry as jest.Mock
 const mockConfirm = confirmManualJournalEntry as jest.Mock
 const mockCancel = cancelManualJournalEntry as jest.Mock
 const mockPost = postManualJournalEntry as jest.Mock
+const mockAttachPdf = attachManualJournalEntryPdfFromSnapshot as jest.Mock
 
 const actor = { staffId: "staff-1", name: "Admin", role: "HO_FINANCE" }
 
@@ -103,6 +109,8 @@ const sampleEntry = {
   postedVoucherId: null,
   postedJournalEntryId: null,
   reversalJournalEntryId: null,
+  pdfPath: null,
+  pdfGeneratedAt: null,
   createdAt: "2026-06-14T12:00:00.000Z",
   updatedAt: "2026-06-14T12:00:00.000Z",
   lines: [
@@ -319,7 +327,16 @@ describe("manual journal entries API routes", () => {
     })
 
     it("POST post", async () => {
-      mockPost.mockResolvedValue(undefined)
+      mockPost.mockResolvedValue({
+        entry: { ...sampleEntry, status: "POSTED", pdfPath: null },
+        pdfSnapshot: { entryId: "entry-1" },
+      })
+      mockAttachPdf.mockResolvedValue({ ok: true })
+      mockGet.mockResolvedValue({
+        ...sampleEntry,
+        status: "POSTED",
+        pdfPath: "manual-journal/entry-1.pdf",
+      })
       const res = await postRoute(
         new NextRequest("http://localhost/api/finance/manual-journal-entries/entry-1/post", {
           method: "POST",
@@ -330,6 +347,15 @@ describe("manual journal entries API routes", () => {
       expect(mockPost).toHaveBeenCalledWith({
         entryId: "entry-1",
         postedByStaffId: "staff-1",
+      })
+      expect(mockAttachPdf).toHaveBeenCalled()
+      await expect(res.json()).resolves.toEqual({
+        entry: {
+          ...sampleEntry,
+          status: "POSTED",
+          pdfPath: "manual-journal/entry-1.pdf",
+        },
+        pdfStatus: "ready",
       })
     })
   })
