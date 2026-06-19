@@ -1,4 +1,6 @@
-﻿export type VoucherLineDetail = {
+﻿import type { FinanceDocumentHeaderContext } from "@/lib/finance-ui/finance-document-display"
+
+export type VoucherLineDetail = {
   id: string
   lineNo: number
   accountCode: string
@@ -17,6 +19,7 @@ export type VoucherJournalDetail = {
 export type VoucherDetail = {
   id: string
   voucherNo: string
+  legalEntityCode: string
   date: string
   status: string
   branchId: string
@@ -25,6 +28,7 @@ export type VoucherDetail = {
   refNo: string | null
   description: string | null
   postedAt: string | null
+  documentHeader: FinanceDocumentHeaderContext | null
   lines: VoucherLineDetail[]
   journal: VoucherJournalDetail | null
 }

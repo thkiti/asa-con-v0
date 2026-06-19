@@ -1,4 +1,6 @@
-﻿export type FinanceFilterValues = {
+﻿import type { FinanceDocumentHeaderContext } from "@/lib/finance-ui/finance-document-display"
+
+export type FinanceFilterValues = {
   branchId?: string
   from?: string
   to?: string
@@ -97,6 +99,7 @@ export type VoucherJournalDetail = {
 export type VoucherDetail = {
   id: string
   voucherNo: string
+  legalEntityCode: string
   date: string
   status: string
   branchId: string
@@ -105,6 +108,7 @@ export type VoucherDetail = {
   refNo: string | null
   description: string | null
   postedAt: string | null
+  documentHeader: FinanceDocumentHeaderContext | null
   lines: VoucherLineDetail[]
   journal: VoucherJournalDetail | null
 }
@@ -451,5 +455,6 @@ export type JournalInquiryResult = {
     id: string
     voucherNo: string
   } | null
+  documentHeader: FinanceDocumentHeaderContext | null
   lines: JournalInquiryLine[]
 }

@@ -2,7 +2,9 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
 import { formatAmount } from "@/lib/finance-ui/format"
+import type { FinanceDocumentHeaderContext } from "@/lib/finance-ui/finance-document-display"
 import { fetchOpeningBalancePostingVerification } from "@/lib/finance-ui/opening-balance"
 import type { ManualJournalEntryPostingVerification } from "@/lib/finance/manual-journal-entry/manual-journal-entry-posting-verification-types"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
@@ -18,14 +20,14 @@ import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type OpeningBalancePostingVerificationPanelProps = {
   entryId: string
-  entryNo: string
   postedJournalEntryId: string | null
+  headerContext: FinanceDocumentHeaderContext
 }
 
 export function OpeningBalancePostingVerificationPanel({
   entryId,
-  entryNo,
   postedJournalEntryId,
+  headerContext,
 }: OpeningBalancePostingVerificationPanelProps) {
   const [verification, setVerification] =
     useState<ManualJournalEntryPostingVerification | null>(null)
@@ -66,6 +68,8 @@ export function OpeningBalancePostingVerificationPanel({
       className="rounded border border-emerald-200 bg-emerald-50/50 p-4 space-y-3"
       data-testid="opb-posting-verification"
     >
+      <FinanceDocumentCanonicalHeader {...headerContext} />
+
       <h3 className="text-sm font-semibold text-emerald-900">Posting verification</h3>
 
       <div className="grid gap-2 text-sm sm:grid-cols-2">
@@ -118,8 +122,6 @@ export function OpeningBalancePostingVerificationPanel({
           >
             View posted GL journal
           </Link>
-          {" · "}
-          <span className="font-mono text-xs text-zinc-500">{entryNo}</span>
         </p>
       ) : null}
 
@@ -137,7 +139,7 @@ export function OpeningBalancePostingVerificationPanel({
             </thead>
             <tbody>
               {verification.accountChecks.map((row) => (
-                <tr key={row.accountCode}>
+                <tr key={row.lineId}>
                   <td>
                     <FinanceAccountDisplay
                       accountCode={row.accountCode}

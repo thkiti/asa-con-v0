@@ -68,6 +68,7 @@ jest.mock("@/lib/finance-ui/opening-balance", () => ({
     trialBalanceTotalCredit: "5010280.88",
     accountChecks: [
       {
+        lineId: "line-1",
         accountCode: "301",
         accountName: "Retained earnings",
         entryDebit: "0",
@@ -189,8 +190,13 @@ describe("opening-balance pages", () => {
       />
     )
     expect(html).toContain('data-testid="opb-verification-loading"')
-    expect(html).toContain('data-testid="finance-document-audit-line"')
+    expect(html).toContain('data-testid="finance-document-header"')
+    expect(html).toContain('data-testid="finance-document-identity-row1"')
+    expect(html).toContain("ASAS • OPENING BALANCE")
     expect(html).toContain("Entry Date: 01.01.2026")
+    expect(html).toContain("Period: 2026-01")
+    expect(html).toContain("Status: POSTED")
+    expect(html).toContain('data-testid="finance-document-workflow-audit"')
     expect(html).toContain("Posted: 14.06.2026")
     expect(html).not.toContain('data-testid="read-only-notice"')
     expect(html).not.toContain('data-testid="field-branch-id"')
@@ -202,8 +208,19 @@ describe("opening-balance pages", () => {
     const html = renderToStaticMarkup(
       <OpeningBalancePostingVerificationPanel
         entryId="opb-1"
-        entryNo="OPB-260001"
         postedJournalEntryId="journal-1"
+        headerContext={{
+          legalEntityCode: "AS",
+          entryType: "OPENING_BALANCE",
+          documentNo: "OPB-260001",
+          entryDate: "2026-01-01",
+          status: "POSTED",
+          description: "Go-live",
+          createdAt: "2026-06-14T12:00:00.000Z",
+          submittedAt: "2026-06-14T12:00:00.000Z",
+          confirmedAt: "2026-06-14T12:00:00.000Z",
+          postedAt: "2026-06-14T12:00:00.000Z",
+        }}
       />
     )
     expect(html).toContain('data-testid="opb-verification-loading"')
@@ -265,15 +282,21 @@ describe("opening-balance pages", () => {
       />
     )
 
-    expect(html).toContain('data-testid="opb-confirmed-document-header"')
-    expect(html).toContain('data-testid="finance-document-audit-line"')
+    expect(html).toContain('data-testid="finance-document-header"')
+    expect(html).toContain('data-testid="finance-document-identity-row1"')
+    expect(html).toContain('data-testid="finance-document-identity-row2"')
     expect(html).toContain("finance-audit-line")
     expect(html).toContain("finance-table")
     expect(html).toContain("OPB-260001")
+    expect(html).toContain("ASAS • OPENING BALANCE")
     expect(html).toContain("Entry Date: 01.01.2026")
+    expect(html).toContain("Period: 2026-01")
+    expect(html).toContain("Status: CONFIRMED")
+    expect(html).toContain('data-testid="finance-document-workflow-audit"')
     expect(html).toContain("Created: 14.06.2026")
     expect(html).toContain("Submitted: 14.06.2026")
     expect(html).toContain("Confirmed: 14.06.2026")
+    expect(html).not.toContain("Posted: 14.06.2026")
     expect(html).toContain('data-testid="finance-document-description"')
     expect(html).toContain("Description:")
     expect(html).toContain("Go-live")

@@ -95,12 +95,14 @@ describe("getManualJournalEntryPostingVerification", () => {
       postedVoucherId: "voucher-1",
       lines: [
         {
+          id: "line-1",
           lineNo: 1,
           debit: new Prisma.Decimal(100),
           credit: new Prisma.Decimal(0),
           glAccount: { code: "1100", name: "Cash" },
         },
         {
+          id: "line-2",
           lineNo: 2,
           debit: new Prisma.Decimal(0),
           credit: new Prisma.Decimal(100),
@@ -128,7 +130,72 @@ describe("getManualJournalEntryPostingVerification", () => {
     expect(result.totalsMatch).toBe(true)
     expect(result.trialBalanceBalanced).toBe(true)
     expect(result.accountChecks).toHaveLength(2)
+    expect(result.accountChecks[0]?.lineId).toBe("line-1")
+    expect(result.accountChecks[1]?.lineId).toBe("line-2")
     expect(result.accountChecks[0]?.sourceRefMatches).toBe(true)
+  })
+
+  it("returns distinct lineId for repeated account codes on multiple lines", async () => {
+    prisma.manualJournalEntry.findUnique.mockResolvedValue({
+      id: "opb-2",
+      entryNo: "OPB-260002",
+      entryType: "OPENING_BALANCE",
+      status: "POSTED",
+      branchId: "branch-1",
+      legalEntityCode: "ASAD",
+      entryDate: new Date("2026-01-01T00:00:00.000Z"),
+      postedJournalEntryId: "journal-1",
+      postedVoucherId: "voucher-1",
+      lines: [
+        {
+          id: "line-a",
+          lineNo: 1,
+          debit: new Prisma.Decimal(50),
+          credit: new Prisma.Decimal(0),
+          glAccount: { code: "4561", name: "Account A" },
+        },
+        {
+          id: "line-b",
+          lineNo: 2,
+          debit: new Prisma.Decimal(50),
+          credit: new Prisma.Decimal(0),
+          glAccount: { code: "4561", name: "Account A" },
+        },
+        {
+          id: "line-c",
+          lineNo: 3,
+          debit: new Prisma.Decimal(0),
+          credit: new Prisma.Decimal(100),
+          glAccount: { code: "301", name: "Retained earnings" },
+        },
+      ],
+    })
+
+    prisma.journalEntry.findUnique.mockResolvedValue({
+      id: "journal-1",
+      lines: [
+        { lineNo: 1, debit: new Prisma.Decimal(50), credit: new Prisma.Decimal(0) },
+        { lineNo: 2, debit: new Prisma.Decimal(50), credit: new Prisma.Decimal(0) },
+        { lineNo: 3, debit: new Prisma.Decimal(0), credit: new Prisma.Decimal(100) },
+      ],
+      voucher: { refNo: "OPB-260002" },
+    })
+
+    const result = await getManualJournalEntryPostingVerification(
+      prisma as never,
+      "opb-2"
+    )
+
+    expect(result.accountChecks.map((row) => row.lineId)).toEqual([
+      "line-a",
+      "line-b",
+      "line-c",
+    ])
+    expect(result.accountChecks.map((row) => row.accountCode)).toEqual([
+      "4561",
+      "4561",
+      "301",
+    ])
   })
 
   it("rejects non-OPENING_BALANCE entries", async () => {

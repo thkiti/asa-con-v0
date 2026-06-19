@@ -231,8 +231,12 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         )}
       />
     )
-    expect(html).toContain('data-testid="finance-document-audit-line"')
+    expect(html).toContain('data-testid="finance-document-header"')
+    expect(html).toContain('data-testid="finance-document-identity-row2"')
     expect(html).toContain("Entry Date: 14.06.2026")
+    expect(html).toContain("Period: 2026-06")
+    expect(html).toContain("Status: POSTED")
+    expect(html).toContain('data-testid="finance-document-workflow-audit"')
     expect(html).toContain("Posted: 14.06.2026")
     expect(html).not.toContain('data-testid="read-only-notice"')
     expect(html).not.toContain('data-testid="field-branch-id"')
@@ -302,8 +306,10 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         )}
       />
     )
-    expect(html).toContain('data-testid="finance-document-audit-line"')
+    expect(html).toContain('data-testid="finance-document-header"')
+    expect(html).toContain('data-testid="finance-document-workflow-audit"')
     expect(html).toContain("Cancelled: 14.06.2026")
+    expect(html).toContain("Status: CANCELLED")
     expect(html).not.toContain('data-testid="read-only-notice"')
     expect(html).not.toContain('data-testid="field-branch-id"')
     expect(html).not.toContain("data-testid=\"action-cancel\"")

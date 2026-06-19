@@ -33,7 +33,7 @@ import {
   buildManualJournalEntryPdfUrl,
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
-import { OpeningBalanceConfirmedDocumentHeader } from "@/components/finance/OpeningBalanceConfirmedDocumentHeader"
+import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { ACCOUNT_DISPLAY_SEPARATOR } from "@/lib/finance-ui/format-account"
@@ -460,11 +460,18 @@ export function ManualJournalEntryEditorPage({
 
       {documentViewLayout ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <OpeningBalanceConfirmedDocumentHeader
+          <FinanceDocumentCanonicalHeader
+            legalEntityCode={legalEntityCode}
+            entryType={entry.entryType}
             documentNo={documentNo}
             entryDate={entryDate}
+            status={entry.status}
             description={description}
-            entry={entry}
+            createdAt={entry.createdAt}
+            submittedAt={entry.submittedAt}
+            confirmedAt={entry.confirmedAt}
+            postedAt={entry.postedAt}
+            cancelledAt={entry.cancelledAt}
           />
           {entry.postedJournalEntryId ? (
             <Link
@@ -958,8 +965,20 @@ export function ManualJournalEntryEditorPage({
       {openingBalanceMode && isPosted && entry ? (
         <OpeningBalancePostingVerificationPanel
           entryId={entry.id}
-          entryNo={entry.entryNo}
           postedJournalEntryId={entry.postedJournalEntryId}
+          headerContext={{
+            legalEntityCode,
+            entryType: entry.entryType,
+            documentNo,
+            entryDate,
+            status: entry.status,
+            description,
+            createdAt: entry.createdAt,
+            submittedAt: entry.submittedAt,
+            confirmedAt: entry.confirmedAt,
+            postedAt: entry.postedAt,
+            cancelledAt: entry.cancelledAt,
+          }}
         />
       ) : null}
     </div>

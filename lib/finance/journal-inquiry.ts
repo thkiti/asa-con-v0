@@ -1,5 +1,10 @@
 import type { PrismaClient } from "@/generated/prisma/client"
 import { toMoney } from "./decimal"
+import {
+  resolveFinanceDocumentHeaderContext,
+  type FinanceDocumentInquiryLink,
+} from "./finance-document-inquiry-header"
+import type { FinanceDocumentHeaderContext } from "@/lib/finance-ui/finance-document-display"
 import { loadJournalEntryWithLines } from "./journal-lineage"
 
 export type JournalInquiryLine = {
@@ -35,16 +40,29 @@ export type JournalInquiryResult = {
     id: string
     voucherNo: string
   } | null
+  documentHeader: FinanceDocumentHeaderContext | null
   lines: JournalInquiryLine[]
 }
 
-export type JournalInquiryPrisma = Pick<PrismaClient, "journalEntry">
+export type JournalInquiryPrisma = Pick<PrismaClient, "journalEntry" | "manualJournalEntry">
 
 export async function getJournalInquiryById(
   prisma: JournalInquiryPrisma,
   journalEntryId: string
 ): Promise<JournalInquiryResult> {
   const entry = await loadJournalEntryWithLines(prisma, journalEntryId)
+
+  const inquiryLink: FinanceDocumentInquiryLink = {
+    legalEntityCode: entry.legalEntityCode,
+    refType: entry.voucher.refType,
+    refId: entry.voucher.refId,
+    refNo: entry.voucher.refNo,
+    entryDate: entry.date.toISOString(),
+    description: entry.voucher.description,
+    postedAt: entry.postedAt.toISOString(),
+  }
+
+  const documentHeader = await resolveFinanceDocumentHeaderContext(prisma, inquiryLink)
 
   return {
     id: entry.id,
@@ -70,6 +88,7 @@ export async function getJournalInquiryById(
           voucherNo: entry.reversedBy.voucher.voucherNo,
         }
       : null,
+    documentHeader,
     lines: entry.lines.map((line) => ({
       id: line.id,
       lineNo: line.lineNo,

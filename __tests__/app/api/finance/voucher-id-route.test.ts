@@ -19,6 +19,7 @@ const mockGetVoucherDetailById = getVoucherDetailById as jest.MockedFunction<
 const voucherDetail = {
   id: "voucher-1",
   voucherNo: "V-2026-0001",
+  legalEntityCode: "AS",
   date: "2026-05-01T00:00:00.000Z",
   status: "POSTED",
   branchId: "branch-1",
@@ -27,6 +28,7 @@ const voucherDetail = {
   refNo: null,
   description: "POS checkout",
   postedAt: "2026-05-01T12:00:00.000Z",
+  documentHeader: null,
   lines: [],
   journal: null,
 }

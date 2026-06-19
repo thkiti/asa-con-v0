@@ -1,4 +1,5 @@
 export type ManualJournalPostingVerificationAccountCheck = {
+  lineId: string
   accountCode: string
   accountName: string
   entryDebit: string

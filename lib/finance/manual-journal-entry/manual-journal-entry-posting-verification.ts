@@ -120,6 +120,7 @@ export async function getManualJournalEntryPostingVerification(
     )
 
     return {
+      lineId: line.id,
       accountCode: line.glAccount.code,
       accountName: line.glAccount.name,
       entryDebit: toMoney(line.debit).toString(),

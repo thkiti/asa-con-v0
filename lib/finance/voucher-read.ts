@@ -1,5 +1,9 @@
 ﻿import type { PrismaClient } from "@/generated/prisma/client"
 import { toMoney } from "./decimal"
+import {
+  resolveFinanceDocumentHeaderContext,
+  type FinanceDocumentInquiryLink,
+} from "./finance-document-inquiry-header"
 import { VoucherReadError } from "./voucher-read-errors"
 import type {
   VoucherDetail,
@@ -14,7 +18,7 @@ export type {
   VoucherLineDetail,
 } from "./voucher-read-types"
 
-export type VoucherReadPrisma = Pick<PrismaClient, "voucher">
+export type VoucherReadPrisma = Pick<PrismaClient, "voucher" | "manualJournalEntry">
 
 function mapLine(line: {
   id: string
@@ -44,6 +48,7 @@ export async function getVoucherDetailById(
     select: {
       id: true,
       voucherNo: true,
+      legalEntityCode: true,
       date: true,
       status: true,
       branchId: true,
@@ -95,9 +100,22 @@ export async function getVoucherDetailById(
       }
     : null
 
+  const inquiryLink: FinanceDocumentInquiryLink = {
+    legalEntityCode: voucher.legalEntityCode,
+    refType: voucher.refType,
+    refId: voucher.refId,
+    refNo: voucher.refNo,
+    entryDate: voucher.date.toISOString(),
+    description: voucher.description,
+    postedAt: voucher.postedAt?.toISOString() ?? journal?.postedAt ?? voucher.date.toISOString(),
+  }
+
+  const documentHeader = await resolveFinanceDocumentHeaderContext(prisma, inquiryLink)
+
   return {
     id: voucher.id,
     voucherNo: voucher.voucherNo,
+    legalEntityCode: voucher.legalEntityCode,
     date: voucher.date.toISOString(),
     status: voucher.status,
     branchId: voucher.branchId,
@@ -106,6 +124,7 @@ export async function getVoucherDetailById(
     refNo: voucher.refNo,
     description: voucher.description,
     postedAt: voucher.postedAt?.toISOString() ?? null,
+    documentHeader,
     lines: voucher.lines.map(mapLine),
     journal,
   }

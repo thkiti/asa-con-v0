@@ -69,6 +69,7 @@ export async function loadJournalEntryWithLines(
       periodId: true,
       postedAt: true,
       reversalOfJournalEntryId: true,
+      legalEntityCode: true,
       voucher: {
         select: {
           id: true,
