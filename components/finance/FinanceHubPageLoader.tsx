@@ -5,12 +5,12 @@ import { toSessionUserApi } from "@/lib/auth/session-user-api"
 import { branchStaffLandingPath } from "@/lib/main-ui/landing-paths"
 import {
   getFinanceMenuHub,
-  type FinanceMenuHubKey,
+  type FinanceMenuAnyHubKey,
 } from "@/lib/main-ui/finance-menu"
 import { isHoMainMenuRole } from "@/lib/main-ui/main-menu"
 
 type FinanceHubPageLoaderProps = {
-  hubKey: FinanceMenuHubKey
+  hubKey: FinanceMenuAnyHubKey
 }
 
 export async function FinanceHubPageLoader({ hubKey }: FinanceHubPageLoaderProps) {
@@ -28,7 +28,9 @@ export async function FinanceHubPageLoader({ hubKey }: FinanceHubPageLoaderProps
     redirect("/unauthorized")
   }
 
-  if (!hub.items.length) {
+  const hasItems = hub.items.length > 0
+  const hasGroups = (hub.itemGroups?.length ?? 0) > 0
+  if (!hasItems && !hasGroups) {
     notFound()
   }
 

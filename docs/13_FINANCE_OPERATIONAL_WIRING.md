@@ -1,7 +1,8 @@
 # Finance Operational Wiring
 
-Status: Planned — architecture only (no wiring in operational modules in this document)  
+Status: **Done** — wiring implemented (Phase 7c). This document remains the architecture reference for hook boundaries.  
 Scope: Integration between POS checkout, stock document posting, and the finance posting kernel  
+Primary finance direction: [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) (Appendix C — current project position)  
 Related: [07_STOCK_DOCUMENT_POSTING.md](./07_STOCK_DOCUMENT_POSTING.md), [08_POS_CHECKOUT_ARCHITECTURE.md](./08_POS_CHECKOUT_ARCHITECTURE.md), [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [ARCHITECTURE_GUARDS.md](./ARCHITECTURE_GUARDS.md)
 
 ---

@@ -4,6 +4,8 @@ Status: **Design (pre-implementation)**
 Scope: Presentation identity for finance operational documents — UI, PDF, reports, traceability  
 Authority: This doc defines **display identity**. Numbering format remains in [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md). Posting linkage remains in [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md).
 
+Primary finance direction: [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md). Unresolved document-code and Level 3 vocabulary conflicts: [Appendix D — Vocabulary Decisions Pending](./FINANCE_TRANSACTION_UNIVERSE.md#appendix-d--vocabulary-decisions-pending) (no decision made yet).
+
 Related: [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md), [32_FINANCE_CORE_16B_MANUAL_JOURNAL.md](./32_FINANCE_CORE_16B_MANUAL_JOURNAL.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md)
 
 ---

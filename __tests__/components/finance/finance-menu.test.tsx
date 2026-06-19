@@ -31,18 +31,20 @@ const hoFinance: SessionUserApi = {
 }
 
 describe("FinanceMenuView", () => {
-  it("renders four finance hub cards with fixed main-menu grid", () => {
+  it("renders four F0 finance hub cards", () => {
     const html = renderToStaticMarkup(<FinanceMenuView user={hoFinance} />)
     expect(html).toContain('data-testid="main-menu-page"')
     expect(html).toContain(mainMenuGridClass)
-    expect(html).toContain('href="/finance/daily-work"')
-    expect(html).toContain('href="/finance/reports"')
+    expect(html).toContain('href="/finance/dashboard"')
+    expect(html).toContain('href="/finance/transactions"')
+    expect(html).toContain('href="/finance/ledger"')
     expect(html).toContain('href="/finance/audit"')
-    expect(html).toContain('href="/finance/system"')
-    expect(html).toContain("Daily Work")
-    expect(html).toContain("Reports")
+    expect(html).toContain("Dashboard")
+    expect(html).toContain("Transactions")
+    expect(html).toContain("Ledger")
     expect(html).toContain("Audit")
-    expect(html).toContain("System")
+    expect(html).not.toContain('href="/finance/daily-work"')
+    expect(html).not.toContain('href="/finance/system"')
     expect(html).toContain('href="/main"')
     expect(html).toContain("w-[482px]")
     expect(html).toContain("h-[108px]")
@@ -50,21 +52,26 @@ describe("FinanceMenuView", () => {
 })
 
 describe("FinanceMenuHubView", () => {
-  it("renders daily work links in main-menu layout", () => {
-    const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
+  it("renders transactions hub with MJV and PAY/REV coming soon groups", () => {
+    const hub = getFinanceMenuHub("HO_FINANCE", "transactions")
     expect(hub).not.toBeNull()
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
+    expect(html).toContain('data-testid="main-menu-grouped-grids"')
     expect(html).toContain('href="/finance"')
-    expect(html).toContain('href="/finance/opening-balance"')
-    expect(html).toContain("Journal Entry Workflow")
-    expect(html).toContain("Instant GL Journal")
+    expect(html).toContain('href="/finance/manual-journal-entries"')
+    expect(html).toContain("MJV")
+    expect(html).toContain("Payment Register")
+    expect(html).toContain("Settlement")
+    expect(html).toContain("Coming Soon")
+    expect(html).not.toContain("Instant GL Journal")
+    expect(html).not.toContain("Journal Entry Workflow")
     expect(html).toContain(mainMenuGridClass)
   })
 
-  it("renders reports hub links", () => {
-    const hub = getFinanceMenuHub("HO_FINANCE", "reports")
+  it("renders ledger hub with core reports only", () => {
+    const hub = getFinanceMenuHub("HO_FINANCE", "ledger")
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
@@ -72,20 +79,44 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain('href="/finance/reports/general-ledger"')
     expect(html).toContain('href="/finance/reports/profit-loss"')
     expect(html).toContain('href="/finance/reports/balance-sheet"')
+    expect(html).toContain("Done")
     expect(html).not.toContain('href="/finance/reports/cash-flow"')
+    expect(html).not.toContain("Retained Earnings")
   })
 
-  it("renders audit hub with reconciliation workspace label", () => {
+  it("renders audit hub with coming soon items", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "audit")
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
-    expect(html).toContain("Reconciliation Workspace")
-    expect(html).toContain('href="/finance/reconciliation"')
-    expect(html).toContain('href="/finance/reconciliation/snapshots"')
+    expect(html).toContain("Voucher Lookup")
+    expect(html).toContain("Document Trace")
+    expect(html).toContain("Attachments")
+    expect(html).toContain('aria-disabled="true"')
+    expect(html).not.toContain('href="/finance/reconciliation"')
   })
 
-  it("renders system hub links", () => {
+  it("renders dashboard quick links to MJV and reports", () => {
+    const hub = getFinanceMenuHub("HO_FINANCE", "dashboard")
+    const html = renderToStaticMarkup(
+      <FinanceMenuHubView user={hoFinance} hub={hub!} />
+    )
+    expect(html).toContain('href="/finance/manual-journal-entries"')
+    expect(html).toContain('href="/finance/reports/trial-balance"')
+  })
+
+  it("maps legacy daily-work hub to transactions", () => {
+    const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
+    expect(hub?.key).toBe("transactions")
+    expect(hub?.label).toBe("Transactions")
+  })
+
+  it("maps legacy reports hub to ledger", () => {
+    const hub = getFinanceMenuHub("HO_FINANCE", "reports")
+    expect(hub?.key).toBe("ledger")
+  })
+
+  it("renders legacy system hub links when requested directly", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "system")
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
@@ -97,11 +128,15 @@ describe("FinanceMenuHubView", () => {
 })
 
 describe("finance-menu config", () => {
-  it("exposes leaf items for diagnostics", () => {
+  it("exposes F0 leaf items for diagnostics", () => {
     const keys = getAllFinanceMenuItems("HO_ADMIN").map((item) => item.key)
-    expect(keys).toContain("opening-balance")
+    expect(keys).toContain("mjv")
     expect(keys).toContain("trial-balance")
-    expect(keys).toContain("accounting-periods")
+    expect(keys).toContain("pay-register")
+    expect(keys).toContain("rev-settlement")
+    expect(keys).toContain("voucher-lookup")
+    expect(keys).not.toContain("manual-journal")
+    expect(keys).not.toContain("opening-balance")
   })
 
   it("returns home sections for HO_FINANCE", () => {

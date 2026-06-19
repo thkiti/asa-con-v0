@@ -1,7 +1,8 @@
 # Finance Reconciliation and Close Policy
 
-Status: Planned — architecture only (no reconciliation modules, no close UI, no schema changes in this document)  
+Status: **Done** — policy implemented across Phases 7b, 15–22. This document remains the architecture reference for reconciliation and close rules.  
 Scope: Reconciliation, period-close governance, and operational-vs-GL consistency policy  
+Primary finance direction: [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) (Appendix C — current project position)  
 Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [10_REPORTING_AND_SUMMARY_KERNEL.md](./10_REPORTING_AND_SUMMARY_KERNEL.md), [05_AUTH_PERMISSIONS.md](./05_AUTH_PERMISSIONS.md), [08_POS_CHECKOUT_ARCHITECTURE.md](./08_POS_CHECKOUT_ARCHITECTURE.md), [ARCHITECTURE_GUARDS.md](./ARCHITECTURE_GUARDS.md)
 
 ---

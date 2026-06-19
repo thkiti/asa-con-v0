@@ -22,7 +22,15 @@ function MainMenuCardDescription({ hint }: { hint?: string }) {
   )
 }
 
+function cardBadgeLabel(item: MainMenuCardItem): string | undefined {
+  if (item.badge?.trim()) return item.badge.trim()
+  if (item.status === "planned") return "Planned"
+  return undefined
+}
+
 export function MainMenuCard({ item }: MainMenuCardProps) {
+  const badge = cardBadgeLabel(item)
+
   if (item.status === "available" && item.href) {
     return (
       <Link
@@ -31,7 +39,10 @@ export function MainMenuCard({ item }: MainMenuCardProps) {
         data-testid="main-menu-card"
       >
         <div className={mainMenuCardTitleSlotClass}>
-          <span className={mainMenuCardTitleClass}>{item.label}</span>
+          <span className={`${mainMenuCardTitleClass} min-w-0 flex-1`}>
+            {item.label}
+          </span>
+          {badge ? <span className={mainMenuCardBadgeClass}>{badge}</span> : null}
         </div>
         <MainMenuCardDescription hint={item.hint} />
       </Link>
@@ -48,7 +59,7 @@ export function MainMenuCard({ item }: MainMenuCardProps) {
         <span className={`${mainMenuCardTitleClass} min-w-0 flex-1`}>
           {item.label}
         </span>
-        <span className={mainMenuCardBadgeClass}>Planned</span>
+        {badge ? <span className={mainMenuCardBadgeClass}>{badge}</span> : null}
       </div>
       <MainMenuCardDescription hint={item.hint} />
     </div>

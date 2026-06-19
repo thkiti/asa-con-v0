@@ -67,7 +67,7 @@ const SECTION_META: Record<
   finance: {
     label: "FINANCE",
     description:
-      "Reports, operations, reconciliation, and period management",
+      "MJV, ledger reports, and finance operations — see /finance for the F0 menu",
   },
   operations: {
     label: "OPERATIONS",

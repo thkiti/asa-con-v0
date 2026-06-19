@@ -62,28 +62,29 @@ describe("getMainMenuSections", () => {
 })
 
 describe("getMainMenuSectionDetail", () => {
-  it("includes Finance hub links for HO_ADMIN finance flat items", () => {
+  it("includes Finance F0 menu leaf links for HO_ADMIN finance flat items", () => {
+    expect(findItem("HO_ADMIN", "mjv")?.href).toBe(
+      "/finance/manual-journal-entries"
+    )
     expect(findItem("HO_ADMIN", "trial-balance")?.href).toBe(
       "/finance/reports/trial-balance"
     )
-    expect(findItem("HO_ADMIN", "retained-earnings")?.href).toBe(
-      "/finance/reports/retained-earnings"
+    expect(findItem("HO_ADMIN", "general-ledger")?.href).toBe(
+      "/finance/reports/general-ledger"
     )
-    expect(findItem("HO_ADMIN", "changes-in-equity")?.href).toBe(
-      "/finance/reports/changes-in-equity"
+    expect(findItem("HO_ADMIN", "profit-loss")?.href).toBe(
+      "/finance/reports/profit-loss"
     )
-    expect(findItem("HO_ADMIN", "chart-of-accounts-import")?.href).toBe(
-      "/finance/accounts/import"
+    expect(findItem("HO_ADMIN", "balance-sheet")?.href).toBe(
+      "/finance/reports/balance-sheet"
     )
-    expect(findItem("HO_ADMIN", "reconciliation-dashboard")?.href).toBe(
-      "/finance/reconciliation"
-    )
-    expect(findItem("HO_ADMIN", "accounting-periods")?.href).toBe(
-      "/finance/periods"
-    )
-    expect(findItem("HO_ADMIN", "opening-balance")?.href).toBe(
-      "/finance/opening-balance"
-    )
+    expect(findItem("HO_ADMIN", "pay-register")?.status).toBe("planned")
+    expect(findItem("HO_ADMIN", "voucher-lookup")?.status).toBe("planned")
+    expect(findItem("HO_ADMIN", "retained-earnings")).toBeUndefined()
+    expect(findItem("HO_ADMIN", "chart-of-accounts-import")).toBeUndefined()
+    expect(findItem("HO_ADMIN", "reconciliation-dashboard")).toBeUndefined()
+    expect(findItem("HO_ADMIN", "accounting-periods")).toBeUndefined()
+    expect(findItem("HO_ADMIN", "opening-balance")).toBeUndefined()
   })
 
   it("includes administration master links for HO_ADMIN", () => {

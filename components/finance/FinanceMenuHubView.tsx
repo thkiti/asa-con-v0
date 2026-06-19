@@ -3,7 +3,7 @@
 import { MainMenuHubPage } from "@/components/main/MainMenuHubPage"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
 import type { FinanceMenuHub } from "@/lib/main-ui/finance-menu"
-import { toMainMenuCardItems } from "@/lib/main-ui/main-menu-card-types"
+import { toFinanceMenuCardItems } from "@/lib/main-ui/main-menu-card-types"
 
 type FinanceMenuHubViewProps = {
   user: SessionUserApi
@@ -11,6 +11,12 @@ type FinanceMenuHubViewProps = {
 }
 
 export function FinanceMenuHubView({ user, hub }: FinanceMenuHubViewProps) {
+  const itemGroups = hub.itemGroups?.map((group) => ({
+    key: group.key,
+    label: group.label,
+    items: toFinanceMenuCardItems(group.items),
+  }))
+
   return (
     <MainMenuHubPage
       user={user}
@@ -19,7 +25,8 @@ export function FinanceMenuHubView({ user, hub }: FinanceMenuHubViewProps) {
       backHref="/finance"
       backLabel="← Finance"
       gridAriaLabel={hub.label}
-      items={toMainMenuCardItems(hub.items)}
+      itemGroups={itemGroups}
+      items={itemGroups ? undefined : toFinanceMenuCardItems(hub.items)}
     />
   )
 }

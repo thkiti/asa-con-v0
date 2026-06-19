@@ -77,9 +77,9 @@ When revenue/expense activity exists without a closing entry to equity, the shee
 |-------|-------|
 | 16A | CoA import |
 | 16B | Manual journal |
-| 16C | Trial balance |
+| 16C | Trial balance (implemented — no standalone doc file; see [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) Appendix C) |
 | 16J | General ledger (done — see [37_FINANCE_CORE_16J_GENERAL_LEDGER.md](./37_FINANCE_CORE_16J_GENERAL_LEDGER.md)) |
-| 16E | Profit & loss |
+| 16E | Profit & loss (implemented — no standalone doc file; see [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) Appendix C) |
 | **16F** | **Balance sheet** |
 | 16G | Retained earnings (done — see 34_FINANCE_CORE_16G_RETAINED_EARNINGS.md) |
 | 16H | Closing entry (done — see 35_FINANCE_CORE_16H_CLOSING_ENTRY.md) |

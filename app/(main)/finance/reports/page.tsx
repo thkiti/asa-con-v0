@@ -1,5 +1,6 @@
-import { FinanceHubPageLoader } from "@/components/finance/FinanceHubPageLoader"
+import { redirect } from "next/navigation"
 
-export default function FinanceReportsHubPage() {
-  return <FinanceHubPageLoader hubKey="reports" />
+/** Legacy hub URL — F0 menu uses /finance/ledger. */
+export default function FinanceReportsLegacyPage() {
+  redirect("/finance/ledger")
 }

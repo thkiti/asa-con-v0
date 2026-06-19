@@ -184,6 +184,8 @@ Reports must not query `ManualJournalEntry` directly.
 
 ## Future codes
 
+Primary finance direction (business document families, Finance Core status): [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md). Pending code decisions (PAY/PV, REV/RV, ACC/ACJ, etc.): [Appendix D — Vocabulary Decisions Pending](./FINANCE_TRANSACTION_UNIVERSE.md#appendix-d--vocabulary-decisions-pending).
+
 All new finance operational document codes must:
 
 1. Use **exactly three uppercase letters**

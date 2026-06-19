@@ -1,7 +1,8 @@
 # Finance Posting Architecture (Phase 7)
 
-Status: Planned — architecture only (no schema, no finance modules, no UI in this document)  
+Status: **Done** — implemented. This document remains the architecture reference for posting invariants and boundaries (not a feature checklist).  
 Scope: General ledger foundation, voucher/journal posting, and operational → accounting integration boundaries  
+Primary finance direction: [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) (Appendix C — current project position)  
 Related: [01_MODULAR_MONOLITH_BOUNDARIES.md](./01_MODULAR_MONOLITH_BOUNDARIES.md), [06_STOCK_LEDGER_FOUNDATION.md](./06_STOCK_LEDGER_FOUNDATION.md), [07_STOCK_DOCUMENT_POSTING.md](./07_STOCK_DOCUMENT_POSTING.md), [08_POS_CHECKOUT_ARCHITECTURE.md](./08_POS_CHECKOUT_ARCHITECTURE.md), [09_REFERENCE_DATA_AND_PRODUCT_TYPES.md](./09_REFERENCE_DATA_AND_PRODUCT_TYPES.md), [10_REPORTING_AND_SUMMARY_KERNEL.md](./10_REPORTING_AND_SUMMARY_KERNEL.md), [ARCHITECTURE_GUARDS.md](./ARCHITECTURE_GUARDS.md)
 
 ---
