@@ -10,6 +10,7 @@ import {
   formatVoucherLinkLabel,
   formatVoucherRefSummary,
 } from "@/lib/finance-ui/trace-links"
+import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
 import type {
   ReconciliationIssueJournalRef,
   ReconciliationIssueRow,
@@ -72,9 +73,11 @@ export function VoucherTraceLink({
 }: {
   voucher: ReconciliationIssueVoucherRef
 }) {
+  const returnTo = useFinanceCurrentReturnPath()
+
   return (
     <Link
-      href={buildVoucherDetailPath(voucher.id)}
+      href={buildVoucherDetailPath(voucher.id, returnTo)}
       className="inline-flex flex-wrap items-center gap-2 rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs text-zinc-800 hover:bg-zinc-100"
     >
       <span className="font-medium">Voucher {formatVoucherLinkLabel(voucher)}</span>
@@ -92,9 +95,11 @@ export function JournalTraceRef({
   journal: ReconciliationIssueJournalRef
   voucherNo?: string
 }) {
+  const returnTo = useFinanceCurrentReturnPath()
+
   return (
     <Link
-      href={buildVoucherDetailPath(journal.voucherId)}
+      href={buildVoucherDetailPath(journal.voucherId, returnTo)}
       className="inline-flex flex-wrap items-center gap-2 rounded border border-zinc-200 bg-white px-2 py-1 font-mono text-xs text-zinc-800 hover:bg-zinc-50"
     >
       <span>{formatJournalLinkLabel(journal, voucherNo)}</span>

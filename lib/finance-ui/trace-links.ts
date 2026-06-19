@@ -1,12 +1,16 @@
-﻿import type {
+﻿import { buildFinanceVoucherDetailPath } from "./finance-navigation"
+import type {
   ReconciliationIssueJournalRef,
   ReconciliationIssueRow,
   ReconciliationIssueVoucherRef,
 } from "./types"
 import { formatFinanceRefType } from "./traceability"
 
-export function buildVoucherDetailPath(voucherId: string): string {
-  return `/finance/vouchers/${encodeURIComponent(voucherId)}`
+export function buildVoucherDetailPath(
+  voucherId: string,
+  returnTo?: string | null
+): string {
+  return buildFinanceVoucherDetailPath(voucherId, returnTo)
 }
 
 export function buildSnapshotDetailPath(snapshotId: string): string {

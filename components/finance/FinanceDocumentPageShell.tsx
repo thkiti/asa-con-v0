@@ -17,7 +17,11 @@ export function FinanceDocumentPageShell({
 }: FinanceDocumentPageShellProps) {
   return (
     <FinanceDocumentContainer>
-      <Link href={backHref} className={`text-sm ${themeLinkMuted}`}>
+      <Link
+        href={backHref}
+        className={`text-sm ${themeLinkMuted}`}
+        data-testid="finance-document-back-link"
+      >
         {backLabel}
       </Link>
       <div className="mt-4">{children}</div>

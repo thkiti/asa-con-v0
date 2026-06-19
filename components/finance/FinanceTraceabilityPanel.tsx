@@ -7,6 +7,7 @@ import {
   buildSnapshotDetailPath,
   buildVoucherDetailPath,
 } from "@/lib/finance-ui/trace-links"
+import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
 import {
   formatFinanceRefType,
   formatTraceLabel,
@@ -33,6 +34,7 @@ function TraceStepMeta({ label, value }: { label: string; value: string }) {
 }
 
 function TraceStepBody({ step }: { step: TraceStep }) {
+  const returnTo = useFinanceCurrentReturnPath()
   const label = formatTraceLabel(step)
 
   switch (step.kind) {
@@ -52,7 +54,7 @@ function TraceStepBody({ step }: { step: TraceStep }) {
       return (
         <div>
           <Link
-            href={buildVoucherDetailPath(step.id)}
+            href={buildVoucherDetailPath(step.id, returnTo)}
             className="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-600"
           >
             {label}
@@ -70,7 +72,7 @@ function TraceStepBody({ step }: { step: TraceStep }) {
         <div>
           {step.voucherId ? (
             <Link
-              href={buildVoucherDetailPath(step.voucherId)}
+              href={buildVoucherDetailPath(step.voucherId, returnTo)}
               className="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-600"
             >
               {label}

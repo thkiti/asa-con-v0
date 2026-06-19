@@ -8,6 +8,9 @@
 describe("trace-links", () => {
   it("builds voucher detail paths", () => {
     expect(buildVoucherDetailPath("voucher-1")).toBe("/finance/vouchers/voucher-1")
+    expect(buildVoucherDetailPath("voucher-1", "/finance/reconciliation")).toBe(
+      `/finance/vouchers/voucher-1?returnTo=${encodeURIComponent("/finance/reconciliation")}`
+    )
   })
 
   it("builds snapshot detail paths", () => {

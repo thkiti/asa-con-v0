@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { FinanceDocumentAccountingSection } from "@/components/finance/FinanceDocumentAccountingSection"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
 import { FinanceDocumentPageShell } from "@/components/finance/FinanceDocumentPageShell"
@@ -10,6 +10,10 @@ import {
   reverseJournal,
 } from "@/lib/finance-ui/journal-entries"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
+import {
+  buildFinanceJournalInquiryPath,
+  resolveFinanceDocumentBackLink,
+} from "@/lib/finance-ui/finance-navigation"
 import type { JournalInquiryResult } from "@/lib/finance-ui/types"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
@@ -26,6 +30,8 @@ type JournalEntryInquiryViewProps = {
   journalEntryId: string
   /** Optional preloaded journal (tests); skips client fetch when provided. */
   initialJournal?: JournalInquiryResult | null
+  /** returnTo query value (from page searchParams or tests). */
+  returnTo?: string | null
 }
 
 function JournalLinesTable({ lines }: { lines: JournalInquiryResult["lines"] }) {
@@ -63,14 +69,20 @@ function JournalLinesTable({ lines }: { lines: JournalInquiryResult["lines"] }) 
   )
 }
 
-function JournalInquiryLineage({ journal }: { journal: JournalInquiryResult }) {
+function JournalInquiryLineage({
+  journal,
+  returnTo,
+}: {
+  journal: JournalInquiryResult
+  returnTo?: string | null
+}) {
   return (
     <div className="space-y-2 text-sm">
       {journal.reverses ? (
         <p>
           Reverses{" "}
           <Link
-            href={`/finance/journal-entries/${journal.reverses.id}`}
+            href={buildFinanceJournalInquiryPath(journal.reverses.id, returnTo)}
             className={`font-mono ${themeLinkMuted}`}
           >
             {journal.reverses.voucherNo}
@@ -81,7 +93,7 @@ function JournalInquiryLineage({ journal }: { journal: JournalInquiryResult }) {
         <p>
           ↓ Reversed by{" "}
           <Link
-            href={`/finance/journal-entries/${journal.reversedBy.id}`}
+            href={buildFinanceJournalInquiryPath(journal.reversedBy.id, returnTo)}
             className={`font-mono ${themeLinkMuted}`}
           >
             {journal.reversedBy.voucherNo}
@@ -97,6 +109,7 @@ function JournalInquiryLineage({ journal }: { journal: JournalInquiryResult }) {
 export function JournalEntryInquiryView({
   journalEntryId,
   initialJournal = null,
+  returnTo = null,
 }: JournalEntryInquiryViewProps) {
   const [journal, setJournal] = useState<JournalInquiryResult | null>(initialJournal)
   const [loading, setLoading] = useState(initialJournal == null)
@@ -127,6 +140,20 @@ export function JournalEntryInquiryView({
     void load()
   }, [load, initialJournal])
 
+  const backLink = useMemo(() => {
+    if (!journal) return null
+    const header = journal.documentHeader
+    return resolveFinanceDocumentBackLink({
+      returnTo,
+      refType: journal.refType,
+      refId: journal.refId,
+      documentNo: header?.documentNo,
+      entryType: header?.entryType ?? null,
+      moduleDefaultHref: "/finance/journal-entries",
+      moduleDefaultLabel: "← Manual journals",
+    })
+  }, [journal, returnTo])
+
   async function handleReverse() {
     if (!reversalReason.trim()) {
       setReverseError("Reversal reason is required.")
@@ -140,7 +167,9 @@ export function JournalEntryInquiryView({
         reason: reversalReason.trim(),
       })
       setShowReverseDialog(false)
-      window.location.assign(`/finance/journal-entries/${result.journalEntryId}`)
+      window.location.assign(
+        buildFinanceJournalInquiryPath(result.journalEntryId, returnTo)
+      )
     } catch (err) {
       setReverseError(err instanceof Error ? err.message : "Reversal failed")
     } finally {
@@ -150,7 +179,7 @@ export function JournalEntryInquiryView({
 
   if (loading) return <p className="text-sm text-zinc-500">Loading…</p>
   if (error) return <p className="text-sm text-red-700">{error}</p>
-  if (!journal) return null
+  if (!journal || !backLink) return null
 
   const canReverse = !journal.isReversal && !journal.isReversed
   const isOperationalDocument = journal.documentHeader != null
@@ -214,8 +243,8 @@ export function JournalEntryInquiryView({
     return (
       <>
         <FinanceDocumentPageShell
-          backHref="/finance/journal-entries"
-          backLabel="← Manual journals"
+          backHref={backLink.href}
+          backLabel={backLink.label}
         >
           <div className="space-y-4" data-testid="journal-entry-inquiry">
             <FinanceDocumentCanonicalHeader {...journal.documentHeader!} />
@@ -231,7 +260,7 @@ export function JournalEntryInquiryView({
             >
               <h3 className="text-sm font-medium text-zinc-800">Lineage</h3>
               <div className="mt-2">
-                <JournalInquiryLineage journal={journal} />
+                <JournalInquiryLineage journal={journal} returnTo={returnTo} />
               </div>
             </section>
             {canReverse ? (
@@ -254,8 +283,8 @@ export function JournalEntryInquiryView({
 
   return (
     <>
-      <Link href="/finance/journal-entries" className={`text-sm ${themeLinkMuted}`}>
-        ← Manual journals
+      <Link href={backLink.href} className={`text-sm ${themeLinkMuted}`}>
+        {backLink.label}
       </Link>
       <h1 className="mt-4 text-xl font-semibold" data-testid="journal-inquiry-dashboard-title">
         Journal inquiry
@@ -290,7 +319,7 @@ export function JournalEntryInquiryView({
         <section className="rounded border border-zinc-200 p-4">
           <h2 className="font-medium text-zinc-900">Lineage</h2>
           <div className="mt-3">
-            <JournalInquiryLineage journal={journal} />
+            <JournalInquiryLineage journal={journal} returnTo={returnTo} />
           </div>
         </section>
 

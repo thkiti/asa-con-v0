@@ -11,6 +11,10 @@ jest.mock("@/lib/finance-ui/fetchers", () => ({
   fetchVoucherById: jest.fn(),
 }))
 
+jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
+  useFinanceCurrentReturnPath: () => "/finance/vouchers/voucher-1",
+}))
+
 import { fetchJournalInquiry } from "@/lib/finance-ui/journal-entries"
 import { fetchVoucherById } from "@/lib/finance-ui/fetchers"
 
@@ -73,9 +77,13 @@ describe("JournalEntryInquiryView", () => {
       <JournalEntryInquiryView
         journalEntryId="journal-1"
         initialJournal={opbJournalFixture}
+        returnTo="/finance/opening-balance/entry-1"
       />
     )
     expect(html).toContain('data-testid="finance-document-container"')
+    expect(html).toContain('data-testid="finance-document-back-link"')
+    expect(html).toContain('href="/finance/opening-balance/entry-1"')
+    expect(html).toContain("← OPB-260001")
     expect(html).toContain('data-testid="journal-entry-inquiry"')
     expect(html).toContain('data-testid="finance-document-header"')
     expect(html).toContain("ASAD • OPENING BALANCE")
@@ -91,6 +99,17 @@ describe("JournalEntryInquiryView", () => {
     expect(html).not.toContain('data-testid="journal-inquiry-dashboard-title"')
     expect(html).not.toContain("<h2>Journal lines</h2>")
     expect(html).not.toMatch(/journal-inquiry-lineage[^>]*rounded border border-zinc-200 p-4/)
+  })
+
+  it("falls back to operational parent when returnTo is absent", () => {
+    const html = renderToStaticMarkup(
+      <JournalEntryInquiryView
+        journalEntryId="journal-1"
+        initialJournal={opbJournalFixture}
+      />
+    )
+    expect(html).toContain('href="/finance/opening-balance/entry-1"')
+    expect(html).toContain("← OPB-260001")
   })
 
   it("keeps dashboard inquiry layout when documentHeader is missing", () => {

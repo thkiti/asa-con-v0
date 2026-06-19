@@ -12,6 +12,12 @@ jest.mock("@/components/main/EntityContextPageHeading", () => ({
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  usePathname: () => "/finance/opening-balance/opb-1",
+  useSearchParams: () => new URLSearchParams(),
+}))
+
+jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
+  useFinanceCurrentReturnPath: () => "/finance/opening-balance/opb-1",
 }))
 
 jest.mock("@/lib/finance-ui/opening-balance", () => ({

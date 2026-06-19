@@ -1,13 +1,18 @@
 ﻿"use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { FinanceDocumentAccountingSection } from "@/components/finance/FinanceDocumentAccountingSection"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
 import { FinanceDocumentPageShell } from "@/components/finance/FinanceDocumentPageShell"
 import { fetchVoucherById } from "@/lib/finance-ui/fetchers"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
+import {
+  buildFinanceJournalInquiryPath,
+  resolveFinanceDocumentBackLink,
+} from "@/lib/finance-ui/finance-navigation"
 import { formatFinanceRefType } from "@/lib/finance-ui/traceability"
+import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
 import type { VoucherDetail } from "@/lib/finance-ui/types"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
@@ -25,6 +30,8 @@ type VoucherDetailViewProps = {
   voucherId: string
   /** Optional preloaded voucher (tests); skips client fetch when provided. */
   initialVoucher?: VoucherDetail | null
+  /** returnTo query value (from page searchParams or tests). */
+  returnTo?: string | null
 }
 
 function VoucherLinesTable({
@@ -111,10 +118,12 @@ function VoucherTraceMetadata({ voucher }: { voucher: VoucherDetail }) {
 export function VoucherDetailView({
   voucherId,
   initialVoucher = null,
+  returnTo = null,
 }: VoucherDetailViewProps) {
   const [voucher, setVoucher] = useState<VoucherDetail | null>(initialVoucher)
   const [loading, setLoading] = useState(initialVoucher == null)
   const [error, setError] = useState<string | null>(null)
+  const currentReturnPath = useFinanceCurrentReturnPath()
 
   useEffect(() => {
     if (initialVoucher != null) return
@@ -146,6 +155,20 @@ export function VoucherDetailView({
     }
   }, [voucherId, initialVoucher])
 
+  const backLink = useMemo(() => {
+    if (!voucher) return null
+    const header = voucher.documentHeader
+    return resolveFinanceDocumentBackLink({
+      returnTo,
+      refType: voucher.refType,
+      refId: voucher.refId,
+      documentNo: header?.documentNo,
+      entryType: header?.entryType ?? null,
+      moduleDefaultHref: "/finance/reconciliation",
+      moduleDefaultLabel: "← Reconciliation",
+    })
+  }, [voucher, returnTo])
+
   if (loading) {
     return <p className="text-sm text-zinc-600">Loading voucher…</p>
   }
@@ -158,18 +181,16 @@ export function VoucherDetailView({
     )
   }
 
-  if (!voucher) {
+  if (!voucher || !backLink) {
     return <p className="text-sm text-zinc-600">Voucher not found.</p>
   }
 
   const isOperationalDocument = voucher.documentHeader != null
+  const journalReturnTo = initialVoucher != null ? returnTo : currentReturnPath
 
   if (isOperationalDocument) {
     return (
-      <FinanceDocumentPageShell
-        backHref="/finance/reconciliation"
-        backLabel="← Reconciliation"
-      >
+      <FinanceDocumentPageShell backHref={backLink.href} backLabel={backLink.label}>
         <div className="space-y-4 text-sm" data-testid="voucher-detail-view">
           <FinanceDocumentCanonicalHeader {...voucher.documentHeader!} />
           <FinanceDocumentAccountingSection
@@ -180,7 +201,7 @@ export function VoucherDetailView({
           {voucher.journal ? (
             <p>
               <Link
-                href={`/finance/journal-entries/${voucher.journal.id}`}
+                href={buildFinanceJournalInquiryPath(voucher.journal.id, journalReturnTo)}
                 className={themeLinkMuted}
                 data-testid="voucher-journal-link"
               >
@@ -217,8 +238,8 @@ export function VoucherDetailView({
 
   return (
     <>
-      <Link href="/finance/reconciliation" className={`text-sm ${themeLinkMuted}`}>
-        ← Reconciliation
+      <Link href={backLink.href} className={`text-sm ${themeLinkMuted}`}>
+        {backLink.label}
       </Link>
       <h1 className="mt-4 text-xl font-semibold" data-testid="voucher-trace-dashboard-title">
         Voucher trace
@@ -250,7 +271,7 @@ export function VoucherDetailView({
         {voucher.journal ? (
           <p>
             <Link
-              href={`/finance/journal-entries/${voucher.journal.id}`}
+              href={buildFinanceJournalInquiryPath(voucher.journal.id, journalReturnTo)}
               className={themeLinkMuted}
               data-testid="voucher-journal-link"
             >

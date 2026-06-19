@@ -6,6 +6,10 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
 }))
 
+jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
+  useFinanceCurrentReturnPath: () => "/finance/manual-journal-entries/entry-1",
+}))
+
 jest.mock("@/lib/finance-ui/manual-journal-entries", () => ({
   fetchManualJournalEntries: jest.fn().mockResolvedValue({
     entries: [
@@ -245,6 +249,9 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).not.toContain("data-testid=\"action-post\"")
     expect(html).not.toContain("data-testid=\"action-save\"")
     expect(html).toContain("posted-journal-link")
+    expect(html).toContain(
+      `/finance/journal-entries/journal-1?returnTo=${encodeURIComponent("/finance/manual-journal-entries/entry-1")}`
+    )
     expect(html).toContain("data-testid=\"pdf-pending-message\"")
     expect(html).toContain("data-testid=\"action-retry-pdf\"")
   })

@@ -7,6 +7,7 @@ import {
   fetchGeneralLedger,
   type GeneralLedgerFilter,
 } from "@/lib/finance-ui/general-ledger"
+import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
 import {
@@ -287,7 +288,10 @@ export function GeneralLedgerPage() {
                           </td>
                           <td className={financeMemo}>
                             <Link
-                              href={`/finance/journal-entries/${tx.journalEntryId}`}
+                              href={buildFinanceJournalInquiryPath(
+                                tx.journalEntryId,
+                                "/finance/reports/general-ledger"
+                              )}
                               className={`${themeLinkMuted} print:no-underline`}
                             >
                               {tx.description ?? tx.lineMemo ?? "Journal entry"}

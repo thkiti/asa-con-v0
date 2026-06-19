@@ -35,6 +35,10 @@ import {
 } from "@/lib/finance-ui/manual-journal-entries"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
+import {
+  buildFinanceJournalInquiryPath,
+} from "@/lib/finance-ui/finance-navigation"
+import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { ACCOUNT_DISPLAY_SEPARATOR } from "@/lib/finance-ui/format-account"
 import { formatEntityShort } from "@/lib/legal-entity"
@@ -155,6 +159,7 @@ export function ManualJournalEntryEditorPage({
   openingBalanceMode = false,
 }: ManualJournalEntryEditorPageProps) {
   const router = useRouter()
+  const currentReturnPath = useFinanceCurrentReturnPath()
   const resolvedEntryType: ManualJournalEntryTypeCode = openingBalanceMode
     ? "OPENING_BALANCE"
     : initialEntryType
@@ -439,6 +444,11 @@ export function ManualJournalEntryEditorPage({
     entry?.entryType ?? entryType
   )
 
+  const postedJournalHref =
+    entry?.postedJournalEntryId != null
+      ? buildFinanceJournalInquiryPath(entry.postedJournalEntryId, currentReturnPath)
+      : null
+
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading journal entry…</p>
   }
@@ -473,9 +483,9 @@ export function ManualJournalEntryEditorPage({
             postedAt={entry.postedAt}
             cancelledAt={entry.cancelledAt}
           />
-          {entry.postedJournalEntryId ? (
+          {postedJournalHref ? (
             <Link
-              href={`/finance/journal-entries/${entry.postedJournalEntryId}`}
+              href={postedJournalHref}
               className="text-sm text-zinc-600 underline"
               data-testid="posted-journal-link"
             >
@@ -509,9 +519,9 @@ export function ManualJournalEntryEditorPage({
                 </p>
               )}
             </div>
-            {entry?.postedJournalEntryId ? (
+            {postedJournalHref ? (
               <Link
-                href={`/finance/journal-entries/${entry.postedJournalEntryId}`}
+                href={postedJournalHref}
                 className="text-sm text-zinc-600 underline"
                 data-testid="posted-journal-link"
               >

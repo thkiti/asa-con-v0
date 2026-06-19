@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { postManualJournal } from "@/lib/finance-ui/journal-entries"
+import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
+import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
 import { formatAmount } from "@/lib/finance-ui/format"
 import {
   financeAccount,
@@ -41,6 +43,7 @@ function parseAmount(value: string): number {
 }
 
 export function ManualJournalEntryPage() {
+  const currentReturnPath = useFinanceCurrentReturnPath()
   const [branchId, setBranchId] = useState("branch-1")
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState("")
@@ -262,7 +265,7 @@ export function ManualJournalEntryPage() {
         <p className="text-sm text-emerald-800">
           Posted.{" "}
           <Link
-            href={`/finance/journal-entries/${postedJournalId}`}
+            href={buildFinanceJournalInquiryPath(postedJournalId, currentReturnPath)}
             className={themeLinkMuted}
           >
             View journal inquiry

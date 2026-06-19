@@ -6,6 +6,8 @@ import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocu
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { FinanceDocumentHeaderContext } from "@/lib/finance-ui/finance-document-display"
 import { fetchOpeningBalancePostingVerification } from "@/lib/finance-ui/opening-balance"
+import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
+import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
 import type { ManualJournalEntryPostingVerification } from "@/lib/finance/manual-journal-entry/manual-journal-entry-posting-verification-types"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
@@ -29,6 +31,7 @@ export function OpeningBalancePostingVerificationPanel({
   postedJournalEntryId,
   headerContext,
 }: OpeningBalancePostingVerificationPanelProps) {
+  const currentReturnPath = useFinanceCurrentReturnPath()
   const [verification, setVerification] =
     useState<ManualJournalEntryPostingVerification | null>(null)
   const [loading, setLoading] = useState(true)
@@ -116,7 +119,10 @@ export function OpeningBalancePostingVerificationPanel({
       {postedJournalEntryId ? (
         <p className="text-sm">
           <Link
-            href={`/finance/journal-entries/${postedJournalEntryId}`}
+            href={buildFinanceJournalInquiryPath(
+              postedJournalEntryId,
+              currentReturnPath
+            )}
             className={`text-sm ${themeLinkMuted}`}
             data-testid="opb-verification-journal-link"
           >
