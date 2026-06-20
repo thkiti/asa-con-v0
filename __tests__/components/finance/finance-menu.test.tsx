@@ -31,7 +31,7 @@ const hoFinance: SessionUserApi = {
 }
 
 describe("FinanceMenuView", () => {
-  it("renders three F0.1 finance hub cards", () => {
+  it("renders three F0.2 finance hub cards", () => {
     const html = renderToStaticMarkup(<FinanceMenuView user={hoFinance} />)
     expect(html).toContain('data-testid="main-menu-page"')
     expect(html).toContain(mainMenuGridClass)
@@ -53,7 +53,7 @@ describe("FinanceMenuView", () => {
 })
 
 describe("FinanceMenuHubView", () => {
-  it("renders daily work hub with MJV, PAY, and REV", () => {
+  it("renders daily work hub with MJV, PAY, REV, and Petty Cash", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
     expect(hub).not.toBeNull()
     expect(hub?.label).toBe("Daily Work")
@@ -65,9 +65,13 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain("MJV")
     expect(html).toContain("PAY")
     expect(html).toContain("REV")
+    expect(html).toContain("Petty Cash")
     expect(html).toContain("Coming Soon")
     expect(html).not.toContain("Instant GL Journal")
     expect(html).not.toContain("Transactions")
+    expect(html).not.toContain("Receivables")
+    expect(html).not.toContain("APV")
+    expect(html).not.toContain("ACC")
     expect(html).toContain(mainMenuGridClass)
   })
 
@@ -119,11 +123,12 @@ describe("FinanceMenuHubView", () => {
 })
 
 describe("finance-menu config", () => {
-  it("exposes F0.1 leaf items for diagnostics", () => {
+  it("exposes F0.2 leaf items for diagnostics", () => {
     const keys = getAllFinanceMenuItems("HO_ADMIN").map((item) => item.key)
     expect(keys).toContain("mjv")
     expect(keys).toContain("pay")
     expect(keys).toContain("rev")
+    expect(keys).toContain("petty-cash")
     expect(keys).toContain("trial-balance")
     expect(keys).toContain("voucher-lookup")
     expect(keys).not.toContain("pay-register")

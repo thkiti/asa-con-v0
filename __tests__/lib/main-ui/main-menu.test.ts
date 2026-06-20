@@ -80,6 +80,7 @@ describe("getMainMenuSectionDetail", () => {
     )
     expect(findItem("HO_ADMIN", "pay")?.status).toBe("planned")
     expect(findItem("HO_ADMIN", "rev")?.status).toBe("planned")
+    expect(findItem("HO_ADMIN", "petty-cash")?.status).toBe("planned")
     expect(findItem("HO_ADMIN", "retained-earnings")).toBeUndefined()
     expect(findItem("HO_ADMIN", "chart-of-accounts-import")).toBeUndefined()
     expect(findItem("HO_ADMIN", "reconciliation-dashboard")).toBeUndefined()

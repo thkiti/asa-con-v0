@@ -1,10 +1,21 @@
 import { canAccessMenu } from "@/lib/permissions/menu"
 import type { Role } from "@/lib/shared"
 
-/** Primary F0.1 finance navigation hubs. */
+/**
+ * Finance menu — F0.2 locked information architecture.
+ *
+ * Document layer (Daily Work): MJV, PAY, REV, Petty Cash
+ * Reporting layer (Dashboard): GL, TB, P&L, BS
+ * Audit layer (Audit): Voucher Lookup, Document Trace, Attachments
+ *
+ * No separate Ledger, Transactions, JV, APV, ACC, or Receivables groups.
+ * See docs/FINANCE_TRANSACTION_UNIVERSE.md for business direction.
+ */
+
+/** Primary F0.2 finance navigation hubs (locked). */
 export type FinanceMenuHubKey = "daily-work" | "dashboard" | "audit"
 
-/** Legacy hub routes kept for bookmarks — not on the F0.1 home menu. */
+/** Legacy hub routes kept for bookmarks — not on the F0.2 home menu. */
 export type FinanceMenuLegacyHubKey =
   | "transactions"
   | "ledger"
@@ -78,7 +89,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
     "daily-work": {
       label: "Daily Work",
       description:
-        "Business documents — MJV for accounting entries; PAY and REV coming soon.",
+        "Create and process finance documents — MJV is live; PAY, REV, and Petty Cash coming soon.",
       href: hubHref("daily-work"),
       items: [
         done(
@@ -97,11 +108,17 @@ function buildPrimaryFinanceMenuHubs(): Record<
           "REV",
           "Receivable settlements — amounts owed, not yet received"
         ),
+        comingSoon(
+          "petty-cash",
+          "Petty Cash",
+          "Small cash disbursements and replenishment"
+        ),
       ],
     },
     dashboard: {
       label: "Dashboard",
-      description: "Read-only financial statements and ledger from posted GL.",
+      description:
+        "View accounting results — read-only GL and financial statements from posted journals.",
       href: hubHref("dashboard"),
       items: [
         done(
@@ -133,7 +150,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
     audit: {
       label: "Audit",
       description:
-        "Voucher lookup, document trace, and attachments — in progress.",
+        "Trace and verify documents — voucher lookup, lineage, and attachments (coming soon).",
       href: hubHref("audit"),
       items: [
         comingSoon(
@@ -156,7 +173,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
   }
 }
 
-/** Admin hub — routes remain valid; not shown on F0.1 Finance home. */
+/** Admin hub — routes remain valid; not shown on F0.2 Finance home. */
 function buildLegacySystemHub(): Omit<FinanceMenuHub, "key"> {
   return {
     label: "System",
@@ -271,7 +288,7 @@ export function getFinanceMenuHub(
   }
 }
 
-/** Flat list of F0.1 finance menu leaf items for diagnostics and main-menu item lookup. */
+/** Flat list of F0.2 finance menu leaf items for diagnostics and main-menu item lookup. */
 export function getAllFinanceMenuItems(role: Role): FinanceMenuItem[] {
   if (!canAccessFinanceMenu(role)) return []
 
@@ -281,4 +298,4 @@ export function getAllFinanceMenuItems(role: Role): FinanceMenuItem[] {
 }
 
 export const FINANCE_MENU_HOME_DESCRIPTION =
-  "Daily Work for MJV, PAY, and REV. Dashboard for GL and financial statements. Audit tools coming soon."
+  "Daily Work — create and process finance documents. Dashboard — view GL and financial statements. Audit — trace and verify (coming soon)."
