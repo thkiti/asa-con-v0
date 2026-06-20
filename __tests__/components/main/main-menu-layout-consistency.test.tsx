@@ -89,12 +89,12 @@ describe("main menu layout consistency", () => {
       html: renderToStaticMarkup(<FinanceMenuView user={hoAdmin} />),
     })
 
-    const ledgerHub = getFinanceMenuHub("HO_ADMIN", "ledger")
-    expect(ledgerHub).not.toBeNull()
+    const dashboardHub = getFinanceMenuHub("HO_ADMIN", "dashboard")
+    expect(dashboardHub).not.toBeNull()
     pages.push({
-      name: "/finance/ledger",
+      name: "/finance/dashboard",
       html: renderToStaticMarkup(
-        <FinanceMenuHubView user={hoAdmin} hub={ledgerHub!} />
+        <FinanceMenuHubView user={hoAdmin} hub={dashboardHub!} />
       ),
     })
 
@@ -140,14 +140,14 @@ describe("main menu layout consistency", () => {
 
   it("uses finance hub pages with the same card primitives", () => {
     const financeHtml = pages.find((page) => page.name === "/finance")!.html
-    const ledgerHtml = pages.find((page) => page.name === "/finance/ledger")!.html
-    expect(financeHtml).toContain("Transactions")
-    expect(financeHtml).toContain("Ledger")
+    const dashboardHtml = pages.find((page) => page.name === "/finance/dashboard")!.html
+    expect(financeHtml).toContain("Daily Work")
+    expect(financeHtml).toContain("Dashboard")
     expect(financeHtml).toContain(mainMenuGridClass)
     expect(financeHtml).toContain(mainMenuCardClass)
-    expect(ledgerHtml).toContain("Trial Balance")
-    expect(ledgerHtml).toContain(mainMenuGridClass)
-    expect(ledgerHtml).toContain(mainMenuCardClass)
+    expect(dashboardHtml).toContain("Trial Balance")
+    expect(dashboardHtml).toContain(mainMenuGridClass)
+    expect(dashboardHtml).toContain(mainMenuCardClass)
   })
 
   it("renders every scoped hub page through MainMenuHubPage", () => {

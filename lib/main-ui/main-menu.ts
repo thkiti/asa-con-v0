@@ -67,7 +67,7 @@ const SECTION_META: Record<
   finance: {
     label: "FINANCE",
     description:
-      "MJV, ledger reports, and finance operations — see /finance for the F0 menu",
+      "Daily Work, Dashboard, and Audit — see /finance for the F0.1 menu",
   },
   operations: {
     label: "OPERATIONS",

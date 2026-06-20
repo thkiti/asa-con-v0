@@ -1,11 +1,15 @@
 import { canAccessMenu } from "@/lib/permissions/menu"
 import type { Role } from "@/lib/shared"
 
-/** Primary F0 finance navigation hubs. */
-export type FinanceMenuHubKey = "dashboard" | "transactions" | "ledger" | "audit"
+/** Primary F0.1 finance navigation hubs. */
+export type FinanceMenuHubKey = "daily-work" | "dashboard" | "audit"
 
-/** Legacy hub routes kept for bookmarks and admin surfaces — not on the F0 home menu. */
-export type FinanceMenuLegacyHubKey = "daily-work" | "reports" | "system"
+/** Legacy hub routes kept for bookmarks — not on the F0.1 home menu. */
+export type FinanceMenuLegacyHubKey =
+  | "transactions"
+  | "ledger"
+  | "reports"
+  | "system"
 
 export type FinanceMenuAnyHubKey = FinanceMenuHubKey | FinanceMenuLegacyHubKey
 
@@ -38,9 +42,8 @@ export type FinanceMenuHub = {
 }
 
 const FINANCE_MENU_HUB_ORDER: readonly FinanceMenuHubKey[] = [
+  "daily-work",
   "dashboard",
-  "transactions",
-  "ledger",
   "audit",
 ] as const
 
@@ -72,89 +75,34 @@ function buildPrimaryFinanceMenuHubs(): Record<
   Omit<FinanceMenuHub, "key">
 > {
   return {
-    dashboard: {
-      label: "Dashboard",
+    "daily-work": {
+      label: "Daily Work",
       description:
-        "Finance Core is operational — MJV → Posting → Voucher → GL → Trial Balance → P&L → Balance Sheet. Future work: PAY, REV, and audit traceability.",
-      href: hubHref("dashboard"),
+        "Business documents — MJV for accounting entries; PAY and REV coming soon.",
+      href: hubHref("daily-work"),
       items: [
         done(
           "mjv",
           "MJV",
           "/finance/manual-journal-entries",
-          "Manual journal vouchers — OPB, MAJ, adjustments, accruals, and other accounting entries"
+          "Manual journal vouchers — OPB, MAJ, adjustments, accruals, corrections"
         ),
-        done(
-          "trial-balance",
-          "Trial Balance",
-          "/finance/reports/trial-balance",
-          "Period integrity across all GL accounts"
+        comingSoon(
+          "pay",
+          "PAY",
+          "Outbound payments, cheques, and settlement disbursements"
         ),
-        done(
-          "general-ledger",
-          "General Ledger",
-          "/finance/reports/general-ledger",
-          "Account-level posted journal drill-down"
+        comingSoon(
+          "rev",
+          "REV",
+          "Receivable settlements — amounts owed, not yet received"
         ),
       ],
     },
-    transactions: {
-      label: "Transactions",
-      description:
-        "Business documents on top of the accounting engine — not separate GL engines.",
-      href: hubHref("transactions"),
-      items: [],
-      itemGroups: [
-        {
-          key: "mjv",
-          label: "Accounting",
-          items: [
-            done(
-              "mjv",
-              "MJV",
-              "/finance/manual-journal-entries",
-              "Central manual journal voucher workflow — opening balance, manual journals, adjustments, accruals, corrections"
-            ),
-          ],
-        },
-        {
-          key: "pay",
-          label: "PAY",
-          items: [
-            comingSoon(
-              "pay-register",
-              "Payment Register",
-              "Outbound payments, cheques, and settlement disbursements"
-            ),
-            comingSoon(
-              "pay-evidence",
-              "Payment Evidence",
-              "Supporting files and evidence for payments"
-            ),
-          ],
-        },
-        {
-          key: "rev",
-          label: "REV",
-          items: [
-            comingSoon(
-              "rev-settlement",
-              "Settlement",
-              "Receivable settlements — mall, partner, and third-party amounts owed"
-            ),
-            comingSoon(
-              "rev-aging",
-              "AR Aging",
-              "Receivable aging and collection tracking"
-            ),
-          ],
-        },
-      ],
-    },
-    ledger: {
-      label: "Ledger",
-      description: "Read-only reports from posted general ledger activity.",
-      href: hubHref("ledger"),
+    dashboard: {
+      label: "Dashboard",
+      description: "Read-only financial statements and ledger from posted GL.",
+      href: hubHref("dashboard"),
       items: [
         done(
           "general-ledger",
@@ -185,7 +133,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
     audit: {
       label: "Audit",
       description:
-        "Voucher lookup, document trace, and attachments — consolidated audit navigation (in progress).",
+        "Voucher lookup, document trace, and attachments — in progress.",
       href: hubHref("audit"),
       items: [
         comingSoon(
@@ -208,7 +156,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
   }
 }
 
-/** Admin / legacy hub — routes remain valid; not shown on F0 Finance home. */
+/** Admin hub — routes remain valid; not shown on F0.1 Finance home. */
 function buildLegacySystemHub(): Omit<FinanceMenuHub, "key"> {
   return {
     label: "System",
@@ -267,13 +215,14 @@ export function isFinanceMenuAnyHubKey(
 ): value is FinanceMenuAnyHubKey {
   return (
     isFinanceMenuHubKey(value) ||
-    value === "daily-work" ||
+    value === "transactions" ||
+    value === "ledger" ||
     value === "reports" ||
     value === "system"
   )
 }
 
-/** Top-level Finance home cards — Dashboard, Transactions, Ledger, Audit. */
+/** Top-level Finance home cards — Daily Work, Dashboard, Audit. */
 export function getFinanceMenuHomeSections(role: Role): FinanceMenuItem[] {
   if (!canAccessFinanceMenu(role)) return []
 
@@ -299,12 +248,12 @@ export function getFinanceMenuHub(
     return { key: "system", ...FINANCE_LEGACY_SYSTEM_HUB }
   }
 
-  if (hubKey === "daily-work") {
-    return getFinanceMenuHub(role, "transactions")
+  if (hubKey === "transactions") {
+    return getFinanceMenuHub(role, "daily-work")
   }
 
-  if (hubKey === "reports") {
-    return getFinanceMenuHub(role, "ledger")
+  if (hubKey === "ledger" || hubKey === "reports") {
+    return getFinanceMenuHub(role, "dashboard")
   }
 
   if (!isFinanceMenuHubKey(hubKey)) {
@@ -322,22 +271,14 @@ export function getFinanceMenuHub(
   }
 }
 
-/** Flat list of F0 finance menu leaf items for diagnostics and main-menu item lookup. */
+/** Flat list of F0.1 finance menu leaf items for diagnostics and main-menu item lookup. */
 export function getAllFinanceMenuItems(role: Role): FinanceMenuItem[] {
   if (!canAccessFinanceMenu(role)) return []
 
-  const primary = FINANCE_MENU_HUB_ORDER.flatMap((key) =>
+  return FINANCE_MENU_HUB_ORDER.flatMap((key) =>
     flattenHubItems(FINANCE_MENU_HUBS[key])
   )
-
-  // Deduplicate by key (dashboard and transactions both expose mjv)
-  const seen = new Set<string>()
-  return primary.filter((item) => {
-    if (seen.has(item.key)) return false
-    seen.add(item.key)
-    return true
-  })
 }
 
 export const FINANCE_MENU_HOME_DESCRIPTION =
-  "Finance Core is operational. Use Transactions for MJV; Ledger for GL and statements; PAY and REV coming soon."
+  "Daily Work for MJV, PAY, and REV. Dashboard for GL and financial statements. Audit tools coming soon."

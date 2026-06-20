@@ -96,7 +96,7 @@ function renderAll(): MeasuredLayout[] {
   const operations = getMainMenuSectionDetail("HO_ADMIN", "operations")!
   const system = getMainMenuSectionDetail("HO_ADMIN", "system")!
   const shop = getMainMenuSectionDetail("HO_ADMIN", "shop")!
-  const ledgerHub = getFinanceMenuHub("HO_ADMIN", "ledger")!
+  const dashboardHub = getFinanceMenuHub("HO_ADMIN", "dashboard")!
 
   const pages: Array<{ name: string; html: string }> = [
     { name: "/main", html: renderToStaticMarkup(<MainMenuView user={hoAdmin} />) },
@@ -105,9 +105,9 @@ function renderAll(): MeasuredLayout[] {
       html: renderToStaticMarkup(<FinanceMenuView user={hoAdmin} />),
     },
     {
-      name: "/finance/ledger",
+      name: "/finance/dashboard",
       html: renderToStaticMarkup(
-        <FinanceMenuHubView user={hoAdmin} hub={ledgerHub!} />
+        <FinanceMenuHubView user={hoAdmin} hub={dashboardHub!} />
       ),
     },
     {

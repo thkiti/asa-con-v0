@@ -1,5 +1,6 @@
-import { FinanceHubPageLoader } from "@/components/finance/FinanceHubPageLoader"
+import { redirect } from "next/navigation"
 
-export default function FinanceTransactionsHubPage() {
-  return <FinanceHubPageLoader hubKey="transactions" />
+/** Legacy hub URL — F0.1 menu uses /finance/daily-work. */
+export default function FinanceTransactionsLegacyPage() {
+  redirect("/finance/daily-work")
 }
