@@ -695,3 +695,167 @@ span.finance-account .finance-account-name-part {
 .pos-read-group-scroll::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.38);
 }
+
+/* Finance voucher print (A4) — THSarabunNew; MJV foundation for PAY / REV / Petty Cash */
+@font-face {
+  font-family: "THSarabunNew";
+  src: url("/fonts/THSarabunNew.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.finance-voucher-print-root {
+  font-family: "THSarabunNew", "Noto Sans Thai", sans-serif;
+}
+
+.finance-voucher-print-sheet {
+  color: #111;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.finance-voucher-meta-grid,
+.finance-voucher-reference-grid,
+.finance-voucher-evidence-grid,
+.finance-voucher-posted-meta {
+  display: grid;
+  gap: 0.5rem 1rem;
+}
+
+.finance-voucher-meta-grid {
+  margin-top: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .finance-voucher-meta-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.finance-voucher-meta-label,
+.finance-voucher-reference-grid dt,
+.finance-voucher-evidence-grid dt,
+.finance-voucher-posted-meta dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #71717a;
+}
+
+.finance-voucher-meta-value,
+.finance-voucher-reference-grid dd,
+.finance-voucher-evidence-grid dd,
+.finance-voucher-posted-meta dd {
+  color: #18181b;
+}
+
+.finance-voucher-reference,
+.finance-voucher-control,
+.finance-voucher-evidence {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--finance-grid-soft);
+}
+
+.finance-voucher-reference-grid {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .finance-voucher-reference-grid {
+    grid-template-columns: 1fr 2fr;
+  }
+}
+
+.finance-voucher-section-title {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #3f3f46;
+}
+
+.finance-voucher-lines {
+  margin-top: 1rem;
+}
+
+.finance-voucher-lines-table thead {
+  display: table-header-group;
+}
+
+.finance-voucher-account-code {
+  font-variant-numeric: tabular-nums;
+  color: var(--finance-account-code);
+}
+
+.finance-voucher-signature-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.finance-voucher-signature-label {
+  font-size: 0.75rem;
+  color: #52525b;
+}
+
+.finance-voucher-signature-line {
+  margin-top: 1.75rem;
+  border-bottom: 1px solid #a1a1aa;
+}
+
+.finance-voucher-signature-staff {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #71717a;
+}
+
+.finance-voucher-posted-meta {
+  margin-top: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.finance-voucher-evidence-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.finance-voucher-print-footer {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--finance-grid-soft);
+  font-size: 0.75rem;
+  color: #71717a;
+}
+
+@media print {
+  body.finance-voucher-print-active {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  body.finance-voucher-print-active .no-print {
+    display: none !important;
+  }
+
+  body.finance-voucher-print-active .finance-voucher-print-root {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: "THSarabunNew", "Noto Sans Thai", sans-serif !important;
+    font-size: 14pt !important;
+    line-height: 1.3 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.finance-voucher-print-active .finance-voucher-print-sheet {
+    color: #000 !important;
+  }
+
+  body.finance-voucher-print-active .finance-voucher-lines-table tbody tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

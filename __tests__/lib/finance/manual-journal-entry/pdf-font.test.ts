@@ -1,33 +1,40 @@
-import { access, rename } from "node:fs/promises"
+import { access as fsAccess, rename } from "node:fs/promises"
 import path from "node:path"
+import {
+  FINANCE_PRINT_FONT_FILE,
+  resolveBundledFinancePrintFontPath,
+  resolveFinancePrintFontPathForPdf,
+} from "@/lib/finance/finance-print-font"
 import {
   MANUAL_JOURNAL_PDF_THAI_FONT_FILE,
   resolveBundledThaiFontPathForPdf,
   resolveThaiFontPathForPdf,
 } from "@/lib/finance/manual-journal-entry/pdf-font"
-import { ManualJournalEntryErrorCodes } from "@/lib/finance/manual-journal-entry/manual-journal-entry-errors"
 
 describe("pdf-font", () => {
   const fontPath = resolveBundledThaiFontPathForPdf()
 
-  it("resolves bundled NotoSansThai-Regular.ttf under public/fonts", async () => {
+  it("resolves bundled THSarabunNew.ttf under public/fonts", async () => {
     await expect(resolveThaiFontPathForPdf()).resolves.toBe(fontPath)
-    await expect(access(fontPath)).resolves.toBeUndefined()
-    expect(fontPath).toContain(path.join("public", "fonts", MANUAL_JOURNAL_PDF_THAI_FONT_FILE))
+    await expect(resolveFinancePrintFontPathForPdf()).resolves.toBe(fontPath)
+    await expect(fsAccess(fontPath)).resolves.toBeUndefined()
+    expect(fontPath).toContain(path.join("public", "fonts", FINANCE_PRINT_FONT_FILE))
+    expect(MANUAL_JOURNAL_PDF_THAI_FONT_FILE).toBe(FINANCE_PRINT_FONT_FILE)
+    expect(resolveBundledFinancePrintFontPath()).toBe(fontPath)
   })
 
-  it("throws PDF_FONT_MISSING when bundled font is absent", async () => {
-    const missingPath = path.join(process.cwd(), "public", "fonts", "__missing-test__.ttf")
+  it("falls back to local dev ASA-CON fonts when bundled font is moved aside", async () => {
     const originalPath = fontPath
     const backupPath = `${originalPath}.bak-test`
+    const devFontPath = path.join("C:", "ASA-CON", "fonts", FINANCE_PRINT_FONT_FILE)
 
     let renamed = false
     try {
       await rename(originalPath, backupPath)
       renamed = true
-      await expect(resolveThaiFontPathForPdf()).rejects.toMatchObject({
-        code: ManualJournalEntryErrorCodes.PDF_FONT_MISSING,
-      })
+      const resolved = await resolveThaiFontPathForPdf()
+      expect(resolved.replace(/\\/g, "/")).toContain("ASA-CON/fonts/THSarabunNew.ttf")
+      await expect(fsAccess(devFontPath)).resolves.toBeUndefined()
     } finally {
       if (renamed) {
         await rename(backupPath, originalPath)

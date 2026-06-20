@@ -275,7 +275,11 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     )
     expect(html).toContain("data-testid=\"action-view-pdf\"")
     expect(html).toContain("data-testid=\"action-download-pdf\"")
+    expect(html).toContain("data-testid=\"action-print-out\"")
+    expect(html).toContain("data-testid=\"action-save-pdf\"")
+    expect(html).toContain("data-testid=\"finance-voucher-print-sheet\"")
     expect(html).not.toContain("data-testid=\"pdf-pending-message\"")
+    expect(html).not.toContain("data-testid=\"manual-journal-lines-table\"")
   })
 
   it("shows pending when pdfPath exists but snapshot is not readable", () => {

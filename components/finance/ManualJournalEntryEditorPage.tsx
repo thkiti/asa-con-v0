@@ -34,6 +34,8 @@ import {
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
+import { FinancePrintActions } from "@/components/finance/FinancePrintActions"
+import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
 import {
   buildFinanceJournalInquiryPath,
@@ -62,6 +64,7 @@ import {
   financeDiffUnbalanced,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeInput } from "@/lib/theme/theme-classes"
+import { buildFinanceVoucherPrintModelFromManualJournalEntry } from "@/lib/finance-ui/finance-voucher-print"
 
 type LineRow = {
   key: string
@@ -185,6 +188,7 @@ export function ManualJournalEntryEditorPage({
   const [lines, setLines] = useState<LineRow[]>(seed.lines)
   const [cancelReason, setCancelReason] = useState("")
   const [showCancelReason, setShowCancelReason] = useState(false)
+  const [branchLabel, setBranchLabel] = useState("")
 
   const status: ManualJournalEntryStatusCode | "NEW" =
     entry?.status ?? (mode === "create" ? "NEW" : "DRAFT")
@@ -223,12 +227,19 @@ export function ManualJournalEntryEditorPage({
   }, [])
 
   useEffect(() => {
-    if (mode === "create") {
-      void fetchManualJournalSessionContext().then((session) => {
-        if (!session) return
+    void fetchManualJournalSessionContext().then((session) => {
+      if (!session) return
+      if (mode === "create") {
         setBranchId(session.branchId)
         setLegalEntityCode(session.documentEntityCode)
-      })
+      }
+      const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
+      setBranchLabel(label || session.branchId)
+    })
+  }, [mode])
+
+  useEffect(() => {
+    if (mode === "create") {
       return
     }
 
@@ -449,6 +460,11 @@ export function ManualJournalEntryEditorPage({
       ? buildFinanceJournalInquiryPath(entry.postedJournalEntryId, currentReturnPath)
       : null
 
+  const voucherPrintModel =
+    isPosted && entry
+      ? buildFinanceVoucherPrintModelFromManualJournalEntry(entry, { branchLabel })
+      : null
+
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading journal entry…</p>
   }
@@ -468,7 +484,29 @@ export function ManualJournalEntryEditorPage({
         </div>
       ) : null}
 
-      {documentViewLayout ? (
+      {isPosted && entry && voucherPrintModel ? (
+        <div className="finance-voucher-print-root finance-document-container">
+          <div className="flex flex-wrap items-start justify-between gap-3 no-print">
+            <FinancePrintActions disabled={busyAction !== null} />
+            {postedJournalHref ? (
+              <Link
+                href={postedJournalHref}
+                className="text-sm text-zinc-600 underline"
+                data-testid="posted-journal-link"
+              >
+                View posted GL journal
+              </Link>
+            ) : null}
+          </div>
+          <FinanceVoucherPrintSheet
+            model={voucherPrintModel}
+            entryType={entry.entryType}
+            legalEntityCode={legalEntityCode}
+            entryDate={entryDate}
+            description={description}
+          />
+        </div>
+      ) : documentViewLayout ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
           <FinanceDocumentCanonicalHeader
             legalEntityCode={legalEntityCode}
@@ -616,6 +654,7 @@ export function ManualJournalEntryEditorPage({
         </>
       )}
 
+      {!isPosted ? (
       <div className={financeTableScroll}>
         <table className={financeTable} data-testid="manual-journal-lines-table">
           <thead>
@@ -783,14 +822,15 @@ export function ManualJournalEntryEditorPage({
           </tfoot>
         </table>
       </div>
+      ) : null}
 
-      {!totals.balanced ? (
+      {!isPosted && !totals.balanced ? (
         <p className="text-sm text-amber-800" data-testid="unbalanced-warning">
           Entry is out of balance. Submit and post are disabled until debit equals credit.
         </p>
       ) : null}
 
-      {canEditLines ? (
+      {!isPosted && canEditLines ? (
         <button
           type="button"
           className="rounded border border-zinc-300 px-3 py-1 text-sm"
