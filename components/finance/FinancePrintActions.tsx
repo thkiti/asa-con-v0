@@ -1,20 +1,26 @@
 "use client"
 
 import { useCallback } from "react"
+import { buildFinanceVoucherPrintPageCss } from "@/lib/finance-ui/finance-voucher-print-page-css"
+import { ensureFinanceVoucherFontsLoaded } from "@/lib/finance-ui/finance-voucher-font-verify"
 
 const FINANCE_VOUCHER_PRINT_PAGE_STYLE_ID = "finance-voucher-print-page-style"
 
-function runFinanceVoucherPrint(): void {
+async function runFinanceVoucherPrint(): Promise<void> {
   document.body.classList.add("finance-voucher-print-active")
 
   let pageStyle = document.getElementById(FINANCE_VOUCHER_PRINT_PAGE_STYLE_ID)
   if (!pageStyle) {
     pageStyle = document.createElement("style")
     pageStyle.id = FINANCE_VOUCHER_PRINT_PAGE_STYLE_ID
-    pageStyle.textContent =
-      "@media print { @page { size: A4 portrait; margin: 12mm; } }"
+    pageStyle.textContent = buildFinanceVoucherPrintPageCss()
     document.head.appendChild(pageStyle)
   }
+
+  await ensureFinanceVoucherFontsLoaded()
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
 
   const cleanup = () => {
     document.body.classList.remove("finance-voucher-print-active")
@@ -35,7 +41,7 @@ type FinancePrintActionsProps = {
 export function FinancePrintActions({ disabled = false }: FinancePrintActionsProps) {
   const handlePrint = useCallback(() => {
     if (disabled) return
-    runFinanceVoucherPrint()
+    void runFinanceVoucherPrint()
   }, [disabled])
 
   return (

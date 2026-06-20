@@ -164,15 +164,14 @@ Document type code: **MAJ** (Manual Accounting Journal). User-facing title: **MA
 
 ### 4.3 Accounting table
 
-| Column | Source |
-|--------|--------|
-| Account Code | `line.accountCode` |
-| Account Name | `line.accountName` |
-| Line Description | `line.memo` |
-| Debit | `line.debit` |
-| Credit | `line.credit` |
-| Total Debit | Sum of saved lines |
-| Total Credit | Sum of saved lines |
+| Column | Source | Notes |
+|--------|--------|-------|
+| Account | `line.accountCode` + `line.accountName` | `Code • Name` in one column |
+| Debit | `line.debit` | Right-aligned, adjacent to Account |
+| Credit | `line.credit` | Right-aligned |
+| Line Description | `line.memo` | Last column; `—` when empty |
+| Total Debit | Sum of saved lines | Label in Account column |
+| Total Credit | Sum of saved lines | Label in Account column |
 
 ### 4.4 Control
 
@@ -206,11 +205,53 @@ Signature lines are blank ruled lines with staff id caption (physical signature 
 
 | Section | Rule |
 |---------|------|
-| Page size | A4 portrait, 12mm margin (finance voucher print only) |
-| Header + meta + reference | `print-break-inside-avoid` |
-| Lines table | `thead` repeats; prefer row break avoidance per line |
-| Control + evidence | `print-break-inside-avoid` |
-| Long line lists | Flow across pages; totals in `tfoot` after last line |
+| Page size | A4 portrait; uniform `12mm` margins (injected `@page`) |
+| Pagination engine | **Browser-native** — single `FinanceVoucherPrintSheet` for screen and print; no JS measurement or page plans |
+| Header + meta | Canonical 3-row header includes compact `Description:` when present |
+| Document No. | Meta grid on page 1 |
+| Page numbers | Native `@page @bottom-center`: `Page X of Y` via `buildFinanceVoucherPrintPageCss()` — margin-box counters only |
+| Reference / Being block | **Not printed** as a separate section — optional compact context lines when needed |
+| Completeness | `END OF VOUCHER` at document end (print-only footer in body) |
+| Lines table | `thead` repeats; `tfoot` uses `table-footer-group` (totals after last line chunk) |
+| Control + evidence | May flow across pages; signature **fields** use `break-inside: avoid` |
+| Print isolation | `body.finance-voucher-print-active` hides `.no-print`, page title, back link; zeros `main` padding — does **not** `display:none` ancestors of the sheet |
+| Bottom margin | No extra print margin-bottom on closing blocks (avoids trailing blank page) |
+| Font | THSarabunNew via `next/font/local` on print root + `@font-face`; `ensureFinanceVoucherFontsLoaded()` before `window.print()` |
+
+### Browser print flow
+
+| Step | Detail |
+|------|--------|
+| Screen + print source | One `FinanceVoucherPrintSheet` — same DOM for preview and print |
+| Print Out / Save as PDF | `FinancePrintActions` → `body.finance-voucher-print-active` → inject `@page` CSS → load fonts → `window.print()` |
+| Not used | JS page plans, content-flow page counters, page identity bands, compact replan |
+
+### Finance Print Page Identity (final)
+
+Page numbers use **native CSS margin-box counters** only — injected at print time via `buildFinanceVoucherPrintPageCss()`:
+
+```css
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+  @bottom-center {
+    content: "Page " counter(page) " of " counter(pages);
+  }
+}
+```
+
+Rules:
+- Browser pagination is authoritative; counters are informational only.
+- No JS pagination, no content-flow `counter(page)` / `counter(pages)`, no page identity bands.
+- Reference/Being block is not printed as a separate section (avoids page-1 height waste).
+- `END OF VOUCHER` remains a print-only marker at document end.
+- Reusable for MJV, PAY, REV, Petty Cash.
+
+### Font verification (F1A.2)
+
+- Bundled: `public/fonts/THSarabunNew.ttf` via `@font-face`.
+- Stack: `.finance-voucher-print-font` on root + sheet; audit lines inherit (not mono).
+- Dev probe: `FinanceVoucherPrintFontProbe` (development only, `no-print`) + `data-finance-print-font="THSarabunNew"` on sheet for DevTools.
 
 ---
 

@@ -30,11 +30,12 @@ import {
   retryManualJournalEntryPdf,
   submitManualJournalEntry,
   updateManualJournalEntryDraft,
-  buildManualJournalEntryPdfUrl,
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
 import { FinancePrintActions } from "@/components/finance/FinancePrintActions"
+import { FinanceLegacyPdfSnapshotPanel } from "@/components/finance/FinanceLegacyPdfSnapshotPanel"
+import { FinanceVoucherPrintFontProbe } from "@/components/finance/FinanceVoucherPrintFontProbe"
 import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
 import {
@@ -65,6 +66,7 @@ import {
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeInput } from "@/lib/theme/theme-classes"
 import { buildFinanceVoucherPrintModelFromManualJournalEntry } from "@/lib/finance-ui/finance-voucher-print"
+import { financeVoucherLocalFont } from "@/lib/finance-ui/finance-voucher-local-font"
 
 type LineRow = {
   key: string
@@ -423,11 +425,6 @@ export function ManualJournalEntryEditorPage({
     }
   }
 
-  function handleViewPdf() {
-    if (!entry) return
-    window.open(buildManualJournalEntryPdfUrl(entry.id, "inline"), "_blank", "noopener,noreferrer")
-  }
-
   async function handleCancel() {
     if (!entry) return
     await runWorkflow("Cancel", () =>
@@ -485,18 +482,32 @@ export function ManualJournalEntryEditorPage({
       ) : null}
 
       {isPosted && entry && voucherPrintModel ? (
-        <div className="finance-voucher-print-root finance-document-container">
-          <div className="flex flex-wrap items-start justify-between gap-3 no-print">
-            <FinancePrintActions disabled={busyAction !== null} />
-            {postedJournalHref ? (
-              <Link
-                href={postedJournalHref}
-                className="text-sm text-zinc-600 underline"
-                data-testid="posted-journal-link"
-              >
-                View posted GL journal
-              </Link>
-            ) : null}
+        <div
+          className={`finance-voucher-print-root finance-document-container finance-voucher-print-font ${financeVoucherLocalFont.variable} ${financeVoucherLocalFont.className}`}
+          data-testid="finance-voucher-print-root"
+        >
+          <div className="no-print flex w-full flex-col gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <FinancePrintActions disabled={busyAction !== null} />
+              {postedJournalHref ? (
+                <Link
+                  href={postedJournalHref}
+                  className="text-sm text-zinc-600 underline"
+                  data-testid="posted-journal-link"
+                >
+                  View posted GL journal
+                </Link>
+              ) : null}
+            </div>
+            <FinanceLegacyPdfSnapshotPanel
+              entryId={entry.id}
+              entryNo={documentNo}
+              pdfSnapshotReady={entry.pdfSnapshotReady}
+              disabled={busyAction !== null}
+              onRetry={() => void handleRetryPdf()}
+              retrying={busyAction === "Retry PDF"}
+              retryError={pdfError}
+            />
           </div>
           <FinanceVoucherPrintSheet
             model={voucherPrintModel}
@@ -505,6 +516,7 @@ export function ManualJournalEntryEditorPage({
             entryDate={entryDate}
             description={description}
           />
+          <FinanceVoucherPrintFontProbe />
         </div>
       ) : documentViewLayout ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -953,54 +965,6 @@ export function ManualJournalEntryEditorPage({
                 Confirm cancel
               </button>
             ) : null}
-          </>
-        ) : null}
-
-        {isPosted ? (
-          <>
-            {entry?.pdfSnapshotReady ? (
-              <>
-                <button
-                  type="button"
-                  className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
-                  disabled={busyAction !== null}
-                  onClick={handleViewPdf}
-                  data-testid="action-view-pdf"
-                >
-                  View PDF
-                </button>
-                <a
-                  className="rounded border border-zinc-300 px-4 py-2 text-sm"
-                  href={buildManualJournalEntryPdfUrl(entry.id, "attachment")}
-                  data-testid="action-download-pdf"
-                >
-                  Download PDF
-                </a>
-              </>
-            ) : (
-              <>
-                <p
-                  className="text-sm text-amber-800"
-                  data-testid="pdf-pending-message"
-                >
-                  PDF pending / repair needed
-                </p>
-                {pdfError ? (
-                  <p className="text-sm text-red-700" data-testid="pdf-error-message">
-                    {pdfError}
-                  </p>
-                ) : null}
-                <button
-                  type="button"
-                  className="rounded border border-amber-400 px-4 py-2 text-sm text-amber-900 disabled:opacity-50"
-                  disabled={busyAction !== null}
-                  onClick={() => void handleRetryPdf()}
-                  data-testid="action-retry-pdf"
-                >
-                  {busyAction === "Retry PDF" ? "Retrying…" : "Retry PDF"}
-                </button>
-              </>
-            )}
           </>
         ) : null}
       </div>

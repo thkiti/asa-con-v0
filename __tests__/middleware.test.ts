@@ -126,6 +126,12 @@ describe("middleware page protection", () => {
     expect(res.status).toBe(307)
     expect(res.headers.get("location")).toBe("http://localhost/shop")
   })
+
+  it("passes /fonts through without session (public static assets)", () => {
+    const res = middleware(requestFor("/fonts/THSarabunNew.ttf"))
+    expect(res.status).toBe(200)
+    expect(res.headers.get("location")).toBeNull()
+  })
 })
 
 describe("middleware unrelated API behavior", () => {

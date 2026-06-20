@@ -6,6 +6,13 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
 }))
 
+jest.mock("@/lib/finance-ui/finance-voucher-local-font", () => ({
+  financeVoucherLocalFont: {
+    variable: "font-finance-voucher",
+    className: "font-finance-voucher",
+  },
+}))
+
 jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
   useFinanceCurrentReturnPath: () => "/finance/manual-journal-entries/entry-1",
 }))
@@ -219,7 +226,7 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).not.toContain("data-testid=\"action-confirm\"")
   })
 
-  it("renders POSTED document view with PDF pending when snapshot missing", () => {
+  it("renders POSTED document view with friendly legacy PDF message when snapshot missing", () => {
     const html = renderToStaticMarkup(
       <ManualJournalEntryEditorPage
         mode="edit"
@@ -252,8 +259,12 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).toContain(
       `/finance/journal-entries/journal-1?returnTo=${encodeURIComponent("/finance/manual-journal-entries/entry-1")}`
     )
-    expect(html).toContain("data-testid=\"pdf-pending-message\"")
+    expect(html).toContain("data-testid=\"finance-legacy-pdf-snapshot\"")
+    expect(html).toContain("data-testid=\"legacy-pdf-missing-message\"")
+    expect(html).toContain("Saved PDF snapshot is missing. Use Print Out / Save as PDF.")
     expect(html).toContain("data-testid=\"action-retry-pdf\"")
+    expect(html).toContain("data-testid=\"action-print-out\"")
+    expect(html).not.toContain("data-testid=\"pdf-pending-message\"")
   })
 
   it("renders POSTED View/Download PDF when snapshot exists", () => {
@@ -275,6 +286,8 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     )
     expect(html).toContain("data-testid=\"action-view-pdf\"")
     expect(html).toContain("data-testid=\"action-download-pdf\"")
+    expect(html).toContain("View archived PDF")
+    expect(html).toContain("data-testid=\"finance-legacy-pdf-snapshot\"")
     expect(html).toContain("data-testid=\"action-print-out\"")
     expect(html).toContain("data-testid=\"action-save-pdf\"")
     expect(html).toContain("data-testid=\"finance-voucher-print-sheet\"")
@@ -299,7 +312,7 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         )}
       />
     )
-    expect(html).toContain("data-testid=\"pdf-pending-message\"")
+    expect(html).toContain("data-testid=\"legacy-pdf-missing-message\"")
     expect(html).not.toContain("data-testid=\"action-view-pdf\"")
   })
 

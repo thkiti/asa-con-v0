@@ -1,21 +1,11 @@
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
-import { formatAmount } from "@/lib/finance-ui/format"
+import { FinanceVoucherPrintLinesTable } from "@/components/finance/FinanceVoucherPrintLinesTable"
 import {
   formatFinanceDocumentDate,
 } from "@/lib/finance-ui/finance-document-display"
 import type { FinanceVoucherPrintModel } from "@/lib/finance-ui/finance-voucher-print"
-import {
-  financeAccount,
-  financeMemo,
-  financeNumber,
-  financeTable,
-  financeTh,
-  financeThRight,
-  financeTotalLabel,
-  financeTotalRow,
-  financeTotalRowStrong,
-  financeTotalValue,
-} from "@/lib/finance-ui/finance-visual-classes"
+import { buildFinanceVoucherPrintCompactContextLines } from "@/lib/finance-ui/finance-voucher-print-compact-context"
+import { FINANCE_VOUCHER_PRINT_FONT_DATA_ATTR } from "@/lib/finance-ui/finance-voucher-print-font"
 
 type FinanceVoucherPrintSheetProps = {
   model: FinanceVoucherPrintModel
@@ -24,12 +14,6 @@ type FinanceVoucherPrintSheetProps = {
   legalEntityCode: string
   entryDate: string
   description: string
-}
-
-function formatSideAmount(value: string): string {
-  const n = Number(value)
-  if (!Number.isFinite(n) || n === 0) return "—"
-  return formatAmount(value)
 }
 
 function MetaField({ label, value }: { label: string; value: string }) {
@@ -57,7 +41,7 @@ function SignatureField({
   )
 }
 
-/** Shared A4 finance voucher print layout — foundation for MJV / PAY / REV / Petty Cash. */
+/** Shared A4 finance voucher layout — same DOM for screen and browser print. */
 export function FinanceVoucherPrintSheet({
   model,
   entryType,
@@ -65,8 +49,20 @@ export function FinanceVoucherPrintSheet({
   entryDate,
   description,
 }: FinanceVoucherPrintSheetProps) {
+  const printedAtDisplay = formatFinanceDocumentDate(new Date().toISOString())
+  const compactContextLines = buildFinanceVoucherPrintCompactContextLines({
+    headerDescription: description,
+    reference: model.reference,
+    description: model.description,
+    remarks: model.remarks,
+  })
+
   return (
-    <article className="finance-voucher-print-sheet" data-testid="finance-voucher-print-sheet">
+    <article
+      className="finance-voucher-print-sheet finance-voucher-print-font"
+      data-testid="finance-voucher-print-sheet"
+      data-finance-print-font={FINANCE_VOUCHER_PRINT_FONT_DATA_ATTR}
+    >
       <header className="finance-voucher-print-header print-break-inside-avoid">
         <FinanceDocumentCanonicalHeader
           legalEntityCode={legalEntityCode}
@@ -91,124 +87,90 @@ export function FinanceVoucherPrintSheet({
         </dl>
       </header>
 
-      <section
-        className="finance-voucher-reference print-break-inside-avoid"
-        data-testid="finance-voucher-reference"
-      >
-        <dl className="finance-voucher-reference-grid">
-          <div>
-            <dt>Reference</dt>
-            <dd>{model.reference ?? "—"}</dd>
-          </div>
-          <div className="sm:col-span-2">
-            <dt>Being / Description</dt>
-            <dd>{model.description ?? "—"}</dd>
-          </div>
-          {model.remarks ? (
-            <div className="sm:col-span-3">
-              <dt>Remarks</dt>
-              <dd>{model.remarks}</dd>
-            </div>
-          ) : null}
-        </dl>
-      </section>
+      {compactContextLines.length > 0 ? (
+        <div
+          className="finance-voucher-print-compact-context"
+          data-testid="finance-voucher-compact-context"
+        >
+          {compactContextLines.map((line) => (
+            <p key={line.label} className="finance-voucher-print-compact-line">
+              <span className="finance-voucher-print-compact-label">{line.label}:</span>{" "}
+              {line.value}
+            </p>
+          ))}
+        </div>
+      ) : null}
 
       <section className="finance-voucher-lines" data-testid="finance-voucher-lines">
-        <table className={`${financeTable} finance-voucher-lines-table`}>
-          <thead>
-            <tr>
-              <th className={financeTh}>Account Code</th>
-              <th className={financeTh}>Account Name</th>
-              <th className={financeTh}>Line Description</th>
-              <th className={financeThRight}>Debit</th>
-              <th className={financeThRight}>Credit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {model.lines.map((line) => (
-              <tr key={line.lineNo}>
-                <td className="finance-voucher-account-code">{line.accountCode}</td>
-                <td className={financeAccount}>{line.accountName}</td>
-                <td className={financeMemo}>{line.lineDescription?.trim() || "—"}</td>
-                <td className={financeNumber}>{formatSideAmount(line.debit)}</td>
-                <td className={financeNumber}>{formatSideAmount(line.credit)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className={financeTotalRow}>
-              <td className={financeTotalLabel} colSpan={3}>
-                Total Debit
-              </td>
-              <td className={financeTotalValue} data-testid="finance-voucher-total-debit">
-                {formatAmount(model.totalDebit)}
-              </td>
-              <td />
-            </tr>
-            <tr className={financeTotalRowStrong}>
-              <td className={financeTotalLabel} colSpan={3}>
-                Total Credit
-              </td>
-              <td />
-              <td className={financeTotalValue} data-testid="finance-voucher-total-credit">
-                {formatAmount(model.totalCredit)}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
+        <FinanceVoucherPrintLinesTable
+          lines={model.lines}
+          totalDebit={model.totalDebit}
+          totalCredit={model.totalCredit}
+        />
       </section>
 
-      <section
-        className="finance-voucher-control print-break-inside-avoid"
-        data-testid="finance-voucher-control"
+      <div
+        className="finance-voucher-closing-blocks"
+        data-testid="finance-voucher-closing-blocks"
       >
-        <h3 className="finance-voucher-section-title">Control</h3>
-        <div className="finance-voucher-signature-grid">
-          <SignatureField label="Prepared By" staffId={model.preparedBy} />
-          <SignatureField label="Checked By" staffId={model.checkedBy} />
-          <SignatureField label="Approved By" staffId={model.approvedBy} />
-        </div>
-        <dl className="finance-voucher-posted-meta">
-          <div>
-            <dt>Posted By</dt>
-            <dd>{model.postedBy?.trim() || "—"}</dd>
+        <section
+          className="finance-voucher-control finance-voucher-signature-block print-break-inside-avoid"
+          data-testid="finance-voucher-control"
+        >
+          <h3 className="finance-voucher-section-title">Control</h3>
+          <div className="finance-voucher-signature-grid">
+            <SignatureField label="Prepared By" staffId={model.preparedBy} />
+            <SignatureField label="Checked By" staffId={model.checkedBy} />
+            <SignatureField label="Approved By" staffId={model.approvedBy} />
           </div>
-          <div>
-            <dt>Posted At</dt>
-            <dd>{model.postedAtDisplay ?? "—"}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section
-        className="finance-voucher-evidence print-break-inside-avoid"
-        data-testid="finance-voucher-evidence"
-      >
-        <h3 className="finance-voucher-section-title">Evidence / Reference</h3>
-        <dl className="finance-voucher-evidence-grid">
-          <div>
-            <dt>Evidence Ref.</dt>
-            <dd>{model.evidenceRef ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Attachment Ref.</dt>
-            <dd>{model.attachmentRef ?? "—"}</dd>
-          </div>
-          {model.accountingVoucherId ? (
+          <dl className="finance-voucher-posted-meta">
             <div>
-              <dt>Accounting Voucher</dt>
-              <dd className="font-mono text-xs">{model.accountingVoucherId}</dd>
+              <dt>Posted By</dt>
+              <dd>{model.postedBy?.trim() || "—"}</dd>
             </div>
-          ) : null}
-        </dl>
-      </section>
+            <div>
+              <dt>Posted At</dt>
+              <dd>{model.postedAtDisplay ?? "—"}</dd>
+            </div>
+          </dl>
+        </section>
 
-      <footer className="finance-voucher-print-footer print-break-inside-avoid">
-        <p>
-          Printed {formatFinanceDocumentDate(new Date().toISOString())} • Reprint from saved
-          document data
-        </p>
-      </footer>
+        <section
+          className="finance-voucher-evidence finance-voucher-evidence-block print-break-inside-avoid"
+          data-testid="finance-voucher-evidence"
+        >
+          <h3 className="finance-voucher-section-title">Evidence / Reference</h3>
+          <dl className="finance-voucher-evidence-grid">
+            <div>
+              <dt>Evidence Ref.</dt>
+              <dd>{model.evidenceRef ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Attachment Ref.</dt>
+              <dd>{model.attachmentRef ?? "—"}</dd>
+            </div>
+            {model.accountingVoucherId ? (
+              <div>
+                <dt>Accounting Voucher</dt>
+                <dd className="finance-voucher-technical-id">{model.accountingVoucherId}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
+
+        <footer className="finance-voucher-print-footer no-print">
+          <p>
+            Printed {printedAtDisplay} • Reprint from saved document data
+          </p>
+        </footer>
+
+        <footer
+          className="finance-voucher-print-document-footer"
+          data-testid="finance-voucher-end-marker"
+        >
+          <p>END OF VOUCHER</p>
+        </footer>
+      </div>
     </article>
   )
 }
