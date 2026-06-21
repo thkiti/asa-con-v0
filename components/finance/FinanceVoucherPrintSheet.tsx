@@ -55,6 +55,9 @@ export function FinanceVoucherPrintSheet({
     reference: model.reference,
     description: model.description,
     remarks: model.remarks,
+    payeeName: model.payeeName,
+    payFromLabel: model.payFromLabel,
+    chequeNo: model.chequeNo,
   })
 
   return (

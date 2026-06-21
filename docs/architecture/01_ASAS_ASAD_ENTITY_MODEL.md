@@ -54,7 +54,7 @@ HO finance/admin at `HO999` may toggle entity at login or in session. Shop staff
 | Concern | Mechanism |
 |---------|-----------|
 | **Entity code** | `LegalEntity.code` (`AS` \| `AD`); persisted on finance and stock headers |
-| **Document numbering** | Entity-neutral format (e.g. `MAJ-260001`, `OPB-260001`); entity is a separate field — never `ASAS-MAJ-260001` |
+| **Document numbering** | Entity-neutral format (e.g. `MJV-260001`, `OPB-260001`); entity is a separate field — never `ASAS-MJV-260001` |
 | **Company identity** | `LegalEntity.name`, `address`, `taxId` for reports and statutory print |
 | **Letterhead / receipt** | Receipt setup (`ReceiptPrintSettings`), branch tax IDs; ASAS shop receipts use company tax ID from `HO999` |
 | **Permissions** | Role matrix in `lib/permissions/` plus entity gates on menu, pages, and APIs |

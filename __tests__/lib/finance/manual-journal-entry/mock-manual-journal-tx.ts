@@ -325,7 +325,7 @@ export function draftEntry(
   const now = new Date("2026-06-01")
   return {
     id: partial.id,
-    entryNo: partial.entryNo ?? "MAJ-260001",
+    entryNo: partial.entryNo ?? "MJV-260001",
     entryType: partial.entryType ?? "MANUAL",
     status: partial.status,
     branchId: partial.branchId ?? "branch-1",

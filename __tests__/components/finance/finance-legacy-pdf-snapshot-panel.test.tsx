@@ -7,7 +7,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
         entryId="entry-1"
-        entryNo="MAJ-260001"
+        entryNo="MJV-260001"
         pdfSnapshotReady={false}
       />
     )
@@ -21,7 +21,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
         entryId="entry-1"
-        entryNo="MAJ-260001"
+        entryNo="MJV-260001"
         pdfSnapshotReady={true}
       />
     )

@@ -1,8 +1,9 @@
 import Link from "next/link"
 import type { ManualJournalEntryTypeCode } from "@/lib/finance-ui/manual-journal-entry-display"
+import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { ManualJournalEntryEditorPage } from "@/components/finance/ManualJournalEntryEditorPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
-import { formatManualJournalEntryTypeLabel } from "@/lib/finance-ui/manual-journal-entry-display"
+import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 const ENTRY_TYPES: ManualJournalEntryTypeCode[] = [
   "MANUAL",
@@ -26,19 +27,21 @@ export default async function NewManualJournalEntryPage({ searchParams }: PagePr
 
   return (
     <main className="p-8">
-      <Link
-        href="/finance/manual-journal-entries"
-        className="text-sm text-zinc-600 underline"
-      >
-        ← Journal entries
-      </Link>
-      <EntityContextPageHeading
-        title={`New ${formatManualJournalEntryTypeLabel(entryType)}`}
-        className="mt-4 text-xl font-semibold"
-      />
-      <div className="mt-6">
-        <ManualJournalEntryEditorPage mode="create" initialEntryType={entryType} />
-      </div>
+      <FinanceDocumentContainer>
+        <Link
+          href="/finance/manual-journal-entries"
+          className={`text-sm ${themeLinkMuted}`}
+        >
+          ← Journal entries
+        </Link>
+        <EntityContextPageHeading
+          title="NEW MANUAL JOURNAL VOUCHER"
+          className="mt-4 text-xl font-semibold"
+        />
+        <div className="mt-4">
+          <ManualJournalEntryEditorPage mode="create" initialEntryType={entryType} />
+        </div>
+      </FinanceDocumentContainer>
     </main>
   )
 }

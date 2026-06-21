@@ -277,7 +277,7 @@ describe("manual-journal-entry-save", () => {
     })
 
     expect(created.status).toBe("DRAFT")
-    expect(created.entryNo).toBe("MAJ-260001")
+    expect(created.entryNo).toBe("MJV-260001")
     expect(created.lines).toHaveLength(1)
     expect(created.lines[0].lineNo).toBe(1)
     expect(tx.voucher.create).not.toHaveBeenCalled()
@@ -362,7 +362,7 @@ describe("manual-journal-entry-save", () => {
     const { tx, entries } = createSaveMockTx(defaultAccounts)
     entries.push({
       id: "locked-entry",
-      entryNo: "MAJ-260099",
+      entryNo: "MJV-260099",
       entryType: "MANUAL",
       status,
       branchId: "branch-1",

@@ -14,7 +14,7 @@ export default function Page() {
       />
       <p className="mt-2 text-zinc-600">
         Operational manual journal workflow — draft, submit, confirm, and post to GL.
-        Document numbers use type codes (MAJ, OPB, etc.) without legal entity prefix.
+        Document numbers use type codes (MJV, OPB, etc.) without legal entity prefix.
       </p>
       <div className="mt-6">
         <ManualJournalEntryListPage />

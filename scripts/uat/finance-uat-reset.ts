@@ -98,7 +98,7 @@ async function executeReset(refTypes: string[]) {
       await tx.voucher.deleteMany({ where: { id: { in: voucherIds } } })
     }
 
-    // Workflow documents (OPB, MAJ, etc.) — all statuses including posted links cleared above
+    // Workflow documents (OPB, MJV, etc.) — all statuses including posted links cleared above
     await tx.manualJournalEntry.deleteMany({})
   })
 }

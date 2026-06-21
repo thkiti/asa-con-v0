@@ -77,6 +77,9 @@ export function formatFinanceDocumentPeriodKey(
 export function formatFinanceDocumentTypeTitle(
   entryType: ManualJournalEntryTypeCode | string
 ): string {
+  if (entryType === "PAV" || entryType === "PAYMENT_VOUCHER") {
+    return "PAYMENT VOUCHER"
+  }
   const key = entryType as ManualJournalEntryTypeCode
   return FINANCE_DOCUMENT_TYPE_TITLE[key] ?? String(entryType).toUpperCase()
 }

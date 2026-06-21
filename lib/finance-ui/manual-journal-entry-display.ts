@@ -15,7 +15,7 @@ export type ManualJournalEntryStatusCode =
 
 /** Document type codes — legal entity is never part of the number string. */
 export const MANUAL_JOURNAL_ENTRY_TYPE_CODE: Record<ManualJournalEntryTypeCode, string> = {
-  MANUAL: "MAJ",
+  MANUAL: "MJV",
   OPENING_BALANCE: "OPB",
   ADJUSTMENT: "ADJ",
   RECLASS: "REJ",
@@ -53,7 +53,7 @@ export function formatManualJournalEntryTypeLabel(
   const code = manualJournalEntryTypeCode(entryType)
   switch (entryType) {
     case "MANUAL":
-      return `${code} — Manual journal`
+      return `${code} — Manual Journal Voucher`
     case "OPENING_BALANCE":
       return `${code} — Opening balance`
     case "ADJUSTMENT":

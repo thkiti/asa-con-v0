@@ -18,7 +18,7 @@ describe("manual-journal-entry-allocate-no", () => {
   describe("document code mapping", () => {
     it("maps all ManualJournalEntryType values to handbook codes", () => {
       expect(ENTRY_TYPE_DOCUMENT_CODE).toEqual({
-        MANUAL: "MAJ",
+        MANUAL: "MJV",
         OPENING_BALANCE: "OPB",
         ADJUSTMENT: "ADJ",
         RECLASS: "REJ",
@@ -28,7 +28,7 @@ describe("manual-journal-entry-allocate-no", () => {
     })
 
     it.each<[ManualJournalEntryType, string]>([
-      ["MANUAL", "MAJ"],
+      ["MANUAL", "MJV"],
       ["OPENING_BALANCE", "OPB"],
       ["ADJUSTMENT", "ADJ"],
       ["RECLASS", "REJ"],
@@ -41,7 +41,7 @@ describe("manual-journal-entry-allocate-no", () => {
 
   describe("buildManualJournalEntryNo format", () => {
     it.each<[ManualJournalEntryType, string]>([
-      ["MANUAL", "MAJ-260001"],
+      ["MANUAL", "MJV-260001"],
       ["OPENING_BALANCE", "OPB-260001"],
       ["ADJUSTMENT", "ADJ-260001"],
       ["RECLASS", "REJ-260001"],
@@ -53,14 +53,14 @@ describe("manual-journal-entry-allocate-no", () => {
 
     it("does not embed legal entity in entryNo", () => {
       const no = buildManualJournalEntryNo("MANUAL", entryDate, 42)
-      expect(no).toBe("MAJ-260042")
+      expect(no).toBe("MJV-260042")
       expect(no).not.toMatch(/ASAS|ASAD/)
     })
 
     it("uses Bangkok calendar year for YY", () => {
       const lateDec = new Date("2025-12-31T20:00:00.000Z")
       expect(calendarYearFromEntryDate(lateDec)).toBe(2026)
-      expect(buildManualJournalEntryNo("MANUAL", lateDec, 1)).toBe("MAJ-260001")
+      expect(buildManualJournalEntryNo("MANUAL", lateDec, 1)).toBe("MJV-260001")
     })
   })
 
@@ -131,7 +131,7 @@ describe("manual-journal-entry-allocate-no", () => {
         entryDate,
       })
 
-      expect(no).toBe("MAJ-260002")
+      expect(no).toBe("MJV-260002")
     })
 
     it("isolates sequence per legalEntityCode", async () => {
@@ -159,8 +159,8 @@ describe("manual-journal-entry-allocate-no", () => {
         entryDate,
       })
 
-      expect(asas).toBe("MAJ-260002")
-      expect(asad).toBe("MAJ-260002")
+      expect(asas).toBe("MJV-260002")
+      expect(asad).toBe("MJV-260002")
     })
 
     it("isolates sequence per entryType", async () => {
@@ -172,7 +172,7 @@ describe("manual-journal-entry-allocate-no", () => {
         },
       ])
 
-      const maj = await allocateManualJournalEntryNo(tx as never, {
+      const mjv = await allocateManualJournalEntryNo(tx as never, {
         legalEntityCode: "ASAS",
         entryType: "MANUAL",
         entryDate,
@@ -183,7 +183,7 @@ describe("manual-journal-entry-allocate-no", () => {
         entryDate,
       })
 
-      expect(maj).toBe("MAJ-260002")
+      expect(mjv).toBe("MJV-260002")
       expect(opb).toBe("OPB-260001")
     })
 

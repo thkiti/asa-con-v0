@@ -6,7 +6,7 @@ describe("buildManualJournalEntryPdfSnapshot", () => {
     const snapshot = buildManualJournalEntryPdfSnapshot(
       {
         id: "entry-1",
-        entryNo: "MAJ-260001",
+        entryNo: "MJV-260001",
         entryType: "OPENING_BALANCE",
         branchId: "branch-1",
         legalEntityCode: "AS",

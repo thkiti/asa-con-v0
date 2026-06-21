@@ -55,4 +55,23 @@ describe("buildFinanceVoucherPrintCompactContextLines", () => {
       })
     ).toEqual([{ label: "Remarks", value: "Posted after TB review" }])
   })
+
+  it("includes PAV payee, pay from, and cheque fields", () => {
+    expect(
+      buildFinanceVoucherPrintCompactContextLines({
+        headerDescription: "Office supplies",
+        reference: "INV-1",
+        description: "Office supplies",
+        remarks: null,
+        payeeName: "ABC Co.",
+        payFromLabel: "10101001 — Bank",
+        chequeNo: "999",
+      })
+    ).toEqual([
+      { label: "Payee", value: "ABC Co." },
+      { label: "Pay from", value: "10101001 — Bank" },
+      { label: "Reference", value: "INV-1" },
+      { label: "Cheque", value: "999" },
+    ])
+  })
 })

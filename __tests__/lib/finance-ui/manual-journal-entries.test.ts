@@ -38,7 +38,7 @@ describe("manual-journal-entries UI fetchers", () => {
   })
 
   it("fetchManualJournalEntry returns entry from detail response", async () => {
-    const entry = { id: "entry-1", entryNo: "MAJ-2620001" }
+    const entry = { id: "entry-1", entryNo: "MJV-2620001" }
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({ entry }),

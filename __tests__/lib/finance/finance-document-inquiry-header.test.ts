@@ -59,7 +59,7 @@ describe("resolveFinanceDocumentHeaderContext", () => {
       legalEntityCode: "AS",
       refType: FINANCE_REF_TYPES.MANUAL_JOURNAL,
       refId: "missing-entry",
-      refNo: "MAJ-260001",
+      refNo: "MJV-260001",
       entryDate: "2026-06-14T00:00:00.000Z",
       description: "Adjustment",
       postedAt: "2026-06-14T15:00:00.000Z",
@@ -68,7 +68,7 @@ describe("resolveFinanceDocumentHeaderContext", () => {
     expect(header).toMatchObject({
       legalEntityCode: "AS",
       entryType: "MANUAL",
-      documentNo: "MAJ-260001",
+      documentNo: "MJV-260001",
       status: "POSTED",
       description: "Adjustment",
     })

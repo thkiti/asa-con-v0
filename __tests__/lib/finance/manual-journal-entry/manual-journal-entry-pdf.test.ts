@@ -33,7 +33,7 @@ const mockApplyPdfSnapshot = applyPdfSnapshot as jest.Mock
 const snapshot = {
   snapshotVersion: 1 as const,
   entryId: "11111111-1111-1111-1111-111111111111",
-  entryNo: "MAJ-260001",
+  entryNo: "MJV-260001",
   entryType: "MANUAL" as const,
   entryTypeLabel: "Manual Journal Voucher",
   branchId: "branch-1",

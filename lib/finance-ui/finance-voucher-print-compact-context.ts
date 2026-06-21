@@ -13,15 +13,33 @@ export function buildFinanceVoucherPrintCompactContextLines(input: {
   reference: string | null
   description: string | null
   remarks: string | null
+  payeeName?: string | null
+  payFromLabel?: string | null
+  chequeNo?: string | null
 }): FinanceVoucherPrintCompactLine[] {
   const lines: FinanceVoucherPrintCompactLine[] = []
   const headerDescription = normalize(input.headerDescription)
   const beingDescription = normalize(input.description)
   const reference = normalize(input.reference)
   const remarks = normalize(input.remarks)
+  const payeeName = normalize(input.payeeName)
+  const payFromLabel = normalize(input.payFromLabel)
+  const chequeNo = normalize(input.chequeNo)
+
+  if (payeeName) {
+    lines.push({ label: "Payee", value: payeeName })
+  }
+
+  if (payFromLabel) {
+    lines.push({ label: "Pay from", value: payFromLabel })
+  }
 
   if (reference) {
     lines.push({ label: "Reference", value: reference })
+  }
+
+  if (chequeNo) {
+    lines.push({ label: "Cheque", value: chequeNo })
   }
 
   if (beingDescription && beingDescription !== headerDescription) {

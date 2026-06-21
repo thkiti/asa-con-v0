@@ -103,12 +103,13 @@ All finance operational document numbers use:
 
 | Document number | Meaning |
 |-----------------|---------|
-| `MAJ-260001` | Manual Journal — first in calendar year 2026 |
+| `MJV-260001` | Manual Journal Voucher — first in calendar year 2026 |
 | `OPB-260001` | Opening Balance — first in 2026 |
 | `ADJ-260001` | Adjustment Journal — first in 2026 |
 | `REJ-260001` | Reclass Journal — first in 2026 |
 | `ACJ-260001` | Accrual Journal — first in 2026 |
 | `AUJ-260001` | Auditor Adjustment Journal — first in 2026 |
+| `PAV-260001` | Payment Voucher — first in calendar year 2026 |
 
 Sequence resets per `CODE` + `YY` (not per accounting period month).
 
@@ -120,7 +121,7 @@ Legal entity codes (**ASAS**, **ASAD**, etc.) are **not** part of document numbe
 
 | Correct | Incorrect |
 |---------|-----------|
-| `MAJ-260001` | `ASAS-MAJ-260001` |
+| `MJV-260001` | `ASAS-MJV-260001` |
 | `OPB-260001` | `ASAD-OPB-260001` |
 
 Legal entity is a **separate field** on the document header and in system context (branch, session, `legalEntityCode`). Document numbers are entity-neutral at the string level; entity scope is enforced by data model and posting rules, not by prefixing the number.
@@ -133,7 +134,7 @@ Legal entity is a **separate field** on the document header and in system contex
 
 | Code | Name | `ManualJournalEntryType` |
 |------|------|--------------------------|
-| **MAJ** | Manual Journal | `MANUAL` |
+| **MJV** | Manual Journal Voucher | `MANUAL` |
 | **OPB** | Opening Balance | `OPENING_BALANCE` |
 | **ADJ** | Adjustment Journal | `ADJUSTMENT` |
 | **REJ** | Reclass Journal | `RECLASS` |
@@ -141,6 +142,16 @@ Legal entity is a **separate field** on the document header and in system contex
 | **AUJ** | Auditor Adjustment Journal | `AUDITOR_ADJUSTMENT` |
 
 Each type maps to exactly one document code. The allocator chooses `CODE` from `entryType` when assigning `entryNo`.
+
+Each type maps to exactly one document code. The allocator chooses `CODE` from `entryType` when assigning `entryNo`.
+
+### Active codes (Payment Voucher — Phase F1C+)
+
+| Code | Name | Model |
+|------|------|-------|
+| **PAV** | Payment Voucher | `PaymentVoucher` |
+
+Document numbers use code **PAV** (e.g. `PAV-260001`). Operational model is separate from `ManualJournalEntry`; posting uses `FINANCE_REF_TYPES.PAYMENT_VOUCHER`.
 
 ### Reserved codes (not yet implemented)
 
@@ -184,7 +195,7 @@ Reports must not query `ManualJournalEntry` directly.
 
 ## Future codes
 
-Primary finance direction (business document families, Finance Core status): [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md). Pending code decisions (PAY/PV, REV/RV, ACC/ACJ, etc.): [Appendix D — Vocabulary Decisions Pending](./FINANCE_TRANSACTION_UNIVERSE.md#appendix-d--vocabulary-decisions-pending).
+Primary finance direction (business document families, Finance Core status): [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md). Pending code decisions (REV/RV, ACC/ACJ, etc.): [Appendix D — Vocabulary Decisions Pending](./FINANCE_TRANSACTION_UNIVERSE.md#appendix-d--vocabulary-decisions-pending).
 
 All new finance operational document codes must:
 

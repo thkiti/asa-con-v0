@@ -6,9 +6,9 @@ import {
 
 describe("manual-journal-entry-display", () => {
   it("formats document number without legal entity prefix", () => {
-    expect(formatManualJournalEntryDocumentNo("MAJ-260001")).toBe("MAJ-260001")
+    expect(formatManualJournalEntryDocumentNo("MJV-260001")).toBe("MJV-260001")
     expect(formatManualJournalEntryDocumentNo("OPB-260001")).toBe("OPB-260001")
-    expect(formatManualJournalEntryDocumentNo(null, "MANUAL")).toBe("MAJ (draft)")
+    expect(formatManualJournalEntryDocumentNo(null, "MANUAL")).toBe("MJV (draft)")
   })
 
   it("maps entry type codes", () => {

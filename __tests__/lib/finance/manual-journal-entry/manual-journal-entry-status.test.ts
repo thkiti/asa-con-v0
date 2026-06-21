@@ -5,6 +5,7 @@ import {
 import {
   applyCancelledStatus,
   applyConfirmedStatus,
+  applyPdfSnapshotRepair,
   applyPostedStatus,
   applySubmittedStatus,
 } from "@/lib/finance/manual-journal-entry/manual-journal-entry-status"
@@ -15,7 +16,7 @@ function entry(
 ): ManualJournalEntryWithLines {
   return {
     id: "entry-1",
-    entryNo: "MAJ-260001",
+    entryNo: "MJV-260001",
     entryType: "MANUAL",
     branchId: "branch-1",
     legalEntityCode: "ASAS",
@@ -35,6 +36,9 @@ function entry(
     postedVoucherId: null,
     postedJournalEntryId: null,
     reversalJournalEntryId: null,
+    pdfPath: null,
+    pdfBlobUrl: null,
+    pdfGeneratedAt: null,
     createdAt: new Date("2026-06-01"),
     updatedAt: new Date("2026-06-01"),
     lines: [],
@@ -182,6 +186,72 @@ describe("manual-journal-entry-status", () => {
         })
       ).rejects.toMatchObject({
         code: ManualJournalEntryErrorCodes.IMMUTABLE_ENTRY,
+      })
+    })
+  })
+
+  describe("applyPdfSnapshotRepair", () => {
+    it("updates only PDF metadata and leaves accounting fields unchanged", async () => {
+      const postedAt = new Date("2026-06-15T10:00:00.000Z")
+      const { tx, getEntry } = createMockTx(
+        entry({
+          status: "POSTED",
+          postedAt,
+          postedByStaffId: "staff-post",
+          postedJournalEntryId: "journal-1",
+          postedVoucherId: "voucher-1",
+          pdfPath: "manual-journal/entry-1.pdf",
+          pdfGeneratedAt: new Date("2026-06-15T10:01:00.000Z"),
+        })
+      )
+
+      const repairAt = new Date("2026-06-20T12:00:00.000Z")
+      const updated = await applyPdfSnapshotRepair(tx as never, {
+        entryId: "entry-1",
+        pdfPath: "manual-journal/entry-1.pdf",
+        pdfBlobUrl: null,
+        pdfGeneratedAt: repairAt,
+      })
+
+      expect(updated.pdfGeneratedAt).toEqual(repairAt)
+      expect(updated.postedAt).toEqual(postedAt)
+      expect(updated.postedJournalEntryId).toBe("journal-1")
+      expect(updated.postedVoucherId).toBe("voucher-1")
+      expect(updated.status).toBe("POSTED")
+      expect(getEntry().postedAt).toEqual(postedAt)
+      expect(getEntry().postedJournalEntryId).toBe("journal-1")
+    })
+
+    it("rejects repair for non-POSTED entries", async () => {
+      const { tx } = createMockTx(
+        entry({
+          status: "CONFIRMED",
+          pdfPath: "manual-journal/entry-1.pdf",
+        })
+      )
+
+      await expect(
+        applyPdfSnapshotRepair(tx as never, {
+          entryId: "entry-1",
+          pdfPath: "manual-journal/entry-1.pdf",
+          pdfGeneratedAt: new Date(),
+        })
+      ).rejects.toMatchObject({
+        code: ManualJournalEntryErrorCodes.INVALID_TRANSITION,
+      })
+    })
+
+    it("rejects repair when no archived PDF exists", async () => {
+      const { tx } = createMockTx(entry({ status: "POSTED" }))
+
+      await expect(
+        applyPdfSnapshotRepair(tx as never, {
+          entryId: "entry-1",
+          pdfPath: "manual-journal/entry-1.pdf",
+          pdfGeneratedAt: new Date(),
+        })
+      ).rejects.toMatchObject({
+        code: ManualJournalEntryErrorCodes.PDF_MISSING,
       })
     })
   })

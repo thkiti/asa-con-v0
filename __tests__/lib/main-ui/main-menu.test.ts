@@ -78,9 +78,10 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("HO_ADMIN", "balance-sheet")?.href).toBe(
       "/finance/reports/balance-sheet"
     )
-    expect(findItem("HO_ADMIN", "pay")?.status).toBe("planned")
-    expect(findItem("HO_ADMIN", "rev")?.status).toBe("planned")
-    expect(findItem("HO_ADMIN", "petty-cash")?.status).toBe("planned")
+    expect(findItem("HO_ADMIN", "pav")?.status).toBe("available")
+    expect(findItem("HO_ADMIN", "rev")?.status).toBe("available")
+    expect(findItem("HO_ADMIN", "rev")?.href).toBe("/finance/revenue-vouchers")
+    expect(findItem("HO_ADMIN", "petty-cash")?.status).toBe("available")
     expect(findItem("HO_ADMIN", "retained-earnings")).toBeUndefined()
     expect(findItem("HO_ADMIN", "chart-of-accounts-import")).toBeUndefined()
     expect(findItem("HO_ADMIN", "reconciliation-dashboard")).toBeUndefined()

@@ -1,6 +1,6 @@
 # Finance Transaction Universe
 
-Status: **Design direction** — captures current understanding after Finance Core work (OPB, MAJ, posting, reports, identity, layout, navigation)  
+Status: **Design direction** — captures current understanding after Finance Core work (OPB, MJV, posting, reports, identity, layout, navigation)  
 Scope: Architecture and document-family taxonomy — **not** an implementation spec  
 Type: Design-direction document  
 Related: [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md), [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md), [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md), [32_FINANCE_CORE_16B_MANUAL_JOURNAL.md](./32_FINANCE_CORE_16B_MANUAL_JOURNAL.md), [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md), [37_FINANCE_CORE_16J_GENERAL_LEDGER.md](./37_FINANCE_CORE_16J_GENERAL_LEDGER.md), [33_FINANCE_CORE_16F_BALANCE_SHEET.md](./33_FINANCE_CORE_16F_BALANCE_SHEET.md)
@@ -11,18 +11,18 @@ Related: [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STA
 
 Finance Core is **substantially complete**.
 
-The accounting engine — opening balance, manual journals, posting, voucher generation, general ledger infrastructure, trial balance, profit & loss, and balance sheet — is operational and has been exercised through OPB and MAJ workflows, report surfaces, identity standardization, and navigation work.
+The accounting engine — opening balance, manual journals, posting, voucher generation, general ledger infrastructure, trial balance, profit & loss, and balance sheet — is operational and has been exercised through OPB and MJV workflows, report surfaces, identity standardization, and navigation work.
 
 **Remaining finance work is primarily:**
 
 | Area | Focus |
 |------|-------|
-| Business document design | PAY, REV, APV, ACC, and other user-facing operational forms |
+| Business document design | PAV, REV, APV, ACC, and other user-facing operational forms |
 | Document storage | Attachments, evidence, supporting files |
 | Audit and traceability | Consistent lineage from business document through voucher to ledger and reports |
 | User workflow | Submit → Confirm → Post UX, settlement processes, inquiry hubs |
 
-This is **not** accounting engine development. Future phases should treat business documents as specialized workflows built on top of the existing MAJ/posting path unless a genuine new accounting capability is required.
+This is **not** accounting engine development. Future phases should treat business documents as specialized workflows built on top of the existing MJV/posting path unless a genuine new accounting capability is required.
 
 ---
 
@@ -33,7 +33,7 @@ Finance is understood as two distinct layers. They share posting infrastructure 
 ```mermaid
 flowchart TB
   subgraph layer2 [Layer 2 — Business Documents]
-    PAY[PAY Payment / Cheque]
+    PAV[PAV Payment Voucher]
     REV[REV Receivable Voucher]
     APV[APV …]
     ACC[ACC …]
@@ -41,7 +41,7 @@ flowchart TB
 
   subgraph layer1 [Layer 1 — Accounting Engine]
     OPB[OPB Opening Balance]
-    MAJ[MAJ Manual Journal]
+    MJV[MJV Manual Journal Voucher]
     Post[Posting]
     Voucher[Voucher generation]
     Journal[Journal creation]
@@ -53,7 +53,7 @@ flowchart TB
 
   layer2 -->|"uses"| layer1
   OPB --> Post
-  MAJ --> Post
+  MJV --> Post
   Post --> Voucher --> Journal --> GL
   GL --> TB
   GL --> PL
@@ -69,7 +69,7 @@ Already implemented:
 | Capability | Notes |
 |------------|-------|
 | OPB | Opening balance via `ManualJournalEntry` — see [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md) |
-| MAJ | Manual journal and reversal — see [32_FINANCE_CORE_16B_MANUAL_JOURNAL.md](./32_FINANCE_CORE_16B_MANUAL_JOURNAL.md) |
+| MJV | Manual journal voucher and reversal — see [32_FINANCE_CORE_16B_MANUAL_JOURNAL.md](./32_FINANCE_CORE_16B_MANUAL_JOURNAL.md) |
 | Posting | Centralized `lib/finance/posting.ts` — see [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md) |
 | Voucher generation | Immutable posted vouchers with `voucherNo` |
 | Journal creation | Balanced `JournalEntry` / `JournalEntryLine` |
@@ -84,16 +84,16 @@ The accounting engine is considered **operational**. Reports read posted GL only
 
 **Status: primary area of future work**
 
-Business documents are **user-facing workflows** built on top of MAJ and posting. They are specialized business forms — not new accounting engines.
+Business documents are **user-facing workflows** built on top of MJV and posting. They are specialized business forms — not new accounting engines.
 
 | Code | Name | Role |
 |------|------|------|
-| **PAY** | Payment / Cheque | Outbound payment workflow |
+| **PAV** | Payment Voucher | Outbound payment workflow |
 | **REV** | Receivable Voucher | Amounts owed to the company, not yet received |
 | **APV** | *(TBD)* | Accounts payable voucher family — design pending |
 | **ACC** | *(TBD)* | Accrual / acceptance family — design pending |
 
-Most future finance documents should follow the same pattern as OPB and MAJ: an operational document model, a workflow (draft through post), and a posting hook into the existing voucher/journal path — not a parallel GL implementation.
+Most future finance documents should follow the same pattern as OPB and MJV: an operational document model, a workflow (draft through post), and a posting hook into the existing voucher/journal path — not a parallel GL implementation.
 
 ---
 
@@ -103,7 +103,7 @@ Every finance event is recognized at three levels. Each level has a distinct rol
 
 | Level | Name | Role | Examples |
 |-------|------|------|----------|
-| **1** | Business Document | Primary user-facing identity | `OPB-260001`, `MAJ-260001`, `PAY-260001`, `REV-260001` |
+| **1** | Business Document | Primary user-facing identity | `OPB-260001`, `MJV-260001`, `PAV-260001`, `REV-260001` |
 | **2** | Posted Journal / Voucher | Accounting posting reference | `V-2026-01-00001` |
 | **3** | Ledger Transactions | Account-level postings that feed TB, P&L, and BS | Debit/credit lines on `JournalEntryLine` per GL account |
 
@@ -147,19 +147,19 @@ flowchart LR
 | Code | Name | `ManualJournalEntryType` | Status |
 |------|------|--------------------------|--------|
 | **OPB** | Opening Balance | `OPENING_BALANCE` | Implemented |
-| **MAJ** | Manual Accounting Journal | `MANUAL` | Implemented |
+| **MJV** | Manual Journal Voucher | `MANUAL` | Implemented |
 | **ADJ** | Adjustment Journal | `ADJUSTMENT` | Registered; same MJE family |
 | **REJ** | Reclass Journal | `RECLASS` | Registered; same MJE family |
 | **ACJ** | Accrual Journal | `ACCRUAL` | Registered; same MJE family |
 | **AUJ** | Auditor Adjustment Journal | `AUDITOR_ADJUSTMENT` | Registered; same MJE family |
 
-OPB and MAJ are the primary exercised paths. Other MJE-family codes share the same operational model and posting infrastructure.
+OPB and MJV are the primary exercised paths. Other MJE-family codes share the same operational model and posting infrastructure.
 
 ### Planned business document families
 
 | Code | Name | Business meaning | Status |
 |------|------|------------------|--------|
-| **PAY** | Payment / Cheque | Outbound payments (cheque, transfer, settlement disbursement) | Design pending |
+| **PAV** | Payment Voucher | Outbound payments (cheque, transfer, settlement disbursement) | F1C foundation |
 | **REV** | Receivable Voucher | Money **owed to the company** but **not yet received** | Design pending |
 | **APV** | Accounts Payable Voucher | Payables workflow — scope TBD | Design pending |
 | **ACC** | *(TBD)* | Accrual / acceptance — scope TBD | Design pending |
@@ -194,7 +194,7 @@ See [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md) for operational �
 
 ## 5. Current System Flow
 
-Standard path for Manual Journal Entry family documents (OPB, MAJ, and future business documents on the same model):
+Standard path for Manual Journal Entry family documents (OPB, MJV, and future business documents on the same model):
 
 ```mermaid
 flowchart LR
@@ -213,7 +213,7 @@ flowchart LR
 
 | Step | Meaning |
 |------|---------|
-| **Business Document** | User creates/edits operational document (e.g. `MAJ-260001`) |
+| **Business Document** | User creates/edits operational document (e.g. `MJV-260001`) |
 | **Submit** | Document leaves draft; enters review queue |
 | **Confirm** | Authorized reviewer approves for posting |
 | **Post** | Accounting engine creates voucher + journal; document status → POSTED |
@@ -230,18 +230,18 @@ Operational sources (POS, stock documents) skip the MJE workflow but still land 
 
 > **Accounting Engine ≠ Business Documents**
 
-This is the major realization from the OPB / MAJ / reports / identity phase:
+This is the major realization from the OPB / MJV / reports / identity phase:
 
 | Layer | State |
 |-------|-------|
 | Accounting engine | Largely complete — posting, vouchers, journals, TB, P&L, BS |
-| Business documents | Mostly ahead — PAY, REV, APV, ACC need design and UX |
+| Business documents | Mostly ahead — PAV UI, REV, APV, ACC need design and UX |
 
 The team repeatedly converged on building **another engine** when the real need was a **better form and workflow** on top of the existing engine.
 
 Implications:
 
-- OPB and MAJ prove the pattern: one operational document model, workflow states, post into existing voucher path
+- OPB and MJV prove the pattern: one operational document model, workflow states, post into existing voucher path
 - New document types should default to **specialized business forms**, not new GL subsystems
 - Report and identity work validated that the downstream chain (voucher → ledger → TB / P&L / BS) is sound
 
@@ -253,7 +253,7 @@ Implications:
 
 | Priority | Area |
 |----------|------|
-| 1 | **PAY document design** — payment/cheque workflow, fields, approval rules |
+| 1 | **PAV document design** — payment/cheque workflow, fields, approval rules (F1C foundation done; UI pending) |
 | 2 | **REV document design** — receivable recognition vs collection; settlement scenarios |
 | 3 | **Attachment strategy** — where files live, how they link to Level 1 identity |
 | 4 | **Evidence management** — supporting documents for audit and close |
@@ -264,7 +264,7 @@ Implications:
 
 **Avoid creating new accounting engines** unless required by a genuine accounting need (e.g. a posting rule that cannot be expressed through the existing voucher/journal path).
 
-When in doubt: design the business document first; confirm posting lines; reuse MAJ/MJE infrastructure.
+When in doubt: design the business document first; confirm posting lines; reuse MJV/MJE infrastructure.
 
 ---
 
@@ -290,7 +290,7 @@ This section records known tensions with existing docs. Resolution belongs in ha
 
 | Topic | This document | Existing doc | Notes |
 |-------|---------------|--------------|-------|
-| Payment code | **PAY** | [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) uses **PV** (Payment Voucher) | Code must be registered in [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) before implementation; reconcile PAY vs PV |
+| Payment code | **PAV** | Registered in [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — Payment Voucher family uses **PAV** (V suffix, same pattern as MJV) | Resolved — F1C |
 | Receivable vs receipt code | **REV** (Receivable Voucher — money owed, not received) | Identity standard uses **RV** (Receipt Voucher — money received) | Opposite business meaning; REV here is receivable recognition, not cash receipt |
 | AR/AP journals | REV, APV as business documents | Handbook reserves **ARJ**, **APJ** for Accounts Receivable / Payable Journal | Clarify whether REV/APV replace ARJ/APJ or sit above them |
 | ACC code | Listed as planned family | Handbook uses **ACJ** for Accrual Journal (implemented MJE type) | ACC may need renaming or explicit distinction from ACJ |
@@ -310,7 +310,7 @@ This section records known tensions with existing docs. Resolution belongs in ha
 | [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) | Document codes, numbering, reporting boundary |
 | [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md) | Posting invariants, voucher/journal model |
 | [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md) | OPB reference implementation |
-| [32_FINANCE_CORE_16B_MANUAL_JOURNAL.md](./32_FINANCE_CORE_16B_MANUAL_JOURNAL.md) | MAJ reference implementation |
+| [32_FINANCE_CORE_16B_MANUAL_JOURNAL.md](./32_FINANCE_CORE_16B_MANUAL_JOURNAL.md) | MJV reference implementation |
 
 ### Reports and GL
 
@@ -343,7 +343,7 @@ This section records known tensions with existing docs. Resolution belongs in ha
 ### Finance Core Status
 
 ✓ OPB  
-✓ MAJ  
+✓ MJV  
 ✓ Posting  
 ✓ Voucher Generation  
 ✓ General Ledger  
@@ -372,7 +372,7 @@ This appendix lists **unresolved** naming and vocabulary conflicts. No decision 
 
 | # | Current term | Conflicting term | Document source | Recommended future decision owner |
 |---|--------------|------------------|-----------------|-----------------------------------|
-| 1 | **PAY** — Payment / Cheque (outbound payment business document) | **PV** — Payment Voucher | [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) §4 vs [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) §8 (`PV-260001`) | [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — document code registry |
+| 1 | **PAV** — Payment Voucher | — | Resolved — see [FINANCE_PAY_DOCUMENT_DESIGN.md](./FINANCE_PAY_DOCUMENT_DESIGN.md) | [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) |
 | 2 | **REV** — Receivable Voucher (money owed, not yet received) | **RV** — Receipt Voucher (money received) | [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) §4 vs [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) §2, §8 (`RV-260001`) | [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — document code registry |
 | 3 | **REV** — Receivable Voucher (business document family) | **ARJ** — Accounts Receivable Journal (reserved code) | [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) §4 vs [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) § Reserved codes | [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) + [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) maintainers |
 | 4 | **APV** — Accounts Payable Voucher (business document family, scope TBD) | **APJ** — Accounts Payable Journal (reserved code) | [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) §2, §4 vs [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) § Reserved codes | [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) + [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) maintainers |
@@ -381,4 +381,4 @@ This appendix lists **unresolved** naming and vocabulary conflicts. No decision 
 | 7 | **JV** — Journal Voucher (`JV-260001`, planned in identity standard) | *(not listed)* — no corresponding family in transaction universe | [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) §2, §8 only | [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — register or retire before use |
 | 8 | Finance Core **16C** (Trial Balance) and **16E** (Profit & Loss) — referenced as implemented capabilities | No standalone `32_FINANCE_CORE_16C_*` or `32_FINANCE_CORE_16E_*` markdown files | [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) §2, [33_FINANCE_CORE_16F_BALANCE_SHEET.md](./33_FINANCE_CORE_16F_BALANCE_SHEET.md) § Finance Core chain, [37_FINANCE_CORE_16J_GENERAL_LEDGER.md](./37_FINANCE_CORE_16J_GENERAL_LEDGER.md) § What 16J is not | Finance Core documentation maintainers |
 
-**Note:** Until rows 1–5 are resolved, do not register new three-letter codes in the handbook or implement PAY / REV / APV / ACC document families.
+**Note:** PAV is registered and implemented (F1C foundation). Rows 2–5 remain open before implementing REV / APV / ACC document families.

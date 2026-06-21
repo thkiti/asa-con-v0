@@ -11,7 +11,7 @@ import {
 import type { AllocateManualJournalEntryNoInput } from "./manual-journal-entry-types"
 
 export const ENTRY_TYPE_DOCUMENT_CODE: Record<ManualJournalEntryType, string> = {
-  MANUAL: "MAJ",
+  MANUAL: "MJV",
   OPENING_BALANCE: "OPB",
   ADJUSTMENT: "ADJ",
   RECLASS: "REJ",

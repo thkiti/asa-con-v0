@@ -27,7 +27,7 @@ The underlying data model already links operational documents to vouchers (`refN
 
 | Surface | Current primary identity | Target |
 |---------|-------------------------|--------|
-| OPB/MAJ editor (POSTED) | Single workflow audit line (`OPB-260001 • Entry Date: … • Created: … • Posted: …`) | Canonical 3-row header (see §5) |
+| OPB/MJV editor (POSTED) | Single workflow audit line (`OPB-260001 • Entry Date: … • Created: … • Posted: …`) | Canonical 3-row header (see §5) |
 | Journal Inquiry | `voucherNo` in header | Level 1 document no + canonical header |
 | Voucher Detail | `<h2>Voucher {voucherNo}</h2>` | Level 1 document no + canonical header; voucher in Accounting Information |
 | General Ledger | `entryNo` column = `voucherNo` | `entryNo` column = Level 1 (`refNo` / sourceRef) |
@@ -58,7 +58,7 @@ Three levels. Each level has one role. Levels must not compete for the same UI s
 | **Role** | User-facing document identity |
 | **Field** | `ManualJournalEntry.entryNo` (and future operational document numbers) |
 | **Format** | `<CODE>-<YY><NNNN>` per [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) |
-| **Examples** | `OPB-260001`, `MAJ-260001`, `RV-260001`, `PV-260001`, `JV-260001` |
+| **Examples** | `OPB-260001`, `MJV-260001`, `PAV-260001`, `REV-260001`, `JV-260001` |
 
 Used in: page headers, list primary columns, PDF titles, search, audit references, traceability labels (first identifier).
 
@@ -97,9 +97,9 @@ The primary document identity is **always** the operational document number.
 Examples:
 
 - `OPB-260001`
-- `MAJ-260001`
+- `MJV-260001`
 - `RV-260001`
-- `PV-260001`
+- `PAV-260001`
 - `JV-260001`
 
 Users, reports, search screens, traceability links, PDF snapshots, and audit references **must use the primary document number as the first identifier**.
@@ -219,7 +219,7 @@ This standard applies to all surfaces that present a finance operational documen
 | Journal Inquiry | `/finance/journal-entries/[id]` | Level 1 + canonical header when `refNo` present |
 | Voucher Detail | Voucher trace view | Level 1 + canonical header; voucher in Accounting Information |
 | PDF Snapshot | Manual journal entry PDF | Mirror POSTED editor header |
-| Hub / list pages | OPB hub, MAJ list | Primary column = Level 1 |
+| Hub / list pages | OPB hub, MJV list | Primary column = Level 1 |
 | General Ledger | GL transaction list | Display column = Level 1 (`refNo` / sourceRef) |
 | Traceability | Reconciliation / trace panels | Level 1 as first identifier |
 
@@ -248,7 +248,7 @@ Numbering format is defined in [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md). This 
 | Code | Type | Row 1 title |
 |------|------|-------------|
 | OPB | Opening Balance | `OPENING BALANCE` |
-| MAJ | Manual Journal | `MANUAL JOURNAL VOUCHER` |
+| MJV | Manual Journal Voucher | `MANUAL JOURNAL VOUCHER` |
 | ADJ | Adjustment | `ADJUSTMENT JOURNAL` |
 | REJ | Reclass | `RECLASS JOURNAL` |
 | ACJ | Accrual | `ACCRUAL JOURNAL` |
@@ -259,7 +259,7 @@ Numbering format is defined in [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md). This 
 | Code | Planned name | Level 1 example |
 |------|--------------|-----------------|
 | RV | Receipt Voucher | `RV-260001` |
-| PV | Payment Voucher | `PV-260001` |
+| PAV | Payment Voucher | `PAYMENT VOUCHER` |
 | JV | Journal Voucher | `JV-260001` |
 
 All future types follow the same rules: one Level 1 number per operational document, canonical 3-row header, Level 2 voucher in Accounting Information only.
@@ -364,7 +364,7 @@ Pre-implementation audit of current codebase and docs against this standard. **N
 
 | Location | Header pattern | Standard violation |
 |----------|---------------|-------------------|
-| POSTED OPB/MAJ editor | Single workflow audit line via `buildFinanceDocumentAuditLine` | Missing Row 1 (entity • type), Row 2 Period/Status; uses Created/Submitted/Confirmed/Posted instead |
+| POSTED OPB/MJV editor | Single workflow audit line via `buildFinanceDocumentAuditLine` | Missing Row 1 (entity • type), Row 2 Period/Status; uses Created/Submitted/Confirmed/Posted instead |
 | OPB CONFIRMED editor | Same audit line pattern | Status should be `CONFIRMED` in Row 2, not workflow-only line |
 | PDF (`manual-journal-entry-pdf-header.ts`) | Matches POSTED UI audit line | Not 3-row canonical; no Accounting Information block separation |
 | Journal Inquiry | Ad-hoc "Journal header" dl grid | No canonical header |
@@ -399,11 +399,11 @@ OPB-260001 • Entry Date: 01.01.2026 • Period: 2026-01 • Status: POSTED
 Description: OPENING BALANCE 2026
 ```
 
-**POSTED MAJ reference:**
+**POSTED MJV reference:**
 
 ```
 ASAD • MANUAL JOURNAL VOUCHER
-MAJ-260001 • Entry Date: 14.06.2026 • Period: 2026-06 • Status: POSTED
+MJV-260001 • Entry Date: 14.06.2026 • Period: 2026-06 • Status: POSTED
 Description: Year-end accrual adjustment
 ```
 

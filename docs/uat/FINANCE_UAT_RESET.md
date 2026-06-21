@@ -40,7 +40,7 @@ Review console output. Obtain stakeholder confirmation if operational GL (POS/st
 
 | Scope | Removes | Preserves |
 |-------|---------|-----------|
-| `manual-only` (default) | All `ManualJournalEntry` (OPB, MAJ, …), vouchers/journals for manual finance ref types | POS/stock GL, CoA, master data |
+| `manual-only` (default) | All `ManualJournalEntry` (OPB, MJV, …), vouchers/journals for manual finance ref types | POS/stock GL, CoA, master data |
 | `all-gl` | Above **plus** `POS_SALE`, `POS_REFUND`, `STOCK_DOC_POST` journals | CoA, branches, staff, products, sales rows, stock documents |
 
 **Risk (`all-gl`):** Deletes GL vouchers for POS/stock. Sales and stock rows remain but finance trace links break until re-posted.

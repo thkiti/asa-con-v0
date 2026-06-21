@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { ManualJournalEntryEditorPage } from "@/components/finance/ManualJournalEntryEditorPage"
 import { ManualJournalEntryListPage } from "@/components/finance/ManualJournalEntryListPage"
+import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
@@ -22,7 +23,7 @@ jest.mock("@/lib/finance-ui/manual-journal-entries", () => ({
     entries: [
       {
         id: "entry-1",
-        entryNo: "MAJ-260001",
+        entryNo: "MJV-260001",
         entryType: "MANUAL",
         status: "DRAFT",
         branchId: "branch-1",
@@ -89,7 +90,7 @@ function asEntry(data: Record<string, unknown>): ManualJournalEntryRead {
 function baseEntry(overrides: Record<string, unknown> = {}) {
   return {
     id: "entry-1",
-    entryNo: "MAJ-260001",
+    entryNo: "MJV-260001",
     entryType: "MANUAL",
     status: "DRAFT",
     branchId: "branch-1",
@@ -150,25 +151,62 @@ describe("ManualJournalEntryListPage", () => {
     expect(html).toContain("filter-entry-type")
     expect(html).toContain("filter-legal-entity")
     expect(html).toContain("Loading entries")
-    expect(html).not.toContain("ASAS-MAJ")
-    expect(html).not.toContain("ASAD-MAJ")
+    expect(html).not.toContain("ASAS-MJV")
+    expect(html).not.toContain("ASAD-MJV")
     expect(html).toContain("/finance/manual-journal-entries/new")
   })
 })
 
 describe("ManualJournalEntryEditorPage create", () => {
-  it("renders draft create actions and line editor", () => {
+  it("renders compact meta row, line columns, and workflow below totals", () => {
     const html = renderToStaticMarkup(
       <ManualJournalEntryEditorPage mode="create" initialEntryType="MANUAL" />
     )
-    expect(html).toContain("data-testid=\"manual-journal-entry-editor\"")
-    expect(html).toContain("MAJ (draft)")
-    expect(html).not.toContain("ASAS-MAJ")
-    expect(html).toContain("data-testid=\"action-save\"")
-    expect(html).toContain("data-testid=\"action-submit\"")
-    expect(html).toContain("data-testid=\"line-account-code\"")
-    expect(html).toContain("data-testid=\"line-account-name\"")
-    expect(html).not.toContain("data-testid=\"action-delete\"")
+    expect(html).toContain('data-testid="manual-journal-entry-editor"')
+    expect(html).toContain('data-testid="mjv-entry-shell"')
+    expect(html).toContain('data-testid="mjv-entry-meta-row"')
+    expect(html).not.toContain('data-testid="mjv-entry-sticky-header"')
+    expect(html).toContain("Draft / Pending number")
+    expect(html).toContain('data-testid="field-description"')
+    expect(html).toContain('data-testid="field-entry-date"')
+    expect(html).not.toContain('data-testid="field-branch-id"')
+    expect(html).not.toContain('data-testid="field-entry-type"')
+    expect(html).not.toContain('data-testid="field-ref-no"')
+    expect(html).not.toContain('data-testid="manual-journal-document-no"')
+    expect(html).not.toContain("Legal entity:")
+    expect(html).not.toContain('data-testid="entity-context-page-title"')
+    expect(html).toContain('data-testid="action-save"')
+    expect(html).toContain('data-testid="action-submit"')
+    expect(html).toContain('data-testid="action-back"')
+    expect(html).toContain('data-testid="line-account-code"')
+    expect(html).toContain('placeholder="Account No."')
+    expect(html).not.toContain(">Name</th>")
+    expect(html).toContain(">Account</th>")
+    expect(html).toContain(">Debit</th>")
+    expect(html).toContain(">Credit</th>")
+    expect(html).toContain(">Memo</th>")
+    expect(html).toContain('data-testid="line-debit"')
+    expect(html).toContain('data-testid="line-credit"')
+    expect(html).toContain('data-testid="line-memo"')
+    expect(html).toContain('data-testid="line-remove"')
+    expect(html).toContain("mjv-entry-lines-table")
+    expect(html.indexOf('data-testid="mjv-entry-meta-row"')).toBeLessThan(
+      html.indexOf('data-testid="manual-journal-lines-table"')
+    )
+    expect(html.indexOf('data-testid="mjv-entry-totals"')).toBeLessThan(
+      html.indexOf('data-testid="workflow-actions"')
+    )
+    expect(html).toContain("<tfoot")
+    expect(html).toContain(">Total</td>")
+    expect(html).toContain('data-testid="line-total-debit"')
+    expect(html).toContain('data-testid="line-total-credit"')
+    expect(html).not.toContain("Debit total")
+    expect(html).not.toContain("Credit total")
+    expect(html).not.toContain(">Balance</")
+    expect(html).not.toContain('data-testid="line-balance-status"')
+    expect(html).not.toContain("Balanced")
+    expect(html).not.toContain('data-testid="action-delete"')
+    expect(html).not.toContain('data-testid="add-line"')
   })
 })
 
@@ -181,7 +219,12 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         initialEntry={asEntry(baseEntry({ status: "DRAFT" }))}
       />
     )
-    expect(html).toContain("MAJ-260001")
+    expect(html).toContain("MJV-260001")
+    expect(html).toContain('data-testid="mjv-entry-meta-row"')
+    expect(html).not.toContain('data-testid="mjv-entry-sticky-header"')
+    expect(html).not.toContain('data-testid="field-branch-id"')
+    expect(html).not.toContain('data-testid="field-entry-type"')
+    expect(html).not.toContain(">Name</th>")
     expect(html).toContain("data-testid=\"action-save\"")
     expect(html).toContain("data-testid=\"action-submit\"")
     expect(html).toContain("data-testid=\"action-delete\"")
@@ -316,7 +359,7 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).not.toContain("data-testid=\"action-view-pdf\"")
   })
 
-  it("renders CANCELLED document view", () => {
+  it("renders CANCELLED entry view with compact meta row", () => {
     const html = renderToStaticMarkup(
       <ManualJournalEntryEditorPage
         mode="edit"
@@ -330,13 +373,12 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         )}
       />
     )
-    expect(html).toContain('data-testid="finance-document-header"')
-    expect(html).toContain('data-testid="finance-document-workflow-audit"')
-    expect(html).toContain("Cancelled: 14.06.2026")
-    expect(html).toContain("Status: CANCELLED")
-    expect(html).not.toContain('data-testid="read-only-notice"')
-    expect(html).not.toContain('data-testid="field-branch-id"')
-    expect(html).not.toContain("data-testid=\"action-cancel\"")
+    expect(html).toContain('data-testid="mjv-entry-meta-row"')
+    expect(html).not.toContain('data-testid="mjv-entry-sticky-header"')
+    expect(html).toContain("Cancelled")
+    expect(html).toContain('data-testid="read-only-notice"')
+    expect(html).not.toContain('data-testid="finance-document-header"')
+    expect(html).not.toContain('data-testid="action-cancel"')
   })
 
   it("disables submit and post when unbalanced", () => {
@@ -374,8 +416,36 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
       />
     )
     expect(html).toContain("unbalanced-warning")
+    expect(html).toContain('data-testid="line-balance-status"')
+    expect(html).toContain("Not Balanced")
+    expect(html).not.toContain("Debit total")
+    expect(html).not.toContain("Credit total")
+    expect(html).not.toContain(">Balance</")
+    expect(html).toContain(">Total</td>")
     expect(html).toContain("disabled=\"\"")
     expect(html).toContain("data-testid=\"action-submit\"")
+  })
+
+  it("renders journal-style totals on read-only submitted entry", () => {
+    const html = renderToStaticMarkup(
+      <ManualJournalEntryEditorPage
+        mode="edit"
+        entryId="entry-1"
+        initialEntry={asEntry(
+          baseEntry({
+            status: "SUBMITTED",
+            submittedAt: "2026-06-14T13:00:00.000Z",
+          })
+        )}
+      />
+    )
+    expect(html).toContain('data-testid="mjv-entry-totals"')
+    expect(html).toContain(">Total</td>")
+    expect(html).toContain('data-testid="line-total-debit"')
+    expect(html).toContain('data-testid="line-total-credit"')
+    expect(html).not.toContain("Debit total")
+    expect(html).not.toContain("Credit total")
+    expect(html).not.toContain('data-testid="line-balance-status"')
   })
 
   it("displays OPB document number without legal entity prefix", () => {
@@ -393,6 +463,39 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     )
     expect(html).toContain("OPB-260001")
     expect(html).not.toContain("ASAS-OPB")
+  })
+
+  it("shows resolved account as code • name with check mark on draft lines", () => {
+    const html = renderToStaticMarkup(
+      <ManualJournalEntryEditorPage
+        mode="edit"
+        entryId="entry-1"
+        initialEntry={asEntry(baseEntry({ status: "DRAFT" }))}
+      />
+    )
+    expect(html).toContain("1100 • Cash")
+    expect(html).toContain('data-testid="line-account-status-success"')
+    expect(html).not.toContain('data-testid="line-account-status-error"')
+    expect(html).not.toContain(">Name</th>")
+  })
+
+  it("shows account error state without check mark for invalid code", () => {
+    const html = renderToStaticMarkup(
+      <MjvLineAccountInput
+        lineKey="line-1"
+        accountCode="9999"
+        accountName=""
+        accountError="—"
+        focused={false}
+        onFocus={() => {}}
+        onBlur={() => {}}
+        onChange={() => {}}
+        onKeyDown={() => {}}
+      />
+    )
+    expect(html).toContain("9999 • —")
+    expect(html).toContain('data-testid="line-account-status-error"')
+    expect(html).not.toContain('data-testid="line-account-status-success"')
   })
 })
 
@@ -413,4 +516,65 @@ describe("manual journal UI does not call 16B journal-entries API", () => {
       expect(source).not.toMatch(/fetch\([^)]*\/api\/finance\/journal-entries/)
     })
   }
+})
+
+describe("MJV line entry keyboard path", () => {
+  const fs = require("fs") as typeof import("fs")
+  const path = require("path") as typeof import("path")
+  const editorPath = path.join(
+    __dirname,
+    "..",
+    "..",
+    "..",
+    "components",
+    "finance",
+    "ManualJournalEntryEditorPage.tsx"
+  )
+
+  it("chains Enter from account through debit, credit, memo, and next line", () => {
+    const source = fs.readFileSync(editorPath, "utf8")
+    expect(source).toContain('scheduleFocusLineField(lineKey, "debit")')
+    expect(source).toContain('scheduleFocusLineField(lineKey, "credit")')
+    expect(source).toContain('scheduleFocusLineField(lineKey, "memo")')
+    expect(source).toContain('scheduleFocusLineField(newLine.key, "account")')
+  })
+})
+
+describe("MJV route pages keep dark EntityContextPageHeading", () => {
+  const fs = require("fs") as typeof import("fs")
+  const path = require("path") as typeof import("path")
+  const ROOT = path.join(__dirname, "..", "..", "..")
+
+  it("new MJV page uses EntityContextPageHeading with NEW MANUAL JOURNAL VOUCHER", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app/(main)/finance/manual-journal-entries/new/page.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("EntityContextPageHeading")
+    expect(source).toContain("NEW MANUAL JOURNAL VOUCHER")
+  })
+
+  it("edit MJV page uses EntityContextPageHeading with MANUAL JOURNAL VOUCHER", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app/(main)/finance/manual-journal-entries/[id]/page.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("EntityContextPageHeading")
+    expect(source).toContain("MANUAL JOURNAL VOUCHER")
+  })
+})
+
+describe("PAV UI remains untouched by MJV entry refactor", () => {
+  const fs = require("fs") as typeof import("fs")
+  const path = require("path") as typeof import("path")
+  const ROOT = path.join(__dirname, "..", "..", "..")
+  const pavEditor = path.join(ROOT, "components", "finance", "PaymentVoucherEditorPage.tsx")
+
+  it("PaymentVoucherEditorPage does not use mjv-entry sticky header test ids", () => {
+    const source = fs.readFileSync(pavEditor, "utf8")
+    expect(source).not.toContain("mjv-entry-sticky-header")
+    expect(source).not.toContain("mjv-entry-shell")
+    expect(source).not.toContain("mjv-entry-lines-table")
+    expect(source).not.toContain("mjv-entry-totals")
+  })
 })

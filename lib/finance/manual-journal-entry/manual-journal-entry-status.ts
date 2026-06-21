@@ -114,6 +114,52 @@ export async function applyPostedStatus(
 }
 
 /**
+ * Replace archived PDF metadata after explicit repair regeneration.
+ * Updates pdfPath / pdfBlobUrl / pdfGeneratedAt only — never workflow or accounting fields.
+ */
+export async function applyPdfSnapshotRepair(
+  tx: Prisma.TransactionClient,
+  input: ApplyPdfSnapshotInput
+): Promise<ManualJournalEntryWithLines> {
+  const entry = await loadEntryWithLines(tx, input.entryId)
+  if (!entry) {
+    throw new ManualJournalEntryError(
+      "Manual journal entry not found",
+      ManualJournalEntryErrorCodes.ENTRY_NOT_FOUND,
+      404
+    )
+  }
+
+  if (entry.status !== "POSTED") {
+    throw new ManualJournalEntryError(
+      "PDF snapshot repair is only allowed for POSTED entries",
+      ManualJournalEntryErrorCodes.INVALID_TRANSITION,
+      409
+    )
+  }
+
+  const existingPdfPath = String(entry.pdfPath ?? "").trim()
+  const existingBlobUrl = String(entry.pdfBlobUrl ?? "").trim()
+  if (!existingPdfPath && !existingBlobUrl) {
+    throw new ManualJournalEntryError(
+      "PDF snapshot repair requires an existing archived PDF snapshot",
+      ManualJournalEntryErrorCodes.PDF_MISSING,
+      409
+    )
+  }
+
+  return tx.manualJournalEntry.update({
+    where: { id: input.entryId },
+    data: {
+      pdfPath: input.pdfPath,
+      pdfGeneratedAt: input.pdfGeneratedAt,
+      pdfBlobUrl: input.pdfBlobUrl ?? null,
+    },
+    include: { lines: true },
+  })
+}
+
+/**
  * Sole writer for pdfPath / pdfGeneratedAt. Idempotent when snapshot already attached.
  */
 export async function applyPdfSnapshot(

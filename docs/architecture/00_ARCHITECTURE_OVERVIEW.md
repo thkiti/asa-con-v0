@@ -84,7 +84,7 @@ Differences are handled through **configuration and guards**, not forked codebas
 | Mechanism | What it controls |
 |-----------|------------------|
 | **Entity code** (`legalEntityCode` / session `documentEntityCode`) | Document ownership, report filters, period close scope |
-| **Document numbering** | Entity-neutral number format (`MAJ-260001`); entity is a separate header field — see [99_ASA_HANDBOOK.md](../99_ASA_HANDBOOK.md) |
+| **Document numbering** | Entity-neutral number format (`MJV-260001`); entity is a separate header field — see [99_ASA_HANDBOOK.md](../99_ASA_HANDBOOK.md) |
 | **Company identity** | `LegalEntity` master (`name`, `address`, `taxId`) |
 | **Letterhead / receipt identity** | Receipt setup, branch tax IDs, print settings |
 | **Permissions** | Role matrix + entity gates (menu, route, API) |

@@ -8,7 +8,9 @@ import { renderManualJournalEntryPdf } from "./manual-journal-entry-pdf-render"
 import { storeManualJournalPdf } from "./manual-journal-entry-pdf-storage"
 import { buildManualJournalEntryPdfSnapshot } from "./manual-journal-entry-pdf-snapshot"
 import type { ManualJournalEntryPdfSnapshot } from "./manual-journal-entry-pdf-snapshot-types"
-import { applyPdfSnapshot } from "./manual-journal-entry-status"
+import {
+  applyPdfSnapshot,
+} from "./manual-journal-entry-status"
 import type { ManualJournalEntryWithLines } from "./manual-journal-entry-types"
 
 export type AttachManualJournalEntryPdfResult =

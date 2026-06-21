@@ -2,22 +2,20 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   computeManualJournalLineTotals,
   formatManualJournalEntryDocumentNo,
-  formatManualJournalEntryTypeLabel,
-  MANUAL_JOURNAL_ENTRY_TYPES,
+  formatManualJournalEntryStatusLabel,
   parseManualJournalAmount,
   type ManualJournalEntryStatusCode,
   type ManualJournalEntryTypeCode,
 } from "@/lib/finance-ui/manual-journal-entry-display"
-import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
 import {
   formatAmount,
-  formatDateTime,
   formatJournalLineSideAmount,
 } from "@/lib/finance-ui/format"
+import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
 import { fetchGlAccounts } from "@/lib/finance-ui/gl-accounts"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import {
@@ -32,25 +30,24 @@ import {
   updateManualJournalEntryDraft,
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
-import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
 import { FinancePrintActions } from "@/components/finance/FinancePrintActions"
 import { FinanceLegacyPdfSnapshotPanel } from "@/components/finance/FinanceLegacyPdfSnapshotPanel"
 import { FinanceVoucherPrintFontProbe } from "@/components/finance/FinanceVoucherPrintFontProbe"
 import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
 import {
   buildFinanceJournalInquiryPath,
 } from "@/lib/finance-ui/finance-navigation"
 import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
-import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
-import { ACCOUNT_DISPLAY_SEPARATOR } from "@/lib/finance-ui/format-account"
-import { formatEntityShort } from "@/lib/legal-entity"
 import {
   type DocumentEntityCode,
 } from "@/lib/legal-entity/constants"
 import {
   financeAccount,
-  financeAccountDisplay,
+  financeAuditLine,
+  financeDocumentContainer,
   financeMemo,
   financeNumber,
   financeTable,
@@ -58,20 +55,21 @@ import {
   financeTh,
   financeThRight,
   financeTotalLabel,
-  financeTotalRow,
   financeTotalRowStrong,
   financeTotalValue,
-  financeDiffBalanced,
   financeDiffUnbalanced,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeInput } from "@/lib/theme/theme-classes"
 import { buildFinanceVoucherPrintModelFromManualJournalEntry } from "@/lib/finance-ui/finance-voucher-print"
 import { financeVoucherLocalFont } from "@/lib/finance-ui/finance-voucher-local-font"
 
+type LineField = "account" | "debit" | "credit" | "memo"
+
 type LineRow = {
   key: string
   accountCode: string
   accountName: string
+  accountError: string | null
   debit: string
   credit: string
   memo: string
@@ -82,6 +80,7 @@ function emptyLine(): LineRow {
     key: crypto.randomUUID(),
     accountCode: "",
     accountName: "",
+    accountError: null,
     debit: "",
     credit: "",
     memo: "",
@@ -96,6 +95,7 @@ function linesFromEntry(entry: ManualJournalEntryRead): LineRow[] {
     key: line.id,
     accountCode: line.accountCode,
     accountName: line.accountName,
+    accountError: null,
     debit: line.debit,
     credit: line.credit,
     memo: line.memo ?? "",
@@ -116,6 +116,39 @@ function linesToPayload(lines: LineRow[]) {
         parseManualJournalAmount(line.debit) ||
         parseManualJournalAmount(line.credit)
     )
+}
+
+function formatMjvEntryRefNo(entryNo: string | null | undefined): string {
+  if (entryNo?.trim()) return entryNo.trim()
+  return "Draft / Pending number"
+}
+
+function focusLineField(lineKey: string, field: LineField): void {
+  const el = document.querySelector(
+    `[data-line-key="${lineKey}"][data-field="${field}"]`
+  ) as HTMLElement | null
+  el?.focus()
+}
+
+function scheduleFocusLineField(lineKey: string, field: LineField): void {
+  window.requestAnimationFrame(() => focusLineField(lineKey, field))
+}
+
+function MjvLineTrashIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path d="M3 6h18" strokeLinecap="round" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M6 6l1 14h10l1-14" strokeLinejoin="round" />
+    </svg>
+  )
 }
 
 function editorSeed(
@@ -191,6 +224,8 @@ export function ManualJournalEntryEditorPage({
   const [cancelReason, setCancelReason] = useState("")
   const [showCancelReason, setShowCancelReason] = useState(false)
   const [branchLabel, setBranchLabel] = useState("")
+  const [focusedAccountLineKey, setFocusedAccountLineKey] = useState<string | null>(null)
+  const accountEnterCommitRef = useRef<string | null>(null)
 
   const status: ManualJournalEntryStatusCode | "NEW" =
     entry?.status ?? (mode === "create" ? "NEW" : "DRAFT")
@@ -209,13 +244,6 @@ export function ManualJournalEntryEditorPage({
   function formatLineSideAmount(value: string): string {
     return openingBalanceMode ? formatJournalLineSideAmount(value) : formatAmount(value)
   }
-
-  const memoColSpan = canEditLines ? 2 : 1
-  const documentViewLayout =
-    entry != null &&
-    (isPosted ||
-      isCancelled ||
-      (openingBalanceMode && isConfirmed))
 
   const applyEntry = useCallback((loaded: ManualJournalEntryRead) => {
     setEntry(loaded)
@@ -288,8 +316,83 @@ export function ManualJournalEntryEditorPage({
 
   async function handleAccountBlur(key: string, accountCode: string) {
     if (!canEditLines) return
-    const name = await resolveAccountName(accountCode)
-    if (name) updateLine(key, { accountName: name })
+    const code = accountCode.trim()
+    if (!code) {
+      updateLine(key, { accountName: "", accountError: null })
+      return
+    }
+    const name = await resolveAccountName(code)
+    if (name) {
+      updateLine(key, { accountCode: code, accountName: name, accountError: null })
+    } else {
+      updateLine(key, { accountName: "", accountError: "—" })
+    }
+  }
+
+  function handleAccountFocus(lineKey: string) {
+    setFocusedAccountLineKey(lineKey)
+  }
+
+  function handleAccountBlurEvent(lineKey: string, accountCode: string) {
+    if (accountEnterCommitRef.current === lineKey) {
+      accountEnterCommitRef.current = null
+      setFocusedAccountLineKey(null)
+      return
+    }
+    setFocusedAccountLineKey(null)
+    void handleAccountBlur(lineKey, accountCode)
+  }
+
+  function handleAccountChange(lineKey: string, value: string) {
+    updateLine(lineKey, {
+      accountCode: value,
+      accountName: "",
+      accountError: null,
+    })
+  }
+
+  async function handleLineEnter(
+    lineKey: string,
+    field: LineField,
+    row: LineRow,
+    lineIndex: number
+  ) {
+    if (field === "account") {
+      accountEnterCommitRef.current = lineKey
+      setFocusedAccountLineKey(null)
+      await handleAccountBlur(lineKey, row.accountCode)
+      scheduleFocusLineField(lineKey, "debit")
+      return
+    }
+    if (field === "debit") {
+      scheduleFocusLineField(lineKey, "credit")
+      return
+    }
+    if (field === "credit") {
+      scheduleFocusLineField(lineKey, "memo")
+      return
+    }
+
+    if (lineIndex === lines.length - 1) {
+      const newLine = emptyLine()
+      setLines((prev) => [...prev, newLine])
+      scheduleFocusLineField(newLine.key, "account")
+      return
+    }
+
+    scheduleFocusLineField(lines[lineIndex + 1]!.key, "account")
+  }
+
+  function handleLineKeyDown(
+    event: React.KeyboardEvent,
+    lineKey: string,
+    field: LineField,
+    row: LineRow,
+    lineIndex: number
+  ) {
+    if (event.key !== "Enter") return
+    event.preventDefault()
+    void handleLineEnter(lineKey, field, row, lineIndex)
   }
 
   async function handleSave(): Promise<ManualJournalEntryRead | null> {
@@ -451,6 +554,7 @@ export function ManualJournalEntryEditorPage({
     entry?.entryNo,
     entry?.entryType ?? entryType
   )
+  const entryRefNo = formatMjvEntryRefNo(entry?.entryNo)
 
   const postedJournalHref =
     entry?.postedJournalEntryId != null
@@ -467,20 +571,7 @@ export function ManualJournalEntryEditorPage({
   }
 
   return (
-    <div
-      className={documentViewLayout ? "space-y-4" : "space-y-6"}
-      data-testid="manual-journal-entry-editor"
-    >
-      {openingBalanceMode && !documentViewLayout ? (
-        <div
-          className="rounded border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950"
-          data-testid="opb-mode-banner"
-        >
-          Opening balance (OPB) — use balance-sheet accounts only (asset, liability, equity).
-          Revenue and expense accounts are not allowed.
-        </div>
-      ) : null}
-
+    <div className="space-y-4" data-testid="manual-journal-entry-editor">
       {isPosted && entry && voucherPrintModel ? (
         <div
           className={`finance-voucher-print-root finance-document-container finance-voucher-print-font ${financeVoucherLocalFont.variable} ${financeVoucherLocalFont.className}`}
@@ -518,463 +609,387 @@ export function ManualJournalEntryEditorPage({
           />
           <FinanceVoucherPrintFontProbe />
         </div>
-      ) : documentViewLayout ? (
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <FinanceDocumentCanonicalHeader
-            legalEntityCode={legalEntityCode}
-            entryType={entry.entryType}
-            documentNo={documentNo}
-            entryDate={entryDate}
-            status={entry.status}
-            description={description}
-            createdAt={entry.createdAt}
-            submittedAt={entry.submittedAt}
-            confirmedAt={entry.confirmedAt}
-            postedAt={entry.postedAt}
-            cancelledAt={entry.cancelledAt}
-          />
-          {postedJournalHref ? (
-            <Link
-              href={postedJournalHref}
-              className="text-sm text-zinc-600 underline"
-              data-testid="posted-journal-link"
-            >
-              View posted GL journal
-            </Link>
-          ) : null}
-        </div>
       ) : (
-        <>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2
-                className="font-mono text-lg font-semibold"
-                data-testid="manual-journal-document-no"
-              >
-                {documentNo}
-              </h2>
-              <p className="mt-1 text-sm text-zinc-600">
-                Legal entity: {formatEntityShort(legalEntityCode)}
-              </p>
-              {entry ? (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <ManualJournalEntryStatusBadge status={entry.status} />
-                  <span className="text-xs text-zinc-500">
-                    {formatManualJournalEntryTypeLabel(entry.entryType)}
-                  </span>
-                </div>
-              ) : (
-                <p className="mt-2 text-xs text-zinc-500">
-                  {formatManualJournalEntryTypeLabel(entryType)}
-                </p>
-              )}
+        <div
+          className={`${financeDocumentContainer} space-y-3`}
+          data-testid="mjv-entry-shell"
+        >
+          {openingBalanceMode ? (
+            <div
+              className="rounded border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950"
+              data-testid="opb-mode-banner"
+            >
+              Opening balance (OPB) — use balance-sheet accounts only (asset, liability,
+              equity). Revenue and expense accounts are not allowed.
             </div>
-            {postedJournalHref ? (
-              <Link
-                href={postedJournalHref}
-                className="text-sm text-zinc-600 underline"
-                data-testid="posted-journal-link"
-              >
-                View posted GL journal
-              </Link>
-            ) : null}
-          </div>
+          ) : null}
+
+          {openingBalanceMode ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-zinc-600">Branch</span>
+                <input
+                  className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
+                  value={branchId}
+                  disabled={!canEditHeader}
+                  onChange={(e) => setBranchId(e.target.value)}
+                  data-testid="field-branch-id"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-zinc-600">Entry date</span>
+                <input
+                  type="date"
+                  className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
+                  value={entryDate}
+                  disabled={!canEditHeader}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                  data-testid="field-entry-date"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                <span className="text-zinc-600">Description</span>
+                <input
+                  className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
+                  value={description}
+                  disabled={!canEditHeader}
+                  onChange={(e) => setDescription(e.target.value)}
+                  data-testid="field-description"
+                />
+              </label>
+            </div>
+          ) : (
+            <div
+              className={`${financeAuditLine} flex flex-wrap items-baseline gap-x-4 gap-y-2 text-sm text-zinc-800`}
+              data-testid="mjv-entry-meta-row"
+            >
+              <span className="shrink-0">
+                Ref. No.:{" "}
+                <span className="font-mono font-medium" data-testid="mjv-entry-ref-no">
+                  {entryRefNo}
+                </span>
+              </span>
+              <span className="flex min-w-0 flex-wrap items-baseline gap-x-1 gap-y-1">
+                <span className="shrink-0">Date prepared:</span>
+                {canEditHeader ? (
+                  <input
+                    type="date"
+                    className="rounded border border-zinc-300 px-2 py-0.5 text-sm disabled:bg-zinc-50"
+                    value={entryDate}
+                    onChange={(e) => setEntryDate(e.target.value)}
+                    data-testid="field-entry-date"
+                  />
+                ) : (
+                  <span data-testid="mjv-entry-date-prepared">
+                    {formatFinanceDocumentDate(entryDate)}
+                  </span>
+                )}
+              </span>
+              <label className="flex min-w-[12rem] flex-1 items-baseline gap-x-1">
+                <span className="shrink-0 text-zinc-800">Description:</span>
+                {canEditHeader ? (
+                  <input
+                    className="min-w-0 flex-1 rounded border border-zinc-300 px-2 py-0.5 text-sm disabled:bg-zinc-50"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    data-testid="field-description"
+                  />
+                ) : (
+                  <span data-testid="field-description-readonly">{description || "—"}</span>
+                )}
+              </label>
+            </div>
+          )}
 
           {readOnly ? (
             <p className="text-sm text-zinc-600" data-testid="read-only-notice">
-              This entry is read-only in status {entry?.status}.
+              This entry is read-only in status{" "}
+              {entry?.status ? formatManualJournalEntryStatusLabel(entry.status) : status}.
             </p>
           ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-zinc-600">Branch</span>
-              <input
-                className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-                value={branchId}
-                disabled={!canEditHeader}
-                onChange={(e) => setBranchId(e.target.value)}
-                data-testid="field-branch-id"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-zinc-600">Entry date</span>
-              <input
-                type="date"
-                className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-                value={entryDate}
-                disabled={!canEditHeader}
-                onChange={(e) => setEntryDate(e.target.value)}
-                data-testid="field-entry-date"
-              />
-            </label>
-            {canEditHeader && !openingBalanceMode ? (
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">Entry type</span>
-                <select
-                  className="rounded border border-zinc-300 px-2 py-1"
-                  value={entryType}
-                  onChange={(e) => setEntryType(e.target.value as ManualJournalEntryTypeCode)}
-                  data-testid="field-entry-type"
-                >
-                  {MANUAL_JOURNAL_ENTRY_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {formatManualJournalEntryTypeLabel(type)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <div className="text-sm">
-                <span className="text-zinc-600">Entry type</span>
-                <p className="mt-1">{formatManualJournalEntryTypeLabel(entryType)}</p>
-              </div>
-            )}
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="text-zinc-600">Description</span>
-              <input
-                className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-                value={description}
-                disabled={!canEditHeader}
-                onChange={(e) => setDescription(e.target.value)}
-                data-testid="field-description"
-              />
-            </label>
-            {refNo.trim() || canEditHeader ? (
-              <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-                <span className="text-zinc-600">Reference no</span>
-                <input
-                  className="rounded border border-zinc-300 px-2 py-1 disabled:bg-zinc-50"
-                  value={refNo}
-                  disabled={!canEditHeader}
-                  onChange={(e) => setRefNo(e.target.value)}
-                  data-testid="field-ref-no"
-                />
-              </label>
-            ) : null}
-          </div>
-
-          {entry ? (
-            <div className="grid gap-2 text-xs text-zinc-500 sm:grid-cols-2 lg:grid-cols-4">
-              <p>Created: {formatDateTime(entry.createdAt)}</p>
-              {entry.submittedAt ? <p>Submitted: {formatDateTime(entry.submittedAt)}</p> : null}
-              {entry.confirmedAt ? <p>Confirmed: {formatDateTime(entry.confirmedAt)}</p> : null}
-              {entry.postedAt ? <p>Posted: {formatDateTime(entry.postedAt)}</p> : null}
-              {entry.cancelledAt ? <p>Cancelled: {formatDateTime(entry.cancelledAt)}</p> : null}
-            </div>
-          ) : null}
-        </>
-      )}
-
-      {!isPosted ? (
-      <div className={financeTableScroll}>
-        <table className={financeTable} data-testid="manual-journal-lines-table">
-          <thead>
-            <tr>
-              <th className={financeTh}>Account</th>
-              <th className={financeThRight}>Debit</th>
-              <th className={financeThRight}>Credit</th>
-              <th className={financeTh}>Memo</th>
-              {canEditLines ? <th className={financeTh} /> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((row) => (
-              <tr key={row.key}>
-                <td className={financeAccount}>
-                  {canEditLines ? (
-                    <span className={financeAccountDisplay}>
-                      <input
-                        className={`${themeInput} finance-account-code-input mt-0`}
-                        value={row.accountCode}
-                        onChange={(e) => updateLine(row.key, { accountCode: e.target.value })}
-                        onBlur={() => void handleAccountBlur(row.key, row.accountCode)}
-                        data-testid="line-account-code"
-                      />
-                      {row.accountName ? (
-                        <>
-                          <span className="finance-account-separator">
-                            {ACCOUNT_DISPLAY_SEPARATOR}
-                          </span>
-                          <span
-                            className="finance-account-name-part"
-                            data-testid="line-account-name"
-                          >
-                            {row.accountName}
-                          </span>
-                        </>
+          <div className={financeTableScroll}>
+            <table
+              className={`${financeTable} mjv-entry-lines-table`}
+              data-testid="manual-journal-lines-table"
+            >
+              <colgroup>
+                <col className="mjv-col-account" />
+                <col className="mjv-col-debit" />
+                <col className="mjv-col-credit" />
+                <col className="mjv-col-memo" />
+                {canEditLines ? <col className="mjv-col-trash" /> : null}
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className={financeTh}>Account</th>
+                  <th className={financeThRight}>Debit</th>
+                  <th className={financeThRight}>Credit</th>
+                  <th className={financeTh}>Memo</th>
+                  {canEditLines ? <th className={financeTh} aria-label="Remove line" /> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((row, lineIndex) => (
+                  <tr key={row.key}>
+                    <td className={financeAccount}>
+                      {canEditLines ? (
+                        <MjvLineAccountInput
+                          lineKey={row.key}
+                          accountCode={row.accountCode}
+                          accountName={row.accountName}
+                          accountError={row.accountError}
+                          focused={focusedAccountLineKey === row.key}
+                          onFocus={() => handleAccountFocus(row.key)}
+                          onBlur={() => handleAccountBlurEvent(row.key, row.accountCode)}
+                          onChange={(value) => handleAccountChange(row.key, value)}
+                          onKeyDown={(e) =>
+                            handleLineKeyDown(e, row.key, "account", row, lineIndex)
+                          }
+                        />
                       ) : (
-                        <span data-testid="line-account-name" className="sr-only" />
+                        <FinanceAccountDisplay
+                          accountCode={row.accountCode}
+                          accountName={row.accountName}
+                          data-testid="line-account-name"
+                        />
                       )}
-                    </span>
-                  ) : (
-                    <FinanceAccountDisplay
-                      accountCode={row.accountCode}
-                      accountName={row.accountName}
-                      data-testid="line-account-name"
-                    />
-                  )}
-                </td>
-                <td className={financeNumber}>
-                  {canEditLines ? (
-                    <input
-                      className={`${themeInput} mt-0`}
-                      value={row.debit}
-                      onChange={(e) => updateLine(row.key, { debit: e.target.value })}
-                      inputMode="decimal"
-                      data-testid="line-debit"
-                    />
-                  ) : (
-                    formatLineSideAmount(row.debit)
-                  )}
-                </td>
-                <td className={financeNumber}>
-                  {canEditLines ? (
-                    <input
-                      className={`${themeInput} mt-0`}
-                      value={row.credit}
-                      onChange={(e) => updateLine(row.key, { credit: e.target.value })}
-                      inputMode="decimal"
-                      data-testid="line-credit"
-                    />
-                  ) : (
-                    formatLineSideAmount(row.credit)
-                  )}
-                </td>
-                <td>
-                  {canEditLines ? (
-                    <input
-                      className={`${themeInput} mt-0`}
-                      value={row.memo}
-                      onChange={(e) => updateLine(row.key, { memo: e.target.value })}
-                      data-testid="line-memo"
-                    />
-                  ) : (
-                    <span className={financeMemo}>{row.memo || "—"}</span>
-                  )}
-                </td>
-                {canEditLines ? (
-                  <td className="px-2 py-1">
-                    <button
-                      type="button"
-                      className="text-xs text-muted underline"
-                      onClick={() => removeLine(row.key)}
-                    >
-                      Remove
-                    </button>
-                  </td>
-                ) : null}
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            {openingBalanceMode ? (
-              <>
-                <tr className={financeTotalRow}>
-                  <td className={financeTotalLabel} colSpan={1}>
-                    Total Debit
-                  </td>
+                    </td>
+                    <td className={financeNumber}>
+                      {canEditLines ? (
+                        <input
+                          className={`${themeInput} mjv-line-field-input mt-0`}
+                          value={row.debit}
+                          onChange={(e) => updateLine(row.key, { debit: e.target.value })}
+                          onKeyDown={(e) =>
+                            handleLineKeyDown(e, row.key, "debit", row, lineIndex)
+                          }
+                          inputMode="decimal"
+                          data-line-key={row.key}
+                          data-field="debit"
+                          data-testid="line-debit"
+                        />
+                      ) : (
+                        formatLineSideAmount(row.debit)
+                      )}
+                    </td>
+                    <td className={financeNumber}>
+                      {canEditLines ? (
+                        <input
+                          className={`${themeInput} mjv-line-field-input mt-0`}
+                          value={row.credit}
+                          onChange={(e) => updateLine(row.key, { credit: e.target.value })}
+                          onKeyDown={(e) =>
+                            handleLineKeyDown(e, row.key, "credit", row, lineIndex)
+                          }
+                          inputMode="decimal"
+                          data-line-key={row.key}
+                          data-field="credit"
+                          data-testid="line-credit"
+                        />
+                      ) : (
+                        formatLineSideAmount(row.credit)
+                      )}
+                    </td>
+                    <td className={financeMemo}>
+                      {canEditLines ? (
+                        <input
+                          className={`${themeInput} mjv-line-field-input mt-0`}
+                          value={row.memo}
+                          onChange={(e) => updateLine(row.key, { memo: e.target.value })}
+                          onKeyDown={(e) =>
+                            handleLineKeyDown(e, row.key, "memo", row, lineIndex)
+                          }
+                          data-line-key={row.key}
+                          data-field="memo"
+                          data-testid="line-memo"
+                        />
+                      ) : (
+                        <span className={financeMemo}>{row.memo || "—"}</span>
+                      )}
+                    </td>
+                    {canEditLines ? (
+                      <td className="mjv-line-trash-cell px-1 py-1 text-center">
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-red-700"
+                          aria-label="Remove line"
+                          onClick={() => removeLine(row.key)}
+                          data-testid="line-remove"
+                        >
+                          <MjvLineTrashIcon />
+                        </button>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot data-testid="mjv-entry-totals">
+                <tr className={financeTotalRowStrong}>
+                  <td className={financeTotalLabel}>Total</td>
                   <td className={financeTotalValue} data-testid="line-total-debit">
                     {formatAmount(String(totals.debit))}
                   </td>
-                  <td className="px-2 py-2" />
-                  <td className="px-2 py-2" colSpan={memoColSpan} />
-                </tr>
-                <tr>
-                  <td className={financeTotalLabel} colSpan={1}>
-                    Total Credit
-                  </td>
-                  <td className="px-2 py-2" />
                   <td className={financeTotalValue} data-testid="line-total-credit">
                     {formatAmount(String(totals.credit))}
                   </td>
-                  <td className="px-2 py-2" colSpan={memoColSpan} />
+                  <td className={financeMemo} />
+                  {canEditLines ? <td /> : null}
                 </tr>
-                <tr className={financeTotalRowStrong}>
-                  <td className={financeTotalLabel} colSpan={1}>
-                    Difference
-                  </td>
-                  <td className={financeTotalValue} colSpan={2} data-testid="line-total-difference">
-                    <span
-                      className={
-                        totals.balanced ? financeDiffBalanced : financeDiffUnbalanced
-                      }
-                    >
-                      {formatAmount(String(totals.difference))}
-                    </span>
-                  </td>
-                  <td className="px-2 py-2" colSpan={memoColSpan} />
-                </tr>
-              </>
-            ) : (
-              <tr className={financeTotalRowStrong}>
-                <td className={financeTotalLabel} colSpan={1}>
-                  Totals
-                </td>
-                <td className={financeTotalValue} data-testid="line-total-debit">
-                  {formatAmount(String(totals.debit))}
-                </td>
-                <td className={financeTotalValue} data-testid="line-total-credit">
-                  {formatAmount(String(totals.credit))}
-                </td>
-                <td className="px-2 py-2" colSpan={memoColSpan}>
-                  <span
-                    data-testid="line-balance-status"
-                    className={
-                      totals.balanced ? financeDiffBalanced : financeDiffUnbalanced
-                    }
+              </tfoot>
+            </table>
+          </div>
+
+          {!totals.balanced ? (
+            <>
+              <p
+                className={`text-sm font-medium ${financeDiffUnbalanced}`}
+                data-testid="line-balance-status"
+              >
+                Not Balanced
+              </p>
+              <p className="text-sm text-amber-800" data-testid="unbalanced-warning">
+                Entry is out of balance. Submit and post are disabled until debit equals credit.
+              </p>
+            </>
+          ) : null}
+
+          {(isSubmitted || isConfirmed) && showCancelReason ? (
+            <label className="flex max-w-md flex-col gap-1 text-sm">
+              <span className="text-zinc-600">Cancel reason</span>
+              <input
+                className="rounded border border-zinc-300 px-2 py-1"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                data-testid="field-cancel-reason"
+              />
+            </label>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2" data-testid="workflow-actions">
+            {isDraft ? (
+              <>
+                <button
+                  type="button"
+                  className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
+                  disabled={busyAction !== null}
+                  onClick={() => void handleSave()}
+                  data-testid="action-save"
+                >
+                  {busyAction === "save" ? "Saving…" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+                  disabled={busyAction !== null || !totals.balanced}
+                  onClick={() => void handleSubmit()}
+                  data-testid="action-submit"
+                >
+                  {busyAction === "Submit" ? "Submitting…" : "Submit"}
+                </button>
+                {entry ? (
+                  <button
+                    type="button"
+                    className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
+                    disabled={busyAction !== null}
+                    onClick={() => void handleDelete()}
+                    data-testid="action-delete"
                   >
-                    {totals.balanced
-                      ? "Balanced"
-                      : `Difference ${formatAmount(String(totals.difference))}`}
-                  </span>
-                </td>
-              </tr>
-            )}
-          </tfoot>
-        </table>
-      </div>
-      ) : null}
-
-      {!isPosted && !totals.balanced ? (
-        <p className="text-sm text-amber-800" data-testid="unbalanced-warning">
-          Entry is out of balance. Submit and post are disabled until debit equals credit.
-        </p>
-      ) : null}
-
-      {!isPosted && canEditLines ? (
-        <button
-          type="button"
-          className="rounded border border-zinc-300 px-3 py-1 text-sm"
-          onClick={addLine}
-          data-testid="add-line"
-        >
-          Add line
-        </button>
-      ) : null}
-
-      {(isSubmitted || isConfirmed) && showCancelReason ? (
-        <label className="flex flex-col gap-1 text-sm max-w-md">
-          <span className="text-zinc-600">Cancel reason</span>
-          <input
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            data-testid="field-cancel-reason"
-          />
-        </label>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-2" data-testid="workflow-actions">
-        {isDraft ? (
-          <>
-            <button
-              type="button"
-              className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
-              disabled={busyAction !== null}
-              onClick={() => void handleSave()}
-              data-testid="action-save"
-            >
-              {busyAction === "save" ? "Saving…" : "Save"}
-            </button>
-            <button
-              type="button"
-              className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-              disabled={busyAction !== null || !totals.balanced}
-              onClick={() => void handleSubmit()}
-              data-testid="action-submit"
-            >
-              {busyAction === "Submit" ? "Submitting…" : "Submit"}
-            </button>
-            {entry ? (
-              <button
-                type="button"
-                className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
-                disabled={busyAction !== null}
-                onClick={() => void handleDelete()}
-                data-testid="action-delete"
-              >
-                {busyAction === "delete" ? "Deleting…" : "Delete"}
-              </button>
+                    {busyAction === "delete" ? "Deleting…" : "Delete"}
+                  </button>
+                ) : null}
+              </>
             ) : null}
-          </>
-        ) : null}
 
-        {isSubmitted ? (
-          <>
-            <button
-              type="button"
-              className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-              disabled={busyAction !== null}
-              onClick={() => void handleConfirm()}
-              data-testid="action-confirm"
-            >
-              {busyAction === "Confirm" ? "Confirming…" : "Confirm"}
-            </button>
-            <button
-              type="button"
-              className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
-              disabled={busyAction !== null}
-              onClick={() => setShowCancelReason(true)}
-              data-testid="action-cancel-open"
-            >
-              Cancel
-            </button>
-            {showCancelReason ? (
-              <button
-                type="button"
-                className="rounded border border-red-500 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
-                disabled={busyAction !== null}
-                onClick={() => void handleCancel()}
-                data-testid="action-cancel"
-              >
-                Confirm cancel
-              </button>
+            {isSubmitted ? (
+              <>
+                <button
+                  type="button"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+                  disabled={busyAction !== null}
+                  onClick={() => void handleConfirm()}
+                  data-testid="action-confirm"
+                >
+                  {busyAction === "Confirm" ? "Confirming…" : "Confirm"}
+                </button>
+                <button
+                  type="button"
+                  className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
+                  disabled={busyAction !== null}
+                  onClick={() => setShowCancelReason(true)}
+                  data-testid="action-cancel-open"
+                >
+                  Cancel
+                </button>
+                {showCancelReason ? (
+                  <button
+                    type="button"
+                    className="rounded border border-red-500 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
+                    disabled={busyAction !== null}
+                    onClick={() => void handleCancel()}
+                    data-testid="action-cancel"
+                  >
+                    Confirm cancel
+                  </button>
+                ) : null}
+              </>
             ) : null}
-          </>
-        ) : null}
 
-        {isConfirmed ? (
-          <>
-            <button
-              type="button"
-              className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-              disabled={busyAction !== null || !totals.balanced}
-              onClick={() => void handlePost()}
-              data-testid="action-post"
-            >
-              {busyAction === "Post" ? "Posting…" : "Post"}
-            </button>
-            <button
-              type="button"
-              className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
-              disabled={busyAction !== null}
-              onClick={() => setShowCancelReason(true)}
-              data-testid="action-cancel-open"
-            >
-              Cancel
-            </button>
-            {showCancelReason ? (
-              <button
-                type="button"
-                className="rounded border border-red-500 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
-                disabled={busyAction !== null}
-                onClick={() => void handleCancel()}
-                data-testid="action-cancel"
-              >
-                Confirm cancel
-              </button>
+            {isConfirmed ? (
+              <>
+                <button
+                  type="button"
+                  className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+                  disabled={busyAction !== null || !totals.balanced}
+                  onClick={() => void handlePost()}
+                  data-testid="action-post"
+                >
+                  {busyAction === "Post" ? "Posting…" : "Post"}
+                </button>
+                <button
+                  type="button"
+                  className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
+                  disabled={busyAction !== null}
+                  onClick={() => setShowCancelReason(true)}
+                  data-testid="action-cancel-open"
+                >
+                  Cancel
+                </button>
+                {showCancelReason ? (
+                  <button
+                    type="button"
+                    className="rounded border border-red-500 px-4 py-2 text-sm text-red-700 disabled:opacity-50"
+                    disabled={busyAction !== null}
+                    onClick={() => void handleCancel()}
+                    data-testid="action-cancel"
+                  >
+                    Confirm cancel
+                  </button>
+                ) : null}
+              </>
             ) : null}
-          </>
-        ) : null}
-      </div>
 
-      {error ? (
-        <p className="text-sm text-red-700" data-testid="editor-error">{error}</p>
-      ) : null}
-      {statusMessage ? (
-        <p className="text-sm text-emerald-800" data-testid="editor-status">{statusMessage}</p>
-      ) : null}
+            <Link
+              href={listHref}
+              className="rounded border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+              data-testid="action-back"
+            >
+              Back
+            </Link>
+          </div>
+
+          {error ? (
+            <p className="text-sm text-red-700" data-testid="editor-error">
+              {error}
+            </p>
+          ) : null}
+          {statusMessage ? (
+            <p className="text-sm text-emerald-800" data-testid="editor-status">
+              {statusMessage}
+            </p>
+          ) : null}
+        </div>
+      )}
 
       {openingBalanceMode && isPosted && entry ? (
         <OpeningBalancePostingVerificationPanel

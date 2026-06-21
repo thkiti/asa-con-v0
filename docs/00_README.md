@@ -52,11 +52,21 @@ Core decision: one application, one database, two legal entities — not duplica
 39. [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md) — Finance Core 17B manual opening balance operations
 40. [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) — **primary finance direction** (Finance Core status, document families, future work)
 41. [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) — finance document presentation identity (Level 1 / Level 2)
-42. [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — business architecture decisions; **Finance Vocabulary** (document codes and numbering)
+42. [FINANCE_PRESENTATION_CONTRACT.md](./FINANCE_PRESENTATION_CONTRACT.md) — **project rule** — screen / print / archived PDF must share one presentation model; PDFKit bridge policy
+43. [FINANCE_MJV_PRINT_ARCHITECTURE.md](./FINANCE_MJV_PRINT_ARCHITECTURE.md) — F1A MJV browser print foundation (layout, font, pagination)
+44. [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — business architecture decisions; **Finance Vocabulary** (document codes and numbering)
 31. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 32. [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) — **POS Complete gate (P1–P4)** + thermal 80mm scope (memory doc)
 33. [RECEIPT_SETUP.md](./RECEIPT_SETUP.md) — current receipt layout / tax ID rules (pre-unify)
 34. [2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md](./2026_MIGRATION_AND_PARALLEL_RUN_PLAN.md) — legacy Excel migration, gradual import, parallel run, cutover gates
+
+## Finance architecture & rules
+
+Presentation and voucher layout rules (read before print/PDF work):
+
+- [FINANCE_PRESENTATION_CONTRACT.md](./FINANCE_PRESENTATION_CONTRACT.md) — **required** — one presentation model for screen, print, archived PDF
+- [FINANCE_MJV_PRINT_ARCHITECTURE.md](./FINANCE_MJV_PRINT_ARCHITECTURE.md) — MJV print implementation detail (F1A)
+- [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) — canonical header identity
 
 ## Phase status
 

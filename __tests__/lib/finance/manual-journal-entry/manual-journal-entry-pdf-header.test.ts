@@ -20,7 +20,7 @@ describe("manual-journal-entry-pdf-header", () => {
 
   it("builds manual journal audit line without optional workflow dates", () => {
     const header = buildManualJournalPdfHeaderLines({
-      entryNo: "MAJ-260001",
+      entryNo: "MJV-260001",
       entryDate: "2026-06-14",
       createdAt: "2026-06-14T12:00:00.000Z",
       submittedAt: null,
@@ -30,14 +30,14 @@ describe("manual-journal-entry-pdf-header", () => {
     })
 
     expect(header.auditLine).toBe(
-      "MAJ-260001 • Entry Date: 14.06.2026 • Created: 14.06.2026 • Posted: 15.06.2026"
+      "MJV-260001 • Entry Date: 14.06.2026 • Created: 14.06.2026 • Posted: 15.06.2026"
     )
     expect(header.description).toBeNull()
   })
 
   it("uses bullet separators only", () => {
     const header = buildManualJournalPdfHeaderLines({
-      entryNo: "MAJ-260002",
+      entryNo: "MJV-260002",
       entryDate: "2026-06-14",
       createdAt: "2026-06-14T12:00:00.000Z",
       submittedAt: "2026-06-14T13:00:00.000Z",

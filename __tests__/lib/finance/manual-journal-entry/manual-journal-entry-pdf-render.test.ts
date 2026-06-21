@@ -37,12 +37,12 @@ const snapshot: ManualJournalEntryPdfSnapshot = {
 }
 
 describe("renderManualJournalEntryPdf Thai font", () => {
-  it("embeds Noto Sans Thai and preserves Thai text in the PDF stream", async () => {
+  it("embeds THSarabunNew and preserves Thai text in the PDF stream", async () => {
     const buffer = await renderManualJournalEntryPdf(snapshot)
     const pdfText = buffer.toString("latin1")
 
     expect(pdfText).toMatch(/FontFile2|FontFile3/)
-    expect(pdfText).toMatch(/NotoSansThai/)
+    expect(pdfText).toMatch(/THSarabunNew/)
     expect(pdfText).not.toMatch(/\/BaseFont\s*\/Helvetica\b/)
   })
 })

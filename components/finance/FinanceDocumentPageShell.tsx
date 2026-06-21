@@ -9,7 +9,7 @@ type FinanceDocumentPageShellProps = {
   children: ReactNode
 }
 
-/** Centered document page frame — back link + 1050px container (OPB/MAJ/inquiry parity). */
+/** Centered document page frame — back link + 1050px container (OPB/MJV/inquiry parity). */
 export function FinanceDocumentPageShell({
   backHref,
   backLabel,

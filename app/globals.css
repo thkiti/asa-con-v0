@@ -372,6 +372,218 @@ span.finance-account .finance-account-name-part {
   color: var(--finance-memo);
 }
 
+/* MJV entry line grid — compact fixed-width data-entry columns */
+.mjv-entry-lines-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.mjv-entry-lines-table col.mjv-col-account {
+  width: 340px;
+}
+
+.mjv-entry-lines-table col.mjv-col-debit {
+  width: 170px;
+}
+
+.mjv-entry-lines-table col.mjv-col-credit {
+  width: 170px;
+}
+
+.mjv-entry-lines-table col.mjv-col-memo {
+  width: 240px;
+}
+
+.mjv-entry-lines-table col.mjv-col-trash {
+  width: 2.25rem;
+}
+
+.mjv-entry-lines-table tbody td {
+  vertical-align: middle;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.mjv-line-field-input,
+.mjv-line-account-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.mjv-line-account-input {
+  padding-right: 1.75rem;
+}
+
+.mjv-line-trash-cell {
+  vertical-align: middle;
+}
+
+.pav-header-account-input {
+  padding-right: 1.75rem;
+}
+
+/* PAV entry header — pay-from / cheque / payee / description on one row */
+.pav-entry-meta-row-2 {
+  display: grid;
+  grid-template-columns: 240px 160px 300px 326px;
+  gap: 8px;
+  align-items: center;
+}
+
+.pav-entry-meta-field {
+  min-width: 0;
+}
+
+.pav-entry-meta-control {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .pav-entry-meta-row-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pav-entry-meta-description {
+    grid-column: 1 / -1;
+  }
+}
+
+/* PCV entry header — petty cash / cheque / payee / description on one row */
+.pcv-entry-meta-row-2 {
+  display: grid;
+  grid-template-columns: 240px 160px 300px 326px;
+  gap: 8px;
+  align-items: center;
+}
+
+.pcv-entry-meta-field {
+  min-width: 0;
+}
+
+.pcv-entry-meta-control {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.pcv-entry-meta-readonly {
+  cursor: default;
+  background-color: rgb(244 244 245);
+  color: rgb(63 63 70);
+}
+
+.pcv-entry-meta-locked:read-only,
+.pcv-entry-meta-locked:disabled {
+  cursor: default;
+  background-color: #fff;
+  color: rgb(39 39 42);
+  opacity: 1;
+  -webkit-text-fill-color: rgb(39 39 42);
+}
+
+.pcv-entry-meta-locked:disabled {
+  cursor: not-allowed;
+}
+
+.pcv-petty-cash-balance-box {
+  border-radius: 0.25rem;
+  border: 1px solid rgb(212 212 216);
+  background-color: rgb(250 250 250 / 0.6);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgb(39 39 42);
+}
+
+.pcv-balance-table {
+  width: 100%;
+  margin-top: 0.25rem;
+  border-collapse: collapse;
+}
+
+.pcv-balance-table tbody td {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+  vertical-align: baseline;
+}
+
+.pcv-balance-label {
+  color: rgb(82 82 91);
+}
+
+@media (max-width: 640px) {
+  .pcv-entry-meta-row-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pcv-entry-meta-description {
+    grid-column: 1 / -1;
+  }
+}
+
+/* PAV entry line grid — same rhythm as MJV allocation table */
+.pav-entry-lines-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.pav-entry-lines-table col.pav-col-account {
+  width: 340px;
+}
+
+.pav-entry-lines-table col.pav-col-debit {
+  width: 170px;
+}
+
+.pav-entry-lines-table col.pav-col-credit {
+  width: 170px;
+}
+
+.pav-entry-lines-table col.pav-col-memo {
+  width: 240px;
+}
+
+.pav-entry-lines-table col.pav-col-trash {
+  width: 2.25rem;
+}
+
+.pav-entry-lines-table tbody td {
+  vertical-align: middle;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.pav-line-field-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.pav-derived-credit-row td {
+  border-top: 1px dashed var(--finance-grid-soft);
+}
+
+.pav-derived-credit-account {
+  display: block;
+  padding-left: 0.75rem;
+  font-weight: 400;
+  color: var(--finance-text-muted, #71717a);
+}
+
+.pav-derived-credit-row .finance-number {
+  font-weight: 400;
+  color: var(--finance-text-muted, #71717a);
+}
+
 .finance-table tfoot .finance-total-row {
   border-top: 1px solid var(--finance-grid);
 }

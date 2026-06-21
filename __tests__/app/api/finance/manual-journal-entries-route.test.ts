@@ -88,7 +88,7 @@ const actor = { staffId: "staff-1", name: "Admin", role: "HO_FINANCE" }
 
 const sampleEntry = {
   id: "entry-1",
-  entryNo: "MAJ-2620001",
+  entryNo: "MJV-2620001",
   entryType: "MANUAL" as const,
   status: "DRAFT" as const,
   branchId: "branch-1",

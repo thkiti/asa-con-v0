@@ -4,9 +4,9 @@ import { ACCOUNT_DISPLAY_SEPARATOR } from "@/lib/finance-ui/format-account"
 import type { FinanceVoucherPrintModel } from "@/lib/finance-ui/finance-voucher-print"
 
 const model: FinanceVoucherPrintModel = {
-  documentTypeCode: "MAJ",
+  documentTypeCode: "MJV",
   documentTypeTitle: "MANUAL JOURNAL VOUCHER",
-  documentNo: "MAJ-260001",
+  documentNo: "MJV-260001",
   documentDate: "14.06.2026",
   legalEntityLabel: "ASAS",
   branchLabel: "HO999 — Head Office",
@@ -57,7 +57,7 @@ describe("FinanceVoucherPrintSheet", () => {
     expect(html).toContain("finance-voucher-print-font")
     expect(html).toContain('data-testid="finance-document-header"')
     expect(html).toContain("Document Type")
-    expect(html).toContain("MAJ")
+    expect(html).toContain("MJV")
     expect(html).toContain(">Account<")
     expect(html).not.toContain("Account Code")
     expect(html).not.toContain("Account Name")
@@ -69,7 +69,7 @@ describe("FinanceVoucherPrintSheet", () => {
     expect(html).not.toContain("Page 1 of")
     expect(html).toContain("END OF VOUCHER")
     expect(html).toContain('data-testid="finance-voucher-end-marker"')
-    expect(html).not.toContain("Document No. MAJ-260001")
+    expect(html).not.toContain("Document No. MJV-260001")
     const accountIdx = html.indexOf(">Account<")
     const debitIdx = html.indexOf(">Debit<")
     const creditIdx = html.indexOf(">Credit<")

@@ -44,7 +44,7 @@ describe("GET manual-journal-entries/[id]/pdf", () => {
       status: "POSTED",
       pdfPath: "manual-journal/entry-1.pdf",
       pdfBlobUrl: "https://blob.example/manual-journal/entry-1.pdf",
-      entryNo: "MAJ-260001",
+      entryNo: "MJV-260001",
     })
     mockReadPdf.mockResolvedValue(Buffer.from("%PDF"))
 
@@ -69,7 +69,7 @@ describe("GET manual-journal-entries/[id]/pdf", () => {
       status: "POSTED",
       pdfPath: null,
       pdfBlobUrl: null,
-      entryNo: "MAJ-260001",
+      entryNo: "MJV-260001",
     })
 
     const res = await pdfRoute(
@@ -87,7 +87,7 @@ describe("GET manual-journal-entries/[id]/pdf", () => {
       status: "POSTED",
       pdfPath: "manual-journal/entry-1.pdf",
       pdfBlobUrl: "https://blob.example/manual-journal/entry-1.pdf",
-      entryNo: "MAJ-260001",
+      entryNo: "MJV-260001",
     })
     const { ManualJournalEntryError } = await import(
       "@/lib/finance/manual-journal-entry/manual-journal-entry-errors"

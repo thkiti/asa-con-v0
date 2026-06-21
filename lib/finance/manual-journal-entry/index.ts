@@ -34,6 +34,10 @@ export {
   type PostManualJournalEntryResult,
 } from "./manual-journal-entry-post"
 export {
+  regenerateManualJournalEntryArchivedPdf,
+  type RegenerateManualJournalEntryArchivedPdfResult,
+} from "./manual-journal-entry-pdf-repair"
+export {
   attachManualJournalEntryPdfFromSnapshot,
   loadPostedManualJournalEntryPdfSnapshot,
   type AttachManualJournalEntryPdfResult,
@@ -69,6 +73,7 @@ export {
   applyCancelledStatus,
   applyConfirmedStatus,
   applyPdfSnapshot,
+  applyPdfSnapshotRepair,
   applyPostedStatus,
   applySubmittedStatus,
 } from "./manual-journal-entry-status"

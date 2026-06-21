@@ -1,9 +1,9 @@
 # Finance MJV Print Architecture (Phase F1A)
 
 Status: **Implemented (F1A foundation)**  
-Scope: Manual Journal Voucher (MJV / MAJ family) print layout, browser print / Save PDF standard, font rule, and inheritance rules for future PAY / REV / Petty Cash vouchers.
+Scope: Manual Journal Voucher (MJV) print layout, browser print / Save PDF standard, font rule, and inheritance rules for future PAV / REV / Petty Cash vouchers.
 
-**Out of scope for F1A:** schema changes, posting engine, voucher engine, GL/TB/P&L/BS calculations, finance report APIs, PAY / REV / Petty Cash implementation.
+**Out of scope for F1A:** schema changes, posting engine, voucher engine, GL/TB/P&L/BS calculations, finance report APIs, PAV / REV / Petty Cash implementation.
 
 Related:
 
@@ -15,7 +15,7 @@ Related:
 
 ## 1. Phase objective
 
-Finalize **MJV print** as the standard **finance voucher print foundation** before PAY, REV, and Petty Cash vouchers.
+Finalize **MJV print** as the standard **finance voucher print foundation** before PAV, REV, and Petty Cash vouchers.
 
 Deliverables:
 
@@ -39,7 +39,7 @@ Deliverables:
 | `components/finance/FinanceDocumentCanonicalHeader.tsx` | Canonical 3-row finance document header | **Keep — reuse in print** |
 | `lib/finance-ui/finance-document-display.ts` | Header row builders, date formatting | **Keep — reuse** |
 | `lib/finance-ui/finance-visual-classes.ts` | Finance table / amount visual tokens | **Keep — reuse** |
-| `app/globals.css` (`.finance-voucher-print-*`) | THSarabunNew `@font-face`, A4 print styles | **Keep — extend for PAY/REV** |
+| `app/globals.css` (`.finance-voucher-print-*`) | THSarabunNew `@font-face`, A4 print styles | **Keep — extend for PAV/REV** |
 | `public/fonts/THSarabunNew.ttf` | Bundled standard finance print font | **Keep — required** |
 | `components/finance/ManualJournalEntryEditorPage.tsx` | POSTED view hosts print sheet + actions | **Keep — wire point** |
 
@@ -138,7 +138,7 @@ Print view model is built from the same read DTO as the POSTED editor. It does n
 
 ## 4. Standard MJV voucher layout
 
-Document type code: **MAJ** (Manual Accounting Journal). User-facing title: **MANUAL JOURNAL VOUCHER** per identity standard. “MJV” in phase name = this voucher family.
+Document type code: **MJV** (Manual Journal Voucher). User-facing title: **MANUAL JOURNAL VOUCHER** per identity standard.
 
 ### 4.1 Header
 
@@ -147,7 +147,7 @@ Document type code: **MAJ** (Manual Accounting Journal). User-facing title: **MA
    - Row 2: `{DocumentNo} • Entry Date • Period • Status`
    - Row 3: `Description: …` (omitted when empty)
 2. **Meta grid** (print-friendly labels):
-   - Document Type (code, e.g. `MAJ`, `OPB`)
+   - Document Type (code, e.g. `MJV`, `OPB`)
    - Document No.
    - Document Date
    - Legal Entity
@@ -245,7 +245,7 @@ Rules:
 - No JS pagination, no content-flow `counter(page)` / `counter(pages)`, no page identity bands.
 - Reference/Being block is not printed as a separate section (avoids page-1 height waste).
 - `END OF VOUCHER` remains a print-only marker at document end.
-- Reusable for MJV, PAY, REV, Petty Cash.
+- Reusable for MJV, PAV, REV, Petty Cash.
 
 ### Font verification (F1A.2)
 
@@ -260,11 +260,11 @@ Rules:
 - Three signature blocks: Prepared, Checked, Approved
 - Each block: label → ruled line → staff id text
 - Posted By / Posted At are typed fields below signature grid (not signature lines)
-- Future PAY / REV / Petty Cash may add payer/receiver signature blocks using the same grid pattern
+- Future PAV / REV / Petty Cash may add payer/receiver signature blocks using the same grid pattern
 
 ---
 
-## 7. Future inheritance (PAY / REV / Petty Cash)
+## 7. Future inheritance (PAV / REV / Petty Cash)
 
 | Shared asset | Reuse |
 |--------------|-------|
@@ -278,7 +278,7 @@ Per-voucher differences (future):
 
 | Code | Document Type Title | Extra sections |
 |------|-------------------|----------------|
-| PAY | PAYMENT VOUCHER | Payee, payment method, bank |
+| PAV | PAYMENT VOUCHER | Payee, payment method, bank |
 | REV | RECEIPT VOUCHER | Payer, receipt method |
 | PCV | PETTY CASH VOUCHER | Petty cash fund, expense category |
 

@@ -4,7 +4,7 @@ import type { Role } from "@/lib/shared"
 /**
  * Finance menu — F0.2 locked information architecture.
  *
- * Document layer (Daily Work): MJV, PAY, REV, Petty Cash
+ * Document layer (Daily Work): MJV, PAV, REV, Petty Cash
  * Reporting layer (Dashboard): GL, TB, P&L, BS
  * Audit layer (Audit): Voucher Lookup, Document Trace, Attachments
  *
@@ -89,29 +89,32 @@ function buildPrimaryFinanceMenuHubs(): Record<
     "daily-work": {
       label: "Daily Work",
       description:
-        "Create and process finance documents — MJV is live; PAY, REV, and Petty Cash coming soon.",
+        "Create and process finance documents — MJV, PAV, REV, and PCV are live.",
       href: hubHref("daily-work"),
       items: [
         done(
           "mjv",
           "MJV",
           "/finance/manual-journal-entries",
-          "Manual journal vouchers — OPB, MAJ, adjustments, accruals, corrections"
+          "Manual journal vouchers — MJV, OPB, adjustments, accruals, corrections"
         ),
-        comingSoon(
-          "pay",
-          "PAY",
+        done(
+          "pav",
+          "PAV",
+          "/finance/payment-vouchers",
           "Outbound payments, cheques, and settlement disbursements"
         ),
-        comingSoon(
+        done(
           "rev",
           "REV",
-          "Receivable settlements — amounts owed, not yet received"
+          "/finance/revenue-vouchers",
+          "Inbound receipts — receive to bank or cash, allocate credits, post to GL"
         ),
-        comingSoon(
+        done(
           "petty-cash",
           "Petty Cash",
-          "Small cash disbursements and replenishment"
+          "/finance/petty-cash-vouchers",
+          "Small cash disbursements and replenishment (PCV)"
         ),
       ],
     },

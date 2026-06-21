@@ -53,7 +53,7 @@ describe("FinanceMenuView", () => {
 })
 
 describe("FinanceMenuHubView", () => {
-  it("renders daily work hub with MJV, PAY, REV, and Petty Cash", () => {
+  it("renders daily work hub with MJV, PAV, REV, and Petty Cash", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
     expect(hub).not.toBeNull()
     expect(hub?.label).toBe("Daily Work")
@@ -62,11 +62,18 @@ describe("FinanceMenuHubView", () => {
     )
     expect(html).toContain('href="/finance"')
     expect(html).toContain('href="/finance/manual-journal-entries"')
+    expect(html).toContain('href="/finance/payment-vouchers"')
     expect(html).toContain("MJV")
-    expect(html).toContain("PAY")
+    expect(html).toContain("PAV")
     expect(html).toContain("REV")
     expect(html).toContain("Petty Cash")
-    expect(html).toContain("Coming Soon")
+    expect(html).toContain(
+      "Create and process finance documents — MJV, PAV, REV, and PCV are live."
+    )
+    expect(html).toContain('href="/finance/revenue-vouchers"')
+    expect(html).toContain('href="/finance/petty-cash-vouchers"')
+    expect(html).toContain("Done")
+    expect(html).not.toContain("Coming Soon")
     expect(html).not.toContain("Instant GL Journal")
     expect(html).not.toContain("Transactions")
     expect(html).not.toContain("Receivables")
@@ -124,14 +131,21 @@ describe("FinanceMenuHubView", () => {
 
 describe("finance-menu config", () => {
   it("exposes F0.2 leaf items for diagnostics", () => {
-    const keys = getAllFinanceMenuItems("HO_ADMIN").map((item) => item.key)
+    const items = getAllFinanceMenuItems("HO_ADMIN")
+    const keys = items.map((item) => item.key)
     expect(keys).toContain("mjv")
-    expect(keys).toContain("pay")
+    expect(keys).toContain("pav")
+    const pav = items.find((item) => item.key === "pav")
+    expect(pav?.status).toBe("available")
+    expect(pav?.href).toBe("/finance/payment-vouchers")
     expect(keys).toContain("rev")
+    const rev = items.find((item) => item.key === "rev")
+    expect(rev?.status).toBe("available")
+    expect(rev?.href).toBe("/finance/revenue-vouchers")
     expect(keys).toContain("petty-cash")
     expect(keys).toContain("trial-balance")
     expect(keys).toContain("voucher-lookup")
-    expect(keys).not.toContain("pay-register")
+    expect(keys).not.toContain("pav-register")
     expect(keys).not.toContain("manual-journal")
   })
 

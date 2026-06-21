@@ -21,10 +21,10 @@ export default async function ManualJournalEntryDetailPage({ params }: PageProps
           ← Journal entries
         </Link>
         <EntityContextPageHeading
-          title="Journal entry"
+          title="MANUAL JOURNAL VOUCHER"
           className="mt-4 text-xl font-semibold"
         />
-        <div className="mt-6">
+        <div className="mt-4">
           <ManualJournalEntryEditorPage mode="edit" entryId={id} />
         </div>
       </FinanceDocumentContainer>
