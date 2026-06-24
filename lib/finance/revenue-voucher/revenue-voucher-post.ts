@@ -1,6 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
-import { addMoney, toMoney, ZERO } from "@/lib/finance/decimal"
+import { toMoney } from "@/lib/finance/decimal"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
 import { postOperationalVoucher } from "@/lib/finance/posting"
 import {
@@ -29,33 +29,12 @@ type EntryWithGlLines = RevenueVoucherWithLines & {
 
 function materializeJournalLines(entry: EntryWithGlLines): JournalLineDraft[] {
   const sorted = [...entry.lines].sort((a, b) => a.lineNo - b.lineNo)
-  const journalLines: JournalLineDraft[] = sorted.map((line) => ({
+  return sorted.map((line) => ({
     glAccountId: line.glAccountId,
-    debit: ZERO,
+    debit: toMoney(line.debit),
     credit: toMoney(line.credit),
     memo: line.memo ?? undefined,
   }))
-
-  const total = journalLines.reduce(
-    (sum, line) => addMoney(sum, line.credit),
-    ZERO
-  )
-
-  if (total.isZero()) {
-    throw new RevenueVoucherError(
-      "Revenue voucher total must be greater than zero",
-      RevenueVoucherErrorCodes.INVALID_AMOUNT
-    )
-  }
-
-  journalLines.push({
-    glAccountId: entry.receiveToAccountId,
-    debit: total,
-    credit: ZERO,
-    memo: entry.receivedFromName ? `Receipt from ${entry.receivedFromName}` : undefined,
-  })
-
-  return journalLines
 }
 
 async function loadEntryWithGlAccountsOrThrow(

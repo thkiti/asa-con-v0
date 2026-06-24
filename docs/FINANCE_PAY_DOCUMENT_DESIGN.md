@@ -28,7 +28,7 @@ Related:
 | Level 2 identity | `Voucher.voucherNo` assigned at POST |
 | Level 3 identity | `JournalEntry.id` (technical / traceability) |
 
-PAV is **not** a journal editor. It is a **payment form**: user selects *where money comes from* (`payFromAccountId`) and *what it pays for* (debit allocation lines). The accounting engine materializes the balanced voucher and journal at POST.
+PAV is a **payment voucher form** with header context (`payFromAccountId`, `payeeName`) and **full debit/credit journal lines** — like MJV line rules, but specialized for outbound payments. Users enter every GL line (WHT payable, bank fees, bank credit, etc.); the system does **not** auto-generate a balancing credit at POST.
 
 ```mermaid
 flowchart LR
@@ -54,17 +54,26 @@ Every posted Payment Voucher represents one balanced double-entry event:
 
 | Side | Rule |
 |------|------|
-| **Credit** | Must hit the **pay-from control account** (`payFromAccountId`) — bank, cash, or petty-cash GL account |
-| **Debit** | One or more allocation lines — expense, asset, liability, prepaid, etc., depending on payment purpose |
-| **Balance** | Sum(debit) = Sum(credit) = `totalAmount` |
+| **Lines** | User enters **both debit and credit** lines (one non-zero side per line) |
+| **Pay-from control** | `payFromAccountId` is the default disbursement account; at least one stored **credit** line must use this account when it is set |
+| **Balance** | Sum(debit) = Sum(credit) on stored lines before SUBMIT/POST |
 | **Timing** | `JournalEntry` is written **only when status → POSTED** |
 
 ### Posting journal shape (conceptual)
 
 ```
-Dr  Expense / Asset / Liability …   (allocation lines — user-entered)
-Cr  Bank / Cash / Petty Cash        (single line — derived from payFromAccountId)
+Dr  Rent Expense              10,000
+Cr  WHT Payable                  500
+Cr  Bank / Cash (pay-from)     9,500
 ```
+
+```
+Dr  Accounts Payable          10,000
+Dr  Bank Fee Expense              20
+Cr  Bank (pay-from)           10,020
+```
+
+These patterns avoid separate Manual Journal entries for withholding tax and bank fees.
 
 ### Account eligibility
 
@@ -93,7 +102,7 @@ Operational header fields for the Payment Voucher (PAV) document. Names below ar
 | `chequeNo` | Optional | Cheque number when payment method is cheque; omit for transfer / cash |
 | `description` | Recommended | Header narrative — appears in canonical header Row 3 and print |
 | `status` | System | `DRAFT` → `SUBMITTED` → `CONFIRMED` → `POSTED` (terminal). Also `CANCELLED` (terminal, no GL) |
-| `totalAmount` | Derived | Sum of debit allocation lines (= credit to pay-from). Stored denormalized for list/display; recomputed on SAVE |
+| `totalAmount` | Derived | Sum of debit lines (= credit total when balanced). Stored denormalized for list/display; recomputed on SAVE |
 | `confirmedBy` | System | Staff id at CONFIRM. **Schema alignment:** `confirmedByStaffId` + `confirmedAt` |
 | `confirmedAt` | System | Timestamp at CONFIRM |
 | `postedAt` | System | Timestamp at POST |
@@ -113,23 +122,22 @@ Operational header fields for the Payment Voucher (PAV) document. Names below ar
 
 ## 4. PAV line fields
 
-PAV lines represent **debit allocations** entered by the user. The **credit line is not stored as a user-editable row** in the operational document (see §8).
+PAV lines are **full journal lines** (same side rules as MJV). Each line has exactly one non-zero side.
 
 | Field | Required | Type / notes |
 |-------|----------|--------------|
-| `accountId` | Yes | GL account to debit. **Schema alignment:** `glAccountId` |
+| `accountId` | Yes | GL account. **Schema alignment:** `glAccountId` |
 | `description` | Optional | Line memo. **Schema alignment:** `memo` |
-| `debitAmount` | Yes (per line) | Amount ≥ 0; at least one line must have debit > 0 |
-| `creditAmount` | No (always 0 on stored lines) | Stored as `0` on operational lines. Credit appears only in POST preview / voucher / journal materialization |
+| `debitAmount` | Per line | Amount ≥ 0; exactly one of debit/credit non-zero |
+| `creditAmount` | Per line | Amount ≥ 0; exactly one of debit/credit non-zero |
 | `sortOrder` | Yes | Display and posting order. **Schema alignment:** `lineNo` |
 
-### Stored vs materialized lines
+### Stored vs posted lines
 
 | Layer | Lines persisted |
 |-------|-----------------|
-| Operational Payment Voucher document | **Debit allocation lines only** (`creditAmount = 0`) |
-| POST preview / print (POSTED) | Debit lines + **one derived credit line** for `payFromAccountId` |
-| `VoucherLine` / `JournalEntryLine` | Full balanced set at POST |
+| Operational Payment Voucher document | **All user-entered debit/credit lines** |
+| `VoucherLine` / `JournalEntryLine` | **Same lines** materialized 1:1 at POST (no derived balancing row) |
 
 ---
 
@@ -139,7 +147,7 @@ Workflow mirrors the proven MJE path ([`ManualJournalEntry` workflow](../lib/fin
 
 | Action | From status | To status | Effect |
 |--------|-------------|-----------|--------|
-| **SAVE** | — / `DRAFT` | `DRAFT` | Persist header + debit lines. Allocate `voucherNo` on create. **No** voucher or journal |
+| **SAVE** | — / `DRAFT` | `DRAFT` | Persist header + balanced debit/credit lines. Allocate `voucherNo` on create. **No** voucher or journal |
 | **SUBMIT** | `DRAFT` | `SUBMITTED` | Validate document; **lock editable fields** (see below). **No** voucher or journal |
 | **CONFIRM** | `SUBMITTED` | `CONFIRMED` | Finance approval stamp. **No** voucher or journal |
 | **POST** | `CONFIRMED` | `POSTED` | Create `Voucher` + `JournalEntry` + lines inside caller outer tx. Link `journalEntryId` / `postedVoucherId`. Document immutable |
@@ -150,7 +158,7 @@ Workflow mirrors the proven MJE path ([`ManualJournalEntry` workflow](../lib/fin
 | Field group | DRAFT | SUBMITTED | CONFIRMED | POSTED |
 |-------------|-------|-----------|-----------|--------|
 | `voucherDate`, `payFromAccountId`, `payeeName`, `referenceNo`, `chequeNo`, `description`, `branchId` | Editable | **Locked** | **Locked** | **Locked** |
-| Debit allocation lines | Editable | **Locked** | **Locked** | **Locked** |
+| Voucher lines (debit + credit) | Editable | **Locked** | **Locked** | **Locked** |
 | Workflow actions | SAVE, SUBMIT, DELETE | CONFIRM, CANCEL | POST, CANCEL | Read-only; print |
 
 `DRAFT` may be hard-deleted (same as MJE). `POSTED` is immutable — no SAVE, no CANCEL without future reversal design (out of F1B scope).
@@ -159,7 +167,7 @@ Workflow mirrors the proven MJE path ([`ManualJournalEntry` workflow](../lib/fin
 
 1. Status must be `CONFIRMED`
 2. `assertPostingPeriodOpen(legalEntityCode, voucherDate)` — fail with `PERIOD_CLOSED` or `PERIOD_NOT_OPENED` when period ≠ `OPEN` ([15_FINANCE_PERIODS.md](./15_FINANCE_PERIODS.md))
-3. Materialize balanced journal lines (debit allocations + derived credit)
+3. Materialize journal lines **directly from stored voucher lines** (no auto-credit)
 4. Call existing finance posting kernel (`postOperationalVoucher` or dedicated PAV post helper joining caller `tx`)
 5. Set `postedAt`, `postedByStaffId`, `journalEntryId`, `postedVoucherId`
 6. **No nested `prisma.$transaction`** — operational orchestrator owns outer tx; posting helper joins `{ tx }`
@@ -172,29 +180,22 @@ Validation runs at SAVE (soft), SUBMIT (strict), and POST (strict + period + acc
 
 | # | Rule | When enforced |
 |---|------|---------------|
-| 1 | Document must not be empty — at least one debit allocation line with `debitAmount > 0` | SUBMIT, POST |
-| 2 | `voucherDate` required | SAVE, SUBMIT, POST |
-| 3 | `payFromAccountId` required | SAVE, SUBMIT, POST |
-| 4 | `payeeName` required (non-blank) | SUBMIT, POST |
-| 5 | At least one debit line with `debitAmount > 0` | SUBMIT, POST |
-| 6 | Lines with `debitAmount = 0` and `creditAmount = 0` must not be saved — strip or reject | SAVE |
-| 7 | Negative amounts not allowed on any line | SAVE, SUBMIT, POST |
-| 8 | `totalAmount` = sum(debit lines); must be > 0 | SUBMIT, POST |
-| 9 | Debit total must equal credit total | POST (after credit line materialization — always true if derived correctly) |
-| 10 | `payFromAccountId` must reference an eligible disbursement control account | SAVE, SUBMIT, POST |
-| 11 | Debit allocation accounts must exist, be active, not deleted | SAVE, SUBMIT, POST |
-| 12 | POST only when `AccountingPeriod.status === OPEN` for entity + date | POST |
-| 13 | Immutable after POST — reject mutating actions | POSTED |
+| 1 | At least **two** valid lines (non-zero debit or credit) | SUBMIT, POST |
+| 2 | Each line: debit **or** credit, not both; not both zero | SAVE, SUBMIT, POST |
+| 3 | `voucherDate` required | SAVE, SUBMIT, POST |
+| 4 | `payFromAccountId` required | SAVE, SUBMIT, POST |
+| 5 | `payeeName` required (non-blank) | SUBMIT, POST |
+| 6 | Debit total must equal credit total | SUBMIT, POST |
+| 7 | Total must be > 0 | SUBMIT, POST |
+| 8 | At least one **credit** line on `payFromAccountId` when set | SUBMIT, POST |
+| 9 | `payFromAccountId` must reference an eligible disbursement control account | SAVE, SUBMIT, POST |
+| 10 | Line accounts must exist, be active, not deleted | SAVE, SUBMIT, POST |
+| 11 | POST only when `AccountingPeriod.status === OPEN` for entity + date | POST |
+| 12 | Immutable after POST — reject mutating actions | POSTED |
 
-### Balance model with auto-credit (see §8)
+### Balance model
 
-During editing, the document is **debit-only** on stored lines. Balance is enforced structurally:
-
-```
-credit_total (derived at POST) = totalAmount = sum(debitAmount on allocation lines)
-```
-
-User does **not** manually enter the credit side under the recommended design.
+Users enter debits and credits in the line table (MJV-style). Submit/confirm/post are blocked when totals differ. The UI shows total debit, total credit, and **Not Balanced** when they differ.
 
 ---
 
@@ -208,7 +209,7 @@ PAV print inherits F1A foundation ([FINANCE_MJV_PRINT_ARCHITECTURE.md](./FINANCE
 |------|--------|
 | Single query / read model | Screen preview and print use the **same read API** and print view-model builder |
 | No print-time totals | `totalAmount`, debit/credit totals come from **saved/posted data** — not recalculated in print CSS or a parallel print component |
-| POSTED print | Includes derived credit line in line table (from posted voucher/journal or POST snapshot) |
+| POSTED print | All stored lines — same as journal |
 
 ### Print view-model mapper (future)
 
@@ -246,57 +247,55 @@ Cheque: 1234567
 
 ---
 
-## 8. Design decision — credit line entry model
+## 8. Design decision — full debit/credit lines (revised)
 
 ### Question
 
-Should PAV UI allow the user to enter the credit line manually, or should the system auto-generate the credit line from `payFromAccountId`?
+Should PAV support only debit allocation lines with an auto-generated pay-from credit, or full debit/credit entry?
 
-### Recommended answer: **Auto-generate credit line**
+### Answer: **Full debit/credit lines**
 
 | Aspect | Decision |
 |--------|----------|
-| User input | **Debit allocation lines only** |
-| Credit line | **System-generated** from `payFromAccountId` + `totalAmount` |
-| When generated | (a) **POST preview** — show full balanced journal before confirm-post; (b) **POST materialization** — write to `VoucherLine` / `JournalEntryLine`; (c) **Print (POSTED)** — include in line table |
-| Stored operational lines | Debit-only rows (`creditAmount = 0`) |
-| UI | Header field `payFromAccountId` replaces manual credit row entry |
+| User input | **Debit and credit** on each line (one side per line) |
+| Pay-from header | `payFromAccountId` remains for UX and validation — at least one **credit** line must hit this account |
+| POST | Journal lines copied **1:1** from voucher lines — **no** derived balancing row |
+| Why | Real payments need WHT payable, bank fees, split credits, etc. without a separate MJV |
 
-### Rationale
+### Examples (accounting)
 
-1. **Matches payment mental model** — user thinks "pay from this bank" + "allocate to these expenses", not double-entry typing
-2. **Prevents user error** — cannot pick wrong credit account or mis-key credit amount
-3. **Guarantees balance** — `totalAmount` on credit always equals sum of debits
-4. **Distinct from MJV** — MJV is general journal; PAV is specialized disbursement form
-5. **Simpler validation** — no "duplicate credit line" or "credit on wrong account" user mistakes
+**Rent with withholding tax**
+
+```
+Dr  Rent Expense           10,000
+Cr  WHT Payable               500
+Cr  Bank (pay-from)         9,500
+```
+
+**Supplier payment plus bank fee**
+
+```
+Dr  Accounts Payable       10,000
+Dr  Bank Fee Expense           20
+Cr  Bank (pay-from)        10,020
+```
 
 ### UI behavior summary
 
 ```
-┌─────────────────────────────────────────────┐
-│ Pay from: [10101001 Kasikorn Current ▼]     │
-│ Payee:    [________________________]        │
-│ ...                                         │
-├─────────────────────────────────────────────┤
-│ Allocation lines (debit only)               │
-│ Account          Description    Amount      │
-│ 50101001         Office supp.   1,500.00    │
-│ 50101002         Courier          500.00    │
-├─────────────────────────────────────────────┤
-│ Total: 2,000.00                             │
-│ (Credit to pay-from implied — not editable) │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ Pay from: [10101001 Kasikorn Current ▼]   Payee: …       │
+├──────────────────────────────────────────────────────────┤
+│ Account          Memo              Debit      Credit     │
+│ 51001001         Rent           10,000.00               │
+│ 22001001         WHT                  500.00            │
+│ 10101001         Bank                      9,500.00     │
+├──────────────────────────────────────────────────────────┤
+│ Total                         10,000.00   10,000.00      │
+└──────────────────────────────────────────────────────────┘
 ```
 
-On POST preview / POSTED print, show explicit credit line:
-
-```
-Cr  10101001  Kasikorn Current Account    2,000.00
-```
-
-### Alternative rejected
-
-Manual credit line entry (MJV-style) — allowed only if product later requires multi-source payments (split disbursement across two bank accounts). Out of scope for v0 PAV; would be a different document type or MJV.
+Submit / confirm / post disabled when debit ≠ credit.
 
 ---
 
@@ -322,7 +321,7 @@ PAV implementation must follow existing finance architecture — no new accounti
 PaymentVoucher (DRAFT…CONFIRMED)
   └─ POST → postPaymentVoucher({ tx, entry })
        → assertPostingPeriodOpen
-       → materializeJournalLines(debits + derivedCredit)
+       → materializeJournalLines(stored lines, 1:1)
        → postOperationalVoucher({ refType: PAYMENT_VOUCHER, refId, refNo: entryNo, … })
        → link postedVoucherId, postedJournalEntryId
 ```
@@ -345,7 +344,7 @@ Business logic stays in `lib/finance/` — not in routes or pages ([01_MODULAR_M
 | Aspect | MJV / OPB (MJE) | PAV |
 |--------|-----------------|-----|
 | Purpose | General balanced journal | Outbound payment from control account |
-| Lines | User enters debits **and** credits | User enters **debit allocations only** |
+| Lines | User enters debits **and** credits | User enters debits **and** credits (pay-from header + WHT/fees) |
 | Header specialization | `entryType` enum | `payFromAccountId`, `payeeName`, `chequeNo` |
 | Workflow | DRAFT → SUBMITTED → CONFIRMED → POSTED | Same |
 | Posting path | `postManualJournalEntry` | Dedicated PAV post (same kernel) |

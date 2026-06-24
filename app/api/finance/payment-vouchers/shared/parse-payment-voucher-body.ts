@@ -25,11 +25,16 @@ export function parsePaymentVoucherSaveLines(body: unknown): PaymentVoucherSaveL
       typeof line.debit === "string" || typeof line.debit === "number"
         ? line.debit
         : "0"
+    const credit =
+      typeof line.credit === "string" || typeof line.credit === "number"
+        ? line.credit
+        : "0"
 
     return {
       ...(accountCode ? { accountCode } : {}),
       ...(glAccountId ? { glAccountId } : {}),
       debit,
+      credit,
       memo: line.memo != null ? String(line.memo) : null,
     }
   })

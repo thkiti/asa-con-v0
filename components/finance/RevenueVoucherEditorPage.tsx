@@ -18,7 +18,7 @@ import {
   type RevReceiveToAccountOption,
 } from "@/lib/finance-ui/rev-receive-to-accounts"
 import {
-  computeRevenueVoucherCreditTotal,
+  computeRevenueVoucherLineTotals,
   formatRevEntryRefNo,
   formatRevenueVoucherDocumentNo,
   formatRevenueVoucherStatusLabel,
@@ -58,13 +58,14 @@ import {
 } from "@/lib/legal-entity/constants"
 import { themeInput, themeLinkMuted } from "@/lib/theme/theme-classes"
 
-type LineField = "account" | "credit" | "memo"
+type LineField = "account" | "debit" | "credit" | "memo"
 
 type LineRow = {
   key: string
   accountCode: string
   accountName: string
   accountError: string | null
+  debit: string
   credit: string
   memo: string
 }
@@ -75,6 +76,7 @@ function emptyLine(): LineRow {
     accountCode: "",
     accountName: "",
     accountError: null,
+    debit: "",
     credit: "",
     memo: "",
   }
@@ -82,13 +84,14 @@ function emptyLine(): LineRow {
 
 function linesFromEntry(entry: RevenueVoucherRead): LineRow[] {
   if (entry.lines.length === 0) {
-    return [emptyLine()]
+    return [emptyLine(), emptyLine()]
   }
   return entry.lines.map((line) => ({
     key: line.id,
     accountCode: line.accountCode,
     accountName: line.accountName,
     accountError: null,
+    debit: line.debit,
     credit: line.credit,
     memo: line.memo ?? "",
   }))
@@ -98,12 +101,25 @@ function linesToPayload(lines: LineRow[]) {
   return lines
     .map((line) => ({
       accountCode: line.accountCode.trim(),
+      debit: line.debit.trim() || "0",
       credit: line.credit.trim() || "0",
       memo: line.memo.trim() || null,
     }))
     .filter(
-      (line) => line.accountCode || parseRevenueVoucherAmount(line.credit) > 0
+      (line) =>
+        line.accountCode ||
+        parseRevenueVoucherAmount(line.debit) > 0 ||
+        parseRevenueVoucherAmount(line.credit) > 0
     )
+}
+
+function countActiveRevenueVoucherLines(lines: LineRow[]): number {
+  return lines.filter(
+    (line) =>
+      line.accountCode.trim() ||
+      parseRevenueVoucherAmount(line.debit) > 0 ||
+      parseRevenueVoucherAmount(line.credit) > 0
+  ).length
 }
 
 function editorSeed(initialEntry: RevenueVoucherRead | null) {
@@ -120,7 +136,7 @@ function editorSeed(initialEntry: RevenueVoucherRead | null) {
       refNo: "",
       receiptNo: "",
       description: "",
-      lines: [emptyLine()],
+      lines: [emptyLine(), emptyLine()],
     }
   }
   return {
@@ -220,12 +236,12 @@ export function RevenueVoucherEditorPage({
   const canEditHeader = isDraft
   const canEditLines = isDraft
 
-  const creditTotal = useMemo(() => computeRevenueVoucherCreditTotal(lines), [lines])
-  const showDerivedDebitLine = Boolean(receiveToAccountId.trim())
-  const debitTotal = showDerivedDebitLine ? creditTotal : 0
-  const totalsBalanced = debitTotal === creditTotal
+  const lineTotals = useMemo(() => computeRevenueVoucherLineTotals(lines), [lines])
+  const totalsBalanced = lineTotals.balanced
   const canSubmitOrPost =
-    creditTotal > 0 &&
+    lineTotals.balanced &&
+    lineTotals.debit > 0 &&
+    countActiveRevenueVoucherLines(lines) >= 2 &&
     receiveToAccountId.trim().length > 0 &&
     receivedFromName.trim().length > 0
 
@@ -355,6 +371,10 @@ export function RevenueVoucherEditorPage({
       accountEnterCommitRef.current = lineKey
       setFocusedAccountLineKey(null)
       await handleAccountBlur(lineKey, row.accountCode)
+      scheduleFocusLineField(lineKey, "debit")
+      return
+    }
+    if (field === "debit") {
       scheduleFocusLineField(lineKey, "credit")
       return
     }
@@ -486,7 +506,7 @@ export function RevenueVoucherEditorPage({
   async function handleSubmit() {
     if (!canSubmitOrPost) {
       setError(
-        "Enter receive-to account, received from, and at least one credit line before submit."
+        "Enter receive-to account, received from, at least two lines, and balanced debit/credit totals before submit."
       )
       return
     }
@@ -506,7 +526,7 @@ export function RevenueVoucherEditorPage({
   async function handlePost() {
     if (!entry) return
     if (!canSubmitOrPost) {
-      setError("Revenue voucher must have allocations before post.")
+      setError("Revenue voucher must be balanced with at least two lines before post.")
       return
     }
     await runWorkflow("Post", () => postRevenueVoucher(entry.id))
@@ -542,8 +562,8 @@ export function RevenueVoucherEditorPage({
       ? buildFinanceJournalInquiryPath(entry.postedJournalEntryId, currentReturnPath)
       : null
 
-  const amountInWords = formatThaiBahtAmountInWords(creditTotal)
-  const showNotBalanced = creditTotal > 0 && !totalsBalanced
+  const amountInWords = formatThaiBahtAmountInWords(lineTotals.debit)
+  const showNotBalanced = lineTotals.debit > 0 || lineTotals.credit > 0 ? !totalsBalanced : false
 
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading revenue voucher…</p>
@@ -749,7 +769,22 @@ export function RevenueVoucherEditorPage({
                       )}
                     </td>
                     <td className={financeNumber}>
-                      <span className="text-zinc-400">—</span>
+                      {canEditLines ? (
+                        <input
+                          className={`${themeInput} pav-line-field-input mt-0`}
+                          value={row.debit}
+                          onChange={(e) => updateLine(row.key, { debit: e.target.value })}
+                          onKeyDown={(e) =>
+                            handleLineKeyDown(e, row.key, "debit", row, lineIndex)
+                          }
+                          inputMode="decimal"
+                          data-line-key={row.key}
+                          data-field="debit"
+                          data-testid="line-debit"
+                        />
+                      ) : (
+                        formatAmount(row.debit)
+                      )}
                     </td>
                     <td className={financeNumber}>
                       {canEditLines ? (
@@ -801,34 +836,15 @@ export function RevenueVoucherEditorPage({
                     ) : null}
                   </tr>
                 ))}
-                {showDerivedDebitLine ? (
-                  <tr className="pav-derived-credit-row" data-testid="rev-derived-debit-line">
-                    <td className={financeAccount}>
-                      <span className="pav-derived-credit-account">
-                        <FinanceAccountDisplay
-                          accountCode={receiveToAccountCode}
-                          accountName={receiveToAccountName}
-                          data-testid="derived-debit-account"
-                        />
-                      </span>
-                    </td>
-                    <td className={financeNumber} data-testid="derived-debit-amount">
-                      {formatAmount(String(creditTotal))}
-                    </td>
-                    <td className={financeNumber} />
-                    <td className={financeMemo} />
-                    {canEditLines ? <td /> : null}
-                  </tr>
-                ) : null}
               </tbody>
               <tfoot data-testid="rev-entry-totals">
                 <tr className={financeTotalRowStrong}>
                   <td className={financeTotalLabel}>Total</td>
                   <td className={financeTotalValue} data-testid="line-total-debit">
-                    {formatAmount(String(debitTotal))}
+                    {formatAmount(String(lineTotals.debit))}
                   </td>
                   <td className={financeTotalValue} data-testid="line-total-credit">
-                    {formatAmount(String(creditTotal))}
+                    {formatAmount(String(lineTotals.credit))}
                   </td>
                   <td className={financeMemo} />
                   {canEditLines ? <td /> : null}

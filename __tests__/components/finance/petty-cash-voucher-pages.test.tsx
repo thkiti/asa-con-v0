@@ -100,6 +100,16 @@ function baseEntry(overrides: Record<string, unknown> = {}) {
         credit: "0.00",
         memo: "June",
       },
+      {
+        id: "line-2",
+        lineNo: 2,
+        glAccountId: "acc-petty-1011",
+        accountCode: "1011",
+        accountName: "เงินสดย่อย",
+        debit: "0.00",
+        credit: "1500.00",
+        memo: "Petty cash payment",
+      },
     ],
     ...overrides,
   }
@@ -118,6 +128,7 @@ describe("PettyCashVoucherEditorPage create", () => {
     expect(html).toContain('disabled=""')
     expect(html).toContain('data-testid="field-payee-name"')
     expect(html).toContain('data-testid="field-description"')
+    expect(html).toContain("pcv-entry-meta-locked")
     expect(html).toContain('data-testid="pcv-petty-cash-balance"')
     expect(html).toContain("pcv-petty-cash-balance-box")
     expect(html).toContain("pcv-balance-table")
@@ -163,7 +174,7 @@ describe("PettyCashVoucherEditorPage create", () => {
 })
 
 describe("PettyCashVoucherEditorPage edit DRAFT", () => {
-  it("renders derived petty cash credit line and journal totals", () => {
+  it("renders editable debit/credit lines and journal totals", () => {
     const html = renderToStaticMarkup(
       <PettyCashVoucherEditorPage
         mode="edit"
@@ -172,7 +183,8 @@ describe("PettyCashVoucherEditorPage edit DRAFT", () => {
       />
     )
     expect(html).toContain("PCV-260001")
-    expect(html).toContain('data-testid="pcv-derived-credit-line"')
+    expect(html).not.toContain('data-testid="pcv-derived-credit-line"')
+    expect(html).toContain('data-testid="line-credit"')
     expect(html).toContain('data-testid="pcv-entry-totals"')
     expect(html).toContain('data-testid="pcv-balance-this-voucher"')
     expect(html).toContain("1,500.00")

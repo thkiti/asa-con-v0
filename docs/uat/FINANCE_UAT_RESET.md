@@ -34,7 +34,23 @@ Store this folder as **UAT reference** before any deletion.
 npm run uat:finance:reset:dry-run
 ```
 
+For a **full** finance workflow reset (MJV/OPB + PAV/PCV/REV + related GL, excluding POS/stock):
+
+```bash
+npm run uat:finance:reset:full
+# or explicitly:
+npm run uat:finance:reset:full -- --dry-run
+```
+
 Review console output. Obtain stakeholder confirmation if operational GL (POS/stock) journals exist.
+
+### Full reset execute (after backup + explicit confirm)
+
+```bash
+npm run uat:finance:reset:full -- --execute --confirm=FINANCE_RESET_CONFIRMED --include-posted-opb
+```
+
+`--include-posted-opb` is required when a **POSTED** opening balance exists (e.g. `OPB-260001`). Remote Supabase databases are detected and logged; execute always requires the confirm token.
 
 ### Scopes
 

@@ -1,4 +1,4 @@
-import { buildCollectorSlipText, COLLECTOR_SIGNATURE_LINES } from "@/lib/thermal/build-collector-slip"
+import { buildCollectorSlipText } from "@/lib/thermal/build-collector-slip"
 import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
@@ -13,6 +13,3 @@ export function buildCollectorTicketSlipText(
     layout ?? resolveThermalLayout("COLLECTOR", DEFAULT_THERMAL_LAYOUTS)
   return buildCollectorSlipText(report, resolved)
 }
-
-/** @deprecated Use COLLECTOR_SIGNATURE_LINES */
-export const COLLECTOR_TICKET_SIGNATURE_LINES = COLLECTOR_SIGNATURE_LINES

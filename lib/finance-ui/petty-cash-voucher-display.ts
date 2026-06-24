@@ -60,3 +60,38 @@ export function computePettyCashVoucherDebitTotal(
 ): number {
   return lines.reduce((sum, line) => sum + parsePettyCashVoucherAmount(line.debit), 0)
 }
+
+export function computePettyCashVoucherCreditTotal(
+  lines: Array<{ credit: string }>
+): number {
+  return lines.reduce((sum, line) => sum + parsePettyCashVoucherAmount(line.credit), 0)
+}
+
+export function computePettyCashVoucherLineTotals(
+  lines: Array<{ debit: string; credit: string }>
+): { debit: number; credit: number; difference: number; balanced: boolean } {
+  const debit = computePettyCashVoucherDebitTotal(lines)
+  const credit = computePettyCashVoucherCreditTotal(lines)
+  const difference = debit - credit
+  return {
+    debit,
+    credit,
+    difference,
+    balanced: Math.abs(difference) < 0.0001,
+  }
+}
+
+export function computePettyCashAccountLineTotals(
+  lines: Array<{ accountCode: string; debit: string; credit: string }>,
+  pettyCashAccountCode: string
+): { debit: number; credit: number } {
+  const code = pettyCashAccountCode.trim()
+  let debit = 0
+  let credit = 0
+  for (const line of lines) {
+    if (line.accountCode.trim() !== code) continue
+    debit += parsePettyCashVoucherAmount(line.debit)
+    credit += parsePettyCashVoucherAmount(line.credit)
+  }
+  return { debit, credit }
+}

@@ -18,7 +18,7 @@ import { formatThaiBahtAmountInWords } from "@/lib/finance-ui/format-thai-baht-w
 import { fetchGlAccounts } from "@/lib/finance-ui/gl-accounts"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import {
-  computePaymentVoucherDebitTotal,
+  computePaymentVoucherLineTotals,
   formatPavEntryRefNo,
   formatPaymentVoucherDocumentNo,
   formatPaymentVoucherStatusLabel,
@@ -63,7 +63,7 @@ import {
 } from "@/lib/legal-entity/constants"
 import { themeInput, themeLinkMuted } from "@/lib/theme/theme-classes"
 
-type LineField = "account" | "debit" | "memo"
+type LineField = "account" | "debit" | "credit" | "memo"
 
 type LineRow = {
   key: string
@@ -71,6 +71,7 @@ type LineRow = {
   accountName: string
   accountError: string | null
   debit: string
+  credit: string
   memo: string
 }
 
@@ -81,13 +82,14 @@ function emptyLine(): LineRow {
     accountName: "",
     accountError: null,
     debit: "",
+    credit: "",
     memo: "",
   }
 }
 
 function linesFromEntry(entry: PaymentVoucherRead): LineRow[] {
   if (entry.lines.length === 0) {
-    return [emptyLine()]
+    return [emptyLine(), emptyLine()]
   }
   return entry.lines.map((line) => ({
     key: line.id,
@@ -95,6 +97,7 @@ function linesFromEntry(entry: PaymentVoucherRead): LineRow[] {
     accountName: line.accountName,
     accountError: null,
     debit: line.debit,
+    credit: line.credit,
     memo: line.memo ?? "",
   }))
 }
@@ -104,11 +107,24 @@ function linesToPayload(lines: LineRow[]) {
     .map((line) => ({
       accountCode: line.accountCode.trim(),
       debit: line.debit.trim() || "0",
+      credit: line.credit.trim() || "0",
       memo: line.memo.trim() || null,
     }))
     .filter(
-      (line) => line.accountCode || parsePaymentVoucherAmount(line.debit) > 0
+      (line) =>
+        line.accountCode ||
+        parsePaymentVoucherAmount(line.debit) > 0 ||
+        parsePaymentVoucherAmount(line.credit) > 0
     )
+}
+
+function countActivePaymentVoucherLines(lines: LineRow[]): number {
+  return lines.filter(
+    (line) =>
+      line.accountCode.trim() ||
+      parsePaymentVoucherAmount(line.debit) > 0 ||
+      parsePaymentVoucherAmount(line.credit) > 0
+  ).length
 }
 
 function editorSeed(initialEntry: PaymentVoucherRead | null) {
@@ -125,7 +141,7 @@ function editorSeed(initialEntry: PaymentVoucherRead | null) {
       refNo: "",
       chequeNo: "",
       description: "",
-      lines: [emptyLine()],
+      lines: [emptyLine(), emptyLine()],
     }
   }
   return {
@@ -226,10 +242,14 @@ export function PaymentVoucherEditorPage({
   const canEditHeader = isDraft
   const canEditLines = isDraft
 
-  const debitTotal = useMemo(() => computePaymentVoucherDebitTotal(lines), [lines])
-  const creditTotal = debitTotal
-  const totalsBalanced = debitTotal === creditTotal
-  const canSubmitOrPost = debitTotal > 0 && payFromAccountId.trim().length > 0
+  const lineTotals = useMemo(() => computePaymentVoucherLineTotals(lines), [lines])
+  const totalsBalanced = lineTotals.balanced
+  const canSubmitOrPost =
+    lineTotals.balanced &&
+    lineTotals.debit > 0 &&
+    countActivePaymentVoucherLines(lines) >= 2 &&
+    payFromAccountId.trim().length > 0 &&
+    payeeName.trim().length > 0
 
   const applyEntry = useCallback((loaded: PaymentVoucherRead) => {
     setEntry(loaded)
@@ -363,6 +383,10 @@ export function PaymentVoucherEditorPage({
       return
     }
     if (field === "debit") {
+      scheduleFocusLineField(lineKey, "credit")
+      return
+    }
+    if (field === "credit") {
       scheduleFocusLineField(lineKey, "memo")
       return
     }
@@ -489,7 +513,9 @@ export function PaymentVoucherEditorPage({
 
   async function handleSubmit() {
     if (!canSubmitOrPost) {
-      setError("Enter pay-from account, payee, and at least one debit line before submit.")
+      setError(
+        "Enter pay-from account, payee, at least two lines, and balanced debit/credit totals before submit."
+      )
       return
     }
     let current = entry
@@ -508,7 +534,7 @@ export function PaymentVoucherEditorPage({
   async function handlePost() {
     if (!entry) return
     if (!canSubmitOrPost) {
-      setError("Payment voucher must have allocations before post.")
+      setError("Payment voucher must be balanced with at least two lines before post.")
       return
     }
     await runWorkflow("Post", () => postPaymentVoucher(entry.id))
@@ -549,9 +575,8 @@ export function PaymentVoucherEditorPage({
       ? buildFinanceVoucherPrintModelFromPaymentVoucher(entry, { branchLabel })
       : null
 
-  const showDerivedCreditLine = Boolean(payFromAccountId.trim())
-  const amountInWords = formatThaiBahtAmountInWords(debitTotal)
-  const showNotBalanced = debitTotal > 0 && !totalsBalanced
+  const amountInWords = formatThaiBahtAmountInWords(lineTotals.debit)
+  const showNotBalanced = lineTotals.debit > 0 || lineTotals.credit > 0 ? !totalsBalanced : false
 
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading payment voucher…</p>
@@ -797,7 +822,22 @@ export function PaymentVoucherEditorPage({
                       )}
                     </td>
                     <td className={financeNumber}>
-                      <span className="text-zinc-400">—</span>
+                      {canEditLines ? (
+                        <input
+                          className={`${themeInput} pav-line-field-input mt-0`}
+                          value={row.credit}
+                          onChange={(e) => updateLine(row.key, { credit: e.target.value })}
+                          onKeyDown={(e) =>
+                            handleLineKeyDown(e, row.key, "credit", row, lineIndex)
+                          }
+                          inputMode="decimal"
+                          data-line-key={row.key}
+                          data-field="credit"
+                          data-testid="line-credit"
+                        />
+                      ) : (
+                        formatAmount(row.credit)
+                      )}
                     </td>
                     <td className={financeMemo}>
                       {canEditLines ? (
@@ -831,34 +871,15 @@ export function PaymentVoucherEditorPage({
                     ) : null}
                   </tr>
                 ))}
-                {showDerivedCreditLine ? (
-                  <tr className="pav-derived-credit-row" data-testid="pav-derived-credit-line">
-                    <td className={financeAccount}>
-                      <span className="pav-derived-credit-account">
-                        <FinanceAccountDisplay
-                          accountCode={payFromAccountCode}
-                          accountName={payFromAccountName}
-                          data-testid="derived-credit-account"
-                        />
-                      </span>
-                    </td>
-                    <td className={financeNumber} />
-                    <td className={financeNumber} data-testid="derived-credit-amount">
-                      {formatAmount(String(debitTotal))}
-                    </td>
-                    <td className={financeMemo} />
-                    {canEditLines ? <td /> : null}
-                  </tr>
-                ) : null}
               </tbody>
               <tfoot data-testid="pav-entry-totals">
                 <tr className={financeTotalRowStrong}>
                   <td className={financeTotalLabel}>Total</td>
                   <td className={financeTotalValue} data-testid="line-total-debit">
-                    {formatAmount(String(debitTotal))}
+                    {formatAmount(String(lineTotals.debit))}
                   </td>
                   <td className={financeTotalValue} data-testid="line-total-credit">
-                    {formatAmount(String(creditTotal))}
+                    {formatAmount(String(lineTotals.credit))}
                   </td>
                   <td className={financeMemo} />
                   {canEditLines ? <td /> : null}

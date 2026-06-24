@@ -1,7 +1,4 @@
-import {
-  buildCollectorTicketSlipText,
-  COLLECTOR_TICKET_SIGNATURE_LINES,
-} from "@/lib/pos-ui/build-collector-ticket-slip"
+import { buildCollectorTicketSlipText } from "@/lib/pos-ui/build-collector-ticket-slip"
 import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
@@ -81,10 +78,10 @@ describe("buildCollectorTicketSlipText", () => {
     expect(text.match(/01010\d{2}-Item/g)?.length).toBe(35)
   })
 
-  it("includes signature block lines for print", () => {
-    expect(COLLECTOR_TICKET_SIGNATURE_LINES.join("\n")).toContain(
-      "Collector Signature"
-    )
-    expect(COLLECTOR_TICKET_SIGNATURE_LINES.join("\n")).toContain("Date ....../....../........")
+  it("includes Phone No / Sign acknowledgement in slip text", () => {
+    const text = buildCollectorTicketSlipText(collectReport())
+    expect(text).toContain("Phone No")
+    expect(text).toContain("Sign")
+    expect(text).not.toContain("Collector Signature")
   })
 })

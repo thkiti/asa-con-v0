@@ -1,14 +1,19 @@
 "use client"
 
-import { ThermalSlipPre } from "@/components/thermal/ThermalSlipPre"
+import { ThermalTicketSlipView } from "@/components/thermal/ThermalTicketSlipView"
 import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
-import { buildRefundSlipText } from "@/lib/pos/refund-slip-format"
+import { buildTicketLayout } from "@/lib/thermal/build-ticket-layout"
 
 type PosRefundReceiptSlipProps = {
   receipt: RefundReceiptPrintContext
 }
 
 export function PosRefundReceiptSlip({ receipt }: PosRefundReceiptSlipProps) {
-  const text = buildRefundSlipText(receipt)
-  return <ThermalSlipPre text={text} ariaLabel="Refund receipt" />
+  const layout = buildTicketLayout({
+    documentType: "REFUND",
+    refund: receipt,
+    layout: receipt.thermalLayout,
+  })
+
+  return <ThermalTicketSlipView layout={layout} />
 }

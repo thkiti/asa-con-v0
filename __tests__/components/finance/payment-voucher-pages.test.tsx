@@ -174,6 +174,16 @@ function baseEntry(overrides: Record<string, unknown> = {}) {
         credit: "0.00",
         memo: "June",
       },
+      {
+        id: "line-2",
+        lineNo: 2,
+        glAccountId: "acc-bank-1",
+        accountCode: "10101001",
+        accountName: "Kasikorn Current",
+        debit: "0.00",
+        credit: "1500.00",
+        memo: "Payment",
+      },
     ],
     ...overrides,
   }
@@ -193,7 +203,7 @@ describe("PaymentVoucherListPage", () => {
 })
 
 describe("PaymentVoucherEditorPage create", () => {
-  it("renders compact header, MJV-style lines, derived credit row, and journal total footer", () => {
+  it("renders compact header, MJV-style debit/credit lines, and journal total footer", () => {
     const html = renderToStaticMarkup(<PaymentVoucherEditorPage mode="create" />)
     expect(html).toContain('data-testid="payment-voucher-editor"')
     expect(html).toContain('data-testid="pav-entry-shell"')
@@ -243,6 +253,7 @@ describe("PaymentVoucherEditorPage create", () => {
     expect(html).not.toContain(">Name</th>")
     expect(html).toContain('data-testid="line-account-code"')
     expect(html).toContain('data-testid="line-debit"')
+    expect(html).toContain('data-testid="line-credit"')
     expect(html).toContain('data-testid="line-memo"')
     expect(html).toContain('data-testid="pav-entry-totals"')
     expect(html).toContain(">Total</td>")
@@ -260,7 +271,7 @@ describe("PaymentVoucherEditorPage create", () => {
 })
 
 describe("PaymentVoucherEditorPage edit by status", () => {
-  it("renders DRAFT with pay-from select, derived credit line, and journal totals", () => {
+  it("renders DRAFT with pay-from select, editable credit lines, and journal totals", () => {
     const html = renderToStaticMarkup(
       <PaymentVoucherEditorPage
         mode="edit"
@@ -270,10 +281,8 @@ describe("PaymentVoucherEditorPage edit by status", () => {
     )
     expect(html).toContain("PAV-260001")
     expect(html).toContain('data-testid="field-pay-from-select"')
-    expect(html).toContain('data-testid="pav-derived-credit-line"')
-    expect(html).toContain('data-testid="derived-credit-account"')
-    expect(html).toContain('data-testid="derived-credit-amount"')
-    expect(html).toContain("pav-derived-credit-row")
+    expect(html).not.toContain('data-testid="pav-derived-credit-line"')
+    expect(html).toContain('data-testid="line-credit"')
     expect(html).toContain("1,500.00")
     expect(html).toContain('data-testid="pav-amount-in-words"')
     expect(html).toContain("## หนึ่งพันห้าร้อยบาทถ้วน ##")
@@ -302,7 +311,7 @@ describe("PaymentVoucherEditorPage edit by status", () => {
     expect(html).toContain('data-testid="action-cancel-open"')
     expect(html).not.toContain('data-testid="action-save"')
     expect(html).not.toContain('data-testid="line-account-code"')
-    expect(html).toContain('data-testid="pav-derived-credit-line"')
+    expect(html).not.toContain('data-testid="pav-derived-credit-line"')
     expect(html).toContain('data-testid="pav-entry-totals"')
     expect(html).toContain(">Total</td>")
     expect(html).toContain("read-only")

@@ -66,6 +66,26 @@ export function computePaymentVoucherDebitTotal(
   return lines.reduce((sum, line) => sum + parsePaymentVoucherAmount(line.debit), 0)
 }
 
+export function computePaymentVoucherCreditTotal(
+  lines: Array<{ credit: string }>
+): number {
+  return lines.reduce((sum, line) => sum + parsePaymentVoucherAmount(line.credit), 0)
+}
+
+export function computePaymentVoucherLineTotals(
+  lines: Array<{ debit: string; credit: string }>
+): { debit: number; credit: number; difference: number; balanced: boolean } {
+  const debit = computePaymentVoucherDebitTotal(lines)
+  const credit = computePaymentVoucherCreditTotal(lines)
+  const difference = debit - credit
+  return {
+    debit,
+    credit,
+    difference,
+    balanced: Math.abs(difference) < 0.0001,
+  }
+}
+
 export function formatPayFromAccountLabel(
   accountCode: string | null | undefined,
   accountName: string | null | undefined

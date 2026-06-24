@@ -1,0 +1,58 @@
+[
+  {
+    "id": "9218dc2d-d966-4ba6-9d0f-0efc2250224a",
+    "entryNo": "OPB-260001",
+    "entryType": "OPENING_BALANCE",
+    "status": "POSTED",
+    "legalEntityCode": "AD",
+    "entryDate": "2026-01-01T00:00:00.000Z",
+    "description": "OPENING BALANCE 2026",
+    "postedAt": "2026-06-18T09:59:22.252Z",
+    "postedJournalEntryId": "c90a128e-7ca1-4216-b7f2-fc84ea6a0a46",
+    "postedVoucherId": "78d0c157-7eec-4907-8cf8-944f5df47686",
+    "createdAt": "2026-06-17T06:16:00.121Z",
+    "updatedAt": "2026-06-20T23:01:11.033Z"
+  },
+  {
+    "id": "c707c23b-4632-4d4f-b8e4-d7605d00b091",
+    "entryNo": "MJV-260001",
+    "entryType": "MANUAL",
+    "status": "CONFIRMED",
+    "legalEntityCode": "AD",
+    "entryDate": "2026-01-05T00:00:00.000Z",
+    "description": "โบนัสพนักงาน ปี 2568",
+    "postedAt": null,
+    "postedJournalEntryId": null,
+    "postedVoucherId": null,
+    "createdAt": "2026-06-18T03:02:56.091Z",
+    "updatedAt": "2026-06-18T03:38:50.633Z"
+  },
+  {
+    "id": "7e5ae892-655d-4303-ba89-5c41e4ae0e51",
+    "entryNo": "MJV-260002",
+    "entryType": "MANUAL",
+    "status": "CANCELLED",
+    "legalEntityCode": "AD",
+    "entryDate": "2026-01-05T00:00:00.000Z",
+    "description": "จ่ายเงินบริษัท เค.ไอ.ที.เทรดดิ้ง จำกัด",
+    "postedAt": null,
+    "postedJournalEntryId": null,
+    "postedVoucherId": null,
+    "createdAt": "2026-06-18T03:06:48.849Z",
+    "updatedAt": "2026-06-22T03:22:19.363Z"
+  },
+  {
+    "id": "833e1858-eaaa-44ef-9602-ffc5b795f343",
+    "entryNo": "MJV-260003",
+    "entryType": "MANUAL",
+    "status": "CANCELLED",
+    "legalEntityCode": "AD",
+    "entryDate": "2026-01-15T00:00:00.000Z",
+    "description": "จ่ายค่าภาษีนำเข้าสินค้าและภาษีมูลค่าเพิ่มกรมศุลกากร สินค้า จาก Global Heels",
+    "postedAt": null,
+    "postedJournalEntryId": null,
+    "postedVoucherId": null,
+    "createdAt": "2026-06-18T03:12:26.954Z",
+    "updatedAt": "2026-06-22T03:31:25.454Z"
+  }
+]

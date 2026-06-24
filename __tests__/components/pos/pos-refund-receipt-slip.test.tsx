@@ -6,7 +6,6 @@ import { createRoot, type Root } from "react-dom/client"
 import { PosRefundReceiptSlip } from "@/components/pos/PosRefundReceiptSlip"
 import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
 import { RefundKind } from "@/generated/prisma/client"
-import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
 import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 
@@ -37,7 +36,7 @@ const sampleReceipt: RefundReceiptPrintContext = {
 }
 
 describe("PosRefundReceiptSlip", () => {
-  it("renders monospace slip text in pre", () => {
+  it("renders unified thermal ticket slip", () => {
     const container = document.createElement("div")
     document.body.appendChild(container)
     const root: Root = createRoot(container)
@@ -48,10 +47,10 @@ describe("PosRefundReceiptSlip", () => {
     expect(container.textContent).toContain("REF-SH001-202606-0001")
     expect(container.textContent).toContain("REC-SH001-202606-0001")
     expect(container.textContent).toContain("50.00")
-    const slip = container.querySelector(".pos-receipt-slip") as HTMLPreElement
+    expect(container.textContent).toContain("Phone No")
+    const slip = container.querySelector(".thermal-ticket-slip") as HTMLElement
     expect(slip).toBeTruthy()
-    expect(slip.style.width).toBe(`${RECEIPT_COLUMNS}ch`)
-    expect(slip.style.maxWidth).toBe(`${RECEIPT_COLUMNS}ch`)
+    expect(container.querySelector("[data-testid='thermal-ticket-body']")).toBeTruthy()
     act(() => root.unmount())
     document.body.removeChild(container)
   })

@@ -1,4 +1,3 @@
-import { REPAIR_PICKUP_WARN_DAYS } from "@/lib/pos-ui/repair-ticket-storage"
 import type { ResolvedThermalLayout } from "./types"
 import {
   THERMAL_COLUMNS,
@@ -6,6 +5,8 @@ import {
   appendThermalHeaderLines,
   repeatThermalChar,
 } from "./format"
+import { buildTicketLayout } from "./build-ticket-layout"
+import { serializeTicketLayoutToText } from "./serialize-ticket-layout-text"
 
 export type RepairTicketSlipInput = {
   ticketNo: string
@@ -14,14 +15,11 @@ export type RepairTicketSlipInput = {
   fileNames: string[]
 }
 
-export function buildRepairTicketSlipText(
-  input: RepairTicketSlipInput,
-  layout: ResolvedThermalLayout
-): string {
+/** Slip body only — header/footer are layout blocks. */
+export function buildRepairTicketSlipBodyText(input: RepairTicketSlipInput): string {
   const w = THERMAL_COLUMNS
   const lines: string[] = []
 
-  appendThermalHeaderLines(lines, layout, w)
   const branchLine = input.branchName.trim().slice(0, w)
   if (branchLine) lines.push(branchLine)
   lines.push(repeatThermalChar("-", w))
@@ -39,10 +37,27 @@ export function buildRepairTicketSlipText(
     const maxName = w - prefix.length
     lines.push(`${prefix}${name.length > maxName ? name.slice(0, maxName) : name}`)
   }
-  lines.push(repeatThermalChar("-", w))
-  lines.push("Warning: bring this ticket".slice(0, w))
-  lines.push(`within ${REPAIR_PICKUP_WARN_DAYS} days`.slice(0, w))
-  appendThermalFooterLines(lines, layout, w)
-  lines.push("")
+
   return lines.join("\n")
+}
+
+export function buildRepairTicketSlipText(
+  input: RepairTicketSlipInput,
+  layout: ResolvedThermalLayout,
+  options?: {
+    branchCode?: string
+    staffId?: string
+    staffName?: string
+  }
+): string {
+  return serializeTicketLayoutToText(
+    buildTicketLayout({
+      documentType: "REPAIR_TICKET",
+      ticket: input,
+      layout,
+      branchCode: options?.branchCode ?? "",
+      staffId: options?.staffId,
+      staffName: options?.staffName,
+    })
+  )
 }

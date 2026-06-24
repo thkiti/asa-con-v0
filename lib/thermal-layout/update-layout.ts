@@ -1,4 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import { mergeReceiptBlockMutation } from "@/lib/thermal/receipt-layout-blocks"
+import { formatReceiptBlockFontPxForStorage, normalizeInfoBlockFontPx, normalizeReceiptBlockFontPx } from "@/lib/thermal/receipt-block-font-size"
 import { loadThermalLayouts, toThermalDocumentLayoutView } from "@/lib/thermal/load-layouts"
 import type {
   ThermalDocumentLayoutView,
@@ -18,30 +20,62 @@ export async function updateThermalDocumentLayout(
   documentType: ThermalDocumentType,
   input: UpdateThermalDocumentLayoutInput
 ): Promise<ThermalDocumentLayoutView> {
+  const merged = mergeReceiptBlockMutation(input)
+
   const row = await db.thermalDocumentLayout.upsert({
     where: { documentType },
     create: {
       documentType,
-      headerLine1: input.headerLine1,
-      headerLine2: input.headerLine2,
-      headerLine3: input.headerLine3,
-      footerLine1: input.footerLine1,
-      footerLine2: input.footerLine2,
-      footerLine3: input.footerLine3,
-      footerLine4: input.footerLine4,
-      footerLine5: input.footerLine5,
+      headerLine1: merged.headerLine1,
+      headerLine2: merged.headerLine2,
+      headerLine3: merged.headerLine3,
+      footerLine1: merged.footerLine1,
+      footerLine2: merged.footerLine2,
+      footerLine3: merged.footerLine3,
+      footerLine4: merged.footerLine4,
+      footerLine5: merged.footerLine5,
+      headerBlockText: merged.headerBlockText,
+      headerFontSize: formatReceiptBlockFontPxForStorage(merged.headerFontSize),
+      headerBlockBold: merged.headerBlockBold,
+      subHeaderBlockText: input.subHeaderBlockText?.trim() ? input.subHeaderBlockText : null,
+      subHeaderFontSize: formatReceiptBlockFontPxForStorage(
+        normalizeReceiptBlockFontPx(input.subHeaderFontSize)
+      ),
+      subHeaderBlockBold: input.subHeaderBlockBold,
+      footerBlockText: merged.footerBlockText,
+      footerFontSize: formatReceiptBlockFontPxForStorage(merged.footerFontSize),
+      footerBlockBold: merged.footerBlockBold,
+      infoBlockFontSize: formatReceiptBlockFontPxForStorage(
+        normalizeInfoBlockFontPx(input.infoBlockFontSize)
+      ),
+      infoBlockBold: input.infoBlockBold,
       showAbbreviatedTaxTitle: input.showAbbreviatedTaxTitle,
       showVatIncludedMessage: input.showVatIncludedMessage,
     },
     update: {
-      headerLine1: input.headerLine1,
-      headerLine2: input.headerLine2,
-      headerLine3: input.headerLine3,
-      footerLine1: input.footerLine1,
-      footerLine2: input.footerLine2,
-      footerLine3: input.footerLine3,
-      footerLine4: input.footerLine4,
-      footerLine5: input.footerLine5,
+      headerLine1: merged.headerLine1,
+      headerLine2: merged.headerLine2,
+      headerLine3: merged.headerLine3,
+      footerLine1: merged.footerLine1,
+      footerLine2: merged.footerLine2,
+      footerLine3: merged.footerLine3,
+      footerLine4: merged.footerLine4,
+      footerLine5: merged.footerLine5,
+      headerBlockText: merged.headerBlockText,
+      headerFontSize: formatReceiptBlockFontPxForStorage(merged.headerFontSize),
+      headerBlockBold: merged.headerBlockBold,
+      subHeaderBlockText: input.subHeaderBlockText?.trim() ? input.subHeaderBlockText : null,
+      subHeaderFontSize: formatReceiptBlockFontPxForStorage(
+        normalizeReceiptBlockFontPx(input.subHeaderFontSize)
+      ),
+      subHeaderBlockBold: input.subHeaderBlockBold,
+      footerBlockText: merged.footerBlockText,
+      footerFontSize: formatReceiptBlockFontPxForStorage(merged.footerFontSize),
+      footerBlockBold: merged.footerBlockBold,
+      infoBlockFontSize: formatReceiptBlockFontPxForStorage(
+        normalizeInfoBlockFontPx(input.infoBlockFontSize)
+      ),
+      infoBlockBold: input.infoBlockBold,
       showAbbreviatedTaxTitle: input.showAbbreviatedTaxTitle,
       showVatIncludedMessage: input.showVatIncludedMessage,
     },

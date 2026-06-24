@@ -1,6 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
-import { addMoney, toMoney, ZERO } from "@/lib/finance/decimal"
+import { toMoney } from "@/lib/finance/decimal"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
 import { postOperationalVoucher } from "@/lib/finance/posting"
 import {
@@ -29,33 +29,12 @@ type EntryWithGlLines = PettyCashVoucherWithLines & {
 
 function materializeJournalLines(entry: EntryWithGlLines): JournalLineDraft[] {
   const sorted = [...entry.lines].sort((a, b) => a.lineNo - b.lineNo)
-  const debitLines: JournalLineDraft[] = sorted.map((line) => ({
+  return sorted.map((line) => ({
     glAccountId: line.glAccountId,
     debit: toMoney(line.debit),
-    credit: ZERO,
+    credit: toMoney(line.credit),
     memo: line.memo ?? undefined,
   }))
-
-  const total = debitLines.reduce(
-    (sum, line) => addMoney(sum, line.debit),
-    ZERO
-  )
-
-  if (total.isZero()) {
-    throw new PettyCashVoucherError(
-      "Petty cash voucher total must be greater than zero",
-      PettyCashVoucherErrorCodes.INVALID_AMOUNT
-    )
-  }
-
-  debitLines.push({
-    glAccountId: entry.pettyCashAccountId,
-    debit: ZERO,
-    credit: total,
-    memo: entry.payeeName ? `Payment to ${entry.payeeName}` : undefined,
-  })
-
-  return debitLines
 }
 
 async function loadEntryWithGlAccountsOrThrow(

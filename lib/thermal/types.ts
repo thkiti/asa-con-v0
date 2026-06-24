@@ -1,3 +1,5 @@
+import type { ReceiptBlockFontPx } from "./receipt-block-font-size"
+
 export const THERMAL_DOCUMENT_TYPES = [
   "RECEIPT",
   "REFUND",
@@ -18,6 +20,17 @@ export type ThermalDocumentLayoutView = {
   footerLine3: string | null
   footerLine4: string | null
   footerLine5: string | null
+  headerBlockText: string | null
+  headerFontSize: ReceiptBlockFontPx
+  headerBlockBold: boolean
+  subHeaderBlockText: string | null
+  subHeaderFontSize: ReceiptBlockFontPx
+  subHeaderBlockBold: boolean
+  footerBlockText: string | null
+  footerFontSize: ReceiptBlockFontPx
+  footerBlockBold: boolean
+  infoBlockFontSize: ReceiptBlockFontPx
+  infoBlockBold: boolean
   showAbbreviatedTaxTitle: boolean
   showVatIncludedMessage: boolean
 }

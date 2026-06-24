@@ -1,4 +1,5 @@
 import type { ThermalDocumentLayoutView, ThermalDocumentType, ThermalLayoutMap } from "./types"
+import { DEFAULT_RECEIPT_BLOCK_FONT_PX, DEFAULT_INFO_BLOCK_FONT_PX } from "./receipt-block-font-size"
 
 function emptyLayout(documentType: ThermalDocumentType): ThermalDocumentLayoutView {
   return {
@@ -11,6 +12,17 @@ function emptyLayout(documentType: ThermalDocumentType): ThermalDocumentLayoutVi
     footerLine3: null,
     footerLine4: null,
     footerLine5: null,
+    headerBlockText: null,
+    headerFontSize: DEFAULT_RECEIPT_BLOCK_FONT_PX,
+    headerBlockBold: true,
+    subHeaderBlockText: null,
+    subHeaderFontSize: DEFAULT_RECEIPT_BLOCK_FONT_PX,
+    subHeaderBlockBold: false,
+    footerBlockText: null,
+    footerFontSize: DEFAULT_RECEIPT_BLOCK_FONT_PX,
+    footerBlockBold: true,
+    infoBlockFontSize: DEFAULT_INFO_BLOCK_FONT_PX,
+    infoBlockBold: true,
     showAbbreviatedTaxTitle: true,
     showVatIncludedMessage: true,
   }
@@ -19,6 +31,7 @@ function emptyLayout(documentType: ThermalDocumentType): ThermalDocumentLayoutVi
 export const DEFAULT_THERMAL_LAYOUTS: ThermalLayoutMap = {
   RECEIPT: {
     ...emptyLayout("RECEIPT"),
+    subHeaderBlockText: "ใบกำกับภาษีอย่างย่อ",
     showAbbreviatedTaxTitle: true,
     showVatIncludedMessage: true,
   },

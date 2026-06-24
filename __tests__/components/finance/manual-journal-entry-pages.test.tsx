@@ -206,7 +206,6 @@ describe("ManualJournalEntryEditorPage create", () => {
     expect(html).not.toContain('data-testid="line-balance-status"')
     expect(html).not.toContain("Balanced")
     expect(html).not.toContain('data-testid="action-delete"')
-    expect(html).not.toContain('data-testid="add-line"')
   })
 })
 

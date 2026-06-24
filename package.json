@@ -24,6 +24,7 @@
     "legacy:sales:control": "npx tsx scripts/legacy-sales-control-report.ts",
     "uat:finance:backup": "npx tsx scripts/uat/finance-uat-backup.ts",
     "uat:finance:reset:dry-run": "npx tsx scripts/uat/finance-uat-reset.ts",
+    "uat:finance:reset:full": "npx tsx scripts/uat/finance-uat-reset-full.ts",
     "uat:finance:verify": "npx tsx scripts/uat/finance-uat-verify.ts",
     "repair:mjv-pdf": "npx tsx scripts/repair-manual-journal-archived-pdfs.ts"
   },

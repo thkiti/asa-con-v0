@@ -18,7 +18,7 @@ import { postOperationalVoucher } from "@/lib/finance/posting"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 
 describe("postPettyCashVoucher", () => {
-  it("materializes derived petty cash credit line and posts via kernel", async () => {
+  it("posts stored voucher lines directly without derived petty cash credit", async () => {
     const entry = {
       id: "PCV-1",
       entryNo: "PCV-260001",
@@ -28,15 +28,31 @@ describe("postPettyCashVoucher", () => {
       entryDate: new Date("2026-06-14T12:00:00.000Z"),
       pettyCashAccountId: "petty-1",
       payeeName: "ABC Co.",
-      description: "Office supplies",
+      description: "Service with WHT",
       lines: [
         {
           lineNo: 1,
           glAccountId: "exp-1",
-          debit: new Prisma.Decimal("2000"),
+          debit: new Prisma.Decimal("10000"),
           credit: new Prisma.Decimal("0"),
-          memo: null,
-          glAccount: { code: "5000", name: "Expense" },
+          memo: "Service",
+          glAccount: { code: "5100", name: "Service Expense" },
+        },
+        {
+          lineNo: 2,
+          glAccountId: "wht-1",
+          debit: new Prisma.Decimal("0"),
+          credit: new Prisma.Decimal("300"),
+          memo: "WHT",
+          glAccount: { code: "2200", name: "WHT Payable" },
+        },
+        {
+          lineNo: 3,
+          glAccountId: "petty-1",
+          debit: new Prisma.Decimal("0"),
+          credit: new Prisma.Decimal("9700"),
+          memo: "Petty cash",
+          glAccount: { code: "1011", name: "Petty Cash" },
         },
       ],
     }
@@ -57,6 +73,11 @@ describe("postPettyCashVoucher", () => {
           isActive: true,
           deleted: false,
         }),
+        findMany: jest.fn().mockResolvedValue([
+          { id: "exp-1", code: "5100", isActive: true, deleted: false },
+          { id: "wht-1", code: "2200", isActive: true, deleted: false },
+          { id: "petty-1", code: "1011", isActive: true, deleted: false },
+        ]),
       },
     }
 
@@ -72,17 +93,14 @@ describe("postPettyCashVoucher", () => {
         refId: "PCV-1",
         refNo: "PCV-260001",
         lines: expect.arrayContaining([
-          expect.objectContaining({
-            glAccountId: "exp-1",
-            debit: expect.anything(),
-            credit: expect.objectContaining({}),
-          }),
-          expect.objectContaining({
-            glAccountId: "petty-1",
-            credit: expect.anything(),
-          }),
+          expect.objectContaining({ glAccountId: "exp-1" }),
+          expect.objectContaining({ glAccountId: "wht-1" }),
+          expect.objectContaining({ glAccountId: "petty-1" }),
         ]),
       })
     )
+
+    const postedLines = (postOperationalVoucher as jest.Mock).mock.calls[0][0].lines
+    expect(postedLines).toHaveLength(3)
   })
 })

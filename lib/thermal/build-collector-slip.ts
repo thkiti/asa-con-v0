@@ -10,6 +10,8 @@ import {
   padThermalLine,
   repeatThermalChar,
 } from "./format"
+import { buildTicketLayout } from "./build-ticket-layout"
+import { serializeTicketLayoutToText } from "./serialize-ticket-layout-text"
 
 function formatRowQty(q: number): string {
   if (Number.isInteger(q)) return String(q)
@@ -32,19 +34,15 @@ function formatDetailLine(
   return `${leftPart}${" ".repeat(Math.max(1, gap))}${rightPart}`
 }
 
-/** Thermal collector ticket from on-screen COLLECT payload — no fetch. */
-export function buildCollectorSlipText(
-  report: ReadReportPayload,
-  layout: ResolvedThermalLayout
-): string {
+/** Slip body only — header/footer are layout blocks. */
+export function buildCollectorSlipBodyText(report: ReadReportPayload): string {
   if (report.mode !== "COLLECT") {
-    throw new Error("buildCollectorSlipText requires COLLECT report")
+    throw new Error("buildCollectorSlipBodyText requires COLLECT report")
   }
 
   const w = THERMAL_COLUMNS
   const lines: string[] = []
 
-  appendThermalHeaderLines(lines, layout, w)
   const branchLine = centerThermalLine(report.branchName.trim() || report.branchCode, w)
   if (branchLine) lines.push(branchLine)
   lines.push("")
@@ -87,19 +85,19 @@ export function buildCollectorSlipText(
   }
   lines.push(padThermalLine("TOTAL", formatThermalMoney2(report.grandTotal), w))
 
-  appendThermalFooterLines(lines, layout, w)
   return lines.join("\n")
 }
 
-export const COLLECTOR_SIGNATURE_LINES = [
-  repeatThermalChar("-", THERMAL_COLUMNS),
-  "",
-  "Collector Signature",
-  "",
-  repeatThermalChar(".", THERMAL_COLUMNS),
-  "",
-  "Date ....../....../........",
-] as const
+/** Thermal collector ticket from on-screen COLLECT payload — no fetch. */
+export function buildCollectorSlipText(
+  report: ReadReportPayload,
+  layout: ResolvedThermalLayout
+): string {
+  if (report.mode !== "COLLECT") {
+    throw new Error("buildCollectorSlipText requires COLLECT report")
+  }
 
-/** @deprecated Use COLLECTOR_SIGNATURE_LINES */
-export const COLLECTOR_TICKET_SIGNATURE_LINES = COLLECTOR_SIGNATURE_LINES
+  return serializeTicketLayoutToText(
+    buildTicketLayout({ documentType: "COLLECTOR", report, layout })
+  )
+}

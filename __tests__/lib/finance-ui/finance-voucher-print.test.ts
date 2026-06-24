@@ -140,22 +140,46 @@ function basePaymentVoucher(
 }
 
 describe("buildFinanceVoucherPrintModelFromPaymentVoucher", () => {
-  it("includes derived credit line and PAV context fields", () => {
-    const model = buildFinanceVoucherPrintModelFromPaymentVoucher(basePaymentVoucher(), {
+  it("maps stored payment voucher lines without derived credit row", () => {
+    const model = buildFinanceVoucherPrintModelFromPaymentVoucher(
+      basePaymentVoucher({
+        lines: [
+          {
+            id: "line-1",
+            lineNo: 1,
+            glAccountId: "acc-exp",
+            accountCode: "50101001",
+            accountName: "Office supplies",
+            debit: "2000.00",
+            credit: "0.00",
+            memo: "June stock-up",
+          },
+          {
+            id: "line-2",
+            lineNo: 2,
+            glAccountId: "acc-bank",
+            accountCode: "10101001",
+            accountName: "Kasikorn Current",
+            debit: "0.00",
+            credit: "2000.00",
+            memo: "Payment to ABC Stationery Co., Ltd.",
+          },
+        ],
+      }),
+      {
       branchLabel: "HO999 — Head Office",
     })
 
     expect(model.documentTypeCode).toBe("PAV")
     expect(model.documentTypeTitle).toBe("PAYMENT VOUCHER")
     expect(model.documentNo).toBe("PAV-260001")
-    expect(model.totalDebit).toBe("2000.00")
-    expect(model.totalCredit).toBe("2000.00")
+    expect(model.totalDebit).toBe("2000")
+    expect(model.totalCredit).toBe("2000")
     expect(model.payeeName).toBe("ABC Stationery Co., Ltd.")
     expect(model.payFromLabel).toBe("10101001 — Kasikorn Current")
     expect(model.chequeNo).toBe("1234567")
     expect(model.lines).toHaveLength(2)
     expect(model.lines[1].accountCode).toBe("10101001")
     expect(model.lines[1].credit).toBe("2000.00")
-    expect(model.lines[1].lineDescription).toBe("Payment to ABC Stationery Co., Ltd.")
   })
 })

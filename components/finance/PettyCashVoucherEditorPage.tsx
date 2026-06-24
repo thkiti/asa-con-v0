@@ -16,7 +16,8 @@ import {
   resolvePcvPettyCashAccount,
 } from "@/lib/finance-ui/pcv-petty-cash-account"
 import {
-  computePettyCashVoucherDebitTotal,
+  computePettyCashAccountLineTotals,
+  computePettyCashVoucherLineTotals,
   formatPcvEntryRefNo,
   formatPettyCashVoucherDocumentNo,
   formatPettyCashVoucherStatusLabel,
@@ -56,7 +57,7 @@ import {
 } from "@/lib/legal-entity/constants"
 import { themeInput, themeLinkMuted } from "@/lib/theme/theme-classes"
 
-type LineField = "account" | "debit" | "memo"
+type LineField = "account" | "debit" | "credit" | "memo"
 
 type LineRow = {
   key: string
@@ -64,6 +65,7 @@ type LineRow = {
   accountName: string
   accountError: string | null
   debit: string
+  credit: string
   memo: string
 }
 
@@ -74,13 +76,14 @@ function emptyLine(): LineRow {
     accountName: "",
     accountError: null,
     debit: "",
+    credit: "",
     memo: "",
   }
 }
 
 function linesFromEntry(entry: PettyCashVoucherRead): LineRow[] {
   if (entry.lines.length === 0) {
-    return [emptyLine()]
+    return [emptyLine(), emptyLine()]
   }
   return entry.lines.map((line) => ({
     key: line.id,
@@ -88,6 +91,7 @@ function linesFromEntry(entry: PettyCashVoucherRead): LineRow[] {
     accountName: line.accountName,
     accountError: null,
     debit: line.debit,
+    credit: line.credit,
     memo: line.memo ?? "",
   }))
 }
@@ -97,11 +101,24 @@ function linesToPayload(lines: LineRow[]) {
     .map((line) => ({
       accountCode: line.accountCode.trim(),
       debit: line.debit.trim() || "0",
+      credit: line.credit.trim() || "0",
       memo: line.memo.trim() || null,
     }))
     .filter(
-      (line) => line.accountCode || parsePettyCashVoucherAmount(line.debit) > 0
+      (line) =>
+        line.accountCode ||
+        parsePettyCashVoucherAmount(line.debit) > 0 ||
+        parsePettyCashVoucherAmount(line.credit) > 0
     )
+}
+
+function countActivePettyCashVoucherLines(lines: LineRow[]): number {
+  return lines.filter(
+    (line) =>
+      line.accountCode.trim() ||
+      parsePettyCashVoucherAmount(line.debit) > 0 ||
+      parsePettyCashVoucherAmount(line.credit) > 0
+  ).length
 }
 
 function editorSeed(initialEntry: PettyCashVoucherRead | null) {
@@ -117,7 +134,7 @@ function editorSeed(initialEntry: PettyCashVoucherRead | null) {
       payeeName: "",
       refNo: "",
       description: "",
-      lines: [emptyLine()],
+      lines: [emptyLine(), emptyLine()],
     }
   }
   return {
@@ -214,10 +231,18 @@ export function PettyCashVoucherEditorPage({
   const canEditHeader = isDraft
   const canEditLines = isDraft
 
-  const debitTotal = useMemo(() => computePettyCashVoucherDebitTotal(lines), [lines])
-  const creditTotal = debitTotal
-  const totalsBalanced = debitTotal === creditTotal
-  const canSubmitOrPost = debitTotal > 0 && pettyCashAccountId.trim().length > 0
+  const lineTotals = useMemo(() => computePettyCashVoucherLineTotals(lines), [lines])
+  const pettyCashLineTotals = useMemo(
+    () => computePettyCashAccountLineTotals(lines, pettyCashAccountCode),
+    [lines, pettyCashAccountCode]
+  )
+  const totalsBalanced = lineTotals.balanced
+  const canSubmitOrPost =
+    lineTotals.balanced &&
+    lineTotals.debit > 0 &&
+    countActivePettyCashVoucherLines(lines) >= 2 &&
+    pettyCashAccountId.trim().length > 0 &&
+    payeeName.trim().length > 0
 
   const pettyCashLockedLabel = formatPcvPettyCashLockedLabel(
     pettyCashAccountCode,
@@ -360,6 +385,10 @@ export function PettyCashVoucherEditorPage({
       return
     }
     if (field === "debit") {
+      scheduleFocusLineField(lineKey, "credit")
+      return
+    }
+    if (field === "credit") {
       scheduleFocusLineField(lineKey, "memo")
       return
     }
@@ -469,7 +498,9 @@ export function PettyCashVoucherEditorPage({
 
   async function handleSubmit() {
     if (!canSubmitOrPost) {
-      setError("Enter petty cash account, payee, and at least one debit line before submit.")
+      setError(
+        "Enter petty cash account, payee, at least two lines, and balanced debit/credit totals before submit."
+      )
       return
     }
     let current = entry
@@ -488,7 +519,7 @@ export function PettyCashVoucherEditorPage({
   async function handlePost() {
     if (!entry) return
     if (!canSubmitOrPost) {
-      setError("Petty cash voucher must have allocations before post.")
+      setError("Petty cash voucher must be balanced with at least two lines before post.")
       return
     }
     await runWorkflow("Post", () => postPettyCashVoucher(entry.id))
@@ -524,8 +555,7 @@ export function PettyCashVoucherEditorPage({
       ? buildFinanceJournalInquiryPath(entry.postedJournalEntryId, currentReturnPath)
       : null
 
-  const showDerivedCreditLine = Boolean(pettyCashAccountId.trim())
-  const showNotBalanced = debitTotal > 0 && !totalsBalanced
+  const showNotBalanced = lineTotals.debit > 0 || lineTotals.credit > 0 ? !totalsBalanced : false
 
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading petty cash voucher…</p>
@@ -746,7 +776,22 @@ export function PettyCashVoucherEditorPage({
                       )}
                     </td>
                     <td className={financeNumber}>
-                      <span className="text-zinc-400">—</span>
+                      {canEditLines ? (
+                        <input
+                          className={`${themeInput} pav-line-field-input mt-0`}
+                          value={row.credit}
+                          onChange={(e) => updateLine(row.key, { credit: e.target.value })}
+                          onKeyDown={(e) =>
+                            handleLineKeyDown(e, row.key, "credit", row, lineIndex)
+                          }
+                          inputMode="decimal"
+                          data-line-key={row.key}
+                          data-field="credit"
+                          data-testid="line-credit"
+                        />
+                      ) : (
+                        formatAmount(row.credit)
+                      )}
                     </td>
                     <td className={financeMemo}>
                       {canEditLines ? (
@@ -780,34 +825,15 @@ export function PettyCashVoucherEditorPage({
                     ) : null}
                   </tr>
                 ))}
-                {showDerivedCreditLine ? (
-                  <tr className="pav-derived-credit-row" data-testid="pcv-derived-credit-line">
-                    <td className={financeAccount}>
-                      <span className="pav-derived-credit-account">
-                        <FinanceAccountDisplay
-                          accountCode={pettyCashAccountCode}
-                          accountName={pettyCashAccountName}
-                          data-testid="derived-credit-account"
-                        />
-                      </span>
-                    </td>
-                    <td className={financeNumber} />
-                    <td className={financeNumber} data-testid="derived-credit-amount">
-                      {formatAmount(String(debitTotal))}
-                    </td>
-                    <td className={financeMemo} />
-                    {canEditLines ? <td /> : null}
-                  </tr>
-                ) : null}
               </tbody>
               <tfoot data-testid="pcv-entry-totals">
                 <tr className={financeTotalRowStrong}>
                   <td className={financeTotalLabel}>Total</td>
                   <td className={financeTotalValue} data-testid="line-total-debit">
-                    {formatAmount(String(debitTotal))}
+                    {formatAmount(String(lineTotals.debit))}
                   </td>
                   <td className={financeTotalValue} data-testid="line-total-credit">
-                    {formatAmount(String(creditTotal))}
+                    {formatAmount(String(lineTotals.credit))}
                   </td>
                   <td className={financeMemo} />
                   {canEditLines ? <td /> : null}
@@ -847,10 +873,12 @@ export function PettyCashVoucherEditorPage({
                 </tr>
                 <tr className="pcv-balance-row" data-testid="pcv-balance-this-voucher-row">
                   <td className="pcv-balance-label">This voucher:</td>
-                  <td className={financeNumber} data-testid="pcv-balance-this-voucher">
-                    {formatAmount(String(debitTotal))}
+                  <td className={financeNumber} data-testid="pcv-balance-this-voucher-debit">
+                    {formatAmount(String(pettyCashLineTotals.debit))}
                   </td>
-                  <td />
+                  <td className={financeNumber} data-testid="pcv-balance-this-voucher">
+                    {formatAmount(String(pettyCashLineTotals.credit))}
+                  </td>
                   <td />
                   {canEditLines ? <td /> : null}
                 </tr>

@@ -3,11 +3,22 @@ import { calculateReceiptVat7FromInclusive } from "@/lib/pos/receipt-vat-display
 import type { ReceiptPrintContext } from "@/lib/pos/receipt-print-context"
 import { posReceiptSlipPaymentLabel } from "@/lib/pos-ui/pos-payment-methods"
 import type { ResolvedThermalLayout } from "./types"
+import type { ReceiptBlockFontPx } from "./receipt-block-font-size"
+import { buildTicketLayout } from "./build-ticket-layout"
+import { serializeTicketLayoutToText } from "./serialize-ticket-layout-text"
+import {
+  resolveFooterBlockLines,
+  resolveHeaderBlockLines,
+  resolveSubHeaderBlockLines,
+} from "./receipt-layout-blocks"
+import { buildSlipIdentityParts } from "./receipt-slip-identity"
+import {
+  formatReceiptMachineLineForThermal,
+} from "./receipt-machine-line"
 import {
   THERMAL_COLUMNS,
+  THERMAL_AMOUNT_MIN_GAP,
   appendThermalCenteredIfPresent,
-  appendThermalFooterLines,
-  appendThermalHeaderLines,
   centerThermalLine,
   formatThermalAmountLine,
   formatThermalCompactUnitPrice,
@@ -41,65 +52,130 @@ function formatReceiptItemDetailLine(
   return formatThermalAmountLine(left, formatReceiptMoney(item.lineTotal), width, amountWidth)
 }
 
-function appendReceiptNo(lines: string[], receiptNo: string, width: number): void {
-  if (receiptNo.length <= width - 8) {
-    lines.push(padThermalLine("Receipt", receiptNo, width))
-    return
+function appendReceiptBlockCenteredLines(
+  lines: string[],
+  blockLines: string[],
+  width: number
+): void {
+  for (const line of blockLines) {
+    appendThermalCenteredIfPresent(lines, line, width)
   }
-  lines.push("Receipt")
-  const no = receiptNo.length > width ? receiptNo.slice(0, width) : receiptNo
-  lines.push(no)
 }
 
-export function buildReceiptSlipText(
-  receipt: ReceiptPrintContext,
-  layout: ResolvedThermalLayout
-): string {
-  const out: string[] = []
-  const w = THERMAL_COLUMNS
+export type ReceiptSlipRefStaff = {
+  refLine: string
+  dateLine: string
+  staffLabel: string
+  staffValue: string
+}
 
-  appendThermalHeaderLines(out, layout, w)
-  if (receipt.companyTaxId) {
-    appendThermalCenteredIfPresent(out, `Tax ID ${receipt.companyTaxId}`, w)
+export type ReceiptSlipParts = {
+  headerLines: string[]
+  headerFontSize: ReceiptBlockFontPx
+  headerBold: boolean
+  identityLines: string[]
+  identityBeforeMachineLines: string[]
+  machineTaxId: string | null
+  identityAfterMachineLines: string[]
+  infoBlockFontSize: ReceiptBlockFontPx
+  infoBlockBold: boolean
+  refStaff: ReceiptSlipRefStaff | null
+  subHeaderLines: string[]
+  subHeaderFontSize: ReceiptBlockFontPx
+  subHeaderBold: boolean
+  monoText: string
+  footerLines: string[]
+  footerFontSize: ReceiptBlockFontPx
+  footerBold: boolean
+}
+
+function buildIdentityParts(receipt: ReceiptPrintContext) {
+  return buildSlipIdentityParts(receipt)
+}
+
+/** @deprecated Use identityBeforeMachineLines + machineTaxId + identityAfterMachineLines */
+function buildIdentityLines(receipt: ReceiptPrintContext): string[] {
+  const parts = buildIdentityParts(receipt)
+  const lines = [...parts.beforeMachineLines]
+  if (parts.machineTaxId) {
+    lines.push(formatReceiptMachineLineForThermal(parts.machineTaxId, THERMAL_COLUMNS).trim())
   }
-  if (receipt.machineTaxId) {
-    appendThermalCenteredIfPresent(out, `Machine ID ${receipt.machineTaxId}`, w)
+  lines.push(...parts.afterMachineLines)
+  return lines
+}
+
+function buildRefStaffData(receipt: ReceiptPrintContext): ReceiptSlipRefStaff {
+  return {
+    refLine: `Ref. ${receipt.receiptNo}`,
+    dateLine: formatThermalDateTime(receipt.issuedAt),
+    staffLabel: "Staff",
+    staffValue: receipt.cashierDisplay?.trim() || "",
   }
-  appendThermalCenteredIfPresent(out, `${receipt.branchCode} ${receipt.branchName}`, w)
-  appendThermalCenteredIfPresent(out, receipt.branchAddress, w)
-  if (receipt.branchPhone) {
-    appendThermalCenteredIfPresent(out, `Tel. ${receipt.branchPhone}`, w)
-  }
-  if (layout.showAbbreviatedTaxTitle) {
-    const taxTitle = centerThermalLine("ใบกำกับภาษีอย่างย่อ", w)
-    if (taxTitle) out.push(taxTitle)
+}
+
+function buildRefStaffPlainText(receipt: ReceiptPrintContext, width: number): string {
+  const lines: string[] = []
+  const refStaff = buildRefStaffData(receipt)
+  const dateWidth = refStaff.dateLine.length
+  const fitsOneLine =
+    refStaff.refLine.length + THERMAL_AMOUNT_MIN_GAP + dateWidth <= width
+
+  if (fitsOneLine) {
+    lines.push(
+      formatThermalAmountLine(refStaff.refLine, refStaff.dateLine, width, dateWidth)
+    )
+  } else if (refStaff.refLine.length <= width) {
+    lines.push(refStaff.refLine)
+    lines.push(
+      refStaff.dateLine.length > width
+        ? refStaff.dateLine.slice(0, width)
+        : refStaff.dateLine.padStart(width, " ")
+    )
+  } else {
+    lines.push("Ref.")
+    const receiptNo = receipt.receiptNo
+    lines.push(receiptNo.length > width ? receiptNo.slice(0, width) : receiptNo)
+    lines.push(
+      refStaff.dateLine.length > width
+        ? refStaff.dateLine.slice(0, width)
+        : refStaff.dateLine.padStart(width, " ")
+    )
   }
 
-  out.push(repeatThermalChar("-", w))
-  appendReceiptNo(out, receipt.receiptNo, w)
-  out.push(padThermalLine("Date", formatThermalDateTime(receipt.issuedAt), w))
-  if (receipt.cashierDisplay) {
-    const cashier = receipt.cashierDisplay
-    if (cashier.length <= w - 9) {
-      out.push(padThermalLine("Cashier", cashier, w))
+  if (refStaff.staffValue) {
+    const cashier = refStaff.staffValue
+    if (cashier.length <= width - 6) {
+      lines.push(padThermalLine(refStaff.staffLabel, cashier, width))
     } else {
-      out.push("Cashier")
-      out.push(cashier.length > w ? cashier.slice(0, w) : cashier)
+      lines.push(refStaff.staffLabel)
+      lines.push(cashier.length > width ? cashier.slice(0, width) : cashier)
     }
   }
-  out.push(repeatThermalChar("-", w))
+  return lines.join("\n")
+}
+
+export function buildReceiptSlipParts(
+  receipt: ReceiptPrintContext,
+  layout: ResolvedThermalLayout
+): ReceiptSlipParts {
+  const monoLines: string[] = []
+  const w = THERMAL_COLUMNS
+
+  monoLines.push(repeatThermalChar("-", w))
 
   const amountWidth = computeReceiptMaxAmountWidth(receipt)
 
   for (const item of receipt.lines) {
     const nameLine = truncateThermalText(item.name, w)
-    if (nameLine) out.push(nameLine)
-    out.push(formatReceiptItemDetailLine(item, w, amountWidth))
+    if (nameLine) monoLines.push(nameLine)
+    monoLines.push(formatReceiptItemDetailLine(item, w, amountWidth))
   }
 
-  out.push(repeatThermalChar("-", w))
-  out.push(formatThermalAmountLine("TOTAL", formatReceiptMoney(receipt.total), w, amountWidth))
-  out.push(
+  monoLines.push(repeatThermalChar("-", w))
+  monoLines.push(
+    formatThermalAmountLine("TOTAL", formatReceiptMoney(receipt.total), w, amountWidth)
+  )
+  monoLines.push(
     formatThermalAmountLine(
       "VAT 7%",
       calculateReceiptVat7FromInclusive(receipt.total),
@@ -107,7 +183,7 @@ export function buildReceiptSlipText(
       amountWidth
     )
   )
-  out.push(
+  monoLines.push(
     formatThermalAmountLine(
       posReceiptSlipPaymentLabel(receipt.paymentMethod),
       formatReceiptMoney(receipt.cashAmount),
@@ -115,17 +191,44 @@ export function buildReceiptSlipText(
       amountWidth
     )
   )
-  out.push(
+  monoLines.push(
     formatThermalAmountLine("CHANGE", formatReceiptMoney(receipt.change), w, amountWidth)
   )
-  out.push(repeatThermalChar("-", w))
+  monoLines.push(repeatThermalChar("-", w))
 
   if (layout.showVatIncludedMessage) {
     const line = centerThermalLine("ราคาสินค้ารวมภาษีมูลค่าเพิ่มแล้ว", w)
-    if (line) out.push(line)
+    if (line) monoLines.push(line)
   }
 
-  appendThermalFooterLines(out, layout, w)
-  out.push("")
-  return out.join("\n")
+  const identityParts = buildIdentityParts(receipt)
+
+  return {
+    headerLines: resolveHeaderBlockLines(layout),
+    headerFontSize: layout.headerFontSize,
+    headerBold: layout.headerBlockBold,
+    identityLines: buildIdentityLines(receipt),
+    identityBeforeMachineLines: identityParts.beforeMachineLines,
+    machineTaxId: identityParts.machineTaxId,
+    identityAfterMachineLines: identityParts.afterMachineLines,
+    refStaff: buildRefStaffData(receipt),
+    subHeaderLines: resolveSubHeaderBlockLines(layout),
+    subHeaderFontSize: layout.subHeaderFontSize,
+    subHeaderBold: layout.subHeaderBlockBold,
+    monoText: monoLines.join("\n"),
+    footerLines: resolveFooterBlockLines(layout),
+    footerFontSize: layout.footerFontSize,
+    footerBold: layout.footerBlockBold,
+    infoBlockFontSize: layout.infoBlockFontSize,
+    infoBlockBold: layout.infoBlockBold,
+  }
+}
+
+export function buildReceiptSlipText(
+  receipt: ReceiptPrintContext,
+  layout: ResolvedThermalLayout
+): string {
+  return serializeTicketLayoutToText(
+    buildTicketLayout({ documentType: "RECEIPT", receipt, layout })
+  )
 }

@@ -123,7 +123,7 @@ export function buildFinanceVoucherPrintModelFromManualJournalEntry(
 function buildPaymentVoucherPrintLines(
   entry: PaymentVoucherRead
 ): FinanceVoucherPrintLine[] {
-  const debitLines = entry.lines.map((line) => ({
+  return entry.lines.map((line) => ({
     lineNo: line.lineNo,
     accountCode: line.accountCode,
     accountName: line.accountName,
@@ -131,33 +131,22 @@ function buildPaymentVoucherPrintLines(
     debit: line.debit,
     credit: line.credit,
   }))
-
-  const total = entry.totalAmount
-  const creditLineNo =
-    debitLines.length > 0
-      ? Math.max(...debitLines.map((line) => line.lineNo)) + 1
-      : 1
-
-  return [
-    ...debitLines,
-    {
-      lineNo: creditLineNo,
-      accountCode: entry.payFromAccountCode,
-      accountName: entry.payFromAccountName,
-      lineDescription: entry.payeeName ? `Payment to ${entry.payeeName}` : null,
-      debit: "0.00",
-      credit: total,
-    },
-  ]
 }
 
-/** Build browser-print view model from saved payment voucher — includes derived credit line. */
+/** Build browser-print view model from saved payment voucher lines. */
 export function buildFinanceVoucherPrintModelFromPaymentVoucher(
   entry: PaymentVoucherRead,
   options?: { branchLabel?: string | null }
 ): FinanceVoucherPrintModel {
   const lines = buildPaymentVoucherPrintLines(entry)
-  const total = entry.totalAmount
+  const totalDebit = lines.reduce(
+    (sum, line) => sum + Number.parseFloat(line.debit || "0"),
+    0
+  )
+  const totalCredit = lines.reduce(
+    (sum, line) => sum + Number.parseFloat(line.credit || "0"),
+    0
+  )
   const branchLabel = options?.branchLabel?.trim() || entry.branchId
 
   return {
@@ -172,8 +161,8 @@ export function buildFinanceVoucherPrintModelFromPaymentVoucher(
     description: entry.description?.trim() || null,
     remarks: entry.cancelReason?.trim() || null,
     lines,
-    totalDebit: total,
-    totalCredit: total,
+    totalDebit: String(totalDebit),
+    totalCredit: String(totalCredit),
     preparedBy: entry.createdByStaffId,
     checkedBy: entry.confirmedByStaffId,
     approvedBy: entry.submittedByStaffId,

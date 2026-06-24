@@ -1,7 +1,8 @@
 "use client"
 
-import { ThermalPrintSource, ThermalSlipPre } from "@/components/thermal/ThermalSlipPre"
-import { buildReadZSlipText } from "@/lib/thermal/build-read-z-slip"
+import { ThermalPrintSource } from "@/components/thermal/ThermalSlipPre"
+import { ThermalTicketSlipView } from "@/components/thermal/ThermalTicketSlipView"
+import { buildTicketLayout } from "@/lib/thermal/build-ticket-layout"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
@@ -11,11 +12,15 @@ type PosReadZSlipProps = {
 }
 
 export function PosReadZSlip({ report, layout }: PosReadZSlipProps) {
-  const slipText = buildReadZSlipText(report, layout)
+  const ticketLayout = buildTicketLayout({
+    documentType: "READ_Z",
+    report,
+    layout,
+  })
 
   return (
     <ThermalPrintSource kind="read-z">
-      <ThermalSlipPre text={slipText} ariaLabel="READ Z report" />
+      <ThermalTicketSlipView layout={ticketLayout} />
     </ThermalPrintSource>
   )
 }

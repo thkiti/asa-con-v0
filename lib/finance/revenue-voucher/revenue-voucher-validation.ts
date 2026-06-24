@@ -1,6 +1,10 @@
 import type { RevenueVoucherStatus, Prisma } from "@/generated/prisma/client"
 import { addMoney, toMoney, ZERO } from "@/lib/finance/decimal"
 import {
+  diagnoseJournalLineSides,
+  formatJournalLineSidesMessage,
+} from "@/lib/finance/journal-line-sides"
+import {
   RevenueVoucherError,
   RevenueVoucherErrorCodes,
 } from "./revenue-voucher-errors"
@@ -93,6 +97,25 @@ export async function assertEligibleReceiveToAccount(
   }
 }
 
+export function assertRevenueVoucherLineSides(
+  debit: Prisma.Decimal,
+  credit: Prisma.Decimal,
+  lineIndex?: number
+): void {
+  const issue = diagnoseJournalLineSides(debit, credit)
+  if (!issue) return
+
+  const code =
+    issue === "NEGATIVE_AMOUNT"
+      ? RevenueVoucherErrorCodes.INVALID_AMOUNT
+      : RevenueVoucherErrorCodes.INVALID_LINE
+
+  throw new RevenueVoucherError(
+    formatJournalLineSidesMessage(issue, lineIndex),
+    code
+  )
+}
+
 export async function resolveRevenueVoucherAllocationLines(
   tx: Pick<Prisma.TransactionClient, "glAccount">,
   rawLines: RevenueVoucherSaveLineInput[]
@@ -102,20 +125,17 @@ export async function resolveRevenueVoucherAllocationLines(
 
   for (let i = 0; i < rawLines.length; i++) {
     const line = rawLines[i]
-    const glAccountId = String(line.glAccountId ?? "").trim()
-    const accountCode = String(line.accountCode ?? "").trim()
-    const credit = toMoney(line.credit)
+    const debit = toMoney(line.debit ?? 0)
+    const credit = toMoney(line.credit ?? 0)
 
-    if (credit.isZero()) {
+    if (debit.isZero() && credit.isZero()) {
       continue
     }
 
-    if (credit.isNegative()) {
-      throw new RevenueVoucherError(
-        `Line ${i + 1}: credit must not be negative`,
-        RevenueVoucherErrorCodes.INVALID_AMOUNT
-      )
-    }
+    assertRevenueVoucherLineSides(debit, credit, i)
+
+    const glAccountId = String(line.glAccountId ?? "").trim()
+    const accountCode = String(line.accountCode ?? "").trim()
 
     if (!glAccountId && !accountCode) {
       throw new RevenueVoucherError(
@@ -146,8 +166,9 @@ export async function resolveRevenueVoucherAllocationLines(
 
   for (let i = 0; i < rawLines.length; i++) {
     const raw = rawLines[i]
-    const credit = toMoney(raw.credit)
-    if (credit.isZero()) continue
+    const debit = toMoney(raw.debit ?? 0)
+    const credit = toMoney(raw.credit ?? 0)
+    if (debit.isZero() && credit.isZero()) continue
 
     const glAccountId = String(raw.glAccountId ?? "").trim()
     const accountCode = String(raw.accountCode ?? "").trim()
@@ -178,7 +199,7 @@ export async function resolveRevenueVoucherAllocationLines(
     resolved.push({
       lineNo,
       glAccountId: account.id,
-      debit: ZERO,
+      debit,
       credit,
       memo: raw.memo?.trim() || null,
     })
@@ -187,10 +208,93 @@ export async function resolveRevenueVoucherAllocationLines(
   return resolved
 }
 
+export function sumRevenueVoucherDebitTotal(
+  lines: ResolvedRevenueVoucherLine[]
+): Prisma.Decimal {
+  return lines.reduce((sum, line) => addMoney(sum, line.debit), ZERO)
+}
+
 export function sumRevenueVoucherCreditTotal(
   lines: ResolvedRevenueVoucherLine[]
 ): Prisma.Decimal {
   return lines.reduce((sum, line) => addMoney(sum, line.credit), ZERO)
+}
+
+async function assertRevenueVoucherLinesReady(
+  tx: Pick<Prisma.TransactionClient, "glAccount">,
+  entry: RevenueVoucherWithLines
+): Promise<void> {
+  const sortedLines = [...entry.lines].sort((a, b) => a.lineNo - b.lineNo)
+
+  if (sortedLines.length < 2) {
+    throw new RevenueVoucherError(
+      "Revenue voucher requires at least two lines",
+      RevenueVoucherErrorCodes.INSUFFICIENT_LINES
+    )
+  }
+
+  for (let i = 0; i < sortedLines.length; i++) {
+    const line = sortedLines[i]
+    assertRevenueVoucherLineSides(toMoney(line.debit), toMoney(line.credit), i)
+  }
+
+  const accountIds = [...new Set(sortedLines.map((line) => line.glAccountId))]
+  const accounts = await tx.glAccount.findMany({
+    where: { id: { in: accountIds } },
+    select: { id: true, code: true, isActive: true, deleted: true },
+  })
+  const byId = new Map(accounts.map((account) => [account.id, account]))
+
+  for (const line of sortedLines) {
+    const account = byId.get(line.glAccountId)
+    if (!account || account.deleted) {
+      throw new RevenueVoucherError(
+        `GL account not found for line glAccountId ${line.glAccountId}`,
+        RevenueVoucherErrorCodes.ACCOUNT_NOT_FOUND
+      )
+    }
+    if (!account.isActive) {
+      throw new RevenueVoucherError(
+        `GL account is inactive: ${account.code}`,
+        RevenueVoucherErrorCodes.ACCOUNT_INACTIVE
+      )
+    }
+  }
+
+  let debits = ZERO
+  let credits = ZERO
+  for (const line of sortedLines) {
+    debits = addMoney(debits, toMoney(line.debit))
+    credits = addMoney(credits, toMoney(line.credit))
+  }
+
+  if (!debits.equals(credits)) {
+    throw new RevenueVoucherError(
+      `Revenue voucher is not balanced: debits=${debits.toString()} credits=${credits.toString()}`,
+      RevenueVoucherErrorCodes.UNBALANCED_VOUCHER
+    )
+  }
+
+  if (debits.isZero()) {
+    throw new RevenueVoucherError(
+      "Revenue voucher total must be greater than zero",
+      RevenueVoucherErrorCodes.INVALID_AMOUNT
+    )
+  }
+
+  if (entry.receiveToAccountId) {
+    const hasReceiveToDebit = sortedLines.some(
+      (line) =>
+        line.glAccountId === entry.receiveToAccountId &&
+        !toMoney(line.debit).isZero()
+    )
+    if (!hasReceiveToDebit) {
+      throw new RevenueVoucherError(
+        "Revenue voucher requires at least one debit line on the receive-to account",
+        RevenueVoucherErrorCodes.MISSING_CONTROL_ACCOUNT_LINE
+      )
+    }
+  }
 }
 
 export async function assertCanSubmitRevenueVoucher(
@@ -206,26 +310,7 @@ export async function assertCanSubmitRevenueVoucher(
   }
 
   await assertEligibleReceiveToAccount(tx, entry.receiveToAccountId)
-
-  const positiveLines = entry.lines.filter((line) => !toMoney(line.credit).isZero())
-  if (positiveLines.length === 0) {
-    throw new RevenueVoucherError(
-      "Revenue voucher requires at least one credit allocation line",
-      RevenueVoucherErrorCodes.EMPTY_ALLOCATION
-    )
-  }
-
-  const total = positiveLines.reduce(
-    (sum, line) => addMoney(sum, toMoney(line.credit)),
-    ZERO
-  )
-
-  if (total.isZero()) {
-    throw new RevenueVoucherError(
-      "Revenue voucher total must be greater than zero",
-      RevenueVoucherErrorCodes.INVALID_AMOUNT
-    )
-  }
+  await assertRevenueVoucherLinesReady(tx, entry)
 }
 
 export async function assertCanPostRevenueVoucher(

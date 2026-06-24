@@ -101,6 +101,16 @@ function baseEntry(overrides: Record<string, unknown> = {}) {
       {
         id: "line-1",
         lineNo: 1,
+        glAccountId: "acc-bank-1021001",
+        accountCode: "1021001",
+        accountName: "เงินฝากธนาคารกรุงเทพ - บัญชีกระแสรายวัน 0266",
+        debit: "3000.00",
+        credit: "0.00",
+        memo: "Bank receipt",
+      },
+      {
+        id: "line-2",
+        lineNo: 2,
         glAccountId: "acc-rev",
         accountCode: "40101001",
         accountName: "Service revenue",
@@ -114,7 +124,7 @@ function baseEntry(overrides: Record<string, unknown> = {}) {
 }
 
 describe("RevenueVoucherEditorPage create", () => {
-  it("renders receive-to dropdown, credit lines, derived debit, and amount in words", () => {
+  it("renders receive-to dropdown, debit/credit lines, and amount in words", () => {
     const html = renderToStaticMarkup(<RevenueVoucherEditorPage mode="create" />)
     expect(html).toContain('data-testid="revenue-voucher-editor"')
     expect(html).toContain('data-testid="field-receive-to-select"')
@@ -122,14 +132,14 @@ describe("RevenueVoucherEditorPage create", () => {
     expect(html).toContain('data-testid="field-received-from-name"')
     expect(html).toContain('data-testid="field-description"')
     expect(html).toContain('data-testid="line-credit"')
-    expect(html).not.toContain('data-testid="line-debit"')
+    expect(html).toContain('data-testid="line-debit"')
     expect(html).toContain('data-testid="rev-amount-in-words"')
     expect(html).toContain("ศูนย์บาทถ้วน")
   })
 })
 
 describe("RevenueVoucherEditorPage edit DRAFT", () => {
-  it("renders derived debit line under debit column", () => {
+  it("renders balanced debit and credit lines in DRAFT edit", () => {
     const html = renderToStaticMarkup(
       <RevenueVoucherEditorPage
         mode="edit"
@@ -138,8 +148,8 @@ describe("RevenueVoucherEditorPage edit DRAFT", () => {
       />
     )
     expect(html).toContain("REV-260001")
-    expect(html).toContain('data-testid="rev-derived-debit-line"')
-    expect(html).toContain('data-testid="derived-debit-amount"')
+    expect(html).not.toContain('data-testid="rev-derived-debit-line"')
+    expect(html).toContain('data-testid="line-debit"')
     expect(html).toContain("3,000.00")
   })
 })

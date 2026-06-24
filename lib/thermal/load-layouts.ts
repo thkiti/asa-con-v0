@@ -1,4 +1,8 @@
 import type { PrismaClient, ThermalDocumentLayout } from "@/generated/prisma/client"
+import {
+  normalizeInfoBlockFontPx,
+  normalizeReceiptBlockFontPx,
+} from "./receipt-block-font-size"
 import { buildThermalLayoutMap } from "./layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "./layout-defaults"
 import type { ThermalDocumentLayoutView, ThermalDocumentType, ThermalLayoutMap } from "./types"
@@ -16,6 +20,17 @@ function toThermalDocumentLayoutView(row: ThermalDocumentLayout): ThermalDocumen
     footerLine3: row.footerLine3?.trim() || null,
     footerLine4: row.footerLine4?.trim() || null,
     footerLine5: row.footerLine5?.trim() || null,
+    headerBlockText: normalizeStoredBlockText(row.headerBlockText),
+    headerFontSize: normalizeReceiptBlockFontPx(row.headerFontSize),
+    headerBlockBold: row.headerBlockBold,
+    subHeaderBlockText: normalizeStoredBlockText(row.subHeaderBlockText),
+    subHeaderFontSize: normalizeReceiptBlockFontPx(row.subHeaderFontSize),
+    subHeaderBlockBold: row.subHeaderBlockBold,
+    footerBlockText: normalizeStoredBlockText(row.footerBlockText),
+    footerFontSize: normalizeReceiptBlockFontPx(row.footerFontSize),
+    footerBlockBold: row.footerBlockBold,
+    infoBlockFontSize: normalizeInfoBlockFontPx(row.infoBlockFontSize),
+    infoBlockBold: row.infoBlockBold,
     showAbbreviatedTaxTitle: row.showAbbreviatedTaxTitle,
     showVatIncludedMessage: row.showVatIncludedMessage,
   }
@@ -40,3 +55,8 @@ export async function loadThermalLayouts(db: LayoutDb): Promise<ThermalLayoutMap
 }
 
 export { toThermalDocumentLayoutView }
+
+function normalizeStoredBlockText(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null
+  return value
+}

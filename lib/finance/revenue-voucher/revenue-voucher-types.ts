@@ -19,7 +19,8 @@ export type RevenueVoucherTransitionContext = {
 export type RevenueVoucherSaveLineInput = {
   accountCode?: string
   glAccountId?: string
-  credit: number | string
+  debit?: number | string
+  credit?: number | string
   memo?: string | null
 }
 

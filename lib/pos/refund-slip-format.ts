@@ -25,8 +25,7 @@ export {
 }
 
 export function buildRefundSlipText(context: RefundReceiptPrintContext): string {
-  const layout =
-    context.thermalLayout ??
-    resolveThermalLayout("REFUND", context.thermalLayouts ?? DEFAULT_THERMAL_LAYOUTS)
+  const layouts = context.thermalLayouts ?? DEFAULT_THERMAL_LAYOUTS
+  const layout = resolveThermalLayout("REFUND", layouts)
   return buildThermalRefundSlipText(context, layout)
 }

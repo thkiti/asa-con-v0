@@ -752,6 +752,31 @@ span.finance-account .finance-account-name-part {
     overflow-x: visible !important;
   }
 
+  .pos-receipt-print .receipt-slip-block {
+    box-sizing: content-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-weight: bold !important;
+    line-height: 1.25 !important;
+    white-space: pre-wrap !important;
+    overflow: visible !important;
+  }
+
+  .pos-receipt-print .receipt-slip-proportional {
+    font-family: "THSarabunNew", "Noto Sans Thai", "Leelawadee UI", sans-serif !important;
+    font-synthesis: none !important;
+  }
+
+  .pos-receipt-print .receipt-slip-mono,
+  .pos-receipt-print .receipt-slip-mono-wrap .thermal-slip,
+  .pos-receipt-print .receipt-slip-mono-wrap .pos-receipt-slip,
+  .pos-receipt-print pre.receipt-slip-mono {
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    line-height: 1.25 !important;
+  }
+
   body.printing-repair-ticket {
     background: white !important;
   }
@@ -841,6 +866,226 @@ span.finance-account .finance-account-name-part {
   max-width: var(--thermal-slip-ch-width, var(--receipt-slip-ch-width, 30ch));
 }
 
+.receipt-slip-parts .receipt-slip-block {
+  box-sizing: content-box;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  white-space: pre-wrap;
+  font-weight: bold;
+  line-height: 1.25;
+  color: #111;
+}
+
+/* Receipt slip — proportional Thai (header/footer/identity/tax title) */
+.receipt-slip-proportional {
+  font-family: "THSarabunNew", "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  font-synthesis: none;
+}
+
+.receipt-slip-identity.receipt-slip-identity-block {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.receipt-slip-tax-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Receipt slip — monospace transaction body */
+.receipt-slip-mono,
+.receipt-slip-mono-wrap .thermal-slip,
+.receipt-slip-mono-wrap .pos-receipt-slip,
+.pre.receipt-slip-mono {
+  font-family: "Courier New", Courier, monospace;
+  font-weight: bold;
+}
+
+.receipt-setup-structured-preview.receipt-setup-preview-slip {
+  font-family: "THSarabunNew", "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  font-synthesis: none;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.receipt-setup-structured-preview .receipt-slip-identity-block,
+.receipt-setup-structured-preview .receipt-slip-ref-staff {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.receipt-setup-structured-preview .receipt-slip-ref-staff-row {
+  width: 100%;
+  max-width: 100%;
+}
+
+.receipt-slip-ref-staff-row .text-left {
+  text-align: left;
+}
+
+.receipt-slip-ref-staff-row .text-right {
+  text-align: right;
+}
+
+.receipt-slip-machine-line .receipt-slip-block-text {
+  overflow: hidden;
+}
+
+.receipt-slip-machine-line span {
+  vertical-align: top;
+}
+
+.receipt-setup-structured-preview .receipt-slip-ref-staff {
+  font-weight: inherit;
+}
+
+.receipt-setup-structured-preview .receipt-slip-tax-title {
+  font-size: 14px;
+}
+
+.receipt-setup-structured-preview .receipt-setup-mono-body {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.receipt-setup-structured-preview .receipt-setup-body {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.receipt-setup-structured-preview .receipt-setup-proportional-line {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: "THSarabunNew", "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  font-synthesis: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.receipt-setup-structured-preview .receipt-setup-dotted-line {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-top: 1px dotted currentColor;
+  line-height: 0;
+}
+
+.receipt-setup-structured-preview .receipt-setup-ack-section {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.receipt-setup-structured-preview .receipt-setup-ack-field {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.receipt-setup-structured-preview .receipt-setup-ack-writing-space {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.receipt-setup-structured-preview .receipt-setup-ack-writing-space .receipt-setup-dotted-line {
+  min-height: 1.05em;
+}
+
+.receipt-setup-structured-preview .receipt-slip-mono-line {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.receipt-setup-structured-preview .receipt-setup-mono-divider {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-top: 1px dashed currentColor;
+  line-height: 0;
+}
+
+.receipt-setup-structured-preview .receipt-setup-mono-text-line,
+.receipt-setup-structured-preview .receipt-setup-mono-amount-row {
+  white-space: nowrap;
+}
+
+.receipt-setup-structured-preview .receipt-slip-proportional {
+  color: #18181b;
+}
+
+.receipt-setup-structured-preview .receipt-slip-block,
+.receipt-setup-structured-preview .receipt-slip-identity-block,
+.receipt-setup-structured-preview .receipt-slip-tax-title {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.receipt-slip-block-centered {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.receipt-slip-block-centered .receipt-slip-block-text {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.receipt-setup-structured-preview .receipt-setup-header-block.receipt-slip-block-centered,
+.receipt-setup-structured-preview .receipt-setup-subheader-block.receipt-slip-block-centered,
+.receipt-setup-structured-preview .receipt-setup-footer-block.receipt-slip-block-centered,
+.receipt-setup-structured-preview .receipt-slip-identity-block.receipt-slip-block-centered,
+.receipt-setup-structured-preview .receipt-slip-tax-title.receipt-slip-block-centered,
+.receipt-setup-structured-preview .receipt-slip-block-text {
+  text-align: center;
+}
+
+.receipt-slip-parts .receipt-slip-block.receipt-slip-block-centered,
+.receipt-slip-parts .receipt-slip-identity-block.receipt-slip-block-centered,
+.receipt-slip-parts .receipt-slip-tax-title.receipt-slip-block-centered {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.receipt-slip-ref-staff {
+  font-family: "THSarabunNew", "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  font-synthesis: none;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pos-receipt-print .receipt-slip-ref-staff {
+  font-family: "THSarabunNew", "Noto Sans Thai", "Leelawadee UI", sans-serif !important;
+  font-synthesis: none !important;
+  font-weight: 600 !important;
+}
+
+.receipt-setup-structured-preview .receipt-slip-mono {
+  color: #18181b;
+}
+
 .repair-ticket-print-area {
   box-sizing: content-box;
   margin: 0;
@@ -859,6 +1104,9 @@ span.finance-account .finance-account-name-part {
 
 /* Receipt Setup admin preview — paper slip on dark UI (not print route) */
 .receipt-setup-preview {
+  --thermal-paper-width: 80mm;
+  --thermal-printable-width: 72mm;
+  --thermal-paper-padding: 4mm;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -870,19 +1118,26 @@ span.finance-account .finance-account-name-part {
 
 .receipt-setup-preview-slip,
 .receipt-setup-preview .thermal-slip {
-  box-sizing: content-box;
+  box-sizing: border-box;
   flex: 0 0 auto;
-  width: var(--receipt-slip-ch-width, 30ch);
-  min-width: var(--receipt-slip-ch-width, 30ch);
+  width: var(--thermal-paper-width, 80mm);
   max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
-  padding: 16px;
+  padding: var(--thermal-paper-padding, 4mm);
   border: 1px solid #ccc;
   border-radius: 6px;
   background: #f8f8f8 !important;
   color: #111 !important;
-  overflow-x: visible;
-  overflow-wrap: normal;
+  overflow: hidden;
+}
+
+.receipt-setup-printable-inner {
+  width: 100%;
+  max-width: var(--thermal-printable-width, 72mm);
+  margin: 0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* READ X/Z — thin orange group-list scrollbar */

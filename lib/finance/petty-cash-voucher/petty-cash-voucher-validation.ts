@@ -1,5 +1,9 @@
 import type { PettyCashVoucherStatus, Prisma } from "@/generated/prisma/client"
 import { addMoney, toMoney, ZERO } from "@/lib/finance/decimal"
+import {
+  diagnoseJournalLineSides,
+  formatJournalLineSidesMessage,
+} from "@/lib/finance/journal-line-sides"
 import { isPettyCashGlAccount } from "@/lib/finance-ui/pav-pay-from-accounts"
 import { PCV_PETTY_CASH_GL_ACCOUNT_CODE } from "@/lib/finance-ui/pcv-petty-cash-account"
 import {
@@ -106,6 +110,25 @@ export async function assertEligiblePettyCashAccount(
   }
 }
 
+export function assertPettyCashVoucherLineSides(
+  debit: Prisma.Decimal,
+  credit: Prisma.Decimal,
+  lineIndex?: number
+): void {
+  const issue = diagnoseJournalLineSides(debit, credit)
+  if (!issue) return
+
+  const code =
+    issue === "NEGATIVE_AMOUNT"
+      ? PettyCashVoucherErrorCodes.INVALID_AMOUNT
+      : PettyCashVoucherErrorCodes.INVALID_LINE
+
+  throw new PettyCashVoucherError(
+    formatJournalLineSidesMessage(issue, lineIndex),
+    code
+  )
+}
+
 export async function resolvePettyCashVoucherAllocationLines(
   tx: Pick<Prisma.TransactionClient, "glAccount">,
   rawLines: PettyCashVoucherSaveLineInput[]
@@ -115,20 +138,17 @@ export async function resolvePettyCashVoucherAllocationLines(
 
   for (let i = 0; i < rawLines.length; i++) {
     const line = rawLines[i]
-    const glAccountId = String(line.glAccountId ?? "").trim()
-    const accountCode = String(line.accountCode ?? "").trim()
-    const debit = toMoney(line.debit)
+    const debit = toMoney(line.debit ?? 0)
+    const credit = toMoney(line.credit ?? 0)
 
-    if (debit.isZero()) {
+    if (debit.isZero() && credit.isZero()) {
       continue
     }
 
-    if (debit.isNegative()) {
-      throw new PettyCashVoucherError(
-        `Line ${i + 1}: debit must not be negative`,
-        PettyCashVoucherErrorCodes.INVALID_AMOUNT
-      )
-    }
+    assertPettyCashVoucherLineSides(debit, credit, i)
+
+    const glAccountId = String(line.glAccountId ?? "").trim()
+    const accountCode = String(line.accountCode ?? "").trim()
 
     if (!glAccountId && !accountCode) {
       throw new PettyCashVoucherError(
@@ -159,8 +179,9 @@ export async function resolvePettyCashVoucherAllocationLines(
 
   for (let i = 0; i < rawLines.length; i++) {
     const raw = rawLines[i]
-    const debit = toMoney(raw.debit)
-    if (debit.isZero()) continue
+    const debit = toMoney(raw.debit ?? 0)
+    const credit = toMoney(raw.credit ?? 0)
+    if (debit.isZero() && credit.isZero()) continue
 
     const glAccountId = String(raw.glAccountId ?? "").trim()
     const accountCode = String(raw.accountCode ?? "").trim()
@@ -192,7 +213,7 @@ export async function resolvePettyCashVoucherAllocationLines(
       lineNo,
       glAccountId: account.id,
       debit,
-      credit: ZERO,
+      credit,
       memo: raw.memo?.trim() || null,
     })
   }
@@ -204,6 +225,89 @@ export function sumPettyCashVoucherDebitTotal(
   lines: ResolvedPettyCashVoucherLine[]
 ): Prisma.Decimal {
   return lines.reduce((sum, line) => addMoney(sum, line.debit), ZERO)
+}
+
+export function sumPettyCashVoucherCreditTotal(
+  lines: ResolvedPettyCashVoucherLine[]
+): Prisma.Decimal {
+  return lines.reduce((sum, line) => addMoney(sum, line.credit), ZERO)
+}
+
+async function assertPettyCashVoucherLinesReady(
+  tx: Pick<Prisma.TransactionClient, "glAccount">,
+  entry: PettyCashVoucherWithLines
+): Promise<void> {
+  const sortedLines = [...entry.lines].sort((a, b) => a.lineNo - b.lineNo)
+
+  if (sortedLines.length < 2) {
+    throw new PettyCashVoucherError(
+      "Petty cash voucher requires at least two lines",
+      PettyCashVoucherErrorCodes.INSUFFICIENT_LINES
+    )
+  }
+
+  for (let i = 0; i < sortedLines.length; i++) {
+    const line = sortedLines[i]
+    assertPettyCashVoucherLineSides(toMoney(line.debit), toMoney(line.credit), i)
+  }
+
+  const accountIds = [...new Set(sortedLines.map((line) => line.glAccountId))]
+  const accounts = await tx.glAccount.findMany({
+    where: { id: { in: accountIds } },
+    select: { id: true, code: true, isActive: true, deleted: true },
+  })
+  const byId = new Map(accounts.map((account) => [account.id, account]))
+
+  for (const line of sortedLines) {
+    const account = byId.get(line.glAccountId)
+    if (!account || account.deleted) {
+      throw new PettyCashVoucherError(
+        `GL account not found for line glAccountId ${line.glAccountId}`,
+        PettyCashVoucherErrorCodes.ACCOUNT_NOT_FOUND
+      )
+    }
+    if (!account.isActive) {
+      throw new PettyCashVoucherError(
+        `GL account is inactive: ${account.code}`,
+        PettyCashVoucherErrorCodes.ACCOUNT_INACTIVE
+      )
+    }
+  }
+
+  let debits = ZERO
+  let credits = ZERO
+  for (const line of sortedLines) {
+    debits = addMoney(debits, toMoney(line.debit))
+    credits = addMoney(credits, toMoney(line.credit))
+  }
+
+  if (!debits.equals(credits)) {
+    throw new PettyCashVoucherError(
+      `Petty cash voucher is not balanced: debits=${debits.toString()} credits=${credits.toString()}`,
+      PettyCashVoucherErrorCodes.UNBALANCED_VOUCHER
+    )
+  }
+
+  if (debits.isZero()) {
+    throw new PettyCashVoucherError(
+      "Petty cash voucher total must be greater than zero",
+      PettyCashVoucherErrorCodes.INVALID_AMOUNT
+    )
+  }
+
+  if (entry.pettyCashAccountId) {
+    const hasPettyCashLine = sortedLines.some(
+      (line) =>
+        line.glAccountId === entry.pettyCashAccountId &&
+        (!toMoney(line.credit).isZero() || !toMoney(line.debit).isZero())
+    )
+    if (!hasPettyCashLine) {
+      throw new PettyCashVoucherError(
+        "Petty cash voucher requires at least one line on the petty cash account",
+        PettyCashVoucherErrorCodes.MISSING_CONTROL_ACCOUNT_LINE
+      )
+    }
+  }
 }
 
 export async function assertCanSubmitPettyCashVoucher(
@@ -219,26 +323,7 @@ export async function assertCanSubmitPettyCashVoucher(
   }
 
   await assertEligiblePettyCashAccount(tx, entry.pettyCashAccountId)
-
-  const positiveLines = entry.lines.filter((line) => !toMoney(line.debit).isZero())
-  if (positiveLines.length === 0) {
-    throw new PettyCashVoucherError(
-      "Petty cash voucher requires at least one debit allocation line",
-      PettyCashVoucherErrorCodes.EMPTY_ALLOCATION
-    )
-  }
-
-  const total = positiveLines.reduce(
-    (sum, line) => addMoney(sum, toMoney(line.debit)),
-    ZERO
-  )
-
-  if (total.isZero()) {
-    throw new PettyCashVoucherError(
-      "Petty cash voucher total must be greater than zero",
-      PettyCashVoucherErrorCodes.INVALID_AMOUNT
-    )
-  }
+  await assertPettyCashVoucherLinesReady(tx, entry)
 }
 
 export async function assertCanPostPettyCashVoucher(

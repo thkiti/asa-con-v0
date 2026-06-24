@@ -19,7 +19,8 @@ export type PettyCashVoucherTransitionContext = {
 export type PettyCashVoucherSaveLineInput = {
   accountCode?: string
   glAccountId?: string
-  debit: number | string
+  debit?: number | string
+  credit?: number | string
   memo?: string | null
 }
 

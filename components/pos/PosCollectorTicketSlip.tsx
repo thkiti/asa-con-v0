@@ -1,11 +1,9 @@
 "use client"
 
-import { ThermalPrintSource, ThermalSlipPre } from "@/components/thermal/ThermalSlipPre"
-import {
-  buildCollectorSlipText,
-  COLLECTOR_SIGNATURE_LINES,
-} from "@/lib/thermal/build-collector-slip"
+import { ThermalPrintSource } from "@/components/thermal/ThermalSlipPre"
+import { ThermalTicketSlipView } from "@/components/thermal/ThermalTicketSlipView"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+import { buildTicketLayout } from "@/lib/thermal/build-ticket-layout"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
 type PosCollectorTicketSlipProps = {
@@ -14,18 +12,15 @@ type PosCollectorTicketSlipProps = {
 }
 
 export function PosCollectorTicketSlip({ report, layout }: PosCollectorTicketSlipProps) {
-  const slipText = buildCollectorSlipText(report, layout)
-  const signatureText = COLLECTOR_SIGNATURE_LINES.join("\n")
+  const ticketLayout = buildTicketLayout({
+    documentType: "COLLECTOR",
+    report,
+    layout,
+  })
 
   return (
     <ThermalPrintSource kind="collector">
-      <ThermalSlipPre text={slipText} ariaLabel="Collector ticket" />
-      <div
-        data-testid="collector-ticket-signature-space"
-        className="thermal-signature-space collector-ticket-signature-space"
-        aria-hidden="true"
-      />
-      <ThermalSlipPre text={signatureText} ariaLabel="Collector signature" />
+      <ThermalTicketSlipView layout={ticketLayout} />
     </ThermalPrintSource>
   )
 }

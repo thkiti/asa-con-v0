@@ -27,6 +27,18 @@ const REFUND_INHERIT_STRING_FIELDS: LayoutStringField[] = [
   "footerLine5",
 ]
 
+const REFUND_INHERIT_BLOCK_FIELDS = [
+  "headerBlockText",
+  "footerBlockText",
+  "subHeaderBlockText",
+  "headerFontSize",
+  "footerFontSize",
+  "subHeaderFontSize",
+  "headerBlockBold",
+  "footerBlockBold",
+  "subHeaderBlockBold",
+] as const
+
 function isEmptyLayoutValue(value: string | null | undefined): boolean {
   return !value?.trim()
 }
@@ -42,6 +54,51 @@ export function mergeRefundLayoutFromReceipt(
   const merged: ResolvedThermalLayout = { ...refund }
 
   for (const field of REFUND_INHERIT_STRING_FIELDS) {
+    if (isEmptyLayoutValue(refund[field])) {
+      merged[field] = receipt[field]
+    }
+  }
+
+  for (const field of REFUND_INHERIT_BLOCK_FIELDS) {
+    if (field === "headerFontSize") {
+      if (isEmptyLayoutValue(refund.headerBlockText)) {
+        merged.headerFontSize = receipt.headerFontSize
+        merged.headerBlockBold = receipt.headerBlockBold
+      }
+      continue
+    }
+    if (field === "footerFontSize") {
+      if (isEmptyLayoutValue(refund.footerBlockText)) {
+        merged.footerFontSize = receipt.footerFontSize
+        merged.footerBlockBold = receipt.footerBlockBold
+      }
+      continue
+    }
+    if (field === "subHeaderFontSize") {
+      if (isEmptyLayoutValue(refund.subHeaderBlockText)) {
+        merged.subHeaderFontSize = receipt.subHeaderFontSize
+        merged.subHeaderBlockBold = receipt.subHeaderBlockBold
+      }
+      continue
+    }
+    if (field === "headerBlockBold") {
+      if (isEmptyLayoutValue(refund.headerBlockText)) {
+        merged.headerBlockBold = receipt.headerBlockBold
+      }
+      continue
+    }
+    if (field === "footerBlockBold") {
+      if (isEmptyLayoutValue(refund.footerBlockText)) {
+        merged.footerBlockBold = receipt.footerBlockBold
+      }
+      continue
+    }
+    if (field === "subHeaderBlockBold") {
+      if (isEmptyLayoutValue(refund.subHeaderBlockText)) {
+        merged.subHeaderBlockBold = receipt.subHeaderBlockBold
+      }
+      continue
+    }
     if (isEmptyLayoutValue(refund[field])) {
       merged[field] = receipt[field]
     }

@@ -19,7 +19,8 @@ export type PaymentVoucherTransitionContext = {
 export type PaymentVoucherSaveLineInput = {
   accountCode?: string
   glAccountId?: string
-  debit: number | string
+  debit?: number | string
+  credit?: number | string
   memo?: string | null
 }
 

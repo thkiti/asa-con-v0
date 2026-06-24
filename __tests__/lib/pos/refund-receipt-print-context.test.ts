@@ -1,5 +1,6 @@
 import { RefundKind } from "@/generated/prisma/client"
 import { loadRefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
+import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 
 describe("loadRefundReceiptPrintContext", () => {
@@ -121,7 +122,9 @@ describe("loadRefundReceiptPrintContext", () => {
     })
 
     expect(ctx.machineTaxId).toBeNull()
-    expect(ctx.thermalLayout).toEqual(DEFAULT_THERMAL_LAYOUTS.REFUND)
+    expect(ctx.thermalLayout).toEqual(
+      resolveThermalLayout("REFUND", DEFAULT_THERMAL_LAYOUTS)
+    )
     expect(ctx.originalReceiptNo).toBeNull()
   })
 })

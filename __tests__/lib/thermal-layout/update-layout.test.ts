@@ -1,7 +1,7 @@
 import { updateThermalDocumentLayout } from "@/lib/thermal-layout/update-layout"
 
 describe("updateThermalDocumentLayout", () => {
-  it("upserts layout row", async () => {
+  it("upserts layout row with block text and footer", async () => {
     const thermalUpsert = jest.fn().mockResolvedValue({
       documentType: "RECEIPT",
       headerLine1: "ASA",
@@ -12,6 +12,15 @@ describe("updateThermalDocumentLayout", () => {
       footerLine3: null,
       footerLine4: null,
       footerLine5: null,
+      headerBlockText: "ASA",
+      headerFontSize: "12",
+      headerBlockBold: true,
+      subHeaderBlockText: null,
+      subHeaderFontSize: "12",
+      subHeaderBlockBold: false,
+      footerBlockText: "Thanks",
+      footerFontSize: "12",
+      footerBlockBold: true,
       showAbbreviatedTaxTitle: true,
       showVatIncludedMessage: true,
     })
@@ -30,12 +39,22 @@ describe("updateThermalDocumentLayout", () => {
         footerLine3: null,
         footerLine4: null,
         footerLine5: null,
+        headerBlockText: "ASA",
+        headerFontSize: 12,
+        headerBlockBold: true,
+        subHeaderBlockText: null,
+        subHeaderFontSize: 12,
+        subHeaderBlockBold: false,
+        footerBlockText: "Thanks",
+        footerFontSize: 12,
+        footerBlockBold: true,
         showAbbreviatedTaxTitle: true,
         showVatIncludedMessage: true,
       }
     )
 
     expect(result.headerLine1).toBe("ASA")
+    expect(result.footerBlockText).toBe("Thanks")
     expect(thermalUpsert).toHaveBeenCalled()
   })
 })

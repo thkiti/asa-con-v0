@@ -2,7 +2,7 @@ import { Prisma } from "@/generated/prisma/client"
 import { createPaymentVoucherDraft } from "@/lib/finance/payment-voucher/payment-voucher-save"
 
 describe("createPaymentVoucherDraft", () => {
-  it("creates DRAFT with PAV entry number and debit-only lines", async () => {
+  it("creates DRAFT with PAV entry number and balanced debit/credit lines", async () => {
     const created = {
       id: "PAV-1",
       entryNo: "PAV-260001",
@@ -15,30 +15,34 @@ describe("createPaymentVoucherDraft", () => {
           debit: new Prisma.Decimal("1500"),
           credit: new Prisma.Decimal("0"),
         },
+        {
+          lineNo: 2,
+          glAccountId: "bank-1",
+          debit: new Prisma.Decimal("0"),
+          credit: new Prisma.Decimal("1500"),
+        },
       ],
     }
 
     const tx = {
       glAccount: {
-        findUnique: jest
-          .fn()
-          .mockResolvedValueOnce({
-            id: "bank-1",
-            code: "1100",
-            accountType: "ASSET",
-            isActive: true,
-            deleted: false,
-          })
-          .mockResolvedValueOnce({
-            id: "exp-1",
-            code: "5000",
-            isActive: true,
-            deleted: false,
-          }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: "bank-1",
+          code: "1100",
+          accountType: "ASSET",
+          isActive: true,
+          deleted: false,
+        }),
         findMany: jest.fn().mockResolvedValue([
           {
             id: "exp-1",
             code: "5000",
+            isActive: true,
+            deleted: false,
+          },
+          {
+            id: "bank-1",
+            code: "1100",
             isActive: true,
             deleted: false,
           },
@@ -57,7 +61,10 @@ describe("createPaymentVoucherDraft", () => {
       payFromAccountId: "bank-1",
       payeeName: "ABC Co.",
       createdByStaffId: "staff-1",
-      lines: [{ accountCode: "5000", debit: "1500" }],
+      lines: [
+        { accountCode: "5000", debit: "1500", credit: "0" },
+        { accountCode: "1100", debit: "0", credit: "1500" },
+      ],
       tx: tx as never,
     })
 

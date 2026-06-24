@@ -54,4 +54,25 @@ describe("resolveThermalLayout", () => {
     expect(merged.headerLine2).toBe("Receipt line 2")
     expect(merged.footerLine3).toBe("Footer 3")
   })
+
+  it("REFUND inherits sub-header block from RECEIPT when empty", () => {
+    const layouts = {
+      ...DEFAULT_THERMAL_LAYOUTS,
+      RECEIPT: {
+        ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+        subHeaderBlockText: "TAX INVOICE (ABB)",
+        subHeaderFontSize: 14,
+        subHeaderBlockBold: false,
+      },
+      REFUND: {
+        ...DEFAULT_THERMAL_LAYOUTS.REFUND,
+        subHeaderBlockText: null,
+      },
+    }
+
+    const resolved = resolveThermalLayout("REFUND", layouts)
+    expect(resolved.subHeaderBlockText).toBe("TAX INVOICE (ABB)")
+    expect(resolved.subHeaderFontSize).toBe(14)
+    expect(resolved.subHeaderBlockBold).toBe(false)
+  })
 })

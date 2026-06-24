@@ -18,7 +18,7 @@ import { postOperationalVoucher } from "@/lib/finance/posting"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 
 describe("postRevenueVoucher", () => {
-  it("materializes derived debit line and credit allocation lines", async () => {
+  it("posts stored voucher lines directly without derived balancing line", async () => {
     const entry = {
       id: "REV-1",
       entryNo: "REV-260001",
@@ -28,15 +28,31 @@ describe("postRevenueVoucher", () => {
       entryDate: new Date("2026-06-14T12:00:00.000Z"),
       receiveToAccountId: "bank-1",
       receivedFromName: "Customer A",
-      description: "Service fee",
+      description: "AR collection with fee",
       lines: [
         {
           lineNo: 1,
-          glAccountId: "rev-1",
+          glAccountId: "bank-1",
+          debit: new Prisma.Decimal("9700"),
+          credit: new Prisma.Decimal("0"),
+          memo: "Bank receipt",
+          glAccount: { code: "1021001", name: "Bank" },
+        },
+        {
+          lineNo: 2,
+          glAccountId: "fee-1",
+          debit: new Prisma.Decimal("300"),
+          credit: new Prisma.Decimal("0"),
+          memo: "Collection fee",
+          glAccount: { code: "5200", name: "Collection Fee" },
+        },
+        {
+          lineNo: 3,
+          glAccountId: "ar-1",
           debit: new Prisma.Decimal("0"),
-          credit: new Prisma.Decimal("3000"),
-          memo: null,
-          glAccount: { code: "4010", name: "Revenue" },
+          credit: new Prisma.Decimal("10000"),
+          memo: "AR clearance",
+          glAccount: { code: "1200", name: "Accounts Receivable" },
         },
       ],
     }
@@ -56,6 +72,26 @@ describe("postRevenueVoucher", () => {
           isActive: true,
           deleted: false,
         }),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "bank-1",
+            code: "1021001",
+            isActive: true,
+            deleted: false,
+          },
+          {
+            id: "fee-1",
+            code: "5200",
+            isActive: true,
+            deleted: false,
+          },
+          {
+            id: "ar-1",
+            code: "1200",
+            isActive: true,
+            deleted: false,
+          },
+        ]),
       },
     }
 
@@ -72,15 +108,22 @@ describe("postRevenueVoucher", () => {
         refNo: "REV-260001",
         lines: expect.arrayContaining([
           expect.objectContaining({
-            glAccountId: "rev-1",
-            credit: expect.anything(),
-          }),
-          expect.objectContaining({
             glAccountId: "bank-1",
             debit: expect.anything(),
+          }),
+          expect.objectContaining({
+            glAccountId: "fee-1",
+            debit: expect.anything(),
+          }),
+          expect.objectContaining({
+            glAccountId: "ar-1",
+            credit: expect.anything(),
           }),
         ]),
       })
     )
+
+    const postedLines = (postOperationalVoucher as jest.Mock).mock.calls[0][0].lines
+    expect(postedLines).toHaveLength(3)
   })
 })

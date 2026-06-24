@@ -18,7 +18,7 @@ import { postOperationalVoucher } from "@/lib/finance/posting"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 
 describe("postPaymentVoucher", () => {
-  it("materializes derived credit line and posts via kernel", async () => {
+  it("posts stored voucher lines directly without derived balancing line", async () => {
     const entry = {
       id: "PAV-1",
       entryNo: "PAV-260001",
@@ -28,15 +28,31 @@ describe("postPaymentVoucher", () => {
       entryDate: new Date("2026-06-14T12:00:00.000Z"),
       payFromAccountId: "bank-1",
       payeeName: "ABC Co.",
-      description: "Office supplies",
+      description: "Rent with WHT",
       lines: [
         {
           lineNo: 1,
-          glAccountId: "exp-1",
-          debit: new Prisma.Decimal("2000"),
+          glAccountId: "rent-1",
+          debit: new Prisma.Decimal("10000"),
           credit: new Prisma.Decimal("0"),
-          memo: null,
-          glAccount: { code: "5000", name: "Expense" },
+          memo: "Rent",
+          glAccount: { code: "5100", name: "Rent Expense" },
+        },
+        {
+          lineNo: 2,
+          glAccountId: "wht-1",
+          debit: new Prisma.Decimal("0"),
+          credit: new Prisma.Decimal("500"),
+          memo: "WHT",
+          glAccount: { code: "2200", name: "WHT Payable" },
+        },
+        {
+          lineNo: 3,
+          glAccountId: "bank-1",
+          debit: new Prisma.Decimal("0"),
+          credit: new Prisma.Decimal("9500"),
+          memo: "Bank",
+          glAccount: { code: "1100", name: "Bank" },
         },
       ],
     }
@@ -56,6 +72,26 @@ describe("postPaymentVoucher", () => {
           isActive: true,
           deleted: false,
         }),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "rent-1",
+            code: "5100",
+            isActive: true,
+            deleted: false,
+          },
+          {
+            id: "wht-1",
+            code: "2200",
+            isActive: true,
+            deleted: false,
+          },
+          {
+            id: "bank-1",
+            code: "1100",
+            isActive: true,
+            deleted: false,
+          },
+        ]),
       },
     }
 
@@ -70,18 +106,25 @@ describe("postPaymentVoucher", () => {
         refType: FINANCE_REF_TYPES.PAYMENT_VOUCHER,
         refId: "PAV-1",
         refNo: "PAV-260001",
-        lines: expect.arrayContaining([
+        lines: [
           expect.objectContaining({
-            glAccountId: "exp-1",
+            glAccountId: "rent-1",
             debit: expect.anything(),
             credit: expect.objectContaining({}),
+          }),
+          expect.objectContaining({
+            glAccountId: "wht-1",
+            credit: expect.anything(),
           }),
           expect.objectContaining({
             glAccountId: "bank-1",
             credit: expect.anything(),
           }),
-        ]),
+        ],
       })
     )
+
+    const postedLines = (postOperationalVoucher as jest.Mock).mock.calls[0][0].lines
+    expect(postedLines).toHaveLength(3)
   })
 })

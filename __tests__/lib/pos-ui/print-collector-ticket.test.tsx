@@ -75,14 +75,15 @@ describe("printCollectorTicket", () => {
     expect(document.body.classList.contains("thermal-clone-print-active")).toBe(true)
     expect(document.querySelector("[data-thermal-print-clone]")).not.toBeNull()
     expect(
-      document.querySelector('[data-thermal-print-source="collector"] pre')?.textContent
+      document.querySelector('[data-thermal-print-source="collector"]')?.textContent
     ).toContain("0101001-Widget")
   })
 
-  it("includes signature space in print source", () => {
-    expect(
-      document.querySelector('[data-testid="collector-ticket-signature-space"]')
-    ).not.toBeNull()
+  it("includes Phone No / Sign acknowledgement in print source", () => {
+    const text =
+      document.querySelector('[data-thermal-print-source="collector"]')?.textContent ?? ""
+    expect(text).toContain("Phone No")
+    expect(text).toContain("Sign")
   })
 
   it("rejects non-COLLECT payloads", () => {

@@ -10,6 +10,8 @@ import {
   padThermalLine,
   repeatThermalChar,
 } from "./format"
+import { buildTicketLayout } from "./build-ticket-layout"
+import { serializeTicketLayoutToText } from "./serialize-ticket-layout-text"
 
 function formatRowQty(q: number): string {
   if (Number.isInteger(q)) return String(q)
@@ -32,19 +34,15 @@ function formatDetailLine(
   return `${leftPart}${" ".repeat(Math.max(1, gap))}${rightPart}`
 }
 
-/** READ Z slip: Header → Group → Payment → Summary → Total → Footer. */
-export function buildReadZSlipText(
-  report: ReadReportPayload,
-  layout: ResolvedThermalLayout
-): string {
+/** Slip body only — header/footer are layout blocks. */
+export function buildReadZSlipBodyText(report: ReadReportPayload): string {
   if (report.mode !== "Z") {
-    throw new Error("buildReadZSlipText requires Z report")
+    throw new Error("buildReadZSlipBodyText requires Z report")
   }
 
   const w = THERMAL_COLUMNS
   const lines: string[] = []
 
-  appendThermalHeaderLines(lines, layout, w)
   const branchLine = centerThermalLine(`${report.branchCode} ${report.branchName}`.trim(), w)
   if (branchLine) lines.push(branchLine)
   lines.push(`Date ${report.bangkokDate}`.slice(0, w))
@@ -84,7 +82,19 @@ export function buildReadZSlipText(
   lines.push("")
   lines.push(padThermalLine("TOTAL", formatThermalMoney2(report.netTotal), w))
 
-  appendThermalFooterLines(lines, layout, w)
-  lines.push("")
   return lines.join("\n")
+}
+
+/** READ Z slip: Header → Group → Payment → Summary → Total → Footer. */
+export function buildReadZSlipText(
+  report: ReadReportPayload,
+  layout: ResolvedThermalLayout
+): string {
+  if (report.mode !== "Z") {
+    throw new Error("buildReadZSlipText requires Z report")
+  }
+
+  return serializeTicketLayoutToText(
+    buildTicketLayout({ documentType: "READ_Z", report, layout })
+  )
 }

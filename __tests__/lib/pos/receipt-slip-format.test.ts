@@ -247,6 +247,37 @@ describe("receipt-slip-format", () => {
     }
   )
 
+  it("skips empty header and footer blocks in slip text", () => {
+    const text = buildReceiptSlipText(
+      sampleContext({
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+          headerBlockText: null,
+          footerBlockText: null,
+          headerLine1: null,
+          footerLine1: null,
+        },
+      })
+    )
+    expect(text).not.toContain("ASA SERVICES")
+    expect(text).toContain("REC-SH001-202606-0001")
+    expect(text).not.toMatch(/Thank you/i)
+  })
+
+  it("renders header block line breaks", () => {
+    const text = buildReceiptSlipText(
+      sampleContext({
+        thermalLayout: {
+          ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+          headerBlockText: "Line one\nLine two",
+          footerBlockText: null,
+        },
+      })
+    )
+    expect(text).toContain("Line one")
+    expect(text).toContain("Line two")
+  })
+
   it("centers footer and Thai VAT lines", () => {
     const footerText = "Thank you for shopping"
     const text = buildReceiptSlipText(
@@ -332,7 +363,7 @@ describe("receipt-slip-format", () => {
     expect(detailLine).not.toMatch(/\n/)
   })
 
-  it("places abbreviated tax title in header before receipt info, not in footer", () => {
+  it("places abbreviated tax title after ref/staff, before item lines", () => {
     const text = buildReceiptSlipText(
       sampleContext({
         branchPhone: "02-111-2222",
@@ -346,11 +377,12 @@ describe("receipt-slip-format", () => {
     )
     const lines = text.split("\n")
     const taxTitleIdx = lines.findIndex((l) => l.includes("ใบกำกับภาษีอย่างย่อ"))
-    const receiptIdx = lines.findIndex((l) => l.includes("REC-SH001"))
+    const refIdx = lines.findIndex((l) => l.includes("Ref.") || l.includes("REC-SH001"))
     const changeIdx = lines.findIndex((l) => l.startsWith("CHANGE") || l.includes("CHANGE"))
     const vatMsgIdx = lines.findIndex((l) => l.includes("ราคาสินค้า"))
     expect(taxTitleIdx).toBeGreaterThan(-1)
-    expect(receiptIdx).toBeGreaterThan(taxTitleIdx)
+    expect(refIdx).toBeGreaterThan(-1)
+    expect(refIdx).toBeLessThan(taxTitleIdx)
     expect(vatMsgIdx).toBeGreaterThan(changeIdx)
     expect(lines.filter((l) => l.includes("ใบกำกับภาษีอย่างย่อ")).length).toBe(1)
     const afterTotals = lines.slice(changeIdx)
@@ -364,6 +396,7 @@ describe("receipt-slip-format", () => {
           ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
           headerLine1: "ASA SERVICES",
           footerLine1: "Thank you",
+          subHeaderBlockText: null,
           showAbbreviatedTaxTitle: false,
           showVatIncludedMessage: false,
         },
@@ -374,11 +407,14 @@ describe("receipt-slip-format", () => {
     expect(text).not.toContain("ราคาสินค้ารวมภาษีมูลค่าเพิ่มแล้ว")
   })
 
-  it("prints company tax and machine id from context", () => {
+  it("prints company tax and machine no from context", () => {
     const text = buildReceiptSlipText(sampleContext())
     expect(text).toContain("Tax ID 0123456789012")
-    expect(text).toContain("Machine ID MACH-001")
-    expect(text).toContain("ASA SERVICES")
+    expect(text).toContain("M/C No. MACH-001")
+    expect(text).toContain("SH001 • Shop One")
+    expect(text).toContain("REC-SH001-202606-0001")
+    expect(text).toContain("Ref.")
+    expect(text).toContain("Staff")
   })
 
   it("calculates VAT via total minus taxable", () => {
@@ -401,7 +437,7 @@ describe("receipt-slip-format", () => {
       })
     )
     expect(text).not.toContain("Tax ID")
-    expect(text).not.toContain("Machine ID")
+    expect(text).not.toContain("M/C No.")
     expect(text).toContain("Only footer")
   })
 

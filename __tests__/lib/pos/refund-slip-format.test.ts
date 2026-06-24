@@ -96,9 +96,12 @@ describe("buildRefundSlipText", () => {
     expect(text).not.toContain("Widget")
   })
 
-  it("does not include abbreviated tax sale title", () => {
+  it("includes receipt sub-header from inherited layout before refund body", () => {
     const text = buildRefundSlipText(sampleContext())
-    expect(text).not.toContain("ใบกำกับภาษีอย่างย่อ")
+    const subIdx = text.indexOf("ใบกำกับภาษีอย่างย่อ")
+    const refundTitleIdx = text.indexOf("REFUND RECEIPT")
+    expect(subIdx).toBeGreaterThan(-1)
+    expect(refundTitleIdx).toBeGreaterThan(subIdx)
   })
 
   it("keeps lines within receipt column width", () => {
@@ -111,16 +114,67 @@ describe("buildRefundSlipText", () => {
     expectSlipLinesWithinColumns(text)
   })
 
-  it("reuses footer lines from thermal layout", () => {
+  it("reuses footer block from receipt layout", () => {
+    const layouts = {
+      ...DEFAULT_THERMAL_LAYOUTS,
+      RECEIPT: {
+        ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+        footerBlockText: "Thank you",
+      },
+      REFUND: DEFAULT_THERMAL_LAYOUTS.REFUND,
+    }
     const text = buildRefundSlipText(
       sampleContext({
-        thermalLayout: {
-          ...DEFAULT_THERMAL_LAYOUTS.REFUND,
-          footerLine1: "Thank you",
-        },
+        thermalLayouts: layouts,
       })
     )
     expect(text).toContain("Thank you")
+  })
+
+  it("inherits receipt header and sub-header blocks in print text", () => {
+    const layouts = {
+      ...DEFAULT_THERMAL_LAYOUTS,
+      RECEIPT: {
+        ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+        headerBlockText: "ASA HEADER",
+        subHeaderBlockText: "SUB HEADER LINE",
+        footerBlockText: "ASA FOOTER",
+        showAbbreviatedTaxTitle: false,
+      },
+      REFUND: DEFAULT_THERMAL_LAYOUTS.REFUND,
+    }
+    const text = buildRefundSlipText(
+      sampleContext({
+        thermalLayouts: layouts,
+      })
+    )
+    expect(text).toContain("ASA HEADER")
+    expect(text).toContain("SUB HEADER LINE")
+    expect(text).toContain("ASA FOOTER")
+    expect(text).toContain("REFUND RECEIPT")
+    expect(text).toContain("REF-SH001-202606-0001")
+  })
+
+  it("places receipt footer before Phone No / Sign acknowledgement", () => {
+    const layouts = {
+      ...DEFAULT_THERMAL_LAYOUTS,
+      RECEIPT: {
+        ...DEFAULT_THERMAL_LAYOUTS.RECEIPT,
+        footerBlockText: "Footer thanks",
+      },
+      REFUND: DEFAULT_THERMAL_LAYOUTS.REFUND,
+    }
+    const text = buildRefundSlipText(
+      sampleContext({
+        thermalLayouts: layouts,
+      })
+    )
+    const footerIdx = text.indexOf("Footer thanks")
+    const phoneIdx = text.indexOf("Phone No")
+    const signIdx = text.indexOf("Sign")
+    expect(footerIdx).toBeGreaterThan(-1)
+    expect(phoneIdx).toBeGreaterThan(footerIdx)
+    expect(signIdx).toBeGreaterThan(phoneIdx)
   })
 
   it("includes customer acknowledgement section after footer", () => {
@@ -132,6 +186,11 @@ describe("buildRefundSlipText", () => {
     expect(phoneIdx).toBeGreaterThan(-1)
     expect(signIdx).toBeGreaterThan(phoneIdx)
     expect(phoneIdx).toBeGreaterThan(refundIdx)
-    expect(text).toContain("..............................")
+
+    const dotLine = ".".repeat(30)
+    const phoneBlock = text.slice(phoneIdx, signIdx)
+    const signBlock = text.slice(signIdx)
+    expect(phoneBlock.split(dotLine).length - 1).toBe(2)
+    expect(signBlock.split(dotLine).length - 1).toBe(3)
   })
 })

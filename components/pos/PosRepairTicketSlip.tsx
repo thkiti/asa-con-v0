@@ -1,32 +1,43 @@
 "use client"
 
-import { ThermalPrintSource, ThermalSlipPre } from "@/components/thermal/ThermalSlipPre"
-import { buildRepairTicketSlipText } from "@/lib/thermal/build-repair-ticket-slip"
+import { ThermalPrintSource } from "@/components/thermal/ThermalSlipPre"
+import { ThermalTicketSlipView } from "@/components/thermal/ThermalTicketSlipView"
+import { buildTicketLayout } from "@/lib/thermal/build-ticket-layout"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
 type PosRepairTicketSlipProps = {
   ticketNo: string
+  branchCode: string
   branchName: string
   issuedAt: string
   fileNames: string[]
   layout: ResolvedThermalLayout
+  staffId?: string
+  staffName?: string
 }
 
 export function PosRepairTicketSlip({
   ticketNo,
+  branchCode,
   branchName,
   issuedAt,
   fileNames,
   layout,
+  staffId,
+  staffName,
 }: PosRepairTicketSlipProps) {
-  const slipText = buildRepairTicketSlipText(
-    { ticketNo, branchName, issuedAt, fileNames },
-    layout
-  )
+  const ticketLayout = buildTicketLayout({
+    documentType: "REPAIR_TICKET",
+    ticket: { ticketNo, branchName, issuedAt, fileNames },
+    layout,
+    branchCode,
+    staffId,
+    staffName,
+  })
 
   return (
     <ThermalPrintSource kind="repair-ticket">
-      <ThermalSlipPre text={slipText} ariaLabel="Repair ticket" />
+      <ThermalTicketSlipView layout={ticketLayout} />
     </ThermalPrintSource>
   )
 }

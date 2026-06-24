@@ -18,6 +18,9 @@ describe("buildRepairTicketSlipText", () => {
     expect(text).toContain("REPAIR TICKET")
     expect(text).toContain("RT-SH001-202606-0001")
     expect(text).toContain("Photos (2)")
+    expect(text).not.toContain("Warning: bring this ticket")
+    expect(text).not.toContain("within 30 days")
+    expect(text).not.toContain("You may collect this ticket")
     for (const line of text.split("\n")) {
       if (!line.length) continue
       expect(line.length).toBeLessThanOrEqual(THERMAL_COLUMNS)

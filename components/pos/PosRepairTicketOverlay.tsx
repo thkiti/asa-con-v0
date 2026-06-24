@@ -187,6 +187,7 @@ export function PosRepairTicketOverlay({
                 <div className="mx-auto min-h-0 flex-1 overflow-y-auto">
                   <PosRepairTicketSlip
                     ticketNo={sessionTicketNo}
+                    branchCode={session.branchCode}
                     branchName={session.branchName}
                     issuedAt={receiptAt || new Date().toISOString()}
                     fileNames={sessionFileNames}

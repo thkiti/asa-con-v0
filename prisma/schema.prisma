@@ -498,9 +498,14 @@ model ThermalDocumentLayout {
   headerBlockText         String?             @db.Text
   headerFontSize          String              @default("12")
   headerBlockBold         Boolean             @default(true)
+  subHeaderBlockText      String?             @db.Text
+  subHeaderFontSize       String              @default("12")
+  subHeaderBlockBold      Boolean             @default(false)
   footerBlockText         String?             @db.Text
   footerFontSize          String              @default("12")
   footerBlockBold         Boolean             @default(true)
+  infoBlockFontSize       String              @default("14")
+  infoBlockBold           Boolean             @default(true)
   showAbbreviatedTaxTitle Boolean             @default(true)
   showVatIncludedMessage  Boolean             @default(true)
   updatedAt               DateTime            @updatedAt
