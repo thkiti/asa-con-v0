@@ -19,7 +19,6 @@ const readyReceipt = {
   documentArchiveId: "arch-1",
   pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
   pdfBlobUrl: null,
-  branch: { code: "SH001", name: "Shop One" },
   documentArchive: {
     status: "READY",
     pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
@@ -29,6 +28,7 @@ const readyReceipt = {
   sale: {
     total: { toFixed: () => "250.00" },
     staffId: "103",
+    branch: { code: "SH001", name: "Shop One" },
     payment: { method: "CASH" },
   },
 }

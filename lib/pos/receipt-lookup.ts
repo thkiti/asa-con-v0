@@ -84,7 +84,6 @@ function mapReceiptRow(
     id: string
     receiptNo: string
     issuedAt: Date
-    branch: { code: string; name: string }
     documentArchiveId: string | null
     pdfPath: string | null
     pdfBlobUrl: string | null
@@ -97,6 +96,7 @@ function mapReceiptRow(
     sale: {
       total: Prisma.Decimal
       staffId: string | null
+      branch: { code: string; name: string }
       payment: { method: string } | null
     }
   },
@@ -114,8 +114,8 @@ function mapReceiptRow(
     receiptId: receipt.id,
     receiptNo: receipt.receiptNo,
     issuedAt: receipt.issuedAt.toISOString(),
-    branchCode: receipt.branch.code,
-    branchName: receipt.branch.name,
+    branchCode: receipt.sale.branch.code,
+    branchName: receipt.sale.branch.name,
     staffDisplay: staffId
       ? formatCashierDisplay(staffId, staffNameByStaffId.get(staffId) ?? null)
       : null,
@@ -160,7 +160,6 @@ export async function searchReceiptLookup(
         : {}),
     },
     include: {
-      branch: { select: { code: true, name: true } },
       documentArchive: {
         select: {
           status: true,
@@ -173,6 +172,7 @@ export async function searchReceiptLookup(
         select: {
           total: true,
           staffId: true,
+          branch: { select: { code: true, name: true } },
           payment: { select: { method: true } },
         },
       },
