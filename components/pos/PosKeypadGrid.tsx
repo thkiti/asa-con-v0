@@ -7,12 +7,14 @@ import {
   POS_KEYPAD_PLACEHOLDER_CELLS,
 } from "@/lib/pos-ui/keypad-layout"
 import type { PosKeypadActionId, PosKeypadButtonVariant } from "@/lib/pos-ui/types"
+import { PosKeypadRefundSplitButton } from "./PosKeypadRefundSplitButton"
 
 const POS_KEYPAD_GHOST_SURFACE =
   "border-2 border-zinc-500/50 bg-zinc-400/30 shadow-inner cursor-not-allowed"
 
 type PosKeypadGridProps = {
   onAction: (id: PosKeypadActionId) => void
+  onReceiptLookup?: () => void
   disabled?: boolean
   printReportHighlighted?: boolean
   printReportLabel?: string
@@ -70,6 +72,7 @@ function labelLines(label: string, multiline?: boolean): string[] {
 
 export function PosKeypadGrid({
   onAction,
+  onReceiptLookup,
   disabled = false,
   printReportHighlighted = false,
   printReportLabel,
@@ -83,6 +86,22 @@ export function PosKeypadGrid({
       {POS_KEYPAD_BUTTONS.map((btn) => {
         const colSpan = btn.colSpan ?? 1
         const rowSpan = btn.rowSpan ?? 1
+
+        if (btn.id === "refund") {
+          return (
+            <PosKeypadRefundSplitButton
+              key={btn.id}
+              col={btn.col}
+              row={btn.row}
+              colSpan={colSpan}
+              rowSpan={rowSpan}
+              disabled={disabled}
+              onRefund={() => onAction("refund")}
+              onReceiptLookup={() => onReceiptLookup?.()}
+            />
+          )
+        }
+
         const isPrint = btn.id === "print-report"
         const label =
           buttonLabelOverrides?.[btn.id] ??

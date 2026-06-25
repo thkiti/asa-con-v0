@@ -10,11 +10,19 @@ jest.mock("@/lib/pos/checkout", () => ({
   checkout: jest.fn(),
 }))
 
+jest.mock("@/lib/pos/receipt-archive-after-checkout", () => ({
+  scheduleReceiptArchiveAfterCheckout: jest.fn(),
+}))
+
 import { getSession } from "@/lib/auth/session"
 import { checkout } from "@/lib/pos/checkout"
+import { scheduleReceiptArchiveAfterCheckout } from "@/lib/pos/receipt-archive-after-checkout"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
 const mockedCheckout = checkout as jest.MockedFunction<typeof checkout>
+const mockedScheduleArchive = scheduleReceiptArchiveAfterCheckout as jest.MockedFunction<
+  typeof scheduleReceiptArchiveAfterCheckout
+>
 
 const shopSession = {
   sessionId: "s1",
@@ -41,6 +49,7 @@ describe("POST /api/pos/checkout", () => {
   beforeEach(() => {
     mockedGetSession.mockReset()
     mockedCheckout.mockReset()
+    mockedScheduleArchive.mockReset()
   })
 
   it("calls checkout with session branch and CASH by default", async () => {
@@ -79,6 +88,11 @@ describe("POST /api/pos/checkout", () => {
       paymentMethod: "CASH",
       paidAmount: 0,
       lines: [{ productId: "p1", qty: 1 }],
+    })
+    expect(mockedScheduleArchive).toHaveBeenCalledWith({
+      receiptId: "rcpt-1",
+      saleId: "sale-1",
+      branchId: "branch-shop",
     })
   })
 

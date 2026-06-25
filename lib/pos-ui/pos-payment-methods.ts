@@ -44,7 +44,9 @@ const LEGACY_PAYMENT_RECEIPT_LABELS: Record<string, string> = {
   TRANSFER: "TRANSFER",
 }
 
-export const POS_BANK_TRANSFER_UPLOAD_LATER_LABEL = "Print Receipt - Upload Later"
+export const POS_PRINT_RECEIPT_LABEL = "Print Receipt"
+
+export const POS_BANK_TRANSFER_UPLOAD_LATER_LABEL = "Continue without slip"
 
 export function posCheckoutConfirmLabel(method: PosCheckoutPaymentMethod): string {
   return (

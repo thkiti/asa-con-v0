@@ -4,30 +4,9 @@ jest.mock("@/lib/auth/session", () => ({
   getSession: jest.fn(),
 }))
 
-jest.mock("fs/promises", () => ({
-  writeFile: jest.fn().mockResolvedValue(undefined),
-  mkdir: jest.fn().mockResolvedValue(undefined),
-}))
-
-jest.mock("@/lib/catalog-image/paths", () => {
-  const actual = jest.requireActual<typeof import("@/lib/catalog-image/paths")>(
-    "@/lib/catalog-image/paths"
-  )
-  return {
-    ...actual,
-    ensureCatalogImageDirs: jest.fn().mockResolvedValue(undefined),
-  }
-})
-
-jest.mock("@/lib/catalog-image/config", () => ({
-  getCatalogImageInputDir: jest.fn(() => "/tmp/catalog-input"),
-}))
-
 import { getSession } from "@/lib/auth/session"
-import fs from "fs/promises"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
-const mockedWriteFile = fs.writeFile as jest.Mock
 
 const hoSession = {
   sessionId: "s1",
@@ -46,7 +25,7 @@ describe("POST /api/operation/catalog-image/open-file", () => {
     mockedGetSession.mockResolvedValue(hoSession)
   })
 
-  it("writes selected PDF to input dir", async () => {
+  it("validates PDF and returns client-side metadata without server storage", async () => {
     const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46])
     const file = new File([pdfBytes], "catalog.pdf", { type: "application/pdf" })
     const formData = new FormData()
@@ -61,13 +40,11 @@ describe("POST /api/operation/catalog-image/open-file", () => {
 
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body.fileName).toMatch(/^catalog-[a-f0-9]{12}\.pdf$/)
-    expect(body.inputPath).toContain(body.fileName)
-    expect(body.originalFileName).toBe("catalog.pdf")
-    expect(mockedWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(body.fileName),
-      expect.any(Buffer)
-    )
+    expect(body).toEqual({
+      fileName: "catalog.pdf",
+      clientSide: true,
+      originalFileName: "catalog.pdf",
+    })
   })
 
   it("returns 400 when request body is not multipart form data", async () => {
@@ -86,7 +63,6 @@ describe("POST /api/operation/catalog-image/open-file", () => {
         code: "VALIDATION_ERROR",
       })
     )
-    expect(mockedWriteFile).not.toHaveBeenCalled()
   })
 
   it("returns 413 when multipart body is truncated or too large", async () => {
@@ -117,7 +93,6 @@ describe("POST /api/operation/catalog-image/open-file", () => {
         code: "PDF_FILE_TOO_LARGE",
       })
     )
-    expect(mockedWriteFile).not.toHaveBeenCalled()
   })
 
   it("returns 401 when unauthenticated", async () => {
@@ -131,6 +106,5 @@ describe("POST /api/operation/catalog-image/open-file", () => {
     )
 
     expect(res.status).toBe(401)
-    expect(mockedWriteFile).not.toHaveBeenCalled()
   })
 })

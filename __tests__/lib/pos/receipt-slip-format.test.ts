@@ -278,7 +278,7 @@ describe("receipt-slip-format", () => {
     expect(text).toContain("Line two")
   })
 
-  it("centers footer and Thai VAT lines", () => {
+  it("centers footer and abbreviated tax title", () => {
     const footerText = "Thank you for shopping"
     const text = buildReceiptSlipText(
       sampleContext({
@@ -294,12 +294,9 @@ describe("receipt-slip-format", () => {
     const lines = text.split("\n").filter((l) => l.length > 0)
     const taxHeader = lines.find((l) => l.includes("ใบกำกับภาษีอย่างย่อ"))!
     const footer = lines.find((l) => l.includes("Thank you"))!
-    const vatMessage = "ราคาสินค้ารวมภาษีมูลค่าเพิ่มแล้ว"
-    const vatLine = lines.find((l) => l.includes("ราคาสินค้า"))!
 
     expectLineCentered(taxHeader, "ใบกำกับภาษีอย่างย่อ")
-    expect(vatLine.length).toBe(RECEIPT_COLUMNS)
-    expect(vatLine.trim()).toBe(vatMessage.slice(0, RECEIPT_COLUMNS))
+    expect(text).not.toContain("ราคาสินค้ารวมภาษีมูลค่าเพิ่มแล้ว")
     expectLineCentered(footer, footerText)
     expect(centerReceiptLine(footerText, RECEIPT_COLUMNS)).toBe(footer)
   })
@@ -357,6 +354,7 @@ describe("receipt-slip-format", () => {
     const nameLine = slipLines.find((l) => l.includes("กุญแจ"))!
     const detailLine = slipLines.find((l) => l.includes("0101001=3x60"))!
     expect(nameLine.length).toBeLessThanOrEqual(RECEIPT_COLUMNS)
+    expect(nameLine.startsWith("ก")).toBe(true)
     expect(nameLine).toMatch(/\.\.\.$/)
     expect(detailLine.length).toBe(RECEIPT_COLUMNS)
     expectAmountInColumn(detailLine, "180.00", 6)
@@ -379,11 +377,10 @@ describe("receipt-slip-format", () => {
     const taxTitleIdx = lines.findIndex((l) => l.includes("ใบกำกับภาษีอย่างย่อ"))
     const refIdx = lines.findIndex((l) => l.includes("Ref.") || l.includes("REC-SH001"))
     const changeIdx = lines.findIndex((l) => l.startsWith("CHANGE") || l.includes("CHANGE"))
-    const vatMsgIdx = lines.findIndex((l) => l.includes("ราคาสินค้า"))
     expect(taxTitleIdx).toBeGreaterThan(-1)
     expect(refIdx).toBeGreaterThan(-1)
     expect(refIdx).toBeLessThan(taxTitleIdx)
-    expect(vatMsgIdx).toBeGreaterThan(changeIdx)
+    expect(text).not.toContain("ราคาสินค้ารวมภาษีมูลค่าเพิ่มแล้ว")
     expect(lines.filter((l) => l.includes("ใบกำกับภาษีอย่างย่อ")).length).toBe(1)
     const afterTotals = lines.slice(changeIdx)
     expect(afterTotals.some((l) => l.includes("ใบกำกับภาษีอย่างย่อ"))).toBe(false)

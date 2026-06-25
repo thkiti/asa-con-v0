@@ -13,7 +13,8 @@ import {
 
 export type SaveMatchedItemInput = {
   productCode: string
-  localFilePath: string
+  localFilePath?: string
+  pngBuffer?: Buffer
   replace?: boolean
 }
 
@@ -103,35 +104,61 @@ export async function saveMatchedCatalogImages(
         continue
       }
 
-      let sourcePath: string
-      try {
-        sourcePath = resolveWorkFilePath(item.localFilePath)
-      } catch (err) {
-        const message =
-          err instanceof CatalogImageError
-            ? err.message
-            : "Source path is invalid"
-        results.push({
-          productCode: safeCode,
-          finalFilePath,
-          finalFileName,
-          status: "ERROR",
-          error: message,
-        })
-        continue
-      }
+      const pngBuffer = item.pngBuffer
+      let sourcePath: string | null = null
+      if (pngBuffer) {
+        if (!Buffer.isBuffer(pngBuffer) || pngBuffer.length === 0) {
+          results.push({
+            productCode: safeCode,
+            finalFilePath,
+            finalFileName,
+            status: "ERROR",
+            error: "PNG image data is required",
+          })
+          continue
+        }
+      } else {
+        const localFilePath = String(item.localFilePath ?? "").trim()
+        if (!localFilePath) {
+          results.push({
+            productCode: safeCode,
+            finalFilePath,
+            finalFileName,
+            status: "ERROR",
+            error: "Source file path or PNG buffer is required",
+          })
+          continue
+        }
 
-      try {
-        await fs.access(sourcePath)
-      } catch {
-        results.push({
-          productCode: safeCode,
-          finalFilePath,
-          finalFileName,
-          status: "ERROR",
-          error: "Source file not found",
-        })
-        continue
+        try {
+          sourcePath = resolveWorkFilePath(localFilePath)
+        } catch (err) {
+          const message =
+            err instanceof CatalogImageError
+              ? err.message
+              : "Source path is invalid"
+          results.push({
+            productCode: safeCode,
+            finalFilePath,
+            finalFileName,
+            status: "ERROR",
+            error: message,
+          })
+          continue
+        }
+
+        try {
+          await fs.access(sourcePath)
+        } catch {
+          results.push({
+            productCode: safeCode,
+            finalFilePath,
+            finalFileName,
+            status: "ERROR",
+            error: "Source file not found",
+          })
+          continue
+        }
       }
 
       const replace = item.replace === true
@@ -151,7 +178,11 @@ export async function saveMatchedCatalogImages(
         await removeProductImageFilesForCode(imageDir, safeCode)
       }
 
-      await fs.copyFile(sourcePath, finalFilePath)
+      if (pngBuffer) {
+        await fs.writeFile(finalFilePath, pngBuffer)
+      } else if (sourcePath) {
+        await fs.copyFile(sourcePath, finalFilePath)
+      }
       results.push({
         productCode: safeCode,
         finalFilePath,

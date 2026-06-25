@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
+import { DocumentArchiveError } from "@/lib/document-archive/errors"
 import { PosLookupError } from "@/lib/pos/pos-errors"
+import { ReceiptLookupError } from "@/lib/pos/receipt-lookup-errors"
 import { WorktimeError } from "@/lib/pos/worktime-errors"
 import { StockDocumentAuthError } from "@/lib/stock/document-read/document-access"
 
@@ -19,6 +21,20 @@ export function posApiErrorResponse(err: unknown, logLabel: string): NextRespons
   }
 
   if (err instanceof PosLookupError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: err.httpStatus }
+    )
+  }
+
+  if (err instanceof ReceiptLookupError) {
+    return NextResponse.json(
+      { error: err.message, code: err.code },
+      { status: err.httpStatus }
+    )
+  }
+
+  if (err instanceof DocumentArchiveError) {
     return NextResponse.json(
       { error: err.message, code: err.code },
       { status: err.httpStatus }

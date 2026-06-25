@@ -2,9 +2,9 @@
  * @jest-environment jsdom
  */
 import {
-  POS_CHECKOUT_PAYMENT_DEFAULT,
+  POS_BANK_TRANSFER_UPLOAD_LATER_LABEL,
   POS_CHECKOUT_PAYMENT_OPTIONS,
-  type PosCheckoutPaymentMethod,
+  POS_PRINT_RECEIPT_LABEL,
 } from "@/lib/pos-ui/pos-payment-methods"
 import { act, type ComponentProps } from "react"
 import { createRoot, type Root } from "react-dom/client"
@@ -21,7 +21,6 @@ import {
   captureVideoFrame,
   startCheckoutCameraStream,
 } from "@/lib/pos-ui/capture-video-frame"
-import { POS_BANK_TRANSFER_UPLOAD_LATER_LABEL } from "@/lib/pos-ui/pos-payment-methods"
 
 const mockedCapture = captureVideoFrame as jest.MockedFunction<typeof captureVideoFrame>
 const mockedStartCamera = startCheckoutCameraStream as jest.MockedFunction<
@@ -51,12 +50,7 @@ function renderOverlay(props: Partial<ComponentProps<typeof PosCheckoutOverlay>>
     lines: sampleLines,
     pending: false,
     error: null,
-    success: null,
-    onConfirm: () => {},
-    onBankTransferCapture: () => {},
-    onBankTransferUploadLater: () => {},
-    onPrintReceiptAndNewSale: () => {},
-    onNewSaleWithoutPrint: () => {},
+    onPrintReceipt: () => {},
     onClose: () => {},
   }
 
@@ -75,6 +69,16 @@ function renderOverlay(props: Partial<ComponentProps<typeof PosCheckoutOverlay>>
   }
 }
 
+function clickButton(container: ParentNode, label: string | RegExp) {
+  const button = [...container.querySelectorAll("button")].find((btn) =>
+    typeof label === "string" ? btn.textContent?.includes(label) : label.test(btn.textContent ?? "")
+  )
+  act(() => {
+    button?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+  })
+  return button
+}
+
 describe("PosCheckoutOverlay", () => {
   beforeEach(() => {
     mockedCapture.mockReset()
@@ -82,123 +86,174 @@ describe("PosCheckoutOverlay", () => {
     mockedStartCamera.mockResolvedValue({} as MediaStream)
   })
 
-  it("shows three payment method buttons and defaults to CASH", () => {
+  it("shows three payment method buttons without an immediate confirm button", () => {
     const { container, unmount } = renderOverlay()
 
     expect(POS_CHECKOUT_PAYMENT_OPTIONS).toHaveLength(3)
     expect(container.textContent).toContain("Cash")
     expect(container.textContent).toContain("Card")
     expect(container.textContent).toContain("Bank Transfer")
+    expect(container.textContent).not.toContain("Pay CASH")
+    expect(container.textContent).not.toContain("Sale complete")
 
-    const cashButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Cash")
-    )
-    expect(cashButton?.getAttribute("aria-pressed")).toBe("true")
-    expect(container.textContent).toContain("Pay CASH")
+    unmount()
+  })
+
+  it("cash: valid amount paid shows summary and Print Receipt calls checkout input", () => {
+    const onPrintReceipt = jest.fn()
+    const { container, unmount } = renderOverlay({ onPrintReceipt })
+
+    clickButton(container, "Cash")
+
+    const input = container.querySelector(
+      '[data-testid="pos-checkout-amount-paid"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(input, "150")
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    clickButton(container, "Continue")
+
+    expect(container.textContent).toContain("Total Amount")
+    expect(container.textContent).toContain("Amount Received")
+    expect(container.textContent).toContain("Change Money")
+    expect(container.textContent).toContain("50.00")
+
+    clickButton(container, POS_PRINT_RECEIPT_LABEL)
+
+    expect(onPrintReceipt).toHaveBeenCalledWith({
+      paymentMethod: "CASH",
+      paidAmount: 150,
+      bankTransferEvidence: undefined,
+    })
+
+    unmount()
+  })
+
+  it("cash: amount paid below total shows error and does not print", () => {
+    const onPrintReceipt = jest.fn()
+    const { container, unmount } = renderOverlay({ onPrintReceipt })
+
+    clickButton(container, "Cash")
+
+    const input = container.querySelector(
+      '[data-testid="pos-checkout-amount-paid"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(input, "50")
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    act(() => {
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
+    })
+
+    expect(container.querySelector('[data-testid="pos-checkout-amount-error"]')).toBeTruthy()
+    expect(onPrintReceipt).not.toHaveBeenCalled()
+
+    unmount()
+  })
+
+  it("card: shows zero change summary and Print Receipt calls checkout input", () => {
+    const onPrintReceipt = jest.fn()
+    const { container, unmount } = renderOverlay({ onPrintReceipt })
+
+    clickButton(container, "Card")
+
+    expect(container.textContent).toContain("Total Amount")
+    expect(container.textContent).toContain("Amount Received")
+    expect(container.textContent).toContain("100.00")
+    expect(container.textContent).toContain("Change Money")
+    expect(container.textContent).toContain("0.00")
+
+    clickButton(container, POS_PRINT_RECEIPT_LABEL)
+
+    expect(onPrintReceipt).toHaveBeenCalledWith({
+      paymentMethod: "CARD",
+      paidAmount: 100,
+      bankTransferEvidence: undefined,
+    })
 
     unmount()
   })
 
   it("opens bank capture view when BANK TRANSFER is selected", () => {
-    const onBankTransferCapture = jest.fn()
-    const { container, unmount } = renderOverlay({ onBankTransferCapture })
+    const { container, unmount } = renderOverlay()
 
-    const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Bank Transfer")
-    )
+    clickButton(container, "Bank Transfer")
 
-    act(() => {
-      bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    })
-
-    expect(container.textContent).toContain("Capture & Print")
-    expect(container.textContent).not.toContain("Pay BANK TRANSFER")
+    expect(container.textContent).toContain("Capture Slip")
+    expect(container.textContent).not.toContain(POS_PRINT_RECEIPT_LABEL)
 
     unmount()
   })
 
-  it("calls onBankTransferCapture when capture succeeds", async () => {
-    const onBankTransferCapture = jest.fn()
+  it("bank transfer: capture success advances to Print Receipt confirm", async () => {
+    const onPrintReceipt = jest.fn()
     const blob = new Blob(["jpeg"], { type: "image/jpeg" })
     mockedCapture.mockResolvedValue(blob)
 
-    const { container, unmount } = renderOverlay({ onBankTransferCapture })
+    const { container, unmount } = renderOverlay({ onPrintReceipt })
 
-    const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Bank Transfer")
-    )
-    act(() => {
-      bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    })
-
-    const captureButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Capture & Print")
-    )
-
+    clickButton(container, "Bank Transfer")
+    clickButton(container, "Capture Slip")
     await act(async () => {
-      captureButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
       await Promise.resolve()
     })
 
-    expect(onBankTransferCapture).toHaveBeenCalledWith(blob)
+    expect(container.textContent).toContain(POS_PRINT_RECEIPT_LABEL)
+    clickButton(container, POS_PRINT_RECEIPT_LABEL)
+
+    expect(onPrintReceipt).toHaveBeenCalledWith({
+      paymentMethod: "BANK_TRANSFER",
+      paidAmount: 100,
+      bankTransferEvidence: blob,
+    })
+
     unmount()
   })
 
-  it("offers upload-later checkout when capture fails", async () => {
-    const onBankTransferCapture = jest.fn()
-    const onBankTransferUploadLater = jest.fn()
+  it("bank transfer: capture failure allows continue without slip then Print Receipt", async () => {
+    const onPrintReceipt = jest.fn()
     mockedCapture.mockResolvedValue(null)
 
-    const { container, unmount } = renderOverlay({
-      onBankTransferCapture,
-      onBankTransferUploadLater,
-    })
+    const { container, unmount } = renderOverlay({ onPrintReceipt })
 
-    const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Bank Transfer")
-    )
-    act(() => {
-      bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    })
-
-    const captureButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Capture & Print")
-    )
-
+    clickButton(container, "Bank Transfer")
+    clickButton(container, "Capture Slip")
     await act(async () => {
-      captureButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
       await Promise.resolve()
     })
 
-    expect(onBankTransferCapture).not.toHaveBeenCalled()
-    expect(container.textContent).toContain("Capture failed")
     expect(container.textContent).toContain(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+    clickButton(container, POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
 
-    const uploadLaterButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
-    )
+    expect(container.textContent).toContain(POS_PRINT_RECEIPT_LABEL)
+    clickButton(container, POS_PRINT_RECEIPT_LABEL)
 
-    act(() => {
-      uploadLaterButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    expect(onPrintReceipt).toHaveBeenCalledWith({
+      paymentMethod: "BANK_TRANSFER",
+      paidAmount: 100,
+      bankTransferEvidence: null,
     })
 
-    expect(onBankTransferUploadLater).toHaveBeenCalledTimes(1)
     unmount()
   })
 
-  it("offers upload-later checkout when camera is unavailable", async () => {
-    const onBankTransferUploadLater = jest.fn()
+  it("bank transfer: camera unavailable offers continue without slip", async () => {
+    const onPrintReceipt = jest.fn()
     mockedStartCamera.mockResolvedValue(null)
 
-    const { container, unmount } = renderOverlay({ onBankTransferUploadLater })
+    const { container, unmount } = renderOverlay({ onPrintReceipt })
 
-    const bankTransferButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Bank Transfer")
-    )
-    act(() => {
-      bankTransferButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    })
-
+    clickButton(container, "Bank Transfer")
     await act(async () => {
       await Promise.resolve()
     })
@@ -206,36 +261,26 @@ describe("PosCheckoutOverlay", () => {
     expect(container.textContent).toContain("Could not open camera")
     expect(container.textContent).toContain(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
 
-    const uploadLaterButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
-    )
-    act(() => {
-      uploadLaterButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    clickButton(container, POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+    clickButton(container, POS_PRINT_RECEIPT_LABEL)
+
+    expect(onPrintReceipt).toHaveBeenCalledWith({
+      paymentMethod: "BANK_TRANSFER",
+      paidAmount: 100,
+      bankTransferEvidence: null,
     })
 
-    expect(onBankTransferUploadLater).toHaveBeenCalledTimes(1)
     unmount()
   })
 
-  it("confirms CASH checkout via onConfirm", () => {
-    const onConfirm = jest.fn()
-    const { container, unmount } = renderOverlay({ onConfirm })
+  it("shows server checkout error on confirm screen without resetting", () => {
+    const { container, unmount } = renderOverlay({ error: "Checkout failed" })
 
-    const confirmButton = [...container.querySelectorAll("button")].find((btn) =>
-      btn.textContent?.includes("Pay CASH")
-    )
+    clickButton(container, "Card")
 
-    act(() => {
-      confirmButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }))
-    })
+    expect(container.textContent).toContain("Checkout failed")
+    expect(container.textContent).not.toContain("Sale complete")
 
-    expect(onConfirm).toHaveBeenCalledWith(
-      "CASH" satisfies PosCheckoutPaymentMethod
-    )
     unmount()
-  })
-
-  it("defaults payment method constant is CASH", () => {
-    expect(POS_CHECKOUT_PAYMENT_DEFAULT).toBe("CASH")
   })
 })

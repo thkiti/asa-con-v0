@@ -399,6 +399,44 @@ model Payment {
   paymentEvidence PaymentEvidence?
 }
 
+enum DocumentArchiveStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum DocumentArchiveType {
+  RECEIPT
+}
+
+model DocumentArchive {
+  id              String                @id @default(uuid())
+  documentType    DocumentArchiveType
+  documentId      String
+  documentNo      String
+  legalEntityId   String?
+  branchId        String?
+
+  pdfPath         String?
+  pdfBlobUrl      String?
+  snapshotJson    Json?
+  snapshotVersion Int
+
+  status          DocumentArchiveStatus @default(PENDING)
+  generatedAt     DateTime?
+  errorMessage    String?               @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  receipt Receipt?
+
+  @@unique([documentType, documentId])
+  @@index([documentType, documentNo])
+  @@index([branchId, documentType, createdAt])
+  @@index([status])
+}
+
 model Receipt {
   id        String   @id @default(uuid())
   saleId    String   @unique
@@ -406,7 +444,13 @@ model Receipt {
   receiptNo String
   issuedAt  DateTime @default(now())
 
+  documentArchiveId String?   @unique
+  pdfPath           String?
+  pdfBlobUrl        String?
+  pdfGeneratedAt    DateTime?
+
   sale              Sale              @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  documentArchive   DocumentArchive?  @relation(fields: [documentArchiveId], references: [id])
   refundsAsOriginal Refund[]          @relation("OriginalReceipt")
   paymentEvidence   PaymentEvidence?
 

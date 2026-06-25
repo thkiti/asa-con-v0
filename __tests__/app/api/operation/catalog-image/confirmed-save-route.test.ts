@@ -6,15 +6,23 @@ jest.mock("@/lib/auth/session", () => ({
 
 jest.mock("@/lib/catalog-image/confirmed-save", () => ({
   confirmedSaveCatalogImages: jest.fn(),
+  confirmedSaveCatalogImagesFromBlobs: jest.fn(),
 }))
 
 import { getSession } from "@/lib/auth/session"
-import { confirmedSaveCatalogImages } from "@/lib/catalog-image/confirmed-save"
+import {
+  confirmedSaveCatalogImages,
+  confirmedSaveCatalogImagesFromBlobs,
+} from "@/lib/catalog-image/confirmed-save"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
 const mockedConfirmedSave = confirmedSaveCatalogImages as jest.MockedFunction<
   typeof confirmedSaveCatalogImages
 >
+const mockedConfirmedSaveBlobs =
+  confirmedSaveCatalogImagesFromBlobs as jest.MockedFunction<
+    typeof confirmedSaveCatalogImagesFromBlobs
+  >
 
 const hoSession = {
   sessionId: "s1",
@@ -44,9 +52,54 @@ describe("POST /api/operation/catalog-image/confirmed-save", () => {
         },
       ],
     })
+    mockedConfirmedSaveBlobs.mockResolvedValue({
+      batchId: "batch-blob-1",
+      finalDir: "D:/work/final",
+      savedCount: 1,
+      items: [
+        {
+          sourceSlot: 1,
+          productCode: "0101015",
+          finalFileName: "0101015.png",
+          status: "SAVED",
+        },
+      ],
+    })
   })
 
-  it("delegates to confirmedSaveCatalogImages", async () => {
+  it("delegates multipart blob save to confirmedSaveCatalogImagesFromBlobs", async () => {
+    const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
+    const formData = new FormData()
+    formData.append(
+      "meta",
+      JSON.stringify({
+        assignedSlots: [{ sourceSlot: 1, productCode: "0101015" }],
+      })
+    )
+    formData.append(
+      "slot-1",
+      new File([pngBytes], "0101015.png", { type: "image/png" })
+    )
+
+    const res = await POST(
+      new Request("http://localhost/api/operation/catalog-image/confirmed-save", {
+        method: "POST",
+        body: formData,
+      })
+    )
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual(
+      expect.objectContaining({
+        savedCount: 1,
+        batchId: "batch-blob-1",
+      })
+    )
+    expect(mockedConfirmedSaveBlobs).toHaveBeenCalled()
+    expect(mockedConfirmedSave).not.toHaveBeenCalled()
+  })
+
+  it("delegates JSON save to confirmedSaveCatalogImages", async () => {
     const res = await POST(
       new Request("http://localhost/api/operation/catalog-image/confirmed-save", {
         method: "POST",

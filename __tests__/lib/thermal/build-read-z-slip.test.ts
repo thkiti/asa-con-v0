@@ -14,8 +14,9 @@ const baseReport: ReadReportPayload = {
   branchName: "Chidlom",
   groupLines: [{ lineKey: "1", displayLeft: "010-Sample", qty: 1, amount: 60 }],
   paymentLines: [
-    { key: "CASH", label: "Cash", amount: 60 },
-    { key: "CREDIT_CARD", label: "Credit Card", amount: 0 },
+    { key: "CASH", label: "CASH", amount: 60 },
+    { key: "CREDIT_CARD", label: "CREDIT CARD", amount: 0 },
+    { key: "BANK_TRANSFER", label: "BANK TRANSFER", amount: 0 },
   ],
   grandTotal: 60,
   saleCount: 1,
@@ -32,7 +33,7 @@ describe("buildReadZSlipText", () => {
     expect(text).toContain("SH001")
     expect(text).toContain("Receipts")
     expect(text).toContain("Net sales")
-    expect(text).toContain("Cash")
+    expect(text).toContain("CASH")
     expect(text).toContain("010-Sample")
     for (const line of text.split("\n")) {
       if (!line.length) continue
@@ -57,7 +58,7 @@ describe("buildReadZSlipText", () => {
 
     const groupIdx = lines.findIndex((line) => line.includes("Group Code-Name"))
     const sampleIdx = lines.findIndex((line) => line.includes("010-Sample"))
-    const cashIdx = lines.findIndex((line) => line.includes("Cash"))
+    const cashIdx = lines.findIndex((line) => line.startsWith("CASH"))
     const receiptsIdx = lines.findIndex((line) => line.startsWith("Receipts"))
     const totalIdx = lines.findIndex((line) => line.trim().startsWith("TOTAL"))
     const footerIdx = lines.findIndex((line) => line.includes("Thank you"))
@@ -104,6 +105,30 @@ describe("buildReadZSlipText", () => {
     expect(text).toContain("0101902-Home Large")
     expect(text).toContain("5100900-Ladies Heels")
     expect(text).not.toContain("0100900")
+  })
+
+  it("prints consolidated payment summary lines for READ Z", () => {
+    const layout = resolveThermalLayout("READ_Z", DEFAULT_THERMAL_LAYOUTS)
+    const text = buildReadZSlipText(
+      {
+        ...baseReport,
+        paymentLines: [
+          { key: "CASH", label: "CASH", amount: 10 },
+          { key: "CREDIT_CARD", label: "CREDIT CARD", amount: 20 },
+          { key: "BANK_TRANSFER", label: "BANK TRANSFER", amount: 30 },
+        ],
+        grandTotal: 60,
+        netTotal: 60,
+      },
+      layout
+    )
+
+    expect(text).toContain("CASH")
+    expect(text).toContain("CREDIT CARD")
+    expect(text).toContain("BANK TRANSFER")
+    expect(text).not.toContain("PROMPT PAY")
+    expect(text).not.toContain("QR CODE")
+    expect(text.split("\n").some((line) => line.trim() === "TRANSFER")).toBe(false)
   })
 
   it("requires Z mode", () => {

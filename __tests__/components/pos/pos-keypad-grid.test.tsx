@@ -73,9 +73,37 @@ describe("PosKeypadGrid", () => {
     const refundBtn = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent?.trim() === "REFUND"
     )
+    const lookupBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "REC. LOOKUP"
+    )
     expect(refundBtn?.disabled).toBe(true)
+    expect(lookupBtn?.disabled).toBe(true)
     expect(refundBtn?.className).not.toContain("cursor-pointer")
-    expect(refundBtn?.className).toContain("disabled:cursor-not-allowed")
+    expect(refundBtn?.className).toContain("cursor-not-allowed")
+
+    act(() => root.unmount())
+    document.body.removeChild(container)
+  })
+
+  it("calls onReceiptLookup from split button lower half", () => {
+    const onReceiptLookup = jest.fn()
+    const container = document.createElement("div")
+    document.body.appendChild(container)
+    const root: Root = createRoot(container)
+    act(() => {
+      root.render(
+        <PosKeypadGrid onAction={() => {}} onReceiptLookup={onReceiptLookup} />
+      )
+    })
+
+    const lookupBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "REC. LOOKUP"
+    )
+    expect(lookupBtn).toBeTruthy()
+    act(() => {
+      lookupBtn!.click()
+    })
+    expect(onReceiptLookup).toHaveBeenCalledTimes(1)
 
     act(() => root.unmount())
     document.body.removeChild(container)

@@ -81,6 +81,9 @@ describe("PosSaleReceiptSlip", () => {
 
     const mono = container.querySelector("[data-testid='thermal-ticket-body']")
     expect(mono).toBeTruthy()
+    const productLine = mono?.querySelector(".receipt-setup-mono-text-line")
+    expect(productLine?.textContent).toBe("Widget")
+    expect(productLine?.classList.contains("text-center")).toBe(false)
 
     const refStaff = container.querySelector("[data-testid='receipt-slip-ref-staff']")
     expect(refStaff?.classList.contains(RECEIPT_SLIP_PROPORTIONAL_CLASS)).toBe(true)

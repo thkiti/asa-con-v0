@@ -194,6 +194,12 @@ function buildSectionItems(
           "Review receipts and bank-transfer slips by shop and month"
         ),
         available(
+          "receipt-lookup",
+          "Receipt Lookup",
+          "/shop/receipt-lookup",
+          "Search archived receipt PDFs by number and date"
+        ),
+        available(
           "catalog-image",
           "Catalog Image",
           "/operations/catalog-image",

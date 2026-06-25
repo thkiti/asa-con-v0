@@ -2,6 +2,7 @@ import path from "path"
 
 const mockAccess = jest.fn()
 const mockCopyFile = jest.fn()
+const mockWriteFile = jest.fn()
 const mockMkdir = jest.fn()
 const mockUnlink = jest.fn()
 const mockRm = jest.fn()
@@ -9,6 +10,7 @@ const mockRm = jest.fn()
 jest.mock("fs/promises", () => ({
   access: (...args: unknown[]) => mockAccess(...args),
   copyFile: (...args: unknown[]) => mockCopyFile(...args),
+  writeFile: (...args: unknown[]) => mockWriteFile(...args),
   mkdir: (...args: unknown[]) => mockMkdir(...args),
   unlink: (...args: unknown[]) => mockUnlink(...args),
   rm: (...args: unknown[]) => mockRm(...args),
@@ -41,6 +43,7 @@ describe("saveMatchedCatalogImages", () => {
     process.env.CATALOG_PRODUCT_IMAGE_DIR = imageDir
     mockMkdir.mockResolvedValue(undefined)
     mockCopyFile.mockResolvedValue(undefined)
+    mockWriteFile.mockResolvedValue(undefined)
     mockUnlink.mockResolvedValue(undefined)
   })
 
@@ -62,6 +65,30 @@ describe("saveMatchedCatalogImages", () => {
       throw new Error("ENOENT")
     })
   }
+
+  it("writes PNG buffer to catalog product images folder", async () => {
+    const db = createDb()
+    mockSourceOnly()
+    const pngBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47])
+
+    const results = await saveMatchedCatalogImages(db, [
+      {
+        productCode: "0101015",
+        pngBuffer,
+      },
+    ])
+
+    expect(results).toEqual([
+      {
+        productCode: "0101015",
+        finalFilePath: finalPath,
+        finalFileName: "0101015.png",
+        status: "SAVED",
+      },
+    ])
+    expect(mockWriteFile).toHaveBeenCalledWith(finalPath, pngBuffer)
+    expect(mockCopyFile).not.toHaveBeenCalled()
+  })
 
   it("copies file to catalog product images folder", async () => {
     const db = createDb()

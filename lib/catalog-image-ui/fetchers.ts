@@ -42,14 +42,36 @@ function isPdfFile(file: File): boolean {
   return type === "application/pdf" || type === "application/x-pdf"
 }
 
-function toUploadPdfFile(file: File): File {
-  const type = file.type || "application/pdf"
-  return new File([file], file.name, { type, lastModified: file.lastModified })
+export function buildConfirmedSaveBlobFormData(params: {
+  assignedSlots: Array<{ sourceSlot: number; productCode: string; blob: Blob }>
+  replace?: boolean
+}): FormData {
+  const formData = new FormData()
+  formData.append(
+    "meta",
+    JSON.stringify({
+      assignedSlots: params.assignedSlots.map((slot) => ({
+        sourceSlot: slot.sourceSlot,
+        productCode: slot.productCode,
+      })),
+      replace: params.replace === true,
+    })
+  )
+
+  for (const slot of params.assignedSlots) {
+    formData.append(
+      `slot-${slot.sourceSlot}`,
+      slot.blob,
+      `${slot.productCode}.png`
+    )
+  }
+
+  return formData
 }
 
 export async function fetchCatalogImageOpenFile(
   file: File
-): Promise<{ fileName: string; inputPath: string; originalFileName?: string }> {
+): Promise<{ fileName: string; clientSide: true; originalFileName?: string }> {
   if (!(file instanceof File) || file.size <= 0) {
     throw new CatalogImageUiError(
       "PDF file is required",
@@ -66,19 +88,10 @@ export async function fetchCatalogImageOpenFile(
     )
   }
 
-  const uploadFile = toUploadPdfFile(file)
-  const formData = new FormData()
-  formData.append("file", uploadFile, uploadFile.name)
-
-  const res = await fetch("/api/operation/catalog-image/open-file", {
-    method: "POST",
-    body: formData,
-  })
-  if (!res.ok) throw await parseJsonError(res)
-  return (await res.json()) as {
-    fileName: string
-    inputPath: string
-    originalFileName?: string
+  return {
+    fileName: file.name,
+    clientSide: true,
+    originalFileName: file.name,
   }
 }
 
@@ -211,6 +224,17 @@ export async function fetchCatalogImageConfirmedSave(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
+  })
+  if (!res.ok) throw await parseJsonError(res)
+  return (await res.json()) as CatalogImageConfirmedSaveResult
+}
+
+export async function fetchCatalogImageConfirmedSaveBlobs(
+  formData: FormData
+): Promise<CatalogImageConfirmedSaveResult> {
+  const res = await fetch("/api/operation/catalog-image/confirmed-save", {
+    method: "POST",
+    body: formData,
   })
   if (!res.ok) throw await parseJsonError(res)
   return (await res.json()) as CatalogImageConfirmedSaveResult

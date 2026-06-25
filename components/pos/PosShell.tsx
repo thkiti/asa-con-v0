@@ -1,6 +1,9 @@
 "use client"
 
-import type { PosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
+import type { RefObject } from "react"
+import type {
+  PosCheckoutPrintReceiptInput,
+} from "@/components/pos/PosCheckoutOverlay"
 import { PosBarcodeCapture } from "./PosBarcodeCapture"
 import { PosKeypadGrid } from "./PosKeypadGrid"
 import { PosCheckoutOverlay } from "./PosCheckoutOverlay"
@@ -14,6 +17,7 @@ import { PosStaffEvidenceOverlay } from "./PosStaffEvidenceOverlay"
 import { PosTargetVsSalesOverlay } from "./PosTargetVsSalesOverlay"
 import { PosWorktimeOverlay } from "./PosWorktimeOverlay"
 import { PosReceiptPanel } from "./PosReceiptPanel"
+import type { PosReceiptLookupPanelHandle } from "./PosReceiptLookupPanel"
 import { PosKeypadMessageBlock } from "./PosKeypadMessageBlock"
 import { PosEvidencePendingOverlay } from "./PosEvidencePendingOverlay"
 import { PosSessionBanner } from "./PosSessionBanner"
@@ -39,6 +43,13 @@ type PosShellProps = {
   onBarcodeChange: (value: string) => void
   onBarcodeSubmit: (value: string) => void
   onKeypadAction: (id: PosKeypadActionId) => void
+  onReceiptLookup?: () => void
+  receiptLookupOpen?: boolean
+  onReceiptLookupClose?: () => void
+  receiptLookupRunningNo?: string
+  onReceiptLookupRunningNoChange?: (value: string) => void
+  receiptLookupFocusRequestId?: number
+  receiptLookupPanelRef?: RefObject<PosReceiptLookupPanelHandle | null>
   cartLines: readonly PosCartLine[]
   cartLookupError: string | null
   onIncrementQty: (productId: string) => void
@@ -49,18 +60,8 @@ type PosShellProps = {
   checkoutOpen: boolean
   checkoutPending: boolean
   checkoutError: string | null
-  checkoutSuccess: {
-    saleId: string
-    receiptNo: string
-    total: string
-    paymentMethod: PosCheckoutPaymentMethod
-  } | null
   onCheckoutClose: () => void
-  onCheckoutConfirm: (paymentMethod: PosCheckoutPaymentMethod) => void
-  onBankTransferCapture: (blob: Blob) => void
-  onBankTransferUploadLater: () => void
-  onCheckoutPrintReceiptAndNewSale: (saleId: string) => void
-  onCheckoutNewSaleWithoutPrint: () => void
+  onCheckoutPrintReceipt: (input: PosCheckoutPrintReceiptInput) => void
   refundOpen: boolean
   refundReceiptNo: string
   refundReceipts: RefundableReceiptSummary[]
@@ -119,6 +120,13 @@ export function PosShell({
   onBarcodeChange,
   onBarcodeSubmit,
   onKeypadAction,
+  onReceiptLookup,
+  receiptLookupOpen = false,
+  onReceiptLookupClose,
+  receiptLookupRunningNo = "",
+  onReceiptLookupRunningNoChange,
+  receiptLookupFocusRequestId = 0,
+  receiptLookupPanelRef,
   cartLines,
   cartLookupError,
   onIncrementQty,
@@ -129,13 +137,8 @@ export function PosShell({
   checkoutOpen,
   checkoutPending,
   checkoutError,
-  checkoutSuccess,
   onCheckoutClose,
-  onCheckoutConfirm,
-  onBankTransferCapture,
-  onBankTransferUploadLater,
-  onCheckoutPrintReceiptAndNewSale,
-  onCheckoutNewSaleWithoutPrint,
+  onCheckoutPrintReceipt,
   refundOpen,
   refundReceiptNo,
   refundReceipts,
@@ -263,15 +266,16 @@ export function PosShell({
               value={barcode}
               onChange={onBarcodeChange}
               onSubmit={onBarcodeSubmit}
-              disabled={muted}
-              focusRequestId={barcodeFocusRequest}
+              disabled={muted || receiptLookupOpen}
+              focusRequestId={receiptLookupOpen ? 0 : barcodeFocusRequest}
             />
           </div>
 
           <div className={`min-h-0 flex-1 ${POS_PANEL_FRAME_CLASS} bg-gradient-to-b from-slate-200 to-slate-300`}>
             <PosKeypadGrid
               onAction={onKeypadAction}
-              disabled={muted && !readReport}
+              onReceiptLookup={onReceiptLookup}
+              disabled={keypadDisabled || (!receiptLookupOpen && muted && !readReport)}
               printReportHighlighted={isPrintReportHighlighted(readReportMode)}
               printReportLabel={
                 readReportMode === "Z" ? "PRINT REPORT\nAND EXIT" : undefined
@@ -297,18 +301,21 @@ export function PosShell({
         onDecrementQty={onDecrementQty}
         onRemoveLine={onRemoveCartLine}
         onClearCart={onClearCart}
+        receiptLookupOpen={receiptLookupOpen}
+        onReceiptLookupClose={onReceiptLookupClose}
+        receiptLookupRunningNo={receiptLookupRunningNo}
+        onReceiptLookupRunningNoChange={onReceiptLookupRunningNoChange}
+        receiptLookupFocusRequestId={receiptLookupFocusRequestId}
+        receiptLookupPanelRef={receiptLookupPanelRef}
         overlay={
-          checkoutOpen ? (
+          receiptLookupOpen
+            ? null
+            : checkoutOpen ? (
             <PosCheckoutOverlay
               lines={cartLines}
               pending={checkoutPending}
               error={checkoutError}
-              success={checkoutSuccess}
-              onConfirm={onCheckoutConfirm}
-              onBankTransferCapture={onBankTransferCapture}
-              onBankTransferUploadLater={onBankTransferUploadLater}
-              onPrintReceiptAndNewSale={onCheckoutPrintReceiptAndNewSale}
-              onNewSaleWithoutPrint={onCheckoutNewSaleWithoutPrint}
+              onPrintReceipt={onCheckoutPrintReceipt}
               onClose={onCheckoutClose}
             />
           ) : refundOpen ? (

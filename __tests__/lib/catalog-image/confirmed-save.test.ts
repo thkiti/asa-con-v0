@@ -1,4 +1,4 @@
-import { confirmedSaveCatalogImages } from "@/lib/catalog-image/confirmed-save"
+import { confirmedSaveCatalogImages, confirmedSaveCatalogImagesFromBlobs } from "@/lib/catalog-image/confirmed-save"
 import { cropCatalogPdf } from "@/lib/catalog-image/crop-pdf"
 import { deleteCatalogImageBatch } from "@/lib/catalog-image/paths"
 import { saveMatchedCatalogImages } from "@/lib/catalog-image/save-matched"
@@ -143,5 +143,31 @@ describe("confirmedSaveCatalogImages", () => {
         }),
       ])
     )
+  })
+
+  it("saves client PNG buffers without server crop", async () => {
+    mockedSave.mockResolvedValue([
+      {
+        productCode: "0101015",
+        finalFilePath: "D:/work/final/0101015.png",
+        finalFileName: "0101015.png",
+        status: "SAVED",
+      },
+    ])
+
+    const pngBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47])
+    const result = await confirmedSaveCatalogImagesFromBlobs(db, {
+      assignedSlots: [{ sourceSlot: 1, productCode: "0101015", pngBuffer }],
+    })
+
+    expect(mockedCrop).not.toHaveBeenCalled()
+    expect(mockedDelete).not.toHaveBeenCalled()
+    expect(mockedSave).toHaveBeenCalledWith(db, [
+      expect.objectContaining({
+        productCode: "0101015",
+        pngBuffer,
+      }),
+    ])
+    expect(result.savedCount).toBe(1)
   })
 })

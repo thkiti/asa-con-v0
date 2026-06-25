@@ -4,6 +4,7 @@ import { posApiErrorResponse } from "@/app/api/pos/shared/pos-api-errors"
 import { PaymentMethod } from "@/generated/prisma/client"
 import { getSession } from "@/lib/auth/session"
 import { checkout } from "@/lib/pos/checkout"
+import { scheduleReceiptArchiveAfterCheckout } from "@/lib/pos/receipt-archive-after-checkout"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import type { CheckoutCartLine } from "@/lib/pos/checkout-types"
 import { requirePosShopSession } from "@/lib/pos/pos-shop-session"
@@ -57,6 +58,12 @@ export async function POST(req: NextRequest) {
       paymentMethod: parsePaymentMethod(body.paymentMethod),
       paidAmount: parsePaidAmount(body.paidAmount),
       lines: parseCheckoutLines(body.lines),
+    })
+
+    scheduleReceiptArchiveAfterCheckout({
+      receiptId: result.receipt.id,
+      saleId: result.sale.id,
+      branchId: result.sale.branchId,
     })
 
     return NextResponse.json(result)

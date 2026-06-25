@@ -65,7 +65,6 @@ export function buildReadZSlipBodyText(report: ReadReportPayload): string {
   lines.push("")
   lines.push(repeatThermalChar("-", w))
   for (const payment of report.paymentLines) {
-    if (payment.amount === 0) continue
     lines.push(padThermalLine(payment.label, formatThermalMoney2(payment.amount), w))
   }
 

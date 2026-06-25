@@ -14,14 +14,18 @@ import {
 } from "@/lib/catalog-image-ui/crop-template"
 import { buildConfirmedSaveUxResult } from "@/lib/catalog-image-ui/confirmed-save-ux"
 import {
-  buildConfirmedSaveRequestBody,
-  catalogImagePagePreviewUrl,
-  fetchCatalogImageConfirmedSave,
+  buildConfirmedSaveBlobFormData,
+  fetchCatalogImageConfirmedSaveBlobs,
   fetchCatalogImageOpenFile,
   fetchCatalogImageUploadToCloud,
 } from "@/lib/catalog-image-ui/fetchers"
 import type { CatalogImageCloudUploadItemResult } from "@/lib/catalog-image-ui/types"
 import type { CatalogImageAssignedSlot } from "@/lib/catalog-image-ui/types"
+import {
+  cropCatalogPdfPageSlots,
+  renderCatalogPdfPagePreview,
+  revokeCatalogPdfBlobUrl,
+} from "@/lib/catalog-image-ui/pdf-render"
 import {
   CatalogImageView,
   type CatalogImageCropSettingsVM,
@@ -43,7 +47,6 @@ function getOpenedFileDisplayPath(file: File): string {
 
 export function CatalogImageController() {
   const [openedFilePath, setOpenedFilePath] = useState<string | null>(null)
-  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [opening, setOpening] = useState(false)
   const [cropSettings, setCropSettings] =
     useState<CatalogImageCropSettingsVM>(DEFAULT_CROP_SETTINGS)
@@ -53,7 +56,7 @@ export function CatalogImageController() {
   )
   const imageNaturalSizeRef = useRef<CropImageSize | null>(null)
   const cropTemplateRef = useRef<CropTemplate | null>(null)
-  const [layoutPreviewKey, setLayoutPreviewKey] = useState(0)
+  const [layoutPreviewUrl, setLayoutPreviewUrl] = useState<string | null>(null)
   const [layoutPreviewLoading, setLayoutPreviewLoading] = useState(false)
   const [selectedPage] = useState(1)
   const [productIdInput, setProductIdInput] = useState("")
@@ -74,16 +77,9 @@ export function CatalogImageController() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const openFileInFlightRef = useRef(false)
   const prevRotateDegRef = useRef(cropSettings.rotateDeg)
-
-  const layoutPreviewUrl =
-    layoutPreviewKey > 0 && selectedFileName
-      ? catalogImagePagePreviewUrl({
-          fileName: selectedFileName,
-          rotateDeg: cropSettings.rotateDeg,
-          pageNo: selectedPage,
-          refreshKey: layoutPreviewKey,
-        })
-      : null
+  const selectedPdfFileRef = useRef<File | null>(null)
+  const previewRenderIdRef = useRef(0)
+  const layoutPreviewUrlRef = useRef<string | null>(null)
 
   const resetPreviewWorkflowState = useCallback(() => {
     setCropRect(null)
@@ -94,10 +90,16 @@ export function CatalogImageController() {
     setProductIdInput("")
   }, [])
 
+  const revokeLayoutPreviewUrl = useCallback(() => {
+    revokeCatalogPdfBlobUrl(layoutPreviewUrlRef.current)
+    layoutPreviewUrlRef.current = null
+    setLayoutPreviewUrl(null)
+  }, [])
+
   const resetPageAfterSuccessfulSave = useCallback(() => {
+    revokeLayoutPreviewUrl()
     setOpenedFilePath(null)
-    setSelectedFileName(null)
-    setLayoutPreviewKey(0)
+    selectedPdfFileRef.current = null
     setLayoutPreviewLoading(false)
     setCropSettings(DEFAULT_CROP_SETTINGS)
     prevRotateDegRef.current = DEFAULT_CROP_SETTINGS.rotateDeg
@@ -108,37 +110,62 @@ export function CatalogImageController() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  }, [resetPreviewWorkflowState])
+  }, [resetPreviewWorkflowState, revokeLayoutPreviewUrl])
 
   const clearPreviewForNewFile = useCallback(() => {
+    revokeLayoutPreviewUrl()
     resetPreviewWorkflowState()
-    setSelectedFileName(null)
-    setCropRect(null)
-    imageNaturalSizeRef.current = null
-    setImageNaturalSize(null)
-    cropTemplateRef.current = null
-    setLayoutPreviewKey(0)
     setLayoutPreviewLoading(false)
-  }, [resetPreviewWorkflowState])
+  }, [resetPreviewWorkflowState, revokeLayoutPreviewUrl])
 
-  const startPreview = useCallback(
-    (fileName: string) => {
-      prevRotateDegRef.current = cropSettings.rotateDeg
-      setSelectedFileName(fileName)
+  const renderClientPreview = useCallback(
+    async (file: File, rotateDeg: number) => {
+      const renderId = previewRenderIdRef.current + 1
+      previewRenderIdRef.current = renderId
       setLayoutPreviewLoading(true)
-      setLayoutPreviewKey((key) => key + 1)
+      setError(null)
+
+      try {
+        const preview = await renderCatalogPdfPagePreview({
+          file,
+          pageNo: selectedPage,
+          rotateDeg,
+        })
+
+        if (previewRenderIdRef.current !== renderId) {
+          revokeCatalogPdfBlobUrl(preview.blobUrl)
+          return
+        }
+
+        revokeLayoutPreviewUrl()
+        layoutPreviewUrlRef.current = preview.blobUrl
+        setLayoutPreviewUrl(preview.blobUrl)
+        setLayoutPreviewLoading(false)
+      } catch (err) {
+        if (previewRenderIdRef.current !== renderId) return
+        setLayoutPreviewLoading(false)
+        setError(err instanceof Error ? err.message : "Page preview failed")
+      }
     },
-    [cropSettings.rotateDeg]
+    [revokeLayoutPreviewUrl, selectedPage]
   )
 
   useEffect(() => {
-    if (layoutPreviewKey === 0) return
+    return () => {
+      previewRenderIdRef.current += 1
+      revokeCatalogPdfBlobUrl(layoutPreviewUrlRef.current)
+      layoutPreviewUrlRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const file = selectedPdfFileRef.current
+    if (!file) return
     if (prevRotateDegRef.current === cropSettings.rotateDeg) return
     prevRotateDegRef.current = cropSettings.rotateDeg
     resetPreviewWorkflowState()
-    setLayoutPreviewLoading(true)
-    setLayoutPreviewKey((key) => key + 1)
-  }, [cropSettings.rotateDeg, layoutPreviewKey, resetPreviewWorkflowState])
+    void renderClientPreview(file, cropSettings.rotateDeg)
+  }, [cropSettings.rotateDeg, renderClientPreview, resetPreviewWorkflowState])
 
   const handleOpenFile = useCallback(
     async (file: File) => {
@@ -157,16 +184,18 @@ export function CatalogImageController() {
       setUploadErrorDetail(null)
       clearPreviewForNewFile()
       setOpenedFilePath(getOpenedFileDisplayPath(file))
-      setLayoutPreviewLoading(true)
+      selectedPdfFileRef.current = file
+      prevRotateDegRef.current = cropSettings.rotateDeg
 
       try {
-        const result = await fetchCatalogImageOpenFile(file)
-        startPreview(result.fileName)
+        await fetchCatalogImageOpenFile(file)
+        await renderClientPreview(file, cropSettings.rotateDeg)
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to open file"
         setError(message)
         setOpenedFilePath(null)
+        selectedPdfFileRef.current = null
         clearPreviewForNewFile()
         setLayoutPreviewLoading(false)
       } finally {
@@ -174,7 +203,7 @@ export function CatalogImageController() {
         setOpening(false)
       }
     },
-    [clearPreviewForNewFile, startPreview]
+    [clearPreviewForNewFile, cropSettings.rotateDeg, renderClientPreview]
   )
 
   const handleLayoutPreviewLoad = useCallback(() => {
@@ -278,7 +307,8 @@ export function CatalogImageController() {
     setLastUploadMessage(null)
     setUploadErrorDetail(null)
 
-    if (!selectedFileName) {
+    const pdfFile = selectedPdfFileRef.current
+    if (!pdfFile) {
       setError("Open a PDF file first")
       return
     }
@@ -302,22 +332,39 @@ export function CatalogImageController() {
 
     setSaving(true)
     try {
-      const result = await fetchCatalogImageConfirmedSave(
-        buildConfirmedSaveRequestBody(
-          {
-            fileName: selectedFileName,
-            pageNo: selectedPage,
-            rotateDeg: cropSettings.rotateDeg,
-            columns: cropSettings.columns,
-            rows: cropSettings.rows,
-          },
-          cropTemplate,
-          assignedSlots.map((slot) => ({
+      const croppedSlots = await cropCatalogPdfPageSlots({
+        file: pdfFile,
+        pageNo: selectedPage,
+        rotateDeg: cropSettings.rotateDeg,
+        columns: cropSettings.columns,
+        rows: cropSettings.rows,
+        cropArea: cropTemplate,
+      })
+
+      const assignedBySlot = new Map(
+        assignedSlots.map((slot) => [slot.sourceSlot, slot] as const)
+      )
+      const uploadSlots = croppedSlots
+        .filter((slot) => assignedBySlot.has(slot.sourceSlot))
+        .map((slot) => {
+          const assigned = assignedBySlot.get(slot.sourceSlot)!
+          return {
             sourceSlot: slot.sourceSlot,
-            productCode: slot.productCode,
-          })),
-          { replace: replaceLocalFilesOnSave }
-        )
+            productCode: assigned.productCode,
+            blob: slot.blob,
+          }
+        })
+
+      if (uploadSlots.length === 0) {
+        setError("No cropped slots matched assigned product codes")
+        return
+      }
+
+      const result = await fetchCatalogImageConfirmedSaveBlobs(
+        buildConfirmedSaveBlobFormData({
+          assignedSlots: uploadSlots,
+          replace: replaceLocalFilesOnSave,
+        })
       )
 
       const uxResult = buildConfirmedSaveUxResult({
@@ -342,7 +389,6 @@ export function CatalogImageController() {
     cropSettings,
     replaceLocalFilesOnSave,
     resetPageAfterSuccessfulSave,
-    selectedFileName,
     selectedPage,
   ])
 

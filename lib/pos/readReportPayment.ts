@@ -1,11 +1,10 @@
 import type { PaymentMethod } from "@/generated/prisma/client"
 
+/** READ X/Z payment summary display order — display grouping only. */
 export const READ_REPORT_PAYMENT_ORDER = [
   "CASH",
   "CREDIT_CARD",
-  "PROMPT_PAY",
-  "QR_CODE",
-  "TRANSFER",
+  "BANK_TRANSFER",
 ] as const
 
 export type ReadReportPaymentKey = (typeof READ_REPORT_PAYMENT_ORDER)[number]
@@ -13,18 +12,15 @@ export type ReadReportPaymentKey = (typeof READ_REPORT_PAYMENT_ORDER)[number]
 export const READ_REPORT_PAYMENT_LABEL: Record<ReadReportPaymentKey, string> = {
   CASH: "CASH",
   CREDIT_CARD: "CREDIT CARD",
-  PROMPT_PAY: "PROMPT PAY",
-  QR_CODE: "QR CODE",
-  TRANSFER: "TRANSFER",
+  BANK_TRANSFER: "BANK TRANSFER",
 }
 
-/** แบ่งยอดตาม Payment.method ใน v0 */
+/**
+ * Map stored Payment.method to READ X/Z display bucket.
+ * Bank-style methods (BANK_TRANSFER, TRANSFER, QR, OTHER) consolidate to BANK TRANSFER.
+ */
 export function readReportPaymentBucket(method: PaymentMethod): ReadReportPaymentKey {
   if (method === "CASH") return "CASH"
   if (method === "CARD") return "CREDIT_CARD"
-  if (method === "BANK_TRANSFER") return "TRANSFER"
-  if (method === "TRANSFER") return "TRANSFER"
-  if (method === "QR") return "QR_CODE"
-  if (method === "OTHER") return "PROMPT_PAY"
-  return "QR_CODE"
+  return "BANK_TRANSFER"
 }

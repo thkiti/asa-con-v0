@@ -36,8 +36,21 @@ function looksLikeDetailRow(left: string, right: string): boolean {
   return false
 }
 
+function looksLikeReceiptItemDetailLine(line: string): boolean {
+  const columns = parseSpacedColumns(line)
+  if (columns) return looksLikeDetailRow(columns.left, columns.right)
+  return line.includes("=") && /\d+x/.test(line)
+}
+
 function shouldStackLabelValue(label: string, value: string): boolean {
   return value.length > RECEIPT_SETUP_PREVIEW_MONO_COLUMNS - label.length - 1
+}
+
+function classifyReceiptProductNameLine(line: string): TicketSetupTextPreviewLine {
+  if (!line.trim()) return { kind: "blank" }
+  if (isRepeatedCharLine(line, "-")) return { kind: "dashed-divider" }
+  if (isRepeatedCharLine(line, ".")) return { kind: "dotted-divider" }
+  return { kind: "mono-text", text: line.trim() }
 }
 
 function classifyLine(line: string): TicketSetupTextPreviewLine {
@@ -84,5 +97,12 @@ function classifyLine(line: string): TicketSetupTextPreviewLine {
 }
 
 export function parseTicketSetupTextPreviewLines(text: string): TicketSetupTextPreviewLine[] {
-  return text.split("\n").map(classifyLine)
+  const rawLines = text.split("\n")
+  return rawLines.map((line, index) => {
+    const nextLine = rawLines[index + 1] ?? ""
+    if (looksLikeReceiptItemDetailLine(nextLine)) {
+      return classifyReceiptProductNameLine(line)
+    }
+    return classifyLine(line)
+  })
 }

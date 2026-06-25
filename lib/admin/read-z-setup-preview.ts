@@ -1,3 +1,7 @@
+import {
+  READ_REPORT_PAYMENT_LABEL,
+  READ_REPORT_PAYMENT_ORDER,
+} from "@/lib/pos/readReportPayment"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import type { ThermalDocumentLayoutView } from "@/lib/thermal/types"
 import { buildTicketLayout } from "@/lib/thermal/build-ticket-layout"
@@ -16,7 +20,11 @@ export function buildReadZSetupSampleReport(
     branchCode: branch.code,
     branchName: branch.name,
     groupLines: [{ lineKey: "g1", displayLeft: "010-Sample Group", qty: 2, amount: 120 }],
-    paymentLines: [{ key: "CASH", label: "Cash", amount: 120 }],
+    paymentLines: READ_REPORT_PAYMENT_ORDER.map((key) => ({
+      key,
+      label: READ_REPORT_PAYMENT_LABEL[key],
+      amount: key === "CASH" ? 120 : 0,
+    })),
     grandTotal: 120,
     saleCount: 2,
     refundCount: 1,

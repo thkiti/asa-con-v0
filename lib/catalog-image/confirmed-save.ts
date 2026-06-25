@@ -95,6 +95,90 @@ function mapSaveResult(
   }
 }
 
+export type ConfirmedSaveBlobSlotInput = {
+  sourceSlot: number
+  productCode: string
+  pngBuffer: Buffer
+}
+
+export type ConfirmedSaveBlobRequest = {
+  assignedSlots: ConfirmedSaveBlobSlotInput[]
+  replace?: boolean
+}
+
+export async function confirmedSaveCatalogImagesFromBlobs(
+  db: ProductLookupDb,
+  request: ConfirmedSaveBlobRequest
+): Promise<ConfirmedSaveResult> {
+  const assignedSlots = Array.isArray(request.assignedSlots)
+    ? request.assignedSlots
+    : []
+  if (assignedSlots.length === 0) {
+    throw new CatalogImageError(
+      "assignedSlots is required",
+      "VALIDATION_ERROR",
+      400
+    )
+  }
+
+  const batchId = randomUUID()
+  const saveItems: SaveMatchedItemInput[] = []
+  const slotMeta: number[] = []
+  const preErrors: ConfirmedSaveSlotResult[] = []
+
+  for (const assigned of assignedSlots) {
+    const sourceSlot = Number(assigned.sourceSlot)
+    const productCode = String(assigned.productCode ?? "").trim()
+    if (!Number.isInteger(sourceSlot) || sourceSlot < 1) {
+      preErrors.push(
+        toSlotError(sourceSlot, productCode, "Invalid source slot number")
+      )
+      continue
+    }
+
+    let safeCode: string
+    try {
+      safeCode = assertSafeProductCode(productCode)
+    } catch (err) {
+      const message =
+        err instanceof CatalogImageError ? err.message : "Invalid product code"
+      preErrors.push(toSlotError(sourceSlot, productCode, message))
+      continue
+    }
+
+    if (!Buffer.isBuffer(assigned.pngBuffer) || assigned.pngBuffer.length === 0) {
+      preErrors.push(
+        toSlotError(sourceSlot, safeCode, "PNG image data is required")
+      )
+      continue
+    }
+
+    saveItems.push({
+      productCode: safeCode,
+      pngBuffer: assigned.pngBuffer,
+      replace: request.replace === true,
+    })
+    slotMeta.push(sourceSlot)
+  }
+
+  const saveResults = await saveMatchedCatalogImages(db, saveItems)
+  const savedItems = saveResults.map((result, index) =>
+    mapSaveResult(slotMeta[index]!, result)
+  )
+
+  const items = [...preErrors, ...savedItems].sort(
+    (a, b) => a.sourceSlot - b.sourceSlot
+  )
+  const savedCount = items.filter((item) => item.status === "SAVED").length
+
+  return {
+    batchId,
+    finalDir: getCatalogImageFinalDir(),
+    savedCount,
+    items,
+  }
+}
+
 export async function confirmedSaveCatalogImages(
   db: ProductLookupDb,
   request: ConfirmedSaveRequest

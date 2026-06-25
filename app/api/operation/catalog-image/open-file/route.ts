@@ -1,15 +1,15 @@
-import fs from "fs/promises"
-import path from "path"
 import { NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 import { getSession } from "@/lib/auth/session"
 import { requireCatalogImageSession } from "@/lib/catalog-image/catalog-image-access"
-import { getCatalogImageInputDir } from "@/lib/catalog-image/config"
 import { CatalogImageError, catalogImageErrorResponse } from "@/lib/catalog-image/errors"
-import {
-  createUniqueInputPdfFileName,
-  ensureCatalogImageDirs,
-} from "@/lib/catalog-image/paths"
+
+function isPdfFile(file: File): boolean {
+  const name = String(file.name ?? "").trim().toLowerCase()
+  if (name.endsWith(".pdf")) return true
+  const type = String(file.type ?? "").trim().toLowerCase()
+  return type === "application/pdf" || type === "application/x-pdf"
+}
 
 function isTruncatedOrOversizedFormDataError(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err)
@@ -65,15 +65,21 @@ export async function POST(req: Request) {
       throw new CatalogImageError("PDF file is required", "VALIDATION_ERROR", 400)
     }
 
-    const fileName = createUniqueInputPdfFileName(file.name)
-    await ensureCatalogImageDirs()
-    const destPath = path.join(getCatalogImageInputDir(), fileName)
-    const buffer = Buffer.from(await file.arrayBuffer())
-    await fs.writeFile(destPath, buffer)
+    if (!isPdfFile(file)) {
+      throw new CatalogImageError(
+        "Only PDF files are allowed",
+        "INVALID_FILE_TYPE",
+        400
+      )
+    }
+
+    if (file.size <= 0) {
+      throw new CatalogImageError("PDF file is required", "VALIDATION_ERROR", 400)
+    }
 
     return NextResponse.json({
-      fileName,
-      inputPath: destPath,
+      fileName: file.name,
+      clientSide: true,
       originalFileName: file.name,
     })
   } catch (err: unknown) {

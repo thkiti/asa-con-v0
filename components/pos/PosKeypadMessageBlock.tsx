@@ -1,5 +1,7 @@
 "use client"
 
+import { PosTerminalLiveClock } from "./PosTerminalLiveClock"
+
 type PosKeypadMessageBlockProps = {
   pendingEvidenceCount: number
   onOpenPendingEvidence: () => void
@@ -41,7 +43,7 @@ export function PosKeypadMessageBlock({
           {trimmedError}
         </p>
       ) : (
-        <span className="sr-only">No POS messages</span>
+        <PosTerminalLiveClock />
       )}
     </div>
   )

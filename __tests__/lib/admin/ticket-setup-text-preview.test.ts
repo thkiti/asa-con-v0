@@ -27,6 +27,18 @@ describe("parseTicketSetupTextPreviewLines", () => {
     const lines = parseTicketSetupTextPreviewLines("..............................")
     expect(lines[0]).toEqual({ kind: "dotted-divider" })
   })
+
+  it("left-aligns receipt product names before item detail rows", () => {
+    const lines = parseTicketSetupTextPreviewLines(
+      [
+        "------------------------------",
+        "Sample Product",
+        "0101001=1x60                    60.00",
+      ].join("\n")
+    )
+    expect(lines[1]).toEqual({ kind: "mono-text", text: "Sample Product" })
+    expect(lines[2]?.kind).toBe("mono-amount")
+  })
 })
 
 describe("buildRefundSetupPreviewBodyData", () => {

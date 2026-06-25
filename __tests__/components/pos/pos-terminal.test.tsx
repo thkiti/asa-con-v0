@@ -366,25 +366,23 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("shows latest receipt number on orange panel after checkout until new sale", async () => {
+  it("shows preview receipt number again after print receipt resets POS", async () => {
+    const printTab = { closed: false, location: { href: "" }, close: jest.fn() }
+    const openSpy = jest.spyOn(window, "open").mockImplementation(
+      () => printTab as unknown as Window
+    )
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
 
-    await checkoutOneItem(container)
-
-    expect(container.textContent).toContain("R-test-20260101-0001")
-
-    const skipPrintBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("New Sale without print")
-    )
-    act(() => {
-      skipPrintBtn!.click()
-    })
-    await flushPromises()
+    await checkoutCashAndPrint(container)
 
     expect(container.textContent).toContain("REC-SH001-202606-0001")
+    expect(container.textContent).not.toContain("Test Product")
+    expect(openSpy).toHaveBeenCalledWith("about:blank", "_blank")
+    expect(printTab.location.href).toBe("/shop/receipt/sale-checkout-1?autoprint=1")
 
+    openSpy.mockRestore()
     act(() => root.unmount())
   })
 
@@ -786,7 +784,7 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  async function checkoutOneItem(container: HTMLElement): Promise<void> {
+  async function addOneItemToCart(container: HTMLElement): Promise<void> {
     const input = container.querySelector(
       'input[aria-label="Barcode scan input"]'
     ) as HTMLInputElement
@@ -805,7 +803,10 @@ describe("PosTerminalPage", () => {
     })
     await flushPromises()
     await flushPromises()
+  }
 
+  async function openCheckoutOverlay(container: HTMLElement): Promise<void> {
+    await addOneItemToCart(container)
     const checkoutBtn = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent?.trim() === "CHECKOUT"
     )
@@ -813,41 +814,136 @@ describe("PosTerminalPage", () => {
       checkoutBtn!.click()
     })
     await flushPromises()
+  }
 
-    const payBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "Pay CASH"
+  async function checkoutCashAndPrint(
+    container: HTMLElement,
+    paidAmount = "30"
+  ): Promise<void> {
+    await openCheckoutOverlay(container)
+    const cashBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Cash")
     )
     act(() => {
-      payBtn!.click()
+      cashBtn!.click()
+    })
+    await flushPromises()
+
+    const amountInput = container.querySelector(
+      '[data-testid="pos-checkout-amount-paid"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(amountInput, paidAmount)
+      amountInput.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    const continueBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Continue")
+    )
+    act(() => {
+      continueBtn!.click()
+    })
+    await flushPromises()
+
+    const printBtn = container.querySelector(
+      '[data-testid="pos-checkout-print-receipt"]'
+    ) as HTMLButtonElement
+    act(() => {
+      printBtn.click()
     })
     await flushPromises()
     await flushPromises()
   }
 
-  it("print receipt and new sale opens autoprint and resets POS immediately", async () => {
-    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
+  async function checkoutOneItem(container: HTMLElement): Promise<void> {
+    await checkoutCashAndPrint(container)
+  }
+
+  function clickCheckoutMethod(container: ParentNode, label: string) {
+    const button = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes(label)
+    )
+    act(() => {
+      button!.click()
+    })
+  }
+
+  function setAmountPaid(container: ParentNode, value: string) {
+    const amountInput = container.querySelector(
+      '[data-testid="pos-checkout-amount-paid"]'
+    ) as HTMLInputElement
+    act(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set
+      nativeSetter?.call(amountInput, value)
+      amountInput.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+  }
+
+  function clickContinue(container: ParentNode) {
+    const continueBtn = Array.from(container.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Continue")
+    )
+    act(() => {
+      continueBtn!.click()
+    })
+  }
+
+  function clickPrintReceipt(container: ParentNode) {
+    const printBtn = container.querySelector(
+      '[data-testid="pos-checkout-print-receipt"]'
+    ) as HTMLButtonElement
+    act(() => {
+      printBtn.click()
+    })
+  }
+
+  it("card checkout shows zero change and opens autoprint tab", async () => {
+    const printTab = { closed: false, location: { href: "" }, close: jest.fn() }
+    const openSpy = jest.spyOn(window, "open").mockImplementation(
+      () => printTab as unknown as Window
+    )
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
 
-    await checkoutOneItem(container)
-
-    expect(container.textContent).toContain("Sale complete")
-    expect(container.textContent).toContain("Print Receipt & New Sale")
-
-    const printBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Print Receipt") && b.textContent?.includes("New Sale")
-    )
-    act(() => {
-      printBtn!.click()
-    })
+    await openCheckoutOverlay(container)
+    clickCheckoutMethod(container, "Card")
     await flushPromises()
 
-    expect(openSpy).toHaveBeenCalledWith(
-      "/shop/receipt/sale-checkout-1?autoprint=1",
-      "_blank"
+    expect(container.textContent).toContain("Change Money")
+    expect(container.textContent).toContain("0.00")
+    clickPrintReceipt(container)
+    await flushPromises()
+    await flushPromises()
+
+    expect(openSpy).toHaveBeenCalledWith("about:blank", "_blank")
+    expect(printTab.location.href).toBe("/shop/receipt/sale-checkout-1?autoprint=1")
+    expect(container.textContent).not.toContain("Test Product")
+
+    openSpy.mockRestore()
+    act(() => root.unmount())
+  })
+
+  it("print receipt opens autoprint tab and resets POS after checkout succeeds", async () => {
+    const printTab = { closed: false, location: { href: "" }, close: jest.fn() }
+    const openSpy = jest.spyOn(window, "open").mockImplementation(
+      () => printTab as unknown as Window
     )
-    expect(container.textContent).not.toContain("Sale complete")
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    await checkoutCashAndPrint(container)
+
+    expect(openSpy).toHaveBeenCalledWith("about:blank", "_blank")
+    expect(printTab.location.href).toBe("/shop/receipt/sale-checkout-1?autoprint=1")
+    expect(container.textContent).not.toContain("Confirm Payment")
     expect(container.textContent).toContain("Scan a product to add to cart")
     expect(container.textContent).not.toContain("Test Product")
 
@@ -855,33 +951,53 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("new sale without print resets POS without opening receipt window", async () => {
-    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
+  it("cash checkout failure keeps cart and does not open print", async () => {
+    const printTab = { closed: false, location: { href: "" }, close: jest.fn() }
+    const openSpy = jest.spyOn(window, "open").mockImplementation(
+      () => printTab as unknown as Window
+    )
+    const originalFetch = global.fetch
+    global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/pos/checkout" && init?.method === "POST") {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: async () => ({ error: "Checkout failed", code: "POS_ERROR" }),
+        } as Response)
+      }
+      return originalFetch(input, init)
+    }) as typeof fetch
+
     const { container, root } = renderPosTerminal()
     await flushPromises()
     await flushPromises()
 
-    await checkoutOneItem(container)
-
-    const skipPrintBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("New Sale without print")
-    )
-    act(() => {
-      skipPrintBtn!.click()
-    })
+    await openCheckoutOverlay(container)
+    clickCheckoutMethod(container, "Cash")
+    await flushPromises()
+    setAmountPaid(container, "30")
+    clickContinue(container)
+    await flushPromises()
+    clickPrintReceipt(container)
+    await flushPromises()
     await flushPromises()
 
-    expect(openSpy).not.toHaveBeenCalled()
-    expect(container.textContent).toContain("Scan a product to add to cart")
-    expect(container.textContent).not.toContain("Sale complete")
+    expect(container.textContent).toContain("Checkout failed")
+    expect(container.textContent).toContain("Test Product")
+    expect(printTab.location.href).toBe("")
+    expect(printTab.close).toHaveBeenCalled()
 
+    global.fetch = originalFetch
     openSpy.mockRestore()
     act(() => root.unmount())
   })
 
   it("bank transfer capture failure allows checkout, print, and pending slip warning", async () => {
-    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
-    const fetchMock = global.fetch as jest.Mock
+    const printTab = { closed: false, location: { href: "" }, close: jest.fn() }
+    const openSpy = jest.spyOn(window, "open").mockImplementation(
+      () => printTab as unknown as Window
+    )
     let pendingCount = 0
 
     mockedPendingEvidence.mockImplementation(async () => ({
@@ -907,43 +1023,12 @@ describe("PosTerminalPage", () => {
     await flushPromises()
     await flushPromises()
 
-    const input = container.querySelector(
-      'input[aria-label="Barcode scan input"]'
-    ) as HTMLInputElement
-    act(() => {
-      const nativeSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value"
-      )?.set
-      nativeSetter?.call(input, "1010015")
-      input.dispatchEvent(new Event("input", { bubbles: true }))
-    })
-    act(() => {
-      input.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Enter", bubbles: true })
-      )
-    })
-    await flushPromises()
-    await flushPromises()
-
-    const checkoutBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "CHECKOUT"
-    )
-    act(() => {
-      checkoutBtn!.click()
-    })
-    await flushPromises()
-
-    const bankTransferBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Bank Transfer")
-    )
-    act(() => {
-      bankTransferBtn!.click()
-    })
+    await openCheckoutOverlay(container)
+    clickCheckoutMethod(container, "Bank Transfer")
     await flushPromises()
 
     const captureBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("Capture & Print")
+      b.textContent?.includes("Capture Slip")
     )
     await act(async () => {
       captureBtn!.click()
@@ -955,17 +1040,18 @@ describe("PosTerminalPage", () => {
 
     pendingCount = 1
 
-    const uploadLaterBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes(POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
-    )
+    clickCheckoutMethod(container, POS_BANK_TRANSFER_UPLOAD_LATER_LABEL)
+    await flushPromises()
+    clickPrintReceipt(container)
+    await flushPromises()
+    await flushPromises()
+
     await act(async () => {
-      uploadLaterBtn!.click()
-      await Promise.resolve()
       await Promise.resolve()
     })
     await flushPromises()
 
-    const checkoutCalls = fetchMock.mock.calls.filter(
+    const checkoutCalls = (global.fetch as jest.Mock).mock.calls.filter(
       ([url, init]) =>
         String(url) === "/api/pos/checkout" && (init as RequestInit | undefined)?.method === "POST"
     )
@@ -973,7 +1059,7 @@ describe("PosTerminalPage", () => {
     const lastCheckoutBody = JSON.parse(String(checkoutCalls.at(-1)?.[1]?.body))
     expect(lastCheckoutBody.paymentMethod).toBe("BANK_TRANSFER")
 
-    expect(openSpy).toHaveBeenCalledWith("/shop/receipt/sale-bank-1?autoprint=1", "_blank")
+    expect(printTab.location.href).toBe("/shop/receipt/sale-bank-1?autoprint=1")
     expect(mockedBackgroundUpload).not.toHaveBeenCalled()
     expect(container.textContent).toContain("Scan a product to add to cart")
     const messageSlot = container.querySelector('[data-testid="pos-keypad-message-slot"]')

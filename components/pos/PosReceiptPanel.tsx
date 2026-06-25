@@ -1,6 +1,7 @@
 "use client"
 
 import { PosCartProductDetailPopup } from "@/components/pos/PosCartProductDetailPopup"
+import { PosReceiptLookupPanel, type PosReceiptLookupPanelHandle } from "@/components/pos/PosReceiptLookupPanel"
 import type { PosCartLine } from "@/lib/pos/cart"
 import { cartTotal, lineAmount } from "@/lib/pos/cart"
 import {
@@ -9,7 +10,7 @@ import {
 } from "@/lib/pos-ui/pos-session-display"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import { POS_CART_PANEL_FRAME_CLASS } from "@/lib/pos-ui/pos-panel-frame"
-import { useState, type ReactNode } from "react"
+import { useState, type ReactNode, type RefObject } from "react"
 
 type PosReceiptPanelProps = {
   session: PosTerminalSession
@@ -21,6 +22,12 @@ type PosReceiptPanelProps = {
   onRemoveLine: (productId: string) => void
   onClearCart: () => void
   overlay?: ReactNode
+  receiptLookupOpen?: boolean
+  onReceiptLookupClose?: () => void
+  receiptLookupRunningNo?: string
+  onReceiptLookupRunningNoChange?: (value: string) => void
+  receiptLookupFocusRequestId?: number
+  receiptLookupPanelRef?: RefObject<PosReceiptLookupPanelHandle | null>
 }
 
 function formatMoney(value: string | number): string {
@@ -47,6 +54,12 @@ export function PosReceiptPanel({
   onRemoveLine: _onRemoveLine,
   onClearCart,
   overlay,
+  receiptLookupOpen = false,
+  onReceiptLookupClose,
+  receiptLookupRunningNo = "",
+  onReceiptLookupRunningNoChange,
+  receiptLookupFocusRequestId = 0,
+  receiptLookupPanelRef,
 }: PosReceiptPanelProps) {
   const [previewLine, setPreviewLine] = useState<PosCartLine | null>(null)
   const total = cartTotal(lines)
@@ -65,6 +78,17 @@ export function PosReceiptPanel({
 
           {overlay}
 
+          {receiptLookupOpen ? (
+            <PosReceiptLookupPanel
+              ref={receiptLookupPanelRef}
+              session={session}
+              runningNo={receiptLookupRunningNo}
+              onRunningNoChange={(value) => onReceiptLookupRunningNoChange?.(value)}
+              focusRequestId={receiptLookupFocusRequestId}
+              onBack={() => onReceiptLookupClose?.()}
+            />
+          ) : (
+            <>
           <div className="shrink-0 space-y-2 border-b border-white/30 p-3 text-center">
             <div className="text-sm font-bold">ASA SERVICES</div>
             <div className="space-y-1.5 border-t border-white/30 pt-2 text-left text-sm leading-snug">
@@ -180,6 +204,8 @@ export function PosReceiptPanel({
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ describe("PosKeypadMessageBlock", () => {
       <PosKeypadMessageBlock pendingEvidenceCount={0} onOpenPendingEvidence={() => {}} />
     )
     expect(html).toContain('data-testid="pos-keypad-message-block"')
-    expect(html).toContain("No POS messages")
+    expect(html).toContain('data-testid="pos-terminal-live-clock"')
   })
 
   it("renders blinking slip pending warning inside the reserved slot", () => {

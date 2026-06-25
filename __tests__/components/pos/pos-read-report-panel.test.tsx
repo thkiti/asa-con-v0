@@ -4,6 +4,10 @@
 import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PosReadReportPanel } from "@/components/pos/PosReadReportPanel"
+import {
+  READ_REPORT_PAYMENT_LABEL,
+  READ_REPORT_PAYMENT_ORDER,
+} from "@/lib/pos/readReportPayment"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 import {
   POLICY_SUMMARY_HEADERS,
@@ -31,7 +35,11 @@ const baseReport: ReadReportPayload = {
   branchCode: "SH001",
   branchName: "Chidlom",
   groupLines: policyGroupLines,
-  paymentLines: [{ key: "CASH", label: "Cash", amount: 0 }],
+  paymentLines: READ_REPORT_PAYMENT_ORDER.map((key) => ({
+    key,
+    label: READ_REPORT_PAYMENT_LABEL[key],
+    amount: 0,
+  })),
   grandTotal: 0,
   saleCount: 0,
   refundCount: 0,
@@ -68,6 +76,78 @@ describe("PosReadReportPanel", () => {
       container.querySelector<HTMLButtonElement>('[aria-label="ปิดรายงาน"]')?.click()
     })
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it("READ X payment summary shows CASH, CREDIT CARD, BANK TRANSFER, and TOTAL only", () => {
+    const container = document.createElement("div")
+    document.body.appendChild(container)
+    const root: Root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <PosReadReportPanel
+          report={{
+            ...baseReport,
+            paymentLines: [
+              { key: "CASH", label: "CASH", amount: 100 },
+              { key: "CREDIT_CARD", label: "CREDIT CARD", amount: 50 },
+              { key: "BANK_TRANSFER", label: "BANK TRANSFER", amount: 25 },
+            ],
+            grandTotal: 175,
+          }}
+          onClose={() => {}}
+          collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
+          readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
+        />
+      )
+    })
+
+    expect(container.textContent).toContain("CASH")
+    expect(container.textContent).toContain("CREDIT CARD")
+    expect(container.textContent).toContain("BANK TRANSFER")
+    expect(container.textContent).toContain("TOTAL")
+    expect(container.textContent).not.toContain("PROMPT PAY")
+    expect(container.textContent).not.toContain("QR CODE")
+
+    act(() => root.unmount())
+  })
+
+  it("READ Z payment summary shows CASH, CREDIT CARD, BANK TRANSFER, and TOTAL only", () => {
+    const container = document.createElement("div")
+    document.body.appendChild(container)
+    const root: Root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <PosReadReportPanel
+          report={{
+            ...baseReport,
+            mode: "Z",
+            paymentLines: [
+              { key: "CASH", label: "CASH", amount: 80 },
+              { key: "CREDIT_CARD", label: "CREDIT CARD", amount: 0 },
+              { key: "BANK_TRANSFER", label: "BANK TRANSFER", amount: 20 },
+            ],
+            grandTotal: 100,
+            netTotal: 90,
+            refundTotal: 10,
+            refundCount: 1,
+          }}
+          onClose={() => {}}
+          collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
+          readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
+        />
+      )
+    })
+
+    expect(container.textContent).toContain("CASH")
+    expect(container.textContent).toContain("CREDIT CARD")
+    expect(container.textContent).toContain("BANK TRANSFER")
+    expect(container.textContent).toContain("TOTAL")
+    expect(container.textContent).not.toContain("PROMPT PAY")
+    expect(container.textContent).not.toContain("QR CODE")
+
+    act(() => root.unmount())
   })
 
   it("READ Z has no visible close or print button; emergency close works", () => {

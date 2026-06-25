@@ -19,7 +19,6 @@ import {
   THERMAL_COLUMNS,
   THERMAL_AMOUNT_MIN_GAP,
   appendThermalCenteredIfPresent,
-  centerThermalLine,
   formatThermalAmountLine,
   formatThermalCompactUnitPrice,
   formatThermalDateTime,
@@ -195,11 +194,6 @@ export function buildReceiptSlipParts(
     formatThermalAmountLine("CHANGE", formatReceiptMoney(receipt.change), w, amountWidth)
   )
   monoLines.push(repeatThermalChar("-", w))
-
-  if (layout.showVatIncludedMessage) {
-    const line = centerThermalLine("ราคาสินค้ารวมภาษีมูลค่าเพิ่มแล้ว", w)
-    if (line) monoLines.push(line)
-  }
 
   const identityParts = buildIdentityParts(receipt)
 

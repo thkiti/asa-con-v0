@@ -1,11 +1,11 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { PosShell } from "./PosShell"
+import type { PosReceiptLookupPanelHandle } from "./PosReceiptLookupPanel"
 import {
   addProductToCart,
-  cartTotal,
   clearCart,
   decrementLineQty,
   incrementLineQty,
@@ -16,7 +16,7 @@ import { fetchPosCheckout } from "@/lib/pos-ui/pos-checkout-client"
 import { uploadPaymentEvidenceSlipInBackground } from "@/lib/pos-ui/payment-evidence-upload-client"
 import { fetchPendingPaymentEvidence } from "@/lib/pos-ui/payment-evidence-pending-client"
 import type { PendingPaymentEvidenceRow } from "@/lib/pos/pending-payment-evidence-types"
-import type { PosCheckoutPaymentMethod } from "@/lib/pos-ui/pos-payment-methods"
+import type { PosCheckoutPrintReceiptInput } from "@/components/pos/PosCheckoutOverlay"
 import {
   getPosActionKind,
   isPosPlaceholderId,
@@ -31,7 +31,10 @@ import {
   stockCountEditorHref,
 } from "@/lib/pos-ui/pos-navigation"
 import { openOrderDraft, openStockCountDraft } from "@/lib/pos-ui/stock-count-client"
-import { openPosReceiptPrint } from "@/lib/pos-ui/pos-receipt-print"
+import {
+  navigatePosReceiptPrintTab,
+  openPosReceiptPrintTab,
+} from "@/lib/pos-ui/pos-receipt-print"
 import { openPosRefundReceiptPrint } from "@/lib/pos-ui/pos-refund-receipt-print"
 import { fetchPosReceiptNoPreview } from "@/lib/pos-ui/pos-receipt-preview-client"
 import {
@@ -50,6 +53,11 @@ import {
   defaultResolvedThermalLayouts,
   fetchPosThermalLayouts,
 } from "@/lib/pos-ui/pos-thermal-layouts-client"
+import {
+  appendReceiptLookupRunningDigit,
+  defaultRunningNoFromNextPreview,
+} from "@/lib/pos-ui/build-receipt-lookup-no"
+import { bangkokCalendarParts } from "@/lib/reporting/bangkok-calendar"
 import type { ResolvedThermalLayout, ThermalDocumentType } from "@/lib/thermal/types"
 
 const PENDING_EVIDENCE_POLL_MS = 60_000
@@ -77,17 +85,15 @@ export function PosTerminalPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [checkoutPending, setCheckoutPending] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
-  const [checkoutSuccess, setCheckoutSuccess] = useState<{
-    saleId: string
-    receiptNo: string
-    total: string
-    paymentMethod: PosCheckoutPaymentMethod
-  } | null>(null)
   const [lastReceiptNo, setLastReceiptNo] = useState<string | null>(null)
   const [previewReceiptNo, setPreviewReceiptNo] = useState<string | null>(null)
   const [logoutPending, setLogoutPending] = useState(false)
   const [barcodeFocusRequest, setBarcodeFocusRequest] = useState(0)
   const [refundOpen, setRefundOpen] = useState(false)
+  const [receiptLookupOpen, setReceiptLookupOpen] = useState(false)
+  const [receiptLookupRunningNo, setReceiptLookupRunningNo] = useState("")
+  const [receiptLookupFocusRequest, setReceiptLookupFocusRequest] = useState(0)
+  const receiptLookupPanelRef = useRef<PosReceiptLookupPanelHandle>(null)
   const [refundReceiptNo, setRefundReceiptNo] = useState("")
   const [refundReceipts, setRefundReceipts] = useState<RefundableReceiptSummary[]>([])
   const [refundReceiptsLoading, setRefundReceiptsLoading] = useState(false)
@@ -277,44 +283,13 @@ export function PosTerminalPage() {
     }
     setCartLookupError(null)
     setCheckoutError(null)
-    setCheckoutSuccess(null)
+    setReceiptLookupOpen(false)
     setCheckoutOpen(true)
   }, [cartLines.length])
-
-  const confirmCheckout = useCallback(
-    async (paymentMethod: PosCheckoutPaymentMethod) => {
-      if (checkoutPending || cartLines.length === 0) return
-
-      setCheckoutPending(true)
-      setCheckoutError(null)
-      try {
-        const result = await fetchPosCheckout(
-          cartLines.map((line) => ({ productId: line.productId, qty: line.qty })),
-          { paymentMethod }
-        )
-        if (!result.ok) {
-          setCheckoutError(result.error)
-          return
-        }
-        const receiptNo = result.result.receipt.receiptNo
-        setCheckoutSuccess({
-          saleId: result.result.sale.id,
-          receiptNo,
-          total: result.result.sale.total.toString(),
-          paymentMethod: result.result.payment.method as PosCheckoutPaymentMethod,
-        })
-        setLastReceiptNo(receiptNo)
-      } finally {
-        setCheckoutPending(false)
-      }
-    },
-    [cartLines, checkoutPending]
-  )
 
   const resetPosForNextSale = useCallback(() => {
     setCartLines(clearCart())
     setCheckoutOpen(false)
-    setCheckoutSuccess(null)
     setCheckoutError(null)
     setCartLookupError(null)
     setLastReceiptNo(null)
@@ -323,82 +298,56 @@ export function PosTerminalPage() {
     void refreshPreviewReceiptNo()
   }, [refreshPreviewReceiptNo])
 
-  const completeBankTransferCheckout = useCallback(async () => {
-    const result = await fetchPosCheckout(
-      cartLines.map((line) => ({ productId: line.productId, qty: line.qty })),
-      {
-        paymentMethod: "BANK_TRANSFER",
-        paidAmount: cartTotal(cartLines),
-      }
-    )
-    if (!result.ok) {
-      setCheckoutError(result.error)
-      return null
-    }
-
-    const receiptNo = result.result.receipt.receiptNo
-    setLastReceiptNo(receiptNo)
-    openPosReceiptPrint(result.result.sale.id)
-    resetPosForNextSale()
-    void refreshPendingEvidence()
-    return receiptNo
-  }, [cartLines, refreshPendingEvidence, resetPosForNextSale])
-
-  const handleBankTransferCapture = useCallback(
-    async (capturedBlob: Blob) => {
+  const handleCheckoutPrintReceipt = useCallback(
+    async (input: PosCheckoutPrintReceiptInput) => {
       if (checkoutPending || cartLines.length === 0) return
+
+      const printTab = openPosReceiptPrintTab()
 
       setCheckoutPending(true)
       setCheckoutError(null)
-
-      let receiptNoForUpload: string | null = null
-
       try {
-        receiptNoForUpload = await completeBankTransferCheckout()
+        const result = await fetchPosCheckout(
+          cartLines.map((line) => ({ productId: line.productId, qty: line.qty })),
+          {
+            paymentMethod: input.paymentMethod,
+            paidAmount: input.paidAmount,
+          }
+        )
+        if (!result.ok) {
+          printTab?.close()
+          setCheckoutError(result.error)
+          return
+        }
+
+        const saleId = result.result.sale.id
+        const receiptNo = result.result.receipt.receiptNo
+        setLastReceiptNo(receiptNo)
+        navigatePosReceiptPrintTab(saleId, printTab)
+
+        if (input.paymentMethod === "BANK_TRANSFER") {
+          if (input.bankTransferEvidence) {
+            uploadPaymentEvidenceSlipInBackground({
+              file: input.bankTransferEvidence,
+              receiptNo,
+            })
+          }
+          if (isJestRuntime) {
+            void refreshPendingEvidence()
+          } else {
+            window.setTimeout(() => {
+              void refreshPendingEvidence()
+            }, 2500)
+          }
+        }
+
+        resetPosForNextSale()
       } finally {
         setCheckoutPending(false)
       }
-
-      if (receiptNoForUpload) {
-        uploadPaymentEvidenceSlipInBackground({
-          file: capturedBlob,
-          receiptNo: receiptNoForUpload,
-        })
-        if (isJestRuntime) {
-          void refreshPendingEvidence()
-        } else {
-          window.setTimeout(() => {
-            void refreshPendingEvidence()
-          }, 2500)
-        }
-      }
     },
-    [cartLines.length, checkoutPending, completeBankTransferCheckout, refreshPendingEvidence]
+    [cartLines, checkoutPending, refreshPendingEvidence, resetPosForNextSale]
   )
-
-  const handleBankTransferUploadLater = useCallback(async () => {
-    if (checkoutPending || cartLines.length === 0) return
-
-    setCheckoutPending(true)
-    setCheckoutError(null)
-    try {
-      await completeBankTransferCheckout()
-    } finally {
-      setCheckoutPending(false)
-    }
-  }, [cartLines.length, checkoutPending, completeBankTransferCheckout])
-
-  const printReceiptAndNewSale = useCallback(
-    (saleId: string) => {
-      openPosReceiptPrint(saleId)
-      resetPosForNextSale()
-    },
-    [resetPosForNextSale]
-  )
-
-  const newSaleWithoutPrint = useCallback(() => {
-    resetPosForNextSale()
-  }, [resetPosForNextSale])
 
   const resetRefundForm = useCallback(() => {
     setRefundReceiptNo("")
@@ -437,6 +386,7 @@ export function PosTerminalPage() {
 
   const openRefund = useCallback(() => {
     resetRefundForm()
+    setReceiptLookupOpen(false)
     setRefundOpen(true)
     setRefundReceiptsLoading(true)
     void fetchPosRefundableReceipts()
@@ -494,6 +444,24 @@ export function PosTerminalPage() {
       setRefundPending(false)
     }
   }, [refundAmount, refundPending, refundPreview, refundReasonCode, resetRefundForm])
+
+  const openReceiptLookup = useCallback(() => {
+    setCheckoutOpen(false)
+    setRefundOpen(false)
+    setReadReport(null)
+    setReadStaffGate(null)
+    setPlaceholder(null)
+    const { y, m } = bangkokCalendarParts(new Date())
+    setReceiptLookupRunningNo(
+      defaultRunningNoFromNextPreview(previewReceiptNo, y, m)
+    )
+    setReceiptLookupOpen(true)
+    setReceiptLookupFocusRequest((n) => n + 1)
+  }, [previewReceiptNo])
+
+  const closeReceiptLookup = useCallback(() => {
+    setReceiptLookupOpen(false)
+  }, [])
 
   const onKeypadAction = useCallback(
     (id: PosKeypadActionId) => {
@@ -579,6 +547,29 @@ export function PosTerminalPage() {
       }
 
       if (kind === "keypad") {
+        if (receiptLookupOpen) {
+          const digit = keypadDigitChar(id)
+          if (digit !== null && digit !== ".") {
+            setReceiptLookupRunningNo((prev) =>
+              appendReceiptLookupRunningDigit(prev, digit)
+            )
+            return
+          }
+          if (id === "backspace") {
+            setReceiptLookupRunningNo((prev) => prev.slice(0, -1))
+            return
+          }
+          if (id === "clear") {
+            setReceiptLookupRunningNo("")
+            return
+          }
+          if (id === "enter") {
+            receiptLookupPanelRef.current?.search()
+            return
+          }
+          return
+        }
+
         const digit = keypadDigitChar(id)
         if (digit !== null) {
           setBarcode((prev) => prev + digit)
@@ -606,6 +597,7 @@ export function PosTerminalPage() {
       openRefund,
       openStockCount,
       readReport,
+      receiptLookupOpen,
       staffEvidenceComplete,
       submitBarcode,
     ]
@@ -628,6 +620,7 @@ export function PosTerminalPage() {
         void submitBarcode(value)
       }}
       onKeypadAction={onKeypadAction}
+      onReceiptLookup={openReceiptLookup}
       cartLines={cartLines}
       cartLookupError={cartLookupError}
       onIncrementQty={(productId) => {
@@ -643,33 +636,26 @@ export function PosTerminalPage() {
         setCartLines(clearCart())
         setCartLookupError(null)
       }}
+      receiptLookupOpen={receiptLookupOpen}
+      onReceiptLookupClose={closeReceiptLookup}
+      receiptLookupRunningNo={receiptLookupRunningNo}
+      onReceiptLookupRunningNoChange={setReceiptLookupRunningNo}
+      receiptLookupFocusRequestId={receiptLookupFocusRequest}
+      receiptLookupPanelRef={receiptLookupPanelRef}
       receiptNo={resolvePosReceiptPanelNo(lastReceiptNo, previewReceiptNo)}
       checkoutOpen={checkoutOpen}
       checkoutPending={checkoutPending}
       checkoutError={checkoutError}
-      checkoutSuccess={checkoutSuccess}
       barcodeFocusRequest={barcodeFocusRequest}
       onCheckoutClose={() => {
         if (!checkoutPending) {
-          if (checkoutSuccess) {
-            resetPosForNextSale()
-          } else {
-            setCheckoutOpen(false)
-            setCheckoutError(null)
-          }
+          setCheckoutOpen(false)
+          setCheckoutError(null)
         }
       }}
-      onCheckoutConfirm={(paymentMethod) => {
-        void confirmCheckout(paymentMethod)
+      onCheckoutPrintReceipt={(input) => {
+        void handleCheckoutPrintReceipt(input)
       }}
-      onBankTransferCapture={(blob) => {
-        void handleBankTransferCapture(blob)
-      }}
-      onBankTransferUploadLater={() => {
-        void handleBankTransferUploadLater()
-      }}
-      onCheckoutPrintReceiptAndNewSale={printReceiptAndNewSale}
-      onCheckoutNewSaleWithoutPrint={newSaleWithoutPrint}
       refundOpen={refundOpen}
       refundReceiptNo={refundReceiptNo}
       refundReceipts={refundReceipts}

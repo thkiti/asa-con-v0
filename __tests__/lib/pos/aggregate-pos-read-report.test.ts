@@ -56,7 +56,7 @@ describe("aggregatePosReadReportFromSales", () => {
     expect(result.paymentLines.find((p) => p.key === "CREDIT_CARD")?.amount).toBe(200)
   })
 
-  it("splits payment methods across READ report buckets including Prompt Pay", () => {
+  it("consolidates bank-style payments into BANK TRANSFER for READ X/Z display", () => {
     const displayCatalog = resolveReadReportDisplayCatalog(POLICY_SUMMARY_HEADERS, [])
     const labels = new Map<string, SummaryHeaderLabel>(
       displayCatalog.map((headerCode) => [
@@ -80,18 +80,28 @@ describe("aggregatePosReadReportFromSales", () => {
         { total: 30, payment: { method: PaymentMethod.OTHER }, items: [{ productId: "p1", qty: 1, lineTotal: 30 }] },
         { total: 40, payment: { method: PaymentMethod.QR }, items: [{ productId: "p1", qty: 1, lineTotal: 40 }] },
         { total: 50, payment: { method: PaymentMethod.TRANSFER }, items: [{ productId: "p1", qty: 1, lineTotal: 50 }] },
+        { total: 15, payment: { method: PaymentMethod.BANK_TRANSFER }, items: [{ productId: "p1", qty: 1, lineTotal: 15 }] },
       ],
       [product],
       labels,
       displayCatalog
     )
 
+    expect(result.paymentLines).toHaveLength(3)
+    expect(result.paymentLines.map((p) => p.label)).toEqual([
+      "CASH",
+      "CREDIT CARD",
+      "BANK TRANSFER",
+    ])
     expect(result.paymentLines.find((p) => p.key === "CASH")?.amount).toBe(10)
     expect(result.paymentLines.find((p) => p.key === "CREDIT_CARD")?.amount).toBe(20)
-    expect(result.paymentLines.find((p) => p.key === "PROMPT_PAY")?.amount).toBe(30)
-    expect(result.paymentLines.find((p) => p.key === "QR_CODE")?.amount).toBe(40)
-    expect(result.paymentLines.find((p) => p.key === "TRANSFER")?.amount).toBe(50)
-    expect(result.grandTotal).toBe(150)
+    expect(result.paymentLines.find((p) => p.key === "BANK_TRANSFER")?.amount).toBe(135)
+    expect(result.grandTotal).toBe(165)
+    const paymentSum = result.paymentLines.reduce((sum, line) => sum + line.amount, 0)
+    expect(paymentSum).toBe(result.grandTotal)
+    expect(result.paymentLines.some((p) => p.label === "PROMPT PAY")).toBe(false)
+    expect(result.paymentLines.some((p) => p.label === "QR CODE")).toBe(false)
+    expect(result.paymentLines.some((p) => p.label === "TRANSFER")).toBe(false)
   })
 
   it("daily READ X/Z uses dynamic display catalog with zero-fill", () => {
