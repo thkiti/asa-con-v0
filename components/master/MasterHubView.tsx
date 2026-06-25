@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { MainMenuHubPage } from "@/components/main/MainMenuHubPage"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
-import { canAccessMasterDatabase } from "@/lib/permissions/master"
 import { mainMenuDescriptionLinkClass } from "@/lib/main-ui/main-menu-layout"
 
 const ADMINISTRATION_ENTRIES = [
@@ -37,11 +36,6 @@ type MasterHubViewProps = {
 }
 
 export function MasterHubView({ user }: MasterHubViewProps) {
-  const items = ADMINISTRATION_ENTRIES.filter((entry) => {
-    if (entry.href === "/master/product-reference") return true
-    return canAccessMasterDatabase(user.role)
-  })
-
   return (
     <MainMenuHubPage
       user={user}
@@ -59,7 +53,7 @@ export function MasterHubView({ user }: MasterHubViewProps) {
         </>
       }
       gridAriaLabel="Administration"
-      items={items.map((entry) => ({
+      items={ADMINISTRATION_ENTRIES.map((entry) => ({
         key: entry.href,
         label: entry.title,
         hint: entry.hint,

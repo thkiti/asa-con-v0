@@ -2,7 +2,7 @@ import type { Role } from "@/lib/shared"
 import { canAccessProductReference } from "./master"
 import { roleHasArea, type AppArea } from "./roles"
 
-/** Paths HO_OPERATIONS may access under /master (Product & Reference only). */
+/** Page paths HO_OPERATIONS may access under /master (Product & Reference only). */
 const HO_OPERATIONS_MASTER_PATHS = [
   "/master/product-reference",
 ] as const
@@ -10,6 +10,29 @@ const HO_OPERATIONS_MASTER_PATHS = [
 function isHoOperationsMasterPath(pathname: string): boolean {
   return HO_OPERATIONS_MASTER_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
+  )
+}
+
+/** Master API routes required by the Product & Reference page for HO_OPERATIONS. */
+function isHoOperationsProductReferenceApi(pathname: string): boolean {
+  if (
+    pathname === "/api/master/product-reference" ||
+    pathname.startsWith("/api/master/product-reference/")
+  ) {
+    return true
+  }
+  if (pathname === "/api/master/products" || pathname.startsWith("/api/master/products/")) {
+    return true
+  }
+  if (pathname.startsWith("/api/master/reference-stock/latest-hook-no")) {
+    return true
+  }
+  return false
+}
+
+function isHoOperationsProductReferenceRoute(pathname: string): boolean {
+  return (
+    isHoOperationsMasterPath(pathname) || isHoOperationsProductReferenceApi(pathname)
   )
 }
 
@@ -88,7 +111,7 @@ export function canAccessRoute(
     return true
   }
 
-  if (role === "HO_OPERATIONS" && isHoOperationsMasterPath(pathname)) {
+  if (role === "HO_OPERATIONS" && isHoOperationsProductReferenceRoute(pathname)) {
     return canAccessProductReference(role)
   }
 

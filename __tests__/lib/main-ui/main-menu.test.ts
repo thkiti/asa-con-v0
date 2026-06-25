@@ -44,21 +44,32 @@ describe("getMainMenuSections", () => {
     expect(keys).toEqual(["finance", "operations", "shop"])
   })
 
-  it("includes Administration, Operations, and Shop for HO_OPERATIONS", () => {
+  it("includes Operations and Shop only for HO_OPERATIONS", () => {
     const keys = getMainMenuSections("HO_OPERATIONS").map(
       (section) => section.key
     )
-    expect(keys).toEqual(["administration", "operations", "shop"])
+    expect(keys).toEqual(["operations", "shop"])
   })
 
-  it("exposes product-reference for HO_OPERATIONS administration only", () => {
-    const items = getMainMenuSectionDetail("HO_OPERATIONS", "administration")?.items ?? []
+  it("exposes product-reference under operations for HO_OPERATIONS only", () => {
+    expect(getMainMenuSectionDetail("HO_OPERATIONS", "administration")).toBeNull()
+    const items =
+      getMainMenuSectionDetail("HO_OPERATIONS", "operations")?.items ?? []
     const keys = items.map((item) => item.key)
-    expect(keys).toEqual(["product-reference-stock"])
+    expect(keys[0]).toBe("product-reference-stock")
+    expect(findItem("HO_OPERATIONS", "product-reference-stock")?.label).toBe(
+      "Product & Reference Stock"
+    )
     expect(findItem("HO_OPERATIONS", "product-reference-stock")?.href).toBe(
       "/master/product-reference"
     )
-    expect(findItem("HO_OPERATIONS", "branch")).toBeUndefined()
+    expect(findItem("HO_OPERATIONS", "product-reference-stock")?.hint).toBe(
+      "Product, category, brand, unit, barcode and stock reference setup"
+    )
+    expect(findItem("HO_FINANCE", "product-reference-stock")).toBeUndefined()
+    expect(findItem("HO_ADMIN", "product-reference-stock")?.href).toBe(
+      "/master/product-reference"
+    )
   })
 
   it("returns no sections for SH_STAFF", () => {

@@ -73,14 +73,39 @@ describe("canAccessRoute", () => {
     expect(canAccessRoute("/main/administration", "SH_STAFF")).toBe(true)
   })
 
-  it("allows /master only for HO_ADMIN (except product-reference for HO_OPERATIONS)", () => {
+  it("allows product-reference for HO_OPERATIONS; denies other master routes", () => {
     expect(canAccessRoute("/master", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/master", "HO_OPERATIONS")).toBe(false)
     expect(canAccessRoute("/master/product-reference", "HO_ADMIN")).toBe(true)
     expect(canAccessRoute("/master/product-reference", "HO_OPERATIONS")).toBe(true)
     expect(canAccessRoute("/master/branch", "HO_ADMIN")).toBe(true)
     expect(canAccessRoute("/master/branch", "HO_OPERATIONS")).toBe(false)
+    expect(canAccessRoute("/master/staff", "HO_OPERATIONS")).toBe(false)
+    expect(canAccessRoute("/master/pricing", "HO_OPERATIONS")).toBe(false)
+    expect(canAccessRoute("/admin/receipt-setup", "HO_OPERATIONS")).toBe(false)
     expect(canAccessRoute("/master/branch", "HO_FINANCE")).toBe(false)
     expect(canAccessRoute("/master/staff", "SH_STAFF")).toBe(false)
+  })
+
+  it("allows product-reference master APIs for HO_OPERATIONS only", () => {
+    expect(canAccessRoute("/api/master/product-reference", "HO_OPERATIONS")).toBe(
+      true
+    )
+    expect(canAccessRoute("/api/master/product-reference/ref-1", "HO_OPERATIONS")).toBe(
+      true
+    )
+    expect(canAccessRoute("/api/master/products", "HO_OPERATIONS")).toBe(true)
+    expect(canAccessRoute("/api/master/products/by-code", "HO_OPERATIONS")).toBe(
+      true
+    )
+    expect(
+      canAccessRoute("/api/master/reference-stock/latest-hook-no", "HO_OPERATIONS")
+    ).toBe(true)
+    expect(canAccessRoute("/api/master/branches", "HO_OPERATIONS")).toBe(false)
+    expect(canAccessRoute("/api/master/staff", "HO_OPERATIONS")).toBe(false)
+    expect(canAccessRoute("/api/master/pricing/policy", "HO_OPERATIONS")).toBe(
+      false
+    )
   })
 
   it("allows /api/master routes only for HO_ADMIN", () => {

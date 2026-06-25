@@ -54,4 +54,22 @@ describe("operations hub via MainMenuSectionView", () => {
     expect(catalogImageIndex).toBeGreaterThan(checkReceiptIndex)
     expect(stockDocumentsIndex).toBeGreaterThan(catalogImageIndex)
   })
+
+  it("renders Product & Reference Stock for HO_OPERATIONS", () => {
+    const section = getMainMenuSectionDetail("HO_OPERATIONS", "operations")
+    expect(section).not.toBeNull()
+
+    const html = renderToStaticMarkup(
+      <MainMenuSectionView
+        user={{ ...hoAdmin, role: "HO_OPERATIONS", name: "Ops User" }}
+        section={section!}
+      />
+    )
+
+    expect(html).toContain('href="/master/product-reference"')
+    expect(html).toContain("Product &amp; Reference Stock")
+    expect(html).toContain(
+      "Product, category, brand, unit, barcode and stock reference setup"
+    )
+  })
 })

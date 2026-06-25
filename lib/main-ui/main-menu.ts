@@ -125,7 +125,7 @@ export function canAccessMainMenuSection(
 
   switch (key) {
     case "administration":
-      return canAccessMasterDatabase(role) || canAccessProductReference(role)
+      return canAccessMasterDatabase(role)
     case "finance":
       return (
         isHoMainMenuRole(role) &&
@@ -149,48 +149,40 @@ function buildSectionItems(
   documentEntityCode: DocumentEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE
 ): MainMenuItem[] {
   switch (key) {
-    case "administration": {
-      const items: MainMenuItem[] = []
-      if (canAccessProductReference(role)) {
-        items.push(
-          available(
-            "product-reference-stock",
-            "Product / Reference Stock",
-            "/master/product-reference",
-            "Search product and hook reference links"
-          )
-        )
-      }
-      if (canAccessMasterDatabase(role)) {
-        items.push(
-          available(
-            "branch",
-            "Branch",
-            "/master/branch",
-            "Branch codes, types, active status"
-          ),
-          available(
-            "staff",
-            "Staff",
-            "/master/staff",
-            "Staff accounts, roles, branch assignment"
-          ),
-          available(
-            "pricing",
-            "Pricing",
-            "/master/pricing",
-            "Transfer policy, selling price, promotion (planned)"
-          ),
-          available(
-            "receipt-setup",
-            "Receipt Setup",
-            "/admin/receipt-setup",
-            "Receipt company name, footer lines, Thai tax labels"
-          )
-        )
-      }
-      return items
-    }
+    case "administration":
+      if (!canAccessMasterDatabase(role)) return []
+      return [
+        available(
+          "product-reference-stock",
+          "Product / Reference Stock",
+          "/master/product-reference",
+          "Search product and hook reference links"
+        ),
+        available(
+          "branch",
+          "Branch",
+          "/master/branch",
+          "Branch codes, types, active status"
+        ),
+        available(
+          "staff",
+          "Staff",
+          "/master/staff",
+          "Staff accounts, roles, branch assignment"
+        ),
+        available(
+          "pricing",
+          "Pricing",
+          "/master/pricing",
+          "Transfer policy, selling price, promotion (planned)"
+        ),
+        available(
+          "receipt-setup",
+          "Receipt Setup",
+          "/admin/receipt-setup",
+          "Receipt company name, footer lines, Thai tax labels"
+        ),
+      ]
 
     case "finance":
       return getAllFinanceMenuItems(role)
@@ -198,6 +190,16 @@ function buildSectionItems(
     case "operations":
       if (!canAccessMenu(role, "operations")) return []
       return [
+        ...(canAccessProductReference(role) && role === "HO_OPERATIONS"
+          ? [
+              available(
+                "product-reference-stock",
+                "Product & Reference Stock",
+                "/master/product-reference",
+                "Product, category, brand, unit, barcode and stock reference setup"
+              ),
+            ]
+          : []),
         available(
           "check-receipt",
           "Check Receipt",
