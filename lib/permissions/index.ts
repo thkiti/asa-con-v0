@@ -19,8 +19,10 @@ export {
 } from "./menu"
 export {
   canAccessMasterDatabase,
+  canAccessProductReference,
   MasterDatabaseAuthError,
   requireMasterDatabaseSession,
+  requireProductReferenceSession,
 } from "./master"
 export {
   canEditSalesTargets,

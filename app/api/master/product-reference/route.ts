@@ -8,12 +8,12 @@ import {
   parseCreateReferenceStockBody,
   parseProductReferenceListQuery,
 } from "@/lib/master"
-import { requireMasterDatabaseSession } from "@/lib/permissions/master"
+import { requireProductReferenceSession } from "@/lib/permissions/master"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    requireMasterDatabaseSession(await getSession())
+    requireProductReferenceSession(await getSession())
     const query = parseProductReferenceListQuery(req.nextUrl.searchParams)
     const items = await listProductReference(prisma, query)
     return NextResponse.json({ items })
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    requireMasterDatabaseSession(await getSession())
+    requireProductReferenceSession(await getSession())
     const body = parseCreateReferenceStockBody(await req.json())
     const item = await createReferenceStock(prisma, body)
     return NextResponse.json({ item }, { status: 201 })

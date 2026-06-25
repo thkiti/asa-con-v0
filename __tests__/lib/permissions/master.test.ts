@@ -1,7 +1,9 @@
 import {
   canAccessMasterDatabase,
+  canAccessProductReference,
   MasterDatabaseAuthError,
   requireMasterDatabaseSession,
+  requireProductReferenceSession,
 } from "@/lib/permissions/master"
 import type { SessionUser } from "@/lib/auth/types"
 
@@ -20,8 +22,18 @@ describe("canAccessMasterDatabase", () => {
   it("allows HO_ADMIN only", () => {
     expect(canAccessMasterDatabase("HO_ADMIN")).toBe(true)
     expect(canAccessMasterDatabase("HO_FINANCE")).toBe(false)
+    expect(canAccessMasterDatabase("HO_OPERATIONS")).toBe(false)
     expect(canAccessMasterDatabase("SH_STAFF")).toBe(false)
     expect(canAccessMasterDatabase(null)).toBe(false)
+  })
+})
+
+describe("canAccessProductReference", () => {
+  it("allows HO_ADMIN and HO_OPERATIONS", () => {
+    expect(canAccessProductReference("HO_ADMIN")).toBe(true)
+    expect(canAccessProductReference("HO_OPERATIONS")).toBe(true)
+    expect(canAccessProductReference("HO_FINANCE")).toBe(false)
+    expect(canAccessProductReference("SH_STAFF")).toBe(false)
   })
 })
 
@@ -45,6 +57,24 @@ describe("requireMasterDatabaseSession", () => {
     ).toThrow(MasterDatabaseAuthError)
     try {
       requireMasterDatabaseSession({ ...hoAdmin, role: "SH_STAFF" })
+    } catch (err) {
+      expect(err).toMatchObject({ code: "FORBIDDEN", httpStatus: 403 })
+    }
+  })
+})
+
+describe("requireProductReferenceSession", () => {
+  it("returns session for HO_OPERATIONS", () => {
+    const hoOps = { ...hoAdmin, role: "HO_OPERATIONS" as const }
+    expect(requireProductReferenceSession(hoOps)).toBe(hoOps)
+  })
+
+  it("throws 403 for HO_FINANCE", () => {
+    expect(() =>
+      requireProductReferenceSession({ ...hoAdmin, role: "HO_FINANCE" })
+    ).toThrow(MasterDatabaseAuthError)
+    try {
+      requireProductReferenceSession({ ...hoAdmin, role: "HO_FINANCE" })
     } catch (err) {
       expect(err).toMatchObject({ code: "FORBIDDEN", httpStatus: 403 })
     }

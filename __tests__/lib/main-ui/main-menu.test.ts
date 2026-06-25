@@ -44,11 +44,21 @@ describe("getMainMenuSections", () => {
     expect(keys).toEqual(["finance", "operations", "shop"])
   })
 
-  it("includes Operations and Shop only for HO_OPERATIONS", () => {
+  it("includes Administration, Operations, and Shop for HO_OPERATIONS", () => {
     const keys = getMainMenuSections("HO_OPERATIONS").map(
       (section) => section.key
     )
-    expect(keys).toEqual(["operations", "shop"])
+    expect(keys).toEqual(["administration", "operations", "shop"])
+  })
+
+  it("exposes product-reference for HO_OPERATIONS administration only", () => {
+    const items = getMainMenuSectionDetail("HO_OPERATIONS", "administration")?.items ?? []
+    const keys = items.map((item) => item.key)
+    expect(keys).toEqual(["product-reference-stock"])
+    expect(findItem("HO_OPERATIONS", "product-reference-stock")?.href).toBe(
+      "/master/product-reference"
+    )
+    expect(findItem("HO_OPERATIONS", "branch")).toBeUndefined()
   })
 
   it("returns no sections for SH_STAFF", () => {

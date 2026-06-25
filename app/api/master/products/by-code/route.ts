@@ -4,12 +4,12 @@ import { masterErrorResponse } from "@/app/api/master/shared/master-api-errors"
 import { getSession } from "@/lib/auth/session"
 import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
 import { loadProductByCode } from "@/lib/master/load-product-by-code"
-import { requireMasterDatabaseSession } from "@/lib/permissions/master"
+import { requireProductReferenceSession } from "@/lib/permissions/master"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    requireMasterDatabaseSession(await getSession())
+    requireProductReferenceSession(await getSession())
     const code = String(req.nextUrl.searchParams.get("code") || "").trim()
     const product = await loadProductByCode(prisma, code)
     return NextResponse.json({

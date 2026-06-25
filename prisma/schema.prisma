@@ -118,6 +118,7 @@ model Branch {
   paymentVouchers          PaymentVoucher[]
   pettyCashVouchers        PettyCashVoucher[]
   revenueVouchers          RevenueVoucher[]
+  invoiceVouchers          InvoiceVoucher[]
   accountingPeriods        AccountingPeriod[]
   reconciliationSnapshots  ReconciliationSnapshot[]
   salesTargets             BranchSalesTarget[]
@@ -626,6 +627,14 @@ enum RevenueVoucherStatus {
   CANCELLED
 }
 
+enum InvoiceVoucherStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  POSTED
+  CANCELLED
+}
+
 model GlAccount {
   id          String         @id @default(uuid())
   code        String         @unique
@@ -648,6 +657,7 @@ model GlAccount {
   pettyCashVoucherLines     PettyCashVoucherLine[]
   revenueVoucherReceiveTo   RevenueVoucher[]     @relation("RevenueVoucherReceiveTo")
   revenueVoucherLines       RevenueVoucherLine[]
+  invoiceVoucherLines       InvoiceVoucherLine[]
 }
 
 model LegalEntity {
@@ -662,6 +672,7 @@ model LegalEntity {
   paymentVouchers      PaymentVoucher[]
   pettyCashVouchers    PettyCashVoucher[]
   revenueVouchers      RevenueVoucher[]
+  invoiceVouchers      InvoiceVoucher[]
   accountingPeriods    AccountingPeriod[]
   stockDocuments       StockDocument[]
 }
@@ -825,6 +836,7 @@ model Voucher {
   paymentVoucherPosted     PaymentVoucher?
   pettyCashVoucherPosted   PettyCashVoucher?
   revenueVoucherPosted     RevenueVoucher?
+  invoiceVoucherPosted     InvoiceVoucher?
 
   @@unique([refType, refId])
   @@index([branchId, date])
@@ -871,6 +883,7 @@ model JournalEntry {
   paymentVoucherPosted     PaymentVoucher?     @relation("PaymentVoucherPosted")
   pettyCashVoucherPosted   PettyCashVoucher?   @relation("PettyCashVoucherPosted")
   revenueVoucherPosted     RevenueVoucher?     @relation("RevenueVoucherPosted")
+  invoiceVoucherPosted     InvoiceVoucher?   @relation("InvoiceVoucherPosted")
   manualJournalEntryReversal ManualJournalEntry? @relation("ManualJournalReversal")
 
   @@index([branchId, periodId, date])
@@ -1143,6 +1156,67 @@ model RevenueVoucherLine {
 
   @@unique([revenueVoucherId, lineNo])
   @@index([revenueVoucherId])
+}
+
+/// Finance Invoice (INV) — billing document for receivables before payment.
+/// Document numbers: INV-YYnnnn — see docs/FINANCE_DOCUMENT_IDENTITY_STANDARD.md.
+/// Not a POS sales invoice; journal lines define Dr receivable / Cr revenue accounts.
+model InvoiceVoucher {
+  id               String               @id @default(uuid())
+  entryNo          String               @unique
+  status           InvoiceVoucherStatus @default(DRAFT)
+  branchId         String
+  legalEntityCode  String
+  invoiceDate      DateTime
+  dueDate          DateTime?
+  customerName     String
+  refNo            String?
+  description      String?
+  totalAmount      Decimal              @default(0) @db.Decimal(18, 2)
+  createdByStaffId String
+
+  submittedAt         DateTime?
+  submittedByStaffId  String?
+  confirmedAt         DateTime?
+  confirmedByStaffId  String?
+  postedAt            DateTime?
+  postedByStaffId     String?
+  cancelledAt         DateTime?
+  cancelledByStaffId  String?
+  cancelReason        String? @db.Text
+
+  postedVoucherId      String? @unique
+  postedJournalEntryId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch             Branch        @relation(fields: [branchId], references: [id])
+  legalEntity        LegalEntity   @relation(fields: [legalEntityCode], references: [code])
+  postedVoucher      Voucher?      @relation(fields: [postedVoucherId], references: [id])
+  postedJournalEntry JournalEntry? @relation("InvoiceVoucherPosted", fields: [postedJournalEntryId], references: [id])
+  lines              InvoiceVoucherLine[]
+
+  @@index([branchId, invoiceDate])
+  @@index([legalEntityCode, invoiceDate])
+  @@index([legalEntityCode, status])
+  @@index([status, invoiceDate])
+}
+
+model InvoiceVoucherLine {
+  id               String  @id @default(uuid())
+  invoiceVoucherId String
+  lineNo           Int
+  glAccountId      String
+  debit            Decimal @default(0) @db.Decimal(18, 2)
+  credit           Decimal @default(0) @db.Decimal(18, 2)
+  memo             String?
+
+  invoiceVoucher InvoiceVoucher @relation(fields: [invoiceVoucherId], references: [id], onDelete: Cascade)
+  glAccount      GlAccount      @relation(fields: [glAccountId], references: [id])
+
+  @@unique([invoiceVoucherId, lineNo])
+  @@index([invoiceVoucherId])
 }
 
 enum ReconciliationSnapshotKind {

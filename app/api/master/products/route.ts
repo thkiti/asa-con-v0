@@ -6,12 +6,12 @@ import {
   createProductWithReference,
   parseCreateProductWithReferenceBody,
 } from "@/lib/master"
-import { requireMasterDatabaseSession } from "@/lib/permissions/master"
+import { requireProductReferenceSession } from "@/lib/permissions/master"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function POST(req: NextRequest) {
   try {
-    requireMasterDatabaseSession(await getSession())
+    requireProductReferenceSession(await getSession())
     const body = parseCreateProductWithReferenceBody(await req.json())
     const item = await createProductWithReference(prisma, body)
     return NextResponse.json({ item }, { status: 201 })

@@ -3,12 +3,12 @@ export const dynamic = "force-dynamic"
 import { masterErrorResponse } from "@/app/api/master/shared/master-api-errors"
 import { getSession } from "@/lib/auth/session"
 import { getNextHookNo } from "@/lib/master/get-next-hook-no"
-import { requireMasterDatabaseSession } from "@/lib/permissions/master"
+import { requireProductReferenceSession } from "@/lib/permissions/master"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    requireMasterDatabaseSession(await getSession())
+    requireProductReferenceSession(await getSession())
     const hookGroup = String(req.nextUrl.searchParams.get("hookGroup") || "")
       .trim()
       .toUpperCase()

@@ -81,12 +81,12 @@ describe("MainMenuView", () => {
     expect(html).not.toContain('href="/main/system"')
   })
 
-  it("renders Operations and Shop cards only for HO_OPERATIONS", () => {
+  it("renders Administration, Operations, and Shop for HO_OPERATIONS", () => {
     const html = renderToStaticMarkup(<MainMenuView user={hoOperations} />)
+    expect(html).toContain('href="/master"')
     expect(html).toContain('href="/main/operations"')
     expect(html).toContain('href="/main/shop"')
     expect(html).not.toContain('href="/finance"')
-    expect(html).not.toContain('href="/main/administration"')
     expect(html).not.toContain('href="/main/system"')
   })
 

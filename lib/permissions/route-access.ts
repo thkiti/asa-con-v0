@@ -1,5 +1,17 @@
 import type { Role } from "@/lib/shared"
+import { canAccessProductReference } from "./master"
 import { roleHasArea, type AppArea } from "./roles"
+
+/** Paths HO_OPERATIONS may access under /master (Product & Reference only). */
+const HO_OPERATIONS_MASTER_PATHS = [
+  "/master/product-reference",
+] as const
+
+function isHoOperationsMasterPath(pathname: string): boolean {
+  return HO_OPERATIONS_MASTER_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  )
+}
 
 const AREA_PREFIX: Record<AppArea, string> = {
   finance: "/finance",
@@ -74,6 +86,10 @@ export function canAccessRoute(
     PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   ) {
     return true
+  }
+
+  if (role === "HO_OPERATIONS" && isHoOperationsMasterPath(pathname)) {
+    return canAccessProductReference(role)
   }
 
   const area = pathnameArea(pathname)

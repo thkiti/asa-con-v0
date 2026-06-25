@@ -8,6 +8,13 @@ export function canAccessMasterDatabase(
   return role === "HO_ADMIN"
 }
 
+/** Product & Reference Stock — HO_ADMIN and HO_OPERATIONS. */
+export function canAccessProductReference(
+  role: Role | null | undefined
+): boolean {
+  return role === "HO_ADMIN" || role === "HO_OPERATIONS"
+}
+
 export class MasterDatabaseAuthError extends Error {
   readonly code: string
   readonly httpStatus: number
@@ -34,6 +41,28 @@ export function requireMasterDatabaseSession(
   if (!canAccessMasterDatabase(session.role)) {
     throw new MasterDatabaseAuthError(
       "Master Database requires HO_ADMIN",
+      "FORBIDDEN",
+      403
+    )
+  }
+
+  return session
+}
+
+export function requireProductReferenceSession(
+  session: SessionUser | null
+): SessionUser {
+  if (!session) {
+    throw new MasterDatabaseAuthError(
+      "Authentication required",
+      "UNAUTHENTICATED",
+      401
+    )
+  }
+
+  if (!canAccessProductReference(session.role)) {
+    throw new MasterDatabaseAuthError(
+      "Product & Reference requires HO_ADMIN or HO_OPERATIONS",
       "FORBIDDEN",
       403
     )

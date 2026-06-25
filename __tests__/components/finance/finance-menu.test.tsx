@@ -53,7 +53,7 @@ describe("FinanceMenuView", () => {
 })
 
 describe("FinanceMenuHubView", () => {
-  it("renders daily work hub with MJV, PAV, REV, and Petty Cash", () => {
+  it("renders daily work hub with MJV, PAV, INV, REV, and Petty Cash", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
     expect(hub).not.toBeNull()
     expect(hub?.label).toBe("Daily Work")
@@ -63,12 +63,14 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain('href="/finance"')
     expect(html).toContain('href="/finance/manual-journal-entries"')
     expect(html).toContain('href="/finance/payment-vouchers"')
+    expect(html).toContain('href="/finance/invoice-vouchers"')
     expect(html).toContain("MJV")
     expect(html).toContain("PAV")
+    expect(html).toContain("INV")
     expect(html).toContain("REV")
     expect(html).toContain("Petty Cash")
     expect(html).toContain(
-      "Create and process finance documents — MJV, PAV, REV, and PCV are live."
+      "Create and process finance documents — MJV, PAV, INV, REV, and PCV are live."
     )
     expect(html).toContain('href="/finance/revenue-vouchers"')
     expect(html).toContain('href="/finance/petty-cash-vouchers"')
@@ -138,6 +140,10 @@ describe("finance-menu config", () => {
     const pav = items.find((item) => item.key === "pav")
     expect(pav?.status).toBe("available")
     expect(pav?.href).toBe("/finance/payment-vouchers")
+    expect(keys).toContain("inv")
+    const inv = items.find((item) => item.key === "inv")
+    expect(inv?.status).toBe("available")
+    expect(inv?.href).toBe("/finance/invoice-vouchers")
     expect(keys).toContain("rev")
     const rev = items.find((item) => item.key === "rev")
     expect(rev?.status).toBe("available")
