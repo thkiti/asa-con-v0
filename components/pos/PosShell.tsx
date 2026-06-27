@@ -1,6 +1,6 @@
 "use client"
 
-import type { RefObject } from "react"
+import { useState, type RefObject } from "react"
 import type {
   PosCheckoutPrintReceiptInput,
 } from "@/components/pos/PosCheckoutOverlay"
@@ -8,10 +8,16 @@ import { PosBarcodeCapture } from "./PosBarcodeCapture"
 import { PosKeypadGrid } from "./PosKeypadGrid"
 import { PosCheckoutOverlay } from "./PosCheckoutOverlay"
 import { PosRefundOverlay } from "./PosRefundOverlay"
+import { PosRefundTicketPanel } from "./PosRefundTicketPanel"
+import { PosReceiptLookupPanel } from "./PosReceiptLookupPanel"
 import { PosCollectorOverlay } from "./PosCollectorOverlay"
 import { PosPlaceholderOverlay } from "./PosPlaceholderOverlay"
 import { PosReadReportCredentialGate } from "./PosReadReportCredentialGate"
+import { PosCollectorReportPanel } from "./PosCollectorReportPanel"
 import { PosReadReportPanel } from "./PosReadReportPanel"
+import { ReadZTodayWorkspace } from "./ReadZTodayWorkspace"
+import { ReadZLookupWorkspace } from "./ReadZLookupWorkspace"
+import { PosReadZHoAuthGate } from "./PosReadZHoAuthGate"
 import { PosRepairTicketOverlay } from "./PosRepairTicketOverlay"
 import { PosStaffEvidenceOverlay } from "./PosStaffEvidenceOverlay"
 import { PosTargetVsSalesOverlay } from "./PosTargetVsSalesOverlay"
@@ -22,17 +28,21 @@ import { PosKeypadMessageBlock } from "./PosKeypadMessageBlock"
 import { PosEvidencePendingOverlay } from "./PosEvidencePendingOverlay"
 import { PosSessionBanner } from "./PosSessionBanner"
 import {
-  isPrintReportHighlighted,
   shouldGhostPrintReportButton,
 } from "@/lib/pos-ui/pos-actions"
-import { printReadZReportAndExit } from "@/lib/pos-ui/print-read-report"
+import {
+  buildPosWorkspaceKeypadGhostButtonIds,
+  resolvePosActiveWorkspace,
+  shouldBlankNumericKeypadForWorkspace,
+} from "@/lib/pos-ui/pos-workspace-keypad"
 import { THERMAL_CLONE_PRINT_STYLES } from "@/lib/thermal/print-css"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+import type { PosCollectCommitContext, ReadZHoReviewAuth } from "@/lib/pos-ui/read-report-client"
 import type { PosCartLine } from "@/lib/pos/cart"
+import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
 import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
-import { POS_KEYPAD_BUTTONS } from "@/lib/pos-ui/keypad-layout"
 import { POS_PANEL_FRAME_CLASS, POS_WORKSPACE_GAP_CLASS } from "@/lib/pos-ui/pos-panel-frame"
 import type { PendingPaymentEvidenceRow } from "@/lib/pos/pending-payment-evidence-types"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
@@ -50,6 +60,7 @@ type PosShellProps = {
   onReceiptLookupRunningNoChange?: (value: string) => void
   receiptLookupFocusRequestId?: number
   receiptLookupPanelRef?: RefObject<PosReceiptLookupPanelHandle | null>
+  onReceiptLookupKeypadRunningInputEnabledChange?: (enabled: boolean) => void
   cartLines: readonly PosCartLine[]
   cartLookupError: string | null
   onIncrementQty: (productId: string) => void
@@ -75,8 +86,13 @@ type PosShellProps = {
   refundLookupPending: boolean
   refundPending: boolean
   refundError: string | null
+  refundSlipContext: RefundReceiptPrintContext | null
+  refundTicketPending: boolean
+  refundTicketError: string | null
   onRefundClose: () => void
   onRefundConfirm: () => void
+  onRefundTicketClose: () => void
+  onRefundPrint: () => void
   barcodeFocusRequest?: number
   placeholderOverlay: PosPlaceholderId | null
   onClosePlaceholder: () => void
@@ -84,14 +100,36 @@ type PosShellProps = {
   onCloseTargetVsSales: () => void
   worktimeOpen: boolean
   onCloseWorktime: () => void
+  worktimeReadZLogoutPending?: boolean
+  onWorktimeReadZLogoutComplete?: () => void
   collectorOpen: boolean
   onCloseCollector: () => void
-  onCollectorReport: (report: ReadReportPayload) => void
+  onCollectorReport: (report: ReadReportPayload, commit: PosCollectCommitContext) => void
   readStaffGate: "X" | "Z" | null
   onCloseReadStaffGate: () => void
   onReadReport: (report: ReadReportPayload) => void
   readReport: ReadReportPayload | null
   onCloseReadReport: () => void
+  onPrintReadZReport?: () => void
+  onPrintReadZLookupReport?: () => void
+  readZLookupOpen?: boolean
+  readZLookupReport?: ReadReportPayload | null
+  onCloseReadZLookup?: () => void
+  onOpenReadZLookup?: () => void
+  readZLookupSelectedDate?: string
+  readZLookupMode?: "daily" | "cumulative"
+  onReadZLookupDateSelect?: (ymd: string) => void
+  onReadZLookupCumulative?: () => void
+  readZHoAuthGateOpen?: boolean
+  onCloseReadZHoAuthGate?: () => void
+  onReadZHoAuthorized?: (auth: ReadZHoReviewAuth) => void
+  readZReviewLoading?: boolean
+  readZReviewError?: string | null
+  readZPrintAllowed?: boolean
+  readZLookupPrintAllowed?: boolean
+  collectorReportPending?: boolean
+  collectorReportError?: string | null
+  onCollectorPrintReport?: () => void
   repairTicketOpen: boolean
   onCloseRepairTicket: () => void
   staffEvidenceOpen: boolean
@@ -127,6 +165,7 @@ export function PosShell({
   onReceiptLookupRunningNoChange,
   receiptLookupFocusRequestId = 0,
   receiptLookupPanelRef,
+  onReceiptLookupKeypadRunningInputEnabledChange,
   cartLines,
   cartLookupError,
   onIncrementQty,
@@ -152,8 +191,13 @@ export function PosShell({
   refundLookupPending,
   refundPending,
   refundError,
+  refundSlipContext,
+  refundTicketPending,
+  refundTicketError,
   onRefundClose,
   onRefundConfirm,
+  onRefundTicketClose,
+  onRefundPrint,
   barcodeFocusRequest = 0,
   placeholderOverlay,
   onClosePlaceholder,
@@ -161,6 +205,8 @@ export function PosShell({
   onCloseTargetVsSales,
   worktimeOpen,
   onCloseWorktime,
+  worktimeReadZLogoutPending = false,
+  onWorktimeReadZLogoutComplete,
   collectorOpen,
   onCloseCollector,
   onCollectorReport,
@@ -169,6 +215,26 @@ export function PosShell({
   onReadReport,
   readReport,
   onCloseReadReport,
+  onPrintReadZReport,
+  onPrintReadZLookupReport,
+  readZLookupOpen = false,
+  readZLookupReport = null,
+  onCloseReadZLookup,
+  onOpenReadZLookup,
+  readZHoAuthGateOpen = false,
+  onCloseReadZHoAuthGate,
+  onReadZHoAuthorized,
+  readZLookupSelectedDate = "",
+  readZLookupMode = "daily",
+  onReadZLookupDateSelect,
+  onReadZLookupCumulative,
+  readZReviewLoading = false,
+  readZReviewError = null,
+  readZPrintAllowed = true,
+  readZLookupPrintAllowed = false,
+  collectorReportPending = false,
+  collectorReportError = null,
+  onCollectorPrintReport,
   repairTicketOpen,
   onCloseRepairTicket,
   staffEvidenceOpen,
@@ -187,8 +253,13 @@ export function PosShell({
   onPendingEvidenceUploadSuccess,
   onPendingEvidenceQrModalOpenChange,
 }: PosShellProps) {
+  const [repairPhotoPreviewHost, setRepairPhotoPreviewHost] = useState<HTMLElement | null>(null)
   const keypadSideMuted =
-    collectorOpen || readStaffGate !== null || repairTicketOpen || staffEvidenceOpen
+    collectorOpen ||
+    readStaffGate !== null ||
+    repairTicketOpen ||
+    staffEvidenceOpen ||
+    readZLookupOpen
   const readReportMode = readReport?.mode ?? null
   const muted =
     keypadDisabled ||
@@ -198,26 +269,38 @@ export function PosShell({
     evidencePendingOpen ||
     checkoutOpen ||
     refundOpen ||
+    receiptLookupOpen ||
     keypadSideMuted ||
-    !!readReport
+    !!readReport ||
+    readZLookupOpen
+
+  const activeWorkspace = resolvePosActiveWorkspace({
+    receiptLookupOpen,
+    refundOpen,
+    refundSlipOpen: !!refundSlipContext,
+    readStaffGate,
+    readReportMode,
+    readZLookupOpen,
+    collectorOpen,
+    repairTicketOpen,
+  })
 
   const ghostPrint = shouldGhostPrintReportButton({
     sideMuted: keypadSideMuted,
     readReportMode,
   })
 
-  const ghostButtonIds = new Set<PosKeypadActionId>()
-  if (ghostPrint) ghostButtonIds.add("print-report")
-  if (readReport) {
-    for (const btn of POS_KEYPAD_BUTTONS) {
-      if (btn.id !== "print-report" || ghostPrint) {
-        ghostButtonIds.add(btn.id)
-      }
-    }
+  const ghostButtonIds = new Set(
+    buildPosWorkspaceKeypadGhostButtonIds(activeWorkspace, { readReportMode })
+  )
+  if (ghostPrint && !ghostButtonIds.has("print-report")) {
+    ghostButtonIds.add("print-report")
   }
   if (staffEvidenceComplete) {
     ghostButtonIds.add("staff-evidence")
   }
+  const permanentlyDisabledButtonIds = new Set<PosKeypadActionId>()
+  const blankNumericKeypad = shouldBlankNumericKeypadForWorkspace(activeWorkspace)
 
   return (
     <div className="pos-terminal-root fixed inset-0 flex bg-white">
@@ -231,6 +314,8 @@ export function PosShell({
           onClose={onCloseWorktime}
           branchCode={session.branchCode}
           branchName={session.branchName}
+          readZLogoutPending={worktimeReadZLogoutPending}
+          onReadZLogoutComplete={onWorktimeReadZLogoutComplete}
         />
       ) : null}
       {targetVsSalesOpen ? (
@@ -254,7 +339,7 @@ export function PosShell({
       ) : null}
       <div className={`flex min-h-0 flex-1 ${POS_WORKSPACE_GAP_CLASS} px-4 py-4`}>
         <div className="mx-auto flex h-full w-full min-h-0 max-w-[1200px] flex-1 flex-col gap-3">
-          <PosSessionBanner session={session} />
+          <PosSessionBanner session={session} onOpenReadZLookup={onOpenReadZLookup} />
 
           <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-zinc-500 bg-gradient-to-b from-zinc-100 to-zinc-300 p-3 shadow-sm">
             <div className="flex items-center justify-center py-1">
@@ -266,27 +351,41 @@ export function PosShell({
               value={barcode}
               onChange={onBarcodeChange}
               onSubmit={onBarcodeSubmit}
-              disabled={muted || receiptLookupOpen}
+              disabled={muted}
               focusRequestId={receiptLookupOpen ? 0 : barcodeFocusRequest}
             />
           </div>
 
-          <div className={`min-h-0 flex-1 ${POS_PANEL_FRAME_CLASS} bg-gradient-to-b from-slate-200 to-slate-300`}>
+          <div className={`relative min-h-0 flex-1 ${POS_PANEL_FRAME_CLASS} bg-gradient-to-b from-slate-200 to-slate-300`}>
+            {repairTicketOpen ? (
+              <div
+                ref={setRepairPhotoPreviewHost}
+                data-testid="repair-ticket-photo-preview-host"
+                className="pointer-events-none absolute inset-0 z-20 min-h-0 p-2"
+              />
+            ) : null}
             <PosKeypadGrid
               onAction={onKeypadAction}
               onReceiptLookup={onReceiptLookup}
-              disabled={keypadDisabled || (!receiptLookupOpen && muted && !readReport)}
-              printReportHighlighted={isPrintReportHighlighted(readReportMode)}
-              printReportLabel={
-                readReportMode === "Z" ? "PRINT REPORT\nAND EXIT" : undefined
-              }
+              disabled={keypadDisabled || (muted && !activeWorkspace)}
+              staffEvidenceComplete={staffEvidenceComplete}
+              readReportMode={readReportMode}
+              printReportHighlighted={false}
               ghostButtonIds={ghostButtonIds.size > 0 ? ghostButtonIds : undefined}
+              permanentlyDisabledButtonIds={
+                permanentlyDisabledButtonIds.size > 0
+                  ? permanentlyDisabledButtonIds
+                  : undefined
+              }
+              blankNumericKeypad={blankNumericKeypad}
               messageSlot={
-                <PosKeypadMessageBlock
-                  pendingEvidenceCount={pendingEvidenceCount}
-                  onOpenPendingEvidence={() => onOpenPendingEvidence?.()}
-                  cartLookupError={cartLookupError}
-                />
+                <div className={receiptLookupOpen ? "pointer-events-none" : undefined}>
+                  <PosKeypadMessageBlock
+                    pendingEvidenceCount={pendingEvidenceCount}
+                    onOpenPendingEvidence={() => onOpenPendingEvidence?.()}
+                    cartLookupError={cartLookupError}
+                  />
+                </div>
               }
             />
           </div>
@@ -301,22 +400,38 @@ export function PosShell({
         onDecrementQty={onDecrementQty}
         onRemoveLine={onRemoveCartLine}
         onClearCart={onClearCart}
-        receiptLookupOpen={receiptLookupOpen}
-        onReceiptLookupClose={onReceiptLookupClose}
-        receiptLookupRunningNo={receiptLookupRunningNo}
-        onReceiptLookupRunningNoChange={onReceiptLookupRunningNoChange}
-        receiptLookupFocusRequestId={receiptLookupFocusRequestId}
-        receiptLookupPanelRef={receiptLookupPanelRef}
         overlay={
-          receiptLookupOpen
-            ? null
-            : checkoutOpen ? (
+          receiptLookupOpen ? (
+            <PosReceiptLookupPanel
+              ref={receiptLookupPanelRef}
+              session={session}
+              receiptThermalLayout={thermalLayouts.RECEIPT}
+              refundThermalLayout={thermalLayouts.REFUND}
+              collectorThermalLayout={thermalLayouts.COLLECTOR}
+              readZThermalLayout={thermalLayouts.READ_Z}
+              runningNo={receiptLookupRunningNo}
+              onRunningNoChange={(value) => onReceiptLookupRunningNoChange?.(value)}
+              focusRequestId={receiptLookupFocusRequestId}
+              onKeypadRunningInputEnabledChange={
+                onReceiptLookupKeypadRunningInputEnabledChange
+              }
+              onClose={() => onReceiptLookupClose?.()}
+            />
+          ) : checkoutOpen ? (
             <PosCheckoutOverlay
               lines={cartLines}
               pending={checkoutPending}
               error={checkoutError}
               onPrintReceipt={onCheckoutPrintReceipt}
               onClose={onCheckoutClose}
+            />
+          ) : refundSlipContext ? (
+            <PosRefundTicketPanel
+              receipt={refundSlipContext}
+              pending={refundTicketPending}
+              error={refundTicketError}
+              onPrintRefund={onRefundPrint}
+              onClose={onRefundTicketClose}
             />
           ) : refundOpen ? (
             <PosRefundOverlay
@@ -335,11 +450,50 @@ export function PosShell({
               onConfirm={onRefundConfirm}
               onClose={onRefundClose}
             />
+          ) : readReport?.mode === "COLLECT" ? (
+            <PosCollectorReportPanel
+              report={readReport}
+              collectorLayout={thermalLayouts.COLLECTOR}
+              pending={collectorReportPending}
+              error={collectorReportError}
+              onPrintReport={() => onCollectorPrintReport?.()}
+              onClose={onCloseReadReport}
+            />
+          ) : readReport?.mode === "Z" ? (
+            <ReadZTodayWorkspace
+              report={readReport}
+              readZLayout={thermalLayouts.READ_Z}
+              onClose={onCloseReadReport}
+              onPrintReport={() => onPrintReadZReport?.()}
+              printError={readZReviewError}
+              printAllowed={readZPrintAllowed}
+            />
+          ) : readZLookupOpen ? (
+            <>
+              <ReadZLookupWorkspace
+                selectedDate={readZLookupSelectedDate}
+                lookupMode={readZLookupMode}
+                report={readZLookupReport}
+                readZLayout={thermalLayouts.READ_Z}
+                onClose={() => onCloseReadZLookup?.()}
+                reviewLoading={readZReviewLoading}
+                printError={readZReviewError}
+                onDateSelect={(ymd) => onReadZLookupDateSelect?.(ymd)}
+                onCumulativePress={() => onReadZLookupCumulative?.()}
+                onPrintReport={() => onPrintReadZLookupReport?.()}
+                printAllowed={readZLookupPrintAllowed}
+              />
+              {readZHoAuthGateOpen ? (
+                <PosReadZHoAuthGate
+                  onClose={() => onCloseReadZHoAuthGate?.()}
+                  onAuthorized={(auth) => onReadZHoAuthorized?.(auth)}
+                />
+              ) : null}
+            </>
           ) : readReport ? (
             <PosReadReportPanel
               report={readReport}
               onClose={onCloseReadReport}
-              collectorLayout={thermalLayouts.COLLECTOR}
               readZLayout={thermalLayouts.READ_Z}
             />
           ) : repairTicketOpen ? (
@@ -347,6 +501,7 @@ export function PosShell({
               session={session}
               onClose={onCloseRepairTicket}
               repairLayout={thermalLayouts.REPAIR_TICKET}
+              photoPreviewHost={repairPhotoPreviewHost}
             />
           ) : placeholderOverlay ? (
             <PosPlaceholderOverlay
@@ -360,9 +515,10 @@ export function PosShell({
 
       {collectorOpen ? (
         <PosCollectorOverlay
+          branchId={session.branchId}
           onClose={onCloseCollector}
-          onReport={(report) => {
-            onCollectorReport(report)
+          onReport={(report, commit) => {
+            onCollectorReport(report, commit)
           }}
         />
       ) : null}

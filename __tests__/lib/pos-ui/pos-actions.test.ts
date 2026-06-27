@@ -41,14 +41,14 @@ describe("pos-ui/pos-actions", () => {
     expect(getPosPlaceholderTitle("worktime")).toBe("Worktime In/Out")
   })
 
-  it("highlights print only for Z and COLLECT reports", () => {
+  it("highlights print only for Z reports", () => {
     expect(isPrintReportHighlighted("Z")).toBe(true)
-    expect(isPrintReportHighlighted("COLLECT")).toBe(true)
+    expect(isPrintReportHighlighted("COLLECT")).toBe(false)
     expect(isPrintReportHighlighted("X")).toBe(false)
     expect(isPrintReportHighlighted(null)).toBe(false)
   })
 
-  it("ghosts print when side muted or READ X is open", () => {
+  it("ghosts print when side muted or READ X is open; COLLECT uses panel print", () => {
     expect(
       shouldGhostPrintReportButton({ sideMuted: true, readReportMode: "Z" })
     ).toBe(true)
@@ -58,5 +58,8 @@ describe("pos-ui/pos-actions", () => {
     expect(
       shouldGhostPrintReportButton({ sideMuted: false, readReportMode: "Z" })
     ).toBe(false)
+    expect(
+      shouldGhostPrintReportButton({ sideMuted: false, readReportMode: "COLLECT" })
+    ).toBe(true)
   })
 })

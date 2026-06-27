@@ -167,6 +167,58 @@ body.thermal-clone-print-active [${THERMAL_PRINT_CLONE_WRAP_ATTR}] {
     display: flex !important;
   }
 
+  body.thermal-clone-print-active [data-thermal-print-clone] .repair-ticket-photo-list {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  body.thermal-clone-print-active [data-thermal-print-clone] .repairTicketPhotoRow {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    column-gap: 4px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    align-items: start !important;
+    overflow: visible !important;
+  }
+
+  body.thermal-clone-print-active [data-thermal-print-clone] .repairTicketPhotoFileName {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZGroupTableHeader,
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZGroupTableRow {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 32px 56px !important;
+    column-gap: 8px !important;
+  }
+
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZScrollableGroupArea {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZGroupStickyHeader {
+    position: static !important;
+  }
+
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZGroupName,
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZGroupQty,
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZGroupAmount {
+    white-space: nowrap !important;
+  }
+
+  body.thermal-clone-print-active [data-thermal-print-clone] .readZGroupQty {
+    margin-right: 5ch !important;
+  }
+
   body.thermal-clone-print-active .no-print {
     display: none !important;
   }

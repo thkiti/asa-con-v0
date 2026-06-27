@@ -2,7 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client"
 import { verifyStaffPassword } from "@/lib/auth/verify-staff-password"
 import { resolveStaffForPosReadReport } from "@/lib/pos/resolvePosReportStaff"
 
-export type PosReportStaffIntent = "READ" | "COLLECT"
+export type PosReportStaffIntent = "READ" | "COLLECT" | "READ_Z_REVIEW"
 
 export type VerifiedPosReportStaff = {
   staffId: string
@@ -12,7 +12,7 @@ export type VerifiedPosReportStaff = {
 
 /**
  * ยืนยันรหัสพนักงาน + รหัสผ่านสำหรับ READ X/Z / COLLECT บน POS
- * COLLECT ต้องมี Staff.posCanCollect (เปิดที่ HO เมนูพนักงาน)
+ * COLLECT ต้องเป็นพนักงาน HO (role !== SH_STAFF) — ยืนยันที่ gate ไม่ใช่ session POS
  */
 export async function verifyPosReportStaffCredentials(
   prisma: PrismaClient,
@@ -23,7 +23,7 @@ export async function verifyPosReportStaffCredentials(
   }
 ): Promise<
   | { ok: true; staff: VerifiedPosReportStaff }
-  | { ok: false; code: "bad_credentials" | "no_collect_permission" }
+  | { ok: false; code: "bad_credentials" | "no_collect_permission" | "no_ho_permission" }
 > {
   const code = opts.staffCode.trim()
   const password = opts.password
@@ -39,7 +39,7 @@ export async function verifyPosReportStaffCredentials(
   const valid = await verifyStaffPassword(password, staff.password)
   if (!valid) return { ok: false, code: "bad_credentials" }
 
-  if (opts.intent === "COLLECT" && !staff.posCanCollect) {
+  if (opts.intent === "COLLECT" && staff.role === "SH_STAFF") {
     return { ok: false, code: "no_collect_permission" }
   }
 

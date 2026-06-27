@@ -49,9 +49,11 @@ export const DEFAULT_THERMAL_LAYOUTS: ThermalLayoutMap = {
   },
   REPAIR_TICKET: {
     ...emptyLayout("REPAIR_TICKET"),
-    headerLine1: "REPAIR TICKET",
-    headerLine2: "ตั๋วรับซ่อม / ฝากซ่อม",
-    headerLine3: "ASA SERVICES",
+    headerLine1: "ASA SERVICES",
+    headerLine2: "Repair Ticket",
+    headerLine3: "ใบรับซ่อม",
+    footerBlockText:
+      "คำเตือน: นำหลักฐานนี้มาเมื่อมารับของ ภายใน 30 วัน นับจากวันที่ออกตั๋ว",
     showAbbreviatedTaxTitle: false,
     showVatIncludedMessage: false,
   },

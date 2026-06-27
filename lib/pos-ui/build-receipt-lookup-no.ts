@@ -49,6 +49,21 @@ export function parseReceiptRunningSeq(receiptNo: string): string | null {
   return match ? match[3] : null
 }
 
+/** Running sequence values from receipt lookup rows, preserving API order and skipping duplicates. */
+export function runningNumbersFromReceiptLookupRows(
+  receipts: ReadonlyArray<{ receiptNo: string }>
+): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const row of receipts) {
+    const running = parseReceiptRunningSeq(row.receiptNo)
+    if (!running || seen.has(running)) continue
+    seen.add(running)
+    result.push(running)
+  }
+  return result
+}
+
 /**
  * Default running number from POS next-receipt preview when it matches year/month.
  * Next preview REC-…-0114 → latest issued running no 0113.

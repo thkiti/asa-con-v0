@@ -1,4 +1,5 @@
 import type { PaymentMethod, Product } from "@/generated/prisma/client"
+import { bangkokCalendarYmd } from "@/lib/pos/bangkokDayBounds"
 import {
   mergeManagementGroupSummary,
   resolveConfiguredProductGroup,
@@ -49,6 +50,17 @@ export type ReadReportPaymentLine = {
   amount: number
 }
 
+export type ReadReportCollectDailyCashLine = {
+  /** Bangkok calendar sales date YYYY-MM-DD */
+  salesDateYmd: string
+  cashAmount: number
+  ticketCount: number
+}
+
+function isCashSale(sale: SaleRowForReadReport): boolean {
+  return (sale.payment?.method ?? "CASH") === "CASH"
+}
+
 function formatReadReportGroupDisplayLeft(
   headerCode: string,
   label: string | null
@@ -58,7 +70,7 @@ function formatReadReportGroupDisplayLeft(
   return `${headerCode}-${nameShort}`
 }
 
-function aggregatePaymentAndTotals(sales: SaleRowForReadReport[]) {
+export function aggregatePaymentAndTotals(sales: SaleRowForReadReport[]) {
   const paymentTotals: Record<string, number> = {}
   for (const k of READ_REPORT_PAYMENT_ORDER) paymentTotals[k] = 0
 
@@ -79,6 +91,41 @@ function aggregatePaymentAndTotals(sales: SaleRowForReadReport[]) {
   }))
 
   return { paymentLines, grandTotal, saleCount: sales.length }
+}
+
+/** COLLECTOR — daily CASH totals by Bangkok sales date (no product groups). */
+export function aggregatePosCollectCashBySalesDate(
+  sales: Array<SaleRowForReadReport & { createdAt: Date }>
+): {
+  dailyCashLines: ReadReportCollectDailyCashLine[]
+  grandTotal: number
+  saleCount: number
+} {
+  const byDate = new Map<string, { cashAmount: number; ticketCount: number }>()
+
+  for (const sale of sales) {
+    if (!isCashSale(sale)) continue
+    const ymd = bangkokCalendarYmd(sale.createdAt)
+    const cur = byDate.get(ymd) ?? { cashAmount: 0, ticketCount: 0 }
+    cur.cashAmount += Number(sale.total)
+    cur.ticketCount += 1
+    byDate.set(ymd, cur)
+  }
+
+  const dailyCashLines = [...byDate.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([salesDateYmd, v]) => ({
+      salesDateYmd,
+      cashAmount: Math.round(v.cashAmount * 100) / 100,
+      ticketCount: v.ticketCount,
+    }))
+
+  const grandTotal =
+    Math.round(dailyCashLines.reduce((sum, row) => sum + row.cashAmount, 0) * 100) /
+    100
+  const saleCount = dailyCashLines.reduce((sum, row) => sum + row.ticketCount, 0)
+
+  return { dailyCashLines, grandTotal, saleCount }
 }
 
 /** READ X/Z — dynamic display catalog (900 parent or 901/902 children), zero-filled. */

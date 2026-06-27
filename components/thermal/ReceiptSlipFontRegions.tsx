@@ -1,6 +1,8 @@
 "use client"
 
 import { useLayoutEffect, useRef, useState } from "react"
+import { TicketSetupDivider } from "@/components/admin/TicketSetupPreviewPrimitives"
+import type { ThermalSlipInfoBlockRow } from "@/lib/thermal/thermal-slip-info-block"
 import {
   RECEIPT_SLIP_PROPORTIONAL_CLASS,
   RECEIPT_SLIP_TAX_TITLE_CLASS,
@@ -171,6 +173,109 @@ export function ReceiptSlipIdentityBlock({
 }
 
 type ReceiptSlipRefStaffBlockProps = ReceiptSlipRefStaff & ReceiptSlipInfoTypography
+
+export type ReceiptSlipInfoBlockRowProps = {
+  label: string
+  value: string
+}
+
+type ReceiptSlipInfoBlockProps = ReceiptSlipInfoTypography & {
+  rows: ReceiptSlipInfoBlockRowProps[]
+}
+
+function ReceiptSlipInfoLabelValueRow({
+  label,
+  value,
+  valueClassName = "min-w-0 truncate text-right tabular-nums",
+}: ReceiptSlipInfoBlockRowProps & { valueClassName?: string }) {
+  if (!value.trim()) return null
+
+  return (
+    <div className="receipt-slip-ref-staff-row flex w-full items-baseline justify-between gap-1">
+      <span className="shrink-0 text-left">{label}</span>
+      <span className={valueClassName}>{value}</span>
+    </div>
+  )
+}
+
+export function ReceiptSlipInfoBlock({
+  rows,
+  fontSizePx,
+  bold = true,
+}: ReceiptSlipInfoBlockProps) {
+  if (rows.length === 0) return null
+
+  const infoStyle = {
+    ...receiptSlipFullWidthStyle,
+    ...(fontSizePx != null
+      ? { fontSize: `${fontSizePx}px`, fontWeight: bold ? 700 : 400 }
+      : {}),
+  }
+
+  return (
+    <div
+      className={`${RECEIPT_SLIP_PROPORTIONAL_CLASS} receipt-slip-ref-staff w-full space-y-0.5 leading-tight`}
+      style={infoStyle}
+      data-testid="receipt-slip-info-block"
+    >
+      {rows.map((row, index) => (
+        <ReceiptSlipInfoLabelValueRow key={`${row.label}-${index}`} {...row} />
+      ))}
+    </div>
+  )
+}
+
+type ReceiptSlipStructuredInfoBlockProps = ReceiptSlipInfoTypography & {
+  rows: ThermalSlipInfoBlockRow[]
+}
+
+export function ReceiptSlipStructuredInfoBlock({
+  rows,
+  fontSizePx,
+  bold = true,
+}: ReceiptSlipStructuredInfoBlockProps) {
+  if (rows.length === 0) return null
+
+  const infoStyle = {
+    ...receiptSlipFullWidthStyle,
+    ...(fontSizePx != null
+      ? { fontSize: `${fontSizePx}px`, fontWeight: bold ? 700 : 400 }
+      : {}),
+  }
+
+  return (
+    <div
+      className={`${RECEIPT_SLIP_PROPORTIONAL_CLASS} receipt-slip-ref-staff w-full space-y-0.5 leading-tight`}
+      style={infoStyle}
+      data-testid="receipt-slip-structured-info-block"
+    >
+      {rows.map((row, index) => {
+        switch (row.kind) {
+          case "label-value":
+            return (
+              <ReceiptSlipInfoLabelValueRow
+                key={`${row.label}-${index}`}
+                label={row.label}
+                value={row.value}
+              />
+            )
+          case "divider":
+            return (
+              <div key={`divider-${index}`} className="receipt-setup-mono-body">
+                <TicketSetupDivider />
+              </div>
+            )
+          case "blank":
+            return <div key={`blank-${index}`} className="h-1" aria-hidden />
+          default: {
+            const _exhaustive: never = row
+            return _exhaustive
+          }
+        }
+      })}
+    </div>
+  )
+}
 
 export function ReceiptSlipRefStaffBlock({
   refLine,

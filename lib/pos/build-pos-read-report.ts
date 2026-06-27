@@ -1,7 +1,8 @@
 import { SaleStatus, type PrismaClient } from "@/generated/prisma/client"
 import {
+  aggregatePosCollectCashBySalesDate,
+  aggregatePaymentAndTotals,
   aggregatePosDailyReadReportFromSales,
-  aggregatePosReadReportFromSales,
   computeReadReportNetTotal,
   summarizeRefundsForReadReport,
 } from "@/lib/pos/aggregatePosReadReport"
@@ -13,12 +14,14 @@ import {
   type ReferenceProductGroupRow,
 } from "@/lib/product-groups/management-product-group"
 import {
-  bangkokCalendarYm,
   bangkokCalendarYmd,
+  readZMonthStartYmd,
   utcRangeForBangkokCalendarDay,
   utcRangeForBangkokInclusiveYmdRange,
 } from "@/lib/pos/bangkokDayBounds"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+
+export { readZMonthStartYmd } from "@/lib/pos/bangkokDayBounds"
 
 type ReadReportPrisma = Pick<
   PrismaClient,
@@ -92,7 +95,7 @@ async function loadReferenceStockByProductIds(
   return map
 }
 
-/** READ X / READ Z — วันนี้ (ปฏิทินกรุงเทพ), read-only */
+/** READ X / READ Z — single Bangkok calendar day, read-only */
 export async function buildPosDailyReadReport(
   prisma: ReadReportPrisma,
   opts: {
@@ -102,10 +105,73 @@ export async function buildPosDailyReadReport(
     staffId: string
     staffName: string
     mode: "X" | "Z"
+    /** Defaults to today (Bangkok). HO review may pass another day for Z. */
+    bangkokDate?: string
   }
 ): Promise<ReadReportPayload> {
-  const ymd = bangkokCalendarYmd(new Date())
-  const { start, endExclusive } = utcRangeForBangkokCalendarDay(ymd)
+  const ymd = opts.bangkokDate ?? bangkokCalendarYmd(new Date())
+  return buildPosReadReportForBangkokRange(prisma, {
+    ...opts,
+    startYmd: ymd,
+    endYmd: ymd,
+    readZScope: opts.mode === "Z" ? "daily" : undefined,
+    readZViewDate: opts.mode === "Z" ? ymd : undefined,
+    bangkokDateLabel: ymd,
+  })
+}
+
+/** READ Z HO review — cumulative month-to-date through endYmd (Bangkok calendar). */
+export async function buildPosReadZCumulativeToDateReport(
+  prisma: ReadReportPrisma,
+  opts: {
+    branchId: string
+    branchCode: string
+    branchName: string
+    staffId: string
+    staffName: string
+    endYmd: string
+  }
+): Promise<ReadReportPayload> {
+  const monthStart = readZMonthStartYmd(opts.endYmd)
+  return buildPosReadReportForBangkokRange(prisma, {
+    branchId: opts.branchId,
+    branchCode: opts.branchCode,
+    branchName: opts.branchName,
+    staffId: opts.staffId,
+    staffName: opts.staffName,
+    mode: "Z",
+    startYmd: monthStart,
+    endYmd: opts.endYmd,
+    readZScope: "cumulative-to-date",
+    readZViewDate: opts.endYmd,
+    bangkokDateFrom: monthStart,
+    bangkokDateTo: opts.endYmd,
+    bangkokDateLabel: `${monthStart} – ${opts.endYmd}`,
+  })
+}
+
+async function buildPosReadReportForBangkokRange(
+  prisma: ReadReportPrisma,
+  opts: {
+    branchId: string
+    branchCode: string
+    branchName: string
+    staffId: string
+    staffName: string
+    mode: "X" | "Z"
+    startYmd: string
+    endYmd: string
+    readZScope?: "daily" | "cumulative-to-date"
+    readZViewDate?: string
+    bangkokDateFrom?: string
+    bangkokDateTo?: string
+    bangkokDateLabel: string
+  }
+): Promise<ReadReportPayload> {
+  const { start, endExclusive } = utcRangeForBangkokInclusiveYmdRange(
+    opts.startYmd,
+    opts.endYmd
+  )
 
   const configuredHeaders = await loadConfiguredManagementHeaderCodes(prisma)
   const displayCatalog = resolveReadReportDisplayCatalog(
@@ -136,7 +202,11 @@ export async function buildPosDailyReadReport(
 
   return {
     mode: opts.mode,
-    bangkokDate: ymd,
+    bangkokDate: opts.bangkokDateLabel,
+    bangkokDateFrom: opts.bangkokDateFrom,
+    bangkokDateTo: opts.bangkokDateTo,
+    readZScope: opts.readZScope,
+    readZViewDate: opts.readZViewDate,
     generatedAt: new Date().toISOString(),
     staffId: opts.staffId,
     staffName: opts.staffName,
@@ -178,28 +248,9 @@ export async function buildPosCollectReport(
     start,
     endExclusive
   )
-  const products = await loadProductsForSales(prisma, sales)
-  const { groupLines, paymentLines, grandTotal, saleCount } =
-    aggregatePosReadReportFromSales(sales, products)
-
-  const monthTotals = new Map<string, { grandTotal: number; saleCount: number }>()
-  for (const sale of sales) {
-    const ym = bangkokCalendarYm(sale.createdAt)
-    const cur = monthTotals.get(ym) ?? { grandTotal: 0, saleCount: 0 }
-    cur.grandTotal += Number(sale.total)
-    cur.saleCount += 1
-    monthTotals.set(ym, cur)
-  }
-  const monthlySubtotals =
-    monthTotals.size > 1
-      ? [...monthTotals.entries()]
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([month, v]) => ({
-            month,
-            grandTotal: Math.round(v.grandTotal * 100) / 100,
-            saleCount: v.saleCount,
-          }))
-      : null
+  const { dailyCashLines, grandTotal, saleCount } =
+    aggregatePosCollectCashBySalesDate(sales)
+  const { paymentLines, grandTotal: totalSales } = aggregatePaymentAndTotals(sales)
 
   return {
     mode: "COLLECT",
@@ -211,15 +262,28 @@ export async function buildPosCollectReport(
     staffName: opts.staffName,
     branchCode: opts.branchCode,
     branchName: opts.branchName,
-    groupLines,
+    groupLines: [],
     paymentLines,
+    dailyCashLines,
     grandTotal,
     saleCount,
     refundCount: 0,
     refundTotal: 0,
-    netTotal: grandTotal,
-    monthlySubtotals,
+    netTotal: totalSales,
+    monthlySubtotals: null,
   }
+}
+
+export function validateReadZBangkokDate(ymd: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+    return "bangkokDate must be YYYY-MM-DD"
+  }
+  try {
+    utcRangeForBangkokCalendarDay(ymd)
+  } catch {
+    return "Invalid bangkokDate"
+  }
+  return null
 }
 
 export function validateCollectDateRange(dateFrom: string, dateTo: string): string | null {

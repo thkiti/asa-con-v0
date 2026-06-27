@@ -6,14 +6,16 @@ import { buildTicketLayout } from "@/lib/thermal/build-ticket-layout"
 
 type PosRefundReceiptSlipProps = {
   receipt: RefundReceiptPrintContext
+  /** 80mm framed slip — required for POS print tab (preview = print). */
+  framed?: boolean
 }
 
-export function PosRefundReceiptSlip({ receipt }: PosRefundReceiptSlipProps) {
+export function PosRefundReceiptSlip({ receipt, framed = false }: PosRefundReceiptSlipProps) {
   const layout = buildTicketLayout({
     documentType: "REFUND",
     refund: receipt,
     layout: receipt.thermalLayout,
   })
 
-  return <ThermalTicketSlipView layout={layout} />
+  return <ThermalTicketSlipView layout={layout} framed={framed} />
 }

@@ -260,7 +260,7 @@ export function PosRefundOverlay({
               disabled={!canConfirm}
               className="shrink-0 rounded-lg border-2 border-white bg-white px-8 py-3 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
-              {pending ? "Processing…" : "Process refund"}
+              {pending ? "Loading…" : "Preview refund ticket"}
             </button>
         </div>
       </div>

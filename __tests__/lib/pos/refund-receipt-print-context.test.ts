@@ -18,6 +18,7 @@ describe("loadRefundReceiptPrintContext", () => {
       createdAt: new Date("2026-06-04T12:00:00.000Z"),
       branch: { code: "SH001", name: "Shop One" },
       originalReceipt: { id: "rcpt-1", receiptNo: "REC-SH001-202606-0001" },
+      sale: { total: { toFixed: () => "860.00" } },
     }
 
     const db = {
@@ -74,6 +75,7 @@ describe("loadRefundReceiptPrintContext", () => {
     expect(ctx.branchPhone).toBe("02-111")
     expect(ctx.refundNo).toBe("REF-SH001-202606-0001")
     expect(ctx.originalReceiptNo).toBe("REC-SH001-202606-0001")
+    expect(ctx.originalReceiptTotal).toBe("860.00")
   })
 
   it("omits machine id when current branch is HO999 and uses default thermal layout", async () => {

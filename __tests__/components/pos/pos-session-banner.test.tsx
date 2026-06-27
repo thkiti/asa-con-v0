@@ -30,5 +30,15 @@ describe("PosSessionBanner", () => {
     expect(html).not.toContain("text-zinc-600")
     expect(html).not.toContain("Branch code")
     expect(html).not.toContain("Staff ID")
+    expect(html).not.toContain("READ Z Lookup")
+  })
+
+  it("shows READ Z Lookup entry for HO staff only", () => {
+    const hoSession: PosTerminalSession = { ...session, role: "HO_ADMIN" }
+    const html = renderToStaticMarkup(
+      <PosSessionBanner session={hoSession} onOpenReadZLookup={() => {}} />
+    )
+    expect(html).toContain("READ Z Lookup")
+    expect(html).toContain('data-testid="pos-open-read-z-lookup"')
   })
 })

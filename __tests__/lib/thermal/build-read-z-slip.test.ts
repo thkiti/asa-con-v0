@@ -56,7 +56,7 @@ describe("buildReadZSlipText", () => {
     )
     const lines = text.split("\n").filter((line) => line.length > 0)
 
-    const groupIdx = lines.findIndex((line) => line.includes("Group Code-Name"))
+    const groupIdx = lines.findIndex((line) => line.includes("Qty") && line.includes("Amount"))
     const sampleIdx = lines.findIndex((line) => line.includes("010-Sample"))
     const cashIdx = lines.findIndex((line) => line.startsWith("CASH"))
     const receiptsIdx = lines.findIndex((line) => line.startsWith("Receipts"))
@@ -101,9 +101,9 @@ describe("buildReadZSlipText", () => {
     ]
     const text = buildReadZSlipText({ ...baseReport, groupLines }, layout)
 
-    expect(text).toContain("0101901-Home Small")
-    expect(text).toContain("0101902-Home Large")
-    expect(text).toContain("5100900-Ladies Heels")
+    expect(text).toContain("0101-Home Sm")
+    expect(text).toContain("0101-Home La")
+    expect(text).toContain("5100-Ladies")
     expect(text).not.toContain("0100900")
   })
 
@@ -129,6 +129,36 @@ describe("buildReadZSlipText", () => {
     expect(text).not.toContain("PROMPT PAY")
     expect(text).not.toContain("QR CODE")
     expect(text.split("\n").some((line) => line.trim() === "TRANSFER")).toBe(false)
+  })
+
+  it("puts identity in receipt-style blocks and omits duplicate body metadata", () => {
+    const layout = resolveThermalLayout("READ_Z", DEFAULT_THERMAL_LAYOUTS)
+    const text = buildReadZSlipText(baseReport, layout)
+    expect(text).toContain("Ref. READZ-SH001-20260607")
+    expect(text).toContain("Staff")
+    expect(text).toContain("SH001 • Chidlom")
+    expect(text).not.toContain("Date 2026-06-07")
+    expect(text).not.toContain("Printed ")
+    expect(text).not.toContain("STAFF 001")
+  })
+
+  it("anchors group Qty and Amount together on the right", () => {
+    const layout = resolveThermalLayout("READ_Z", DEFAULT_THERMAL_LAYOUTS)
+    const text = buildReadZSlipText(
+      {
+        ...baseReport,
+        groupLines: [{ lineKey: "1", displayLeft: "0101902-Home Large", qty: 2, amount: 60 }],
+      },
+      layout
+    )
+    const header = text.split("\n").find((line) => line.includes("Qty") && line.includes("Amount"))
+    const row = text.split("\n").find((line) => line.includes("0101-Ho"))
+    expect(header).toBeTruthy()
+    expect(row).toBeTruthy()
+    expect(header!.length).toBe(THERMAL_COLUMNS)
+    expect(row!.length).toBe(THERMAL_COLUMNS)
+    expect(header!.slice(-13)).toBe("Qty    Amount")
+    expect(row!.slice(-13)).toBe("  2     60.00")
   })
 
   it("requires Z mode", () => {

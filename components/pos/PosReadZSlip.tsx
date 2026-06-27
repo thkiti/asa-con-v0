@@ -9,9 +9,11 @@ import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 type PosReadZSlipProps = {
   report: ReadReportPayload
   layout: ResolvedThermalLayout
+  /** Admin / POS preview — white paper frame matching Receipt Setup. */
+  framed?: boolean
 }
 
-export function PosReadZSlip({ report, layout }: PosReadZSlipProps) {
+export function PosReadZSlip({ report, layout, framed = false }: PosReadZSlipProps) {
   const ticketLayout = buildTicketLayout({
     documentType: "READ_Z",
     report,
@@ -20,7 +22,7 @@ export function PosReadZSlip({ report, layout }: PosReadZSlipProps) {
 
   return (
     <ThermalPrintSource kind="read-z">
-      <ThermalTicketSlipView layout={ticketLayout} />
+      <ThermalTicketSlipView layout={ticketLayout} framed={framed} />
     </ThermalPrintSource>
   )
 }

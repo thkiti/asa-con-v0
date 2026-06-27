@@ -8,105 +8,76 @@ import {
   resolveSubHeaderBlockLines,
 } from "./receipt-layout-blocks"
 import { buildSlipIdentityParts } from "./receipt-slip-identity"
-import { formatReceiptMachineLineForThermal } from "./receipt-machine-line"
-import type { ReceiptSlipRefStaff } from "@/lib/thermal/build-receipt-slip"
 import {
   THERMAL_COLUMNS,
-  appendThermalCenteredIfPresent,
-  centerThermalLine,
-  formatThermalAmountLine,
   formatThermalDateTime,
-  padThermalLine,
-  repeatThermalChar,
-  truncateThermalText,
 } from "./format"
-
-function appendLabelValue(
-  lines: string[],
-  label: string,
-  value: string,
-  width: number
-): void {
-  const gap = label.length + 1
-  if (value.length <= width - gap) {
-    lines.push(padThermalLine(label, value, width))
-    return
-  }
-  lines.push(label)
-  const trimmed = value.length > width ? value.slice(0, width) : value
-  lines.push(trimmed)
-}
-
-function appendReceiptBlockCenteredLines(
-  lines: string[],
-  blockLines: string[],
-  width: number
-): void {
-  for (const line of blockLines) {
-    appendThermalCenteredIfPresent(lines, line, width)
-  }
-}
-
-function formatRefundKindLabel(kind: RefundReceiptPrintContext["kind"]): string {
-  return kind === "SALE_LINKED" ? "SALE LINKED" : "GOODWILL"
-}
-
 import { buildTicketLayout } from "./build-ticket-layout"
 import { serializeTicketLayoutToText } from "./serialize-ticket-layout-text"
 import { buildThermalCustomerAcknowledgementText } from "./thermal-customer-ack"
+import type { ThermalSlipInfoBlockRow } from "./thermal-slip-info-block"
 
-function buildRefundBodyLines(context: RefundReceiptPrintContext, width: number): string[] {
-  const body: string[] = []
-
-  const title = centerThermalLine("REFUND RECEIPT", width)
-  if (title) body.push(title)
-
-  body.push(repeatThermalChar("-", width))
-  appendLabelValue(body, "Refund No", context.refundNo, width)
-
-  if (context.kind === "SALE_LINKED" && context.originalReceiptNo) {
-    appendLabelValue(body, "ORIGINAL RECEIPT NO", context.originalReceiptNo, width)
-  }
-
-  body.push(padThermalLine("Date", formatThermalDateTime(context.issuedAt), width))
-
-  if (context.cashierDisplay) {
-    const staff = context.cashierDisplay
-    if (staff.length <= width - 6) {
-      body.push(padThermalLine("Staff", staff, width))
-    } else {
-      body.push("Staff")
-      body.push(staff.length > width ? staff.slice(0, width) : staff)
-    }
-  }
-
-  body.push(padThermalLine("Type", formatRefundKindLabel(context.kind), width))
-
-  if (context.reason?.trim()) {
-    const reasonLine = truncateThermalText(context.reason.trim(), width)
-    if (reasonLine) {
-      body.push("Reason")
-      body.push(reasonLine)
-    }
-  }
-
-  body.push(repeatThermalChar("-", width))
-
-  const amountText = formatReceiptMoney(context.amount)
-  const amountWidth = Math.max(4, amountText.length)
-  body.push(formatThermalAmountLine("REFUND", amountText, width, amountWidth))
-
-  body.push(repeatThermalChar("-", width))
-  return body
+function formatRefundStaffDisplay(cashierDisplay: string): string {
+  const trimmed = cashierDisplay.trim()
+  const dash = trimmed.indexOf("-")
+  if (dash <= 0) return trimmed
+  return `${trimmed.slice(0, dash)} • ${trimmed.slice(dash + 1).trim()}`
 }
 
-function buildRefundRefStaffData(context: RefundReceiptPrintContext): ReceiptSlipRefStaff {
-  return {
-    refLine: `Ref. ${context.refundNo}`,
-    dateLine: formatThermalDateTime(context.issuedAt),
-    staffLabel: "Staff",
-    staffValue: context.cashierDisplay?.trim() || "",
+function buildRefundDocumentInfoBlock(
+  context: RefundReceiptPrintContext
+): ThermalSlipInfoBlockRow[] {
+  const rows: ThermalSlipInfoBlockRow[] = [
+    { kind: "label-value", label: "Ref. No.", value: context.refundNo },
+    { kind: "divider" },
+  ]
+
+  if (context.kind === "SALE_LINKED" && context.originalReceiptNo) {
+    rows.push({
+      kind: "label-value",
+      label: "Original Receipt No.",
+      value: context.originalReceiptNo,
+    })
+
+    if (context.originalReceiptTotal) {
+      rows.push({
+        kind: "label-value",
+        label: "TOTAL AMOUNT",
+        value: formatReceiptMoney(context.originalReceiptTotal),
+      })
+    }
+
+    rows.push({ kind: "blank" })
   }
+
+  rows.push({
+    kind: "label-value",
+    label: "Date:",
+    value: formatThermalDateTime(context.issuedAt),
+  })
+
+  if (context.cashierDisplay?.trim()) {
+    rows.push({
+      kind: "label-value",
+      label: "Staff:",
+      value: formatRefundStaffDisplay(context.cashierDisplay),
+    })
+  }
+
+  rows.push({ kind: "blank" })
+
+  return rows
+}
+
+function buildRefundSummaryRows(
+  context: RefundReceiptPrintContext
+): Array<{ label: string; value: string }> {
+  return [
+    {
+      label: "REFUND AMOUNT",
+      value: formatReceiptMoney(context.amount),
+    },
+  ]
 }
 
 export type RefundSlipParts = {
@@ -118,10 +89,12 @@ export type RefundSlipParts = {
   identityAfterMachineLines: string[]
   infoBlockFontSize: ReceiptBlockFontPx
   infoBlockBold: boolean
-  refStaff: ReceiptSlipRefStaff
+  infoBlockRows: ThermalSlipInfoBlockRow[]
   subHeaderLines: string[]
   subHeaderFontSize: ReceiptBlockFontPx
   subHeaderBold: boolean
+  refundReason: string | null
+  summaryRows: Array<{ label: string; value: string }>
   refundBodyText: string
   footerLines: string[]
   footerFontSize: ReceiptBlockFontPx
@@ -135,7 +108,6 @@ export function buildRefundSlipParts(
 ): RefundSlipParts {
   const w = THERMAL_COLUMNS
   const identityParts = buildSlipIdentityParts(context)
-  const refundBodyLines = buildRefundBodyLines(context, w)
 
   return {
     headerLines: resolveHeaderBlockLines(layout),
@@ -146,15 +118,24 @@ export function buildRefundSlipParts(
     identityAfterMachineLines: identityParts.afterMachineLines,
     infoBlockFontSize: layout.infoBlockFontSize,
     infoBlockBold: layout.infoBlockBold,
-    refStaff: buildRefundRefStaffData(context),
+    infoBlockRows: buildRefundDocumentInfoBlock(context),
     subHeaderLines: resolveSubHeaderBlockLines(layout),
     subHeaderFontSize: layout.subHeaderFontSize,
     subHeaderBold: layout.subHeaderBlockBold,
-    refundBodyText: refundBodyLines.join("\n"),
+    refundReason: context.reason?.trim() || null,
+    summaryRows: buildRefundSummaryRows(context),
+    refundBodyText: "",
     footerLines: resolveFooterBlockLines(layout),
     footerFontSize: layout.footerFontSize,
     footerBold: layout.footerBlockBold,
-    acknowledgementText: buildThermalCustomerAcknowledgementText(w),
+    acknowledgementText: buildThermalCustomerAcknowledgementText(w, {
+      writingGuides: true,
+      leadingDivider: false,
+      leadingBlank: true,
+      inlineGuides: true,
+      cutSeparator: true,
+      phoneLabel: "Phone No.",
+    }),
   }
 }
 

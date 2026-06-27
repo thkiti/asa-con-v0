@@ -8,16 +8,19 @@ import {
 } from "@/lib/pos-ui/pos-staff-credential"
 import {
   fetchPosCollectReport,
+  fetchCollectorDefaultDates,
   verifyPosStaffCredential,
+  type PosCollectCommitContext,
 } from "@/lib/pos-ui/read-report-client"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
 type PosCollectorOverlayProps = {
+  branchId: string
   onClose: () => void
-  onReport: (report: ReadReportPayload) => void
+  onReport: (report: ReadReportPayload, commit: PosCollectCommitContext) => void
 }
 
-export function PosCollectorOverlay({ onClose, onReport }: PosCollectorOverlayProps) {
+export function PosCollectorOverlay({ branchId, onClose, onReport }: PosCollectorOverlayProps) {
   const y = bangkokTodayYmdClient()
   const [staffInput, setStaffInput] = useState("")
   const [resolvedCode, setResolvedCode] = useState<string | null>(null)
@@ -52,6 +55,12 @@ export function PosCollectorOverlay({ onClose, onReport }: PosCollectorOverlayPr
     setResolvedCode(r.staffId)
     verifiedPasswordRef.current = parsed.password
     setGateStep("range")
+
+    const defaults = await fetchCollectorDefaultDates(branchId)
+    if (defaults.ok) {
+      setDateFrom(defaults.dateFrom)
+      setDateTo(defaults.dateTo)
+    }
   }
 
   async function submitCollect() {
@@ -78,12 +87,18 @@ export function PosCollectorOverlay({ onClose, onReport }: PosCollectorOverlayPr
         password: pw,
         dateFrom,
         dateTo,
+        persist: false,
       })
       if (!result.ok) {
         alert(result.error)
         return
       }
-      onReport(result.report)
+      onReport(result.report, {
+        staffId: code,
+        password: pw,
+        dateFrom,
+        dateTo,
+      })
     } finally {
       setLoading(false)
     }
@@ -104,12 +119,13 @@ export function PosCollectorOverlay({ onClose, onReport }: PosCollectorOverlayPr
           COLLECTOR — เก็บยอดจาก Cash Register
         </p>
         <p className="mt-1 text-center text-[11px] text-zinc-600">
-          ช่วงวันที่ปฏิทินกรุงเทพ สูงสุด 31 วัน — พิมพ์{" "}
+          ยืนยันตัวตนพนักงาน HO — พิมพ์{" "}
           <span className="font-mono">รหัสพนักงาน/รหัสผ่าน</span> แล้วกด Enter
-          เพื่อยืนยัน จากนั้นเลือกวันที่ แล้ว Enter อีกครั้งหรือกดตกลง
+          เพื่อยืนยัน จากนั้นเลือกช่วงวันที่ (กรุงเทพ สูงสุด 31 วัน) แล้ว Enter
+          อีกครั้งหรือกดตกลง
         </p>
         <label className="mt-3 block text-xs font-semibold text-zinc-700">
-          รหัสพนักงาน / รหัสผ่าน
+          รหัสพนักงาน HO / รหัสผ่าน
         </label>
         <input
           type={gateStep === "credential" ? "password" : "text"}

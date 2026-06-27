@@ -47,3 +47,15 @@ export function utcRangeForBangkokInclusiveYmdRange(
   const { endExclusive } = utcRangeForBangkokCalendarDay(toYmd)
   return { start, endExclusive }
 }
+
+/** First calendar day of the month containing ymd (Bangkok YYYY-MM-DD). */
+export function readZMonthStartYmd(ymd: string): string {
+  return `${ymd.slice(0, 7)}-01`
+}
+
+/** Add calendar days to a Bangkok YYYY-MM-DD (no DST). */
+export function addBangkokCalendarDays(ymd: string, days: number): string {
+  const { start } = utcRangeForBangkokCalendarDay(ymd)
+  const next = new Date(start.getTime() + days * 24 * 60 * 60 * 1000)
+  return bangkokCalendarYmd(next)
+}

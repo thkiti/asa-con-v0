@@ -1,6 +1,10 @@
 export type RepairTicketRecord = {
   ticketNo: string
   fileName?: string
+  /** Public Vercel Blob url from upload or list API. */
+  url?: string
+  /** Blob pathname e.g. repair/REP-SH001-202606-0004-01.jpg */
+  blobPath?: string
   createdAt: string
   branchCode: string
   staffId: string

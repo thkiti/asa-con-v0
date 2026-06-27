@@ -23,9 +23,13 @@ import {
   keypadDigitChar,
 } from "@/lib/pos-ui/pos-actions"
 import {
-  printPosReadReport,
+  printCollectorReportAndExit,
   printReadZReportAndExit,
 } from "@/lib/pos-ui/print-read-report"
+import { buildRefundPreviewSlipContext } from "@/lib/pos-ui/build-refund-preview-slip-context"
+import { printRefundAndExit } from "@/lib/pos-ui/print-refund-and-exit"
+import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
+import type { PosCollectCommitContext } from "@/lib/pos-ui/read-report-client"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import {
   stockCountEditorHref,
@@ -35,19 +39,33 @@ import {
   navigatePosReceiptPrintTab,
   openPosReceiptPrintTab,
 } from "@/lib/pos-ui/pos-receipt-print"
-import { openPosRefundReceiptPrint } from "@/lib/pos-ui/pos-refund-receipt-print"
 import { fetchPosReceiptNoPreview } from "@/lib/pos-ui/pos-receipt-preview-client"
 import {
-  fetchPosRefund,
   fetchPosRefundPreviewByReceiptNo,
   fetchPosRefundableReceipts,
 } from "@/lib/pos-ui/pos-refund-client"
 import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
 import { fetchPosProductLookup } from "@/lib/pos-ui/pos-product-lookup"
 import { resolvePosReceiptPanelNo } from "@/lib/pos-ui/pos-session-display"
+import {
+  fetchPosReadZReviewReport,
+  type ReadZHoReviewAuth,
+  type PosReadZReviewScope,
+} from "@/lib/pos-ui/read-report-client"
+import {
+  readZLookupDailyHasTicket,
+  type ReadZLookupMode,
+} from "@/lib/pos-ui/read-z-lookup-display"
+import { isReadZReportPrintAllowed } from "@/lib/pos/read-z-print-policy"
+import { bangkokTodayYmdClient } from "@/lib/pos-ui/pos-staff-credential"
+import { isPosHoStaffRole } from "@/lib/pos-ui/pos-staff-role"
 import { fetchSessionUser } from "@/lib/pos-ui/session-client"
 import { fetchStaffEvidenceStatus } from "@/lib/pos-ui/staff-evidence-client"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
+import {
+  isPosWorkspaceKeypadActionAllowed,
+  resolvePosActiveWorkspace,
+} from "@/lib/pos-ui/pos-workspace-keypad"
 import type { RefundPreviewResult } from "@/lib/pos/refund"
 import {
   defaultResolvedThermalLayouts,
@@ -75,6 +93,12 @@ export function PosTerminalPage() {
   const [lookupPending, setLookupPending] = useState(false)
   const [placeholder, setPlaceholder] = useState<PosPlaceholderId | null>(null)
   const [readReport, setReadReport] = useState<ReadReportPayload | null>(null)
+  const collectCommitRef = useRef<PosCollectCommitContext | null>(null)
+  const refundCommitRef = useRef<{
+    saleId: string
+    amount?: string
+    reasonCode: string
+  } | null>(null)
   const [readStaffGate, setReadStaffGate] = useState<null | "X" | "Z">(null)
   const [collectorOpen, setCollectorOpen] = useState(false)
   const [repairTicketOpen, setRepairTicketOpen] = useState(false)
@@ -82,6 +106,7 @@ export function PosTerminalPage() {
   const [staffEvidenceComplete, setStaffEvidenceComplete] = useState(false)
   const [targetVsSalesOpen, setTargetVsSalesOpen] = useState(false)
   const [worktimeOpen, setWorktimeOpen] = useState(false)
+  const [worktimeReadZLogoutPending, setWorktimeReadZLogoutPending] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [checkoutPending, setCheckoutPending] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
@@ -92,6 +117,7 @@ export function PosTerminalPage() {
   const [refundOpen, setRefundOpen] = useState(false)
   const [receiptLookupOpen, setReceiptLookupOpen] = useState(false)
   const [receiptLookupRunningNo, setReceiptLookupRunningNo] = useState("")
+  const [receiptLookupKeypadRunning, setReceiptLookupKeypadRunning] = useState(true)
   const [receiptLookupFocusRequest, setReceiptLookupFocusRequest] = useState(0)
   const receiptLookupPanelRef = useRef<PosReceiptLookupPanelHandle>(null)
   const [refundReceiptNo, setRefundReceiptNo] = useState("")
@@ -103,6 +129,12 @@ export function PosTerminalPage() {
   const [refundLookupPending, setRefundLookupPending] = useState(false)
   const [refundPending, setRefundPending] = useState(false)
   const [refundError, setRefundError] = useState<string | null>(null)
+  const [refundSlipContext, setRefundSlipContext] =
+    useState<RefundReceiptPrintContext | null>(null)
+  const [refundTicketPending, setRefundTicketPending] = useState(false)
+  const [refundTicketError, setRefundTicketError] = useState<string | null>(null)
+  const [collectorReportPending, setCollectorReportPending] = useState(false)
+  const [collectorReportError, setCollectorReportError] = useState<string | null>(null)
   const [thermalLayouts, setThermalLayouts] = useState<
     Record<ThermalDocumentType, ResolvedThermalLayout>
   >(defaultResolvedThermalLayouts())
@@ -118,6 +150,21 @@ export function PosTerminalPage() {
   const [evidenceQrModalOpen, setEvidenceQrModalOpen] = useState(false)
   const [stockCountPending, setStockCountPending] = useState(false)
   const [orderPending, setOrderPending] = useState(false)
+  const [readZHoReviewAuth, setReadZHoReviewAuth] = useState<ReadZHoReviewAuth | null>(
+    null
+  )
+  const [readZHoAuthGateOpen, setReadZHoAuthGateOpen] = useState(false)
+  const readZHoAuthPendingRef = useRef<"lookup-open" | null>(null)
+  const [readZLookupOpen, setReadZLookupOpen] = useState(false)
+  const [readZLookupReport, setReadZLookupReport] = useState<ReadReportPayload | null>(
+    null
+  )
+  const [readZLookupSelectedDate, setReadZLookupSelectedDate] = useState(() =>
+    bangkokTodayYmdClient()
+  )
+  const [readZLookupMode, setReadZLookupMode] = useState<ReadZLookupMode>("daily")
+  const [readZReviewLoading, setReadZReviewLoading] = useState(false)
+  const [readZReviewError, setReadZReviewError] = useState<string | null>(null)
 
   const openStockCount = useCallback(async () => {
     if (stockCountPending) return
@@ -357,6 +404,9 @@ export function PosTerminalPage() {
     setRefundReasonCode("")
     setRefundPreview(null)
     setRefundError(null)
+    setRefundSlipContext(null)
+    setRefundTicketError(null)
+    refundCommitRef.current = null
   }, [])
 
   const previewRefundByReceiptNo = useCallback(
@@ -403,10 +453,17 @@ export function PosTerminalPage() {
   }, [resetRefundForm])
 
   const closeRefund = useCallback(() => {
-    if (refundPending || refundLookupPending) return
+    if (refundPending || refundLookupPending || refundTicketPending) return
     setRefundOpen(false)
     resetRefundForm()
-  }, [refundPending, refundLookupPending, resetRefundForm])
+  }, [refundPending, refundLookupPending, refundTicketPending, resetRefundForm])
+
+  const closeRefundTicket = useCallback(() => {
+    if (refundTicketPending) return
+    setRefundSlipContext(null)
+    setRefundTicketError(null)
+    refundCommitRef.current = null
+  }, [refundTicketPending])
 
   const selectRefundReceipt = useCallback(
     (receiptNo: string) => {
@@ -421,29 +478,100 @@ export function PosTerminalPage() {
     [previewRefundByReceiptNo]
   )
 
-  const confirmRefund = useCallback(async () => {
-    if (refundPending || !refundPreview) return
+  const previewRefundTicket = useCallback(() => {
+    if (!refundPreview || !session) return
 
-    setRefundPending(true)
-    setRefundError(null)
-    try {
-      const result = await fetchPosRefund({
-        saleId: refundPreview.saleId,
-        amount: refundAmount.trim() || undefined,
-        reasonCode: refundReasonCode,
-      })
-      if (!result.ok) {
-        setRefundError(result.error)
-        return
-      }
-      openPosRefundReceiptPrint(result.refund.id)
-      resetRefundForm()
-      setRefundOpen(false)
-      setBarcodeFocusRequest((n) => n + 1)
-    } finally {
-      setRefundPending(false)
+    const slip = buildRefundPreviewSlipContext({
+      preview: refundPreview,
+      amount: refundAmount,
+      reasonCode: refundReasonCode,
+      session,
+      receiptThermalLayout: thermalLayouts.RECEIPT,
+      refundThermalLayout: thermalLayouts.REFUND,
+    })
+    if (!slip) {
+      setRefundError("Refund reason is required")
+      return
     }
-  }, [refundAmount, refundPending, refundPreview, refundReasonCode, resetRefundForm])
+
+    refundCommitRef.current = {
+      saleId: refundPreview.saleId,
+      amount: refundAmount.trim() || undefined,
+      reasonCode: refundReasonCode,
+    }
+    setRefundError(null)
+    setRefundTicketError(null)
+    setRefundSlipContext(slip)
+  }, [
+    refundAmount,
+    refundPreview,
+    refundReasonCode,
+    session,
+    thermalLayouts.RECEIPT,
+    thermalLayouts.REFUND,
+  ])
+
+  const printRefundTicketAndExit = useCallback(async () => {
+    const commit = refundCommitRef.current
+    if (!commit || refundTicketPending) return
+
+    setRefundTicketPending(true)
+    setRefundTicketError(null)
+    try {
+      const result = await printRefundAndExit(
+        commit,
+        () => {
+          refundCommitRef.current = null
+          resetRefundForm()
+          setRefundOpen(false)
+          setBarcodeFocusRequest((n) => n + 1)
+        },
+        async (refund) => {
+          setRefundSlipContext((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  refundId: refund.id,
+                  refundNo: refund.refundNo,
+                  amount: refund.amount,
+                  issuedAt: new Date().toISOString(),
+                }
+              : prev
+          )
+        }
+      )
+      if (!result.ok) {
+        setRefundTicketError(result.error)
+      }
+    } finally {
+      setRefundTicketPending(false)
+    }
+  }, [refundTicketPending, resetRefundForm])
+
+  const printCollectorTicketAndExit = useCallback(async () => {
+    const commit = collectCommitRef.current
+    if (!commit || collectorReportPending) return
+
+    setCollectorReportPending(true)
+    setCollectorReportError(null)
+    try {
+      const result = await printCollectorReportAndExit(
+        commit,
+        () => {
+          collectCommitRef.current = null
+          setReadReport(null)
+        },
+        async (report) => {
+          setReadReport(report)
+        }
+      )
+      if (!result.ok) {
+        setCollectorReportError(result.error)
+      }
+    } finally {
+      setCollectorReportPending(false)
+    }
+  }, [collectorReportPending])
 
   const openReceiptLookup = useCallback(() => {
     setCheckoutOpen(false)
@@ -455,6 +583,7 @@ export function PosTerminalPage() {
     setReceiptLookupRunningNo(
       defaultRunningNoFromNextPreview(previewReceiptNo, y, m)
     )
+    setReceiptLookupKeypadRunning(true)
     setReceiptLookupOpen(true)
     setReceiptLookupFocusRequest((n) => n + 1)
   }, [previewReceiptNo])
@@ -463,9 +592,149 @@ export function PosTerminalPage() {
     setReceiptLookupOpen(false)
   }, [])
 
+  const clearReadZLookupWorkspace = useCallback(() => {
+    setReadZLookupOpen(false)
+    setReadZLookupReport(null)
+    setReadZHoReviewAuth(null)
+    setReadZHoAuthGateOpen(false)
+    readZHoAuthPendingRef.current = null
+    setReadZLookupMode("daily")
+    setReadZLookupSelectedDate(bangkokTodayYmdClient())
+    setReadZReviewError(null)
+    setReadZReviewLoading(false)
+  }, [])
+
+  const clearReadZTodayWorkspace = useCallback(() => {
+    setReadReport((prev) => (prev?.mode === "Z" ? null : prev))
+  }, [])
+
+  const finishReadZTodayAfterPrint = useCallback(() => {
+    clearReadZTodayWorkspace()
+    setWorktimeReadZLogoutPending(true)
+    setWorktimeOpen(true)
+  }, [clearReadZTodayWorkspace])
+
+  const loadReadZLookupReview = useCallback(
+    async (scope: PosReadZReviewScope, bangkokDate: string) => {
+      if (!readZHoReviewAuth) {
+        readZHoAuthPendingRef.current = "lookup-open"
+        setReadZHoAuthGateOpen(true)
+        return
+      }
+      setReadZReviewLoading(true)
+      setReadZReviewError(null)
+      try {
+        const result = await fetchPosReadZReviewReport({
+          staffId: readZHoReviewAuth.staffId,
+          password: readZHoReviewAuth.password,
+          scope,
+          bangkokDate,
+        })
+        if (!result.ok) {
+          setReadZReviewError(result.error)
+          setReadZLookupReport(null)
+          return
+        }
+        setReadZLookupReport(result.report)
+      } finally {
+        setReadZReviewLoading(false)
+      }
+    },
+    [readZHoReviewAuth]
+  )
+
+  const onReadZLookupDateSelect = useCallback(
+    (ymd: string) => {
+      setReadZLookupMode("daily")
+      setReadZLookupSelectedDate(ymd)
+      void loadReadZLookupReview("daily", ymd)
+    },
+    [loadReadZLookupReview]
+  )
+
+  const onReadZLookupCumulative = useCallback(() => {
+    setReadZLookupMode("cumulative")
+    void loadReadZLookupReview("cumulative-to-date", readZLookupSelectedDate)
+  }, [loadReadZLookupReview, readZLookupSelectedDate])
+
+  const openReadZLookup = useCallback(() => {
+    if (!session || !isPosHoStaffRole(session.role)) return
+    const today = bangkokTodayYmdClient()
+    setReadReport(null)
+    setReadStaffGate(null)
+    setReadZLookupOpen(true)
+    setReadZLookupReport(null)
+    setReadZLookupMode("daily")
+    setReadZLookupSelectedDate(today)
+    setReadZReviewError(null)
+    if (readZHoReviewAuth) {
+      void loadReadZLookupReview("daily", today)
+      return
+    }
+    readZHoAuthPendingRef.current = "lookup-open"
+    setReadZHoAuthGateOpen(true)
+  }, [session, readZHoReviewAuth, loadReadZLookupReview])
+
+  const onReadZHoAuthorized = useCallback(async (auth: ReadZHoReviewAuth) => {
+    setReadZHoReviewAuth(auth)
+    setReadZHoAuthGateOpen(false)
+    const pending = readZHoAuthPendingRef.current
+    readZHoAuthPendingRef.current = null
+
+    if (pending !== "lookup-open") return
+
+    const today = bangkokTodayYmdClient()
+    setReadZLookupMode("daily")
+    setReadZLookupSelectedDate(today)
+    setReadZReviewLoading(true)
+    setReadZReviewError(null)
+    try {
+      const result = await fetchPosReadZReviewReport({
+        staffId: auth.staffId,
+        password: auth.password,
+        scope: "daily",
+        bangkokDate: today,
+      })
+      if (!result.ok) {
+        setReadZReviewError(result.error)
+        return
+      }
+      setReadZLookupReport(result.report)
+    } finally {
+      setReadZReviewLoading(false)
+    }
+  }, [])
+
+  const readZPrintAllowed =
+    readReport?.mode === "Z" && isReadZReportPrintAllowed(readReport)
+  const readZLookupPrintAllowed =
+    readZLookupReport !== null &&
+    isReadZReportPrintAllowed(readZLookupReport) &&
+    (readZLookupMode === "cumulative" ||
+      readZLookupDailyHasTicket(readZLookupReport))
+
   const onKeypadAction = useCallback(
     (id: PosKeypadActionId) => {
       const kind = getPosActionKind(id)
+      const readReportMode = readReport?.mode ?? null
+      const activeWorkspace = resolvePosActiveWorkspace({
+        receiptLookupOpen,
+        refundOpen,
+        refundSlipOpen: !!refundSlipContext,
+        readStaffGate,
+        readReportMode,
+        readZLookupOpen,
+        collectorOpen,
+        repairTicketOpen,
+      })
+
+      if (
+        activeWorkspace &&
+        kind !== "keypad" &&
+        !isPosWorkspaceKeypadActionAllowed(activeWorkspace, id, { readReportMode })
+      ) {
+        return
+      }
 
       if (kind === "wire-logout") {
         void onLogout()
@@ -527,6 +796,7 @@ export function PosTerminalPage() {
       }
 
       if (kind === "wire-read-z") {
+        clearReadZLookupWorkspace()
         setReadReport(null)
         setReadStaffGate("Z")
         return
@@ -534,9 +804,7 @@ export function PosTerminalPage() {
 
       if (kind === "wire-print-report") {
         if (readReport?.mode === "Z") {
-          printReadZReportAndExit(readReport, () => setReadReport(null))
-        } else {
-          printPosReadReport(readReport)
+          printReadZReportAndExit(readReport, finishReadZTodayAfterPrint)
         }
         return
       }
@@ -548,6 +816,17 @@ export function PosTerminalPage() {
 
       if (kind === "keypad") {
         if (receiptLookupOpen) {
+          if (id === "clear") {
+            setReceiptLookupRunningNo("")
+            return
+          }
+          if (id === "enter") {
+            receiptLookupPanelRef.current?.search()
+            return
+          }
+          if (!receiptLookupKeypadRunning) {
+            return
+          }
           const digit = keypadDigitChar(id)
           if (digit !== null && digit !== ".") {
             setReceiptLookupRunningNo((prev) =>
@@ -557,14 +836,6 @@ export function PosTerminalPage() {
           }
           if (id === "backspace") {
             setReceiptLookupRunningNo((prev) => prev.slice(0, -1))
-            return
-          }
-          if (id === "clear") {
-            setReceiptLookupRunningNo("")
-            return
-          }
-          if (id === "enter") {
-            receiptLookupPanelRef.current?.search()
             return
           }
           return
@@ -591,13 +862,21 @@ export function PosTerminalPage() {
     },
     [
       barcode,
+      collectorOpen,
+      finishReadZTodayAfterPrint,
       onLogout,
       openCheckout,
       openOrder,
       openRefund,
       openStockCount,
       readReport,
+      readStaffGate,
       receiptLookupOpen,
+      receiptLookupKeypadRunning,
+      refundOpen,
+      refundSlipContext,
+      repairTicketOpen,
+      session,
       staffEvidenceComplete,
       submitBarcode,
     ]
@@ -642,6 +921,7 @@ export function PosTerminalPage() {
       onReceiptLookupRunningNoChange={setReceiptLookupRunningNo}
       receiptLookupFocusRequestId={receiptLookupFocusRequest}
       receiptLookupPanelRef={receiptLookupPanelRef}
+      onReceiptLookupKeypadRunningInputEnabledChange={setReceiptLookupKeypadRunning}
       receiptNo={resolvePosReceiptPanelNo(lastReceiptNo, previewReceiptNo)}
       checkoutOpen={checkoutOpen}
       checkoutPending={checkoutPending}
@@ -669,32 +949,89 @@ export function PosTerminalPage() {
       refundLookupPending={refundLookupPending}
       refundPending={refundPending}
       refundError={refundError}
+      refundSlipContext={refundSlipContext}
+      refundTicketPending={refundTicketPending}
+      refundTicketError={refundTicketError}
       onRefundClose={() => {
         closeRefund()
       }}
       onRefundConfirm={() => {
-        void confirmRefund()
+        previewRefundTicket()
+      }}
+      onRefundTicketClose={() => {
+        closeRefundTicket()
+      }}
+      onRefundPrint={() => {
+        void printRefundTicketAndExit()
       }}
       placeholderOverlay={placeholder}
       onClosePlaceholder={() => setPlaceholder(null)}
       targetVsSalesOpen={targetVsSalesOpen}
       onCloseTargetVsSales={() => setTargetVsSalesOpen(false)}
       worktimeOpen={worktimeOpen}
-      onCloseWorktime={() => setWorktimeOpen(false)}
+      onCloseWorktime={() => {
+        setWorktimeOpen(false)
+        setWorktimeReadZLogoutPending(false)
+      }}
+      worktimeReadZLogoutPending={worktimeReadZLogoutPending}
+      onWorktimeReadZLogoutComplete={() => {
+        setWorktimeReadZLogoutPending(false)
+        setWorktimeOpen(false)
+        void onLogout()
+      }}
       collectorOpen={collectorOpen}
       onCloseCollector={() => setCollectorOpen(false)}
-      onCollectorReport={(report) => {
+      onCollectorReport={(report, commit) => {
         setCollectorOpen(false)
+        collectCommitRef.current = commit
         setReadReport(report)
       }}
       readStaffGate={readStaffGate}
       onCloseReadStaffGate={() => setReadStaffGate(null)}
       onReadReport={(report) => {
+        clearReadZLookupWorkspace()
         setReadStaffGate(null)
         setReadReport(report)
       }}
       readReport={readReport}
-      onCloseReadReport={() => setReadReport(null)}
+      onCloseReadReport={() => {
+        if (collectorReportPending) return
+        collectCommitRef.current = null
+        setCollectorReportError(null)
+        if (readReport?.mode === "Z") {
+          clearReadZTodayWorkspace()
+          return
+        }
+        setReadReport(null)
+      }}
+      onPrintReadZReport={() => {
+        if (!readZPrintAllowed || !readReport) return
+        printReadZReportAndExit(readReport, finishReadZTodayAfterPrint)
+      }}
+      onPrintReadZLookupReport={() => {
+        if (!readZLookupPrintAllowed || !readZLookupReport) return
+        printReadZReportAndExit(readZLookupReport, () => clearReadZLookupWorkspace())
+      }}
+      readZLookupOpen={readZLookupOpen}
+      readZLookupReport={readZLookupReport}
+      readZLookupSelectedDate={readZLookupSelectedDate}
+      readZLookupMode={readZLookupMode}
+      onCloseReadZLookup={() => clearReadZLookupWorkspace()}
+      onOpenReadZLookup={openReadZLookup}
+      onReadZLookupDateSelect={onReadZLookupDateSelect}
+      onReadZLookupCumulative={onReadZLookupCumulative}
+      readZHoAuthGateOpen={readZHoAuthGateOpen}
+      onCloseReadZHoAuthGate={() => setReadZHoAuthGateOpen(false)}
+      onReadZHoAuthorized={onReadZHoAuthorized}
+      readZReviewLoading={readZReviewLoading}
+      readZReviewError={readZReviewError}
+      readZPrintAllowed={readZPrintAllowed}
+      readZLookupPrintAllowed={readZLookupPrintAllowed}
+      collectorReportPending={collectorReportPending}
+      collectorReportError={collectorReportError}
+      onCollectorPrintReport={() => {
+        void printCollectorTicketAndExit()
+      }}
       repairTicketOpen={repairTicketOpen}
       onCloseRepairTicket={() => setRepairTicketOpen(false)}
       staffEvidenceOpen={staffEvidenceOpen}
@@ -707,7 +1044,13 @@ export function PosTerminalPage() {
       }}
       thermalLayouts={thermalLayouts}
       keypadDisabled={
-        logoutPending || lookupPending || checkoutPending || refundPending || refundLookupPending
+        logoutPending ||
+        lookupPending ||
+        checkoutPending ||
+        refundPending ||
+        refundLookupPending ||
+        refundTicketPending ||
+        collectorReportPending
       }
       pendingEvidenceCount={pendingEvidenceCount}
       onOpenPendingEvidence={() => {

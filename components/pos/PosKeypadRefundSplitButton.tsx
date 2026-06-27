@@ -11,6 +11,9 @@ type PosKeypadRefundSplitButtonProps = {
 }
 
 const REFUND_BUTTON_CLASS =
+  "bg-rose-700 text-white text-xs font-extrabold shadow-sm transition active:scale-[0.98]"
+
+const LOOKUP_BUTTON_CLASS =
   "bg-blue-600 text-white text-xs font-extrabold shadow-sm transition active:scale-[0.98]"
 
 export function PosKeypadRefundSplitButton({
@@ -40,7 +43,7 @@ export function PosKeypadRefundSplitButton({
         disabled={disabled}
         data-testid="pos-keypad-refund"
         onClick={onRefund}
-        className={`flex min-h-0 flex-1 items-center justify-center border-b border-blue-800/60 ${REFUND_BUTTON_CLASS} ${enabledClass}`}
+        className={`flex min-h-0 flex-1 items-center justify-center border-b border-rose-900/60 ${REFUND_BUTTON_CLASS} ${enabledClass}`}
       >
         REFUND
       </button>
@@ -49,9 +52,9 @@ export function PosKeypadRefundSplitButton({
         disabled={disabled}
         data-testid="pos-keypad-receipt-lookup"
         onClick={onReceiptLookup}
-        className={`flex min-h-0 flex-1 items-center justify-center leading-tight ${REFUND_BUTTON_CLASS} ${enabledClass}`}
+        className={`flex min-h-0 flex-1 items-center justify-center leading-tight ${LOOKUP_BUTTON_CLASS} ${enabledClass}`}
       >
-        REC. LOOKUP
+        LOOKUP
       </button>
     </div>
   )

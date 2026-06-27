@@ -107,11 +107,12 @@ export function shouldGhostPrintReportButton(opts: {
 }): boolean {
   if (opts.sideMuted) return true
   if (!opts.readReportMode) return false
-  return opts.readReportMode !== "Z" && opts.readReportMode !== "COLLECT"
+  return opts.readReportMode !== "Z"
 }
 
 export function isPrintReportHighlighted(
   readReportMode: "X" | "Z" | "COLLECT" | null
 ): boolean {
-  return readReportMode === "Z" || readReportMode === "COLLECT"
+  return readReportMode === "Z"
 }
+

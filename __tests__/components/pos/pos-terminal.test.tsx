@@ -276,6 +276,29 @@ describe("PosTerminalPage", () => {
       if (url === "/api/pos/staff-evidence/status") {
         return Promise.resolve(mockStaffEvidenceStatusResponse())
       }
+      if (url.startsWith("/api/pos/receipts/lookup")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            receipts: [
+              {
+                receiptId: "receipt-lookup-1",
+                receiptNo: "REC-SH001-202606-0113",
+                issuedAt: "2026-06-26T10:00:00.000Z",
+                branchCode: "SH001",
+                branchName: "Chidlom",
+                staffDisplay: "103-Somsak",
+                total: "25.00",
+                paymentMethod: "CASH",
+                paymentMethodLabel: "CASH",
+                archiveStatus: "legacy",
+                items: [],
+              },
+            ],
+          }),
+        } as Response)
+      }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as typeof fetch
   })
@@ -479,15 +502,15 @@ describe("PosTerminalPage", () => {
     expect(container.querySelector('input[aria-label="Manual receipt number"]')).toBeNull()
 
     const processBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Process refund")
+      (b) => b.textContent?.includes("Preview refund ticket")
     )
     expect(processBtn?.disabled).toBe(true)
 
     act(() => root.unmount())
   })
 
-  it("successful refund opens print, closes overlay, and resets form", async () => {
-    const openSpy = jest.spyOn(window, "open").mockImplementation(() => null)
+  it("successful refund prints ticket, closes panel, and resets form", async () => {
+    const printSpy = jest.spyOn(window, "print").mockImplementation(() => {})
     const fetchMock = global.fetch as jest.Mock
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
@@ -584,20 +607,30 @@ describe("PosTerminalPage", () => {
       amountInput.dispatchEvent(new Event("input", { bubbles: true }))
     })
 
-    const processBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Process refund")
+    const previewBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Preview refund ticket")
     )
     act(() => {
-      processBtn!.click()
+      previewBtn!.click()
     })
     await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-refund-ticket-panel"]')).not.toBeNull()
+
+    const printRefundBtn = container.querySelector(
+      '[data-testid="pos-refund-print-button"]'
+    ) as HTMLButtonElement
+    act(() => {
+      printRefundBtn.click()
+    })
+    await flushPromises()
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
     await flushPromises()
 
-    expect(openSpy).toHaveBeenCalledWith(
-      "/shop/refund-receipt/refund-pos-1?autoprint=1",
-      "_blank"
-    )
-    expect(container.textContent).not.toContain("Refund complete")
+    expect(printSpy).toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="pos-refund-ticket-panel"]')).toBeNull()
     expect(container.querySelector('[aria-label="Recent sales"]')).toBeNull()
     expect(container.textContent).toContain("Scan a product to add to cart")
 
@@ -629,11 +662,11 @@ describe("PosTerminalPage", () => {
     ) as HTMLSelectElement
     expect(reopenedReason?.value).toBe("")
 
-    openSpy.mockRestore()
+    printSpy.mockRestore()
     act(() => root.unmount())
   })
 
-  it("failed refund keeps overlay open and preserves entered values", async () => {
+  it("failed refund keeps ticket panel open and shows error", async () => {
     const fetchMock = global.fetch as jest.Mock
     fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
@@ -727,20 +760,37 @@ describe("PosTerminalPage", () => {
       amountInput.dispatchEvent(new Event("input", { bubbles: true }))
     })
 
-    const processBtn = Array.from(container.querySelectorAll("button")).find(
-      (b) => b.textContent?.includes("Process refund")
+    const previewBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Preview refund ticket")
     )
     act(() => {
-      processBtn!.click()
+      previewBtn!.click()
     })
     await flushPromises()
+
+    const printRefundBtn = container.querySelector(
+      '[data-testid="pos-refund-print-button"]'
+    ) as HTMLButtonElement
+    act(() => {
+      printRefundBtn.click()
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-refund-ticket-panel"]')).not.toBeNull()
+    expect(container.textContent).toContain("Refund amount exceeds remaining refundable balance")
+
+    act(() => {
+      container.querySelector('[data-testid="pos-refund-ticket-close"]')!.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      )
+    })
     await flushPromises()
 
     expect(container.querySelector('[aria-label="Recent sales"]')).not.toBeNull()
     expect(receiptSelect.value).toBe("REC-SH001-202606-0001")
     expect(amountInput.value).toBe("50.00")
     expect(reasonSelect.value).toBe("KEY_BLANK_MISTAKE")
-    expect(container.textContent).toContain("Refund amount exceeds remaining refundable balance")
 
     act(() => root.unmount())
   })
@@ -1084,6 +1134,104 @@ describe("PosTerminalPage", () => {
     await flushPromises()
 
     expect(push).toHaveBeenCalledWith("/login")
+
+    act(() => root.unmount())
+  })
+
+  function clickKeypadButton(container: HTMLElement, label: string) {
+    const btn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === label
+    )
+    expect(btn).toBeDefined()
+    act(() => {
+      btn!.click()
+    })
+  }
+
+  it("hides numeric keypad tiles while receipt lookup is open", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    clickKeypadButton(container, "LOOKUP")
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-receipt-lookup-panel"]')).not.toBeNull()
+    expect(
+      container.querySelector('[data-testid="document-lookup-running-select"]')
+    ).not.toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-running-no"]')).toBeNull()
+
+    const numericBlankTiles = container.querySelectorAll(
+      '[data-testid="pos-keypad-numeric-blank"]'
+    )
+    expect(numericBlankTiles.length).toBeGreaterThan(0)
+
+    const digitButtons = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "C", "ENTER"].flatMap(
+      (label) =>
+        Array.from(container.querySelectorAll("button")).filter(
+          (b) => b.textContent?.trim() === label
+        )
+    )
+    expect(digitButtons.length).toBe(0)
+
+    act(() => root.unmount())
+  })
+
+  it("triggers receipt lookup search when Search is clicked after selecting running", async () => {
+    const fetchMock = global.fetch as jest.Mock
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    clickKeypadButton(container, "LOOKUP")
+    await flushPromises()
+    await flushPromises()
+
+    const searchBtn = container.querySelector(
+      '[data-testid="receipt-lookup-search"]'
+    ) as HTMLButtonElement
+
+    await act(async () => {
+      searchBtn.click()
+      await Promise.resolve()
+    })
+
+    await flushPromises()
+    await flushPromises()
+
+    const lookupCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).startsWith("/api/pos/receipts/lookup")
+    )
+    const receiptNoCalls = lookupCalls.filter(([url]) => String(url).includes("receiptNo="))
+    expect(receiptNoCalls.length).toBeGreaterThan(0)
+
+    act(() => root.unmount())
+  })
+
+  it("keeps cart when closing receipt lookup with X", async () => {
+    const { container, root } = renderPosTerminal()
+    await flushPromises()
+    await flushPromises()
+
+    await addOneItemToCart(container)
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-cart-row"]')).not.toBeNull()
+
+    clickKeypadButton(container, "LOOKUP")
+    await flushPromises()
+
+    const closeBtn = container.querySelector(
+      '[data-testid="pos-receipt-lookup-close"]'
+    ) as HTMLButtonElement
+    act(() => {
+      closeBtn.click()
+    })
+    await flushPromises()
+
+    expect(container.querySelector('[data-testid="pos-receipt-lookup-panel"]')).toBeNull()
+    expect(container.querySelector('[data-testid="pos-cart-row"]')).not.toBeNull()
 
     act(() => root.unmount())
   })

@@ -1,5 +1,6 @@
 import { PaymentMethod } from "@/generated/prisma/client"
 import {
+  aggregatePosCollectCashBySalesDate,
   aggregatePosDailyReadReportFromSales,
   aggregatePosReadReportFromSales,
   computeReadReportNetTotal,
@@ -10,6 +11,83 @@ import {
   resolveReadReportDisplayCatalog,
   type SummaryHeaderLabel,
 } from "@/lib/product-groups/management-product-group"
+
+describe("aggregatePosCollectCashBySalesDate", () => {
+  it("includes CASH sales only grouped by Bangkok sales date", () => {
+    const result = aggregatePosCollectCashBySalesDate([
+      {
+        total: 12000,
+        payment: { method: PaymentMethod.CASH },
+        items: [],
+        createdAt: new Date("2026-06-03T04:00:00.000Z"),
+      },
+      {
+        total: 18240,
+        payment: { method: PaymentMethod.CASH },
+        items: [],
+        createdAt: new Date("2026-06-04T04:00:00.000Z"),
+      },
+      {
+        total: 14000,
+        payment: { method: PaymentMethod.CASH },
+        items: [],
+        createdAt: new Date("2026-06-05T04:00:00.000Z"),
+      },
+      {
+        total: 999,
+        payment: { method: PaymentMethod.CARD },
+        items: [],
+        createdAt: new Date("2026-06-05T04:00:00.000Z"),
+      },
+      {
+        total: 500,
+        payment: { method: PaymentMethod.TRANSFER },
+        items: [],
+        createdAt: new Date("2026-06-05T04:00:00.000Z"),
+      },
+    ])
+
+    expect(result.dailyCashLines).toEqual([
+      { salesDateYmd: "2026-06-03", cashAmount: 12000, ticketCount: 1 },
+      { salesDateYmd: "2026-06-04", cashAmount: 18240, ticketCount: 1 },
+      { salesDateYmd: "2026-06-05", cashAmount: 14000, ticketCount: 1 },
+    ])
+    expect(result.saleCount).toBe(3)
+    expect(result.grandTotal).toBe(44240)
+    expect(
+      result.dailyCashLines.reduce((sum, row) => sum + row.cashAmount, 0)
+    ).toBe(result.grandTotal)
+  })
+
+  it("excludes credit card and bank transfer from collector totals", () => {
+    const result = aggregatePosCollectCashBySalesDate([
+      {
+        total: 100,
+        payment: { method: PaymentMethod.CARD },
+        items: [],
+        createdAt: new Date("2026-06-06T04:00:00.000Z"),
+      },
+      {
+        total: 200,
+        payment: { method: PaymentMethod.QR },
+        items: [],
+        createdAt: new Date("2026-06-06T04:00:00.000Z"),
+      },
+      {
+        total: 50,
+        payment: { method: PaymentMethod.CASH },
+        items: [],
+        createdAt: new Date("2026-06-06T04:00:00.000Z"),
+      },
+    ])
+
+    expect(result.dailyCashLines).toEqual([
+      { salesDateYmd: "2026-06-06", cashAmount: 50, ticketCount: 1 },
+    ])
+    expect(result.grandTotal).toBe(50)
+    expect(result.saleCount).toBe(1)
+  })
+})
 
 describe("aggregatePosReadReportFromSales", () => {
   it("aggregates v0 sale rows by group and payment method", () => {

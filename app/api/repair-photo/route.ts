@@ -3,8 +3,26 @@ import path from "path"
 import { NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 import { getSession } from "@/lib/auth/session"
+import { listRepairPhotos } from "@/lib/pos/repair-photo-list"
 
 const REPAIR_PREFIX = "repair"
+
+export async function GET() {
+  const session = await getSession()
+  if (!session?.sessionId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const photos = await listRepairPhotos(session.branchCode)
+    return NextResponse.json({ photos })
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Failed to list repair photos from Blob storage"
+    console.error("REPAIR_PHOTO_LIST_ERROR:", err)
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
 
 function safeRepairFileName(name: string): string | null {
   const base = path.basename(String(name).trim())

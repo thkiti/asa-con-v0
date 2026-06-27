@@ -181,4 +181,44 @@ describe("PosWorktimeOverlay", () => {
     act(() => root.unmount())
     document.body.removeChild(container)
   })
+
+  it("calls onReadZLogoutComplete after successful OUT when readZLogoutPending", async () => {
+    const onClose = jest.fn()
+    const onReadZLogoutComplete = jest.fn()
+    const container = document.createElement("div")
+    document.body.appendChild(container)
+    const root: Root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <PosWorktimeOverlay
+          onClose={onClose}
+          branchCode="SH001"
+          branchName="Chidlom"
+          readZLogoutPending
+          onReadZLogoutComplete={onReadZLogoutComplete}
+        />
+      )
+    })
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(
+      container.querySelector('[data-testid="pos-worktime-read-z-logout-hint"]')
+    ).not.toBeNull()
+
+    const outBtn = container.querySelector('[data-testid="pos-worktime-out-btn"]')
+    await act(async () => {
+      ;(outBtn as HTMLButtonElement).click()
+      await Promise.resolve()
+    })
+
+    expect(onReadZLogoutComplete).toHaveBeenCalledTimes(1)
+    expect(onClose).not.toHaveBeenCalled()
+
+    act(() => root.unmount())
+    document.body.removeChild(container)
+  })
 })

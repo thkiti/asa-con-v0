@@ -4,6 +4,7 @@
 import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { PosReadReportPanel } from "@/components/pos/PosReadReportPanel"
+import { ReadZTodayWorkspace } from "@/components/pos/ReadZTodayWorkspace"
 import {
   READ_REPORT_PAYMENT_LABEL,
   READ_REPORT_PAYMENT_ORDER,
@@ -59,7 +60,6 @@ describe("PosReadReportPanel", () => {
         <PosReadReportPanel
           report={baseReport}
           onClose={onClose}
-          collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
           readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
         />
       )
@@ -96,7 +96,6 @@ describe("PosReadReportPanel", () => {
             grandTotal: 175,
           }}
           onClose={() => {}}
-          collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
           readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
         />
       )
@@ -112,14 +111,16 @@ describe("PosReadReportPanel", () => {
     act(() => root.unmount())
   })
 
-  it("READ Z payment summary shows CASH, CREDIT CARD, BANK TRANSFER, and TOTAL only", () => {
+  it("READ Z Today workspace shows thermal preview without HO controls", () => {
+    const onClose = jest.fn()
+    const onPrintReport = jest.fn()
     const container = document.createElement("div")
     document.body.appendChild(container)
     const root: Root = createRoot(container)
 
     act(() => {
       root.render(
-        <PosReadReportPanel
+        <ReadZTodayWorkspace
           report={{
             ...baseReport,
             mode: "Z",
@@ -133,48 +134,36 @@ describe("PosReadReportPanel", () => {
             refundTotal: 10,
             refundCount: 1,
           }}
-          onClose={() => {}}
-          collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
-          readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
-        />
-      )
-    })
-
-    expect(container.textContent).toContain("CASH")
-    expect(container.textContent).toContain("CREDIT CARD")
-    expect(container.textContent).toContain("BANK TRANSFER")
-    expect(container.textContent).toContain("TOTAL")
-    expect(container.textContent).not.toContain("PROMPT PAY")
-    expect(container.textContent).not.toContain("QR CODE")
-
-    act(() => root.unmount())
-  })
-
-  it("READ Z has no visible close or print button; emergency close works", () => {
-    const onClose = jest.fn()
-    const container = document.createElement("div")
-    document.body.appendChild(container)
-    const root: Root = createRoot(container)
-
-    act(() => {
-      root.render(
-        <PosReadReportPanel
-          report={{ ...baseReport, mode: "Z" }}
           onClose={onClose}
-          collectorLayout={DEFAULT_THERMAL_LAYOUTS.COLLECTOR}
+          onPrintReport={onPrintReport}
           readZLayout={DEFAULT_THERMAL_LAYOUTS.READ_Z}
         />
       )
     })
 
     expect(container.textContent).toContain("READ Z")
-    expect(container.textContent).not.toContain("ณ เวลานี้")
-    expect(container.textContent).not.toContain("Print Report and Exit")
+    expect(container.querySelector(".readZReportColumn")).not.toBeNull()
+    expect(container.querySelector(".readZHoControlRow")).toBeNull()
+    expect(container.querySelector(".readZTicketCard")).not.toBeNull()
+    expect(container.querySelector('[data-testid="pos-read-z-preview"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="pos-read-z-print-preview"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-copy-watermark"]')).toBeNull()
+    expect(container.querySelector('[data-testid="pos-read-z-print-report-button"]')).not.toBeNull()
+    expect(container.textContent).toContain("PRINT REPORT AND EXIT")
     expect(container.querySelector('[aria-label="ปิดรายงาน"]')).toBeNull()
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="pos-read-z-print-report-button"]')
+        ?.click()
+    })
+    expect(onPrintReport).toHaveBeenCalledTimes(1)
 
     act(() => {
       container.querySelector<HTMLButtonElement>('[aria-label="Emergency close"]')?.click()
     })
     expect(onClose).toHaveBeenCalledTimes(1)
+
+    act(() => root.unmount())
   })
 })

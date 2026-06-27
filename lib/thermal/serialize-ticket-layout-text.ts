@@ -1,6 +1,9 @@
+import { buildReadZGroupTableText } from "./read-z-group-table-text"
 import type { ReceiptSlipRefStaff } from "./build-receipt-slip"
 import { formatReceiptMachineLineForThermal } from "./receipt-machine-line"
+import { appendRefundReasonPlainText } from "./refund-reason-text"
 import { appendThermalCustomerAcknowledgement } from "./thermal-customer-ack"
+import { serializeInfoBlockPlainText } from "./thermal-slip-info-block"
 import type { ThermalTicketLayout } from "./ticket-layout-types"
 import {
   THERMAL_COLUMNS,
@@ -9,6 +12,7 @@ import {
   formatThermalAmountLine,
   padThermalLine,
 } from "./format"
+import { appendRepairTicketPhotoLines } from "./repair-ticket-photo-lines"
 
 function appendBlockCenteredLines(
   lines: string[],
@@ -83,13 +87,54 @@ export function serializeTicketLayoutToText(
   if (layout.refStaff) {
     out.push(serializeRefStaffPlainText(layout.refStaff, width))
   }
+  if (layout.infoBlockRows?.length) {
+    out.push(serializeInfoBlockPlainText(layout.infoBlockRows, width))
+  }
   appendBlockCenteredLines(out, layout.subHeaderLines, width)
+  if (layout.refundReason !== undefined) {
+    appendRefundReasonPlainText(out, layout.refundReason, width)
+    out.push("")
+  }
+  if (!layout.summaryAfterBody && layout.summaryRows?.length) {
+    out.push(
+      serializeInfoBlockPlainText(
+        layout.summaryRows.map((row) => ({ kind: "label-value" as const, ...row })),
+        width
+      )
+    )
+  }
+  if (layout.readZGroupLines) {
+    out.push(buildReadZGroupTableText(layout.readZGroupLines, width))
+  }
   if (layout.bodyText.trim()) {
     out.push(layout.bodyText.trim())
   }
+  if (layout.repairPhotoFileNames?.length) {
+    const photoLines: string[] = []
+    appendRepairTicketPhotoLines(photoLines, layout.repairPhotoFileNames, width)
+    out.push(photoLines.join("\n"))
+  }
+  if (layout.summaryAfterBody && layout.summaryRows?.length) {
+    out.push(
+      serializeInfoBlockPlainText(
+        layout.summaryRows.map((row) => ({ kind: "label-value" as const, ...row })),
+        width
+      )
+    )
+  }
   appendBlockCenteredLines(out, layout.footerLines, width)
   if (layout.showCustomerAck) {
-    appendThermalCustomerAcknowledgement(out, width)
+    appendThermalCustomerAcknowledgement(out, width, {
+      writingGuides: layout.customerAckWritingGuides !== false,
+      phoneLabel: layout.customerAckPhoneLabel,
+      signLabel: layout.customerAckSignLabel,
+      leadingDivider: layout.customerAckLeadingDivider,
+      inlineGuides: layout.customerAckInlineGuides === true,
+      stackedGuides: layout.customerAckStackedGuides === true,
+      leadingBlank: layout.customerAckLeadingBlank === true,
+      cutLine: layout.customerAckCutLine === true,
+      cutSeparator: layout.customerAckCutSeparator === true,
+    })
   }
 
   out.push("")

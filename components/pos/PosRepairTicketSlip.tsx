@@ -14,6 +14,13 @@ type PosRepairTicketSlipProps = {
   layout: ResolvedThermalLayout
   staffId?: string
   staffName?: string
+  /** Admin / POS preview — white paper frame matching Receipt Setup. */
+  framed?: boolean
+  identityContext?: {
+    branchPhone?: string | null
+    companyTaxId?: string | null
+    machineTaxId?: string | null
+  }
 }
 
 export function PosRepairTicketSlip({
@@ -25,6 +32,8 @@ export function PosRepairTicketSlip({
   layout,
   staffId,
   staffName,
+  framed = false,
+  identityContext,
 }: PosRepairTicketSlipProps) {
   const ticketLayout = buildTicketLayout({
     documentType: "REPAIR_TICKET",
@@ -33,11 +42,12 @@ export function PosRepairTicketSlip({
     branchCode,
     staffId,
     staffName,
+    identityContext,
   })
 
   return (
     <ThermalPrintSource kind="repair-ticket">
-      <ThermalTicketSlipView layout={ticketLayout} />
+      <ThermalTicketSlipView layout={ticketLayout} framed={framed} />
     </ThermalPrintSource>
   )
 }

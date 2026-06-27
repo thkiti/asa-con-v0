@@ -10,21 +10,26 @@ export function buildCollectorSetupSampleReport(
 ): ReadReportPayload {
   return {
     mode: "COLLECT",
-    bangkokDate: "2026-06-07",
-    bangkokDateFrom: "2026-06-01",
-    bangkokDateTo: "2026-06-07",
-    generatedAt: "2026-06-07T10:00:00.000Z",
-    staffId: "103",
-    staffName: "Somsak",
+    bangkokDate: "2026-06-03 – 2026-06-05",
+    bangkokDateFrom: "2026-06-03",
+    bangkokDateTo: "2026-06-05",
+    generatedAt: "2026-06-26T08:16:00.000Z",
+    staffId: "001",
+    staffName: "Kiti Thengtrirat",
     branchCode: branch.code,
     branchName: branch.name,
-    groupLines: [{ lineKey: "g1", displayLeft: "010-Sample Group", qty: 2, amount: 120 }],
-    paymentLines: [{ key: "CASH", label: "Cash", amount: 120 }],
-    grandTotal: 120,
-    saleCount: 2,
+    groupLines: [],
+    paymentLines: [],
+    dailyCashLines: [
+      { salesDateYmd: "2026-06-03", cashAmount: 12000, ticketCount: 20 },
+      { salesDateYmd: "2026-06-04", cashAmount: 18240, ticketCount: 18 },
+      { salesDateYmd: "2026-06-05", cashAmount: 14000, ticketCount: 15 },
+    ],
+    grandTotal: 44240,
+    saleCount: 53,
     refundCount: 0,
     refundTotal: 0,
-    netTotal: 120,
+    netTotal: 44240,
   }
 }
 

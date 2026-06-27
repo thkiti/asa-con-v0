@@ -12,8 +12,10 @@ import type {
   ReceiptLookupRow,
   SearchReceiptLookupInput,
 } from "@/lib/pos/receipt-lookup-types"
+import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
 import { formatCashierDisplay } from "@/lib/pos/format-cashier-display"
 import { posReceiptSlipPaymentLabel } from "@/lib/pos-ui/pos-payment-methods"
+import { COMPANY_TAX_BRANCH_CODE, loadCompanyTaxId } from "@/lib/thermal/company-tax"
 import { toDec } from "@/lib/stock/decimal"
 
 export const RECEIPT_LOOKUP_DEFAULT_LIMIT = 50
@@ -21,7 +23,7 @@ export const RECEIPT_LOOKUP_MAX_LIMIT = 200
 
 type SearchReceiptLookupDb = Pick<
   Prisma.TransactionClient,
-  "receipt" | "staff"
+  "receipt" | "staff" | "branch"
 >
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
@@ -94,15 +96,33 @@ function mapReceiptRow(
       errorMessage: string | null
     } | null
     sale: {
+      id: string
       total: Prisma.Decimal
       staffId: string | null
-      branch: { code: string; name: string }
-      payment: { method: string } | null
+      branch: {
+        code: string
+        name: string
+        address: string | null
+        phone: string | null
+        taxId: string | null
+      }
+      payment: { method: string; amount: Prisma.Decimal; change: Prisma.Decimal } | null
+      items: Array<{
+        qty: number
+        unitPrice: Prisma.Decimal
+        lineTotal: Prisma.Decimal
+        product: { name: string; code: string }
+      }>
     }
   },
-  staffNameByStaffId: Map<string, string>
+  staffNameByStaffId: Map<string, string>,
+  companyTaxId: string | null
 ): ReceiptLookupRow {
   const staffId = receipt.sale.staffId?.trim() ?? null
+  const branchCode = receipt.sale.branch.code
+  const machineRaw = receipt.sale.branch.taxId?.trim() || null
+  const machineTaxId =
+    branchCode === COMPANY_TAX_BRANCH_CODE ? null : machineRaw
   const archive = resolveReceiptLookupArchiveStatus({
     documentArchiveId: receipt.documentArchiveId,
     pdfPath: receipt.pdfPath,
@@ -110,23 +130,38 @@ function mapReceiptRow(
     documentArchive: receipt.documentArchive,
   })
 
+  const paymentMethod = receipt.sale.payment?.method ?? "CASH"
+
   return {
     receiptId: receipt.id,
+    saleId: receipt.sale.id,
     receiptNo: receipt.receiptNo,
     issuedAt: receipt.issuedAt.toISOString(),
     branchCode: receipt.sale.branch.code,
     branchName: receipt.sale.branch.name,
+    branchAddress: receipt.sale.branch.address?.trim() || null,
+    branchPhone: receipt.sale.branch.phone?.trim() || null,
+    companyTaxId,
+    machineTaxId,
     staffDisplay: staffId
       ? formatCashierDisplay(staffId, staffNameByStaffId.get(staffId) ?? null)
       : null,
     total: toDec(receipt.sale.total).toFixed(2),
-    paymentMethodLabel: posReceiptSlipPaymentLabel(
-      receipt.sale.payment?.method ?? "CASH"
-    ),
+    paymentMethod,
+    paymentMethodLabel: posReceiptSlipPaymentLabel(paymentMethod),
+    cashAmount: toDec(receipt.sale.payment?.amount).toFixed(2),
+    change: toDec(receipt.sale.payment?.change).toFixed(2),
     archiveStatus: archive.archiveStatus,
     archiveStatusLabel: archive.archiveStatusLabel,
     archiveError: archive.archiveError,
     pdfUrl: archive.pdfReady ? buildReceiptLookupPdfUrl(receipt.id) : null,
+    items: receipt.sale.items.map((item) => ({
+      code: item.product.code.trim() || "-",
+      name: cleanGroupDisplayName(item.product.name),
+      qty: item.qty,
+      unitPrice: toDec(item.unitPrice).toFixed(2),
+      lineTotal: toDec(item.lineTotal).toFixed(2),
+    })),
   }
 }
 
@@ -170,10 +205,28 @@ export async function searchReceiptLookup(
       },
       sale: {
         select: {
+          id: true,
           total: true,
           staffId: true,
-          branch: { select: { code: true, name: true } },
-          payment: { select: { method: true } },
+          branch: {
+            select: {
+              code: true,
+              name: true,
+              address: true,
+              phone: true,
+              taxId: true,
+            },
+          },
+          payment: { select: { method: true, amount: true, change: true } },
+          items: {
+            select: {
+              qty: true,
+              unitPrice: true,
+              lineTotal: true,
+              product: { select: { name: true, code: true } },
+            },
+            orderBy: { createdAt: "asc" },
+          },
         },
       },
     },
@@ -199,7 +252,9 @@ export async function searchReceiptLookup(
     staffRows.map((row) => [row.staffId, row.name] as const)
   )
 
+  const companyTaxId = await loadCompanyTaxId(db)
+
   return {
-    receipts: receipts.map((row) => mapReceiptRow(row, staffNameByStaffId)),
+    receipts: receipts.map((row) => mapReceiptRow(row, staffNameByStaffId, companyTaxId)),
   }
 }

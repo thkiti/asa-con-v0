@@ -14,7 +14,8 @@ type Body = {
 
 export async function POST(req: Request) {
   try {
-    requirePosReportContext(await getSession())
+    const session = await getSession()
+    requirePosReportContext(session)
 
     const body = (await req.json()) as Body
     const staffId = String(body.staffId || "").trim()
@@ -26,11 +27,13 @@ export async function POST(req: Request) {
         ? ("COLLECT" as const)
         : intentRaw === "READ"
           ? ("READ" as const)
-          : null
+          : intentRaw === "READ_Z_REVIEW"
+            ? ("READ_Z_REVIEW" as const)
+            : null
 
     if (!intent) {
       return NextResponse.json(
-        { error: "intent must be READ or COLLECT" },
+        { error: "intent must be READ, COLLECT, or READ_Z_REVIEW" },
         { status: 400 }
       )
     }
@@ -45,8 +48,15 @@ export async function POST(req: Request) {
       if (v.code === "no_collect_permission") {
         return NextResponse.json(
           {
-            error:
-              "บัญชีนี้ยังไม่ได้รับสิทธิ์ COLLECTOR — ให้ HO เปิดในเมนูพนักงาน",
+            error: "COLLECTOR is available to HO staff only",
+          },
+          { status: 403 }
+        )
+      }
+      if (v.code === "no_ho_permission") {
+        return NextResponse.json(
+          {
+            error: "READ Z review is available to HO staff only",
           },
           { status: 403 }
         )

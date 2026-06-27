@@ -3,6 +3,7 @@ import {
   buildReceiptLookupNo,
   defaultRunningNoFromNextPreview,
   normalizeReceiptLookupRunningNo,
+  runningNumbersFromReceiptLookupRows,
 } from "@/lib/pos-ui/build-receipt-lookup-no"
 
 describe("buildReceiptLookupNo", () => {
@@ -52,5 +53,18 @@ describe("defaultRunningNoFromNextPreview", () => {
 describe("appendReceiptLookupRunningDigit", () => {
   it("appends digits up to four characters", () => {
     expect(appendReceiptLookupRunningDigit("01", "1")).toBe("011")
+  })
+})
+
+describe("runningNumbersFromReceiptLookupRows", () => {
+  it("returns running-only values in API order without duplicates", () => {
+    expect(
+      runningNumbersFromReceiptLookupRows([
+        { receiptNo: "REC-SH001-202606-0114" },
+        { receiptNo: "REC-SH001-202606-0113" },
+        { receiptNo: "REC-SH001-202606-0111" },
+        { receiptNo: "REC-SH001-202606-0113" },
+      ])
+    ).toEqual(["0114", "0113", "0111"])
   })
 })

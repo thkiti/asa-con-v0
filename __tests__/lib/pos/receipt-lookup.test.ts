@@ -8,8 +8,26 @@ function makeDb(receipts: unknown[], staff: unknown[] = []) {
     staff: {
       findMany: jest.fn().mockResolvedValue(staff),
     },
+    branch: {
+      findUnique: jest.fn().mockResolvedValue({ taxId: "0123456789012" }),
+    },
   }
 }
+
+const saleItems = [
+  {
+    qty: 2,
+    unitPrice: "100.00",
+    lineTotal: "200.00",
+    product: { name: "Widget", code: "0101001" },
+  },
+  {
+    qty: 1,
+    unitPrice: "50.00",
+    lineTotal: "50.00",
+    product: { name: "Gadget", code: "0101002" },
+  },
+]
 
 const readyReceipt = {
   id: "receipt-1",
@@ -26,10 +44,18 @@ const readyReceipt = {
     errorMessage: null,
   },
   sale: {
+    id: "sale-1",
     total: { toFixed: () => "250.00" },
     staffId: "103",
-    branch: { code: "SH001", name: "Shop One" },
-    payment: { method: "CASH" },
+    branch: {
+      code: "SH001",
+      name: "Shop One",
+      address: "123 Main St",
+      phone: "02-111-2222",
+      taxId: "MACHINE-001",
+    },
+    payment: { method: "CASH", amount: "250.00", change: "0.00" },
+    items: saleItems,
   },
 }
 
@@ -166,5 +192,28 @@ describe("searchReceiptLookup", () => {
       archiveStatusLabel: "Legacy / no archive",
       pdfUrl: null,
     })
+  })
+
+  it("maps sale line items for preview", async () => {
+    const db = makeDb([readyReceipt])
+
+    const result = await searchReceiptLookup(db, { branchId: "branch-1" })
+
+    expect(result.receipts[0].items).toEqual([
+      {
+        code: "0101001",
+        name: "Widget",
+        qty: 2,
+        unitPrice: "100.00",
+        lineTotal: "200.00",
+      },
+      {
+        code: "0101002",
+        name: "Gadget",
+        qty: 1,
+        unitPrice: "50.00",
+        lineTotal: "50.00",
+      },
+    ])
   })
 })

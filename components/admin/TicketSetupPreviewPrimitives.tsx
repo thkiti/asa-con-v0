@@ -131,26 +131,110 @@ export function TicketSetupLabelValueRow({
   )
 }
 
+export function TicketSetupInlineDottedGuide({ testId }: { testId?: string }) {
+  return (
+    <div
+      className="receipt-setup-ack-inline-guide min-h-[1.05em] flex-1 border-b border-dotted border-current"
+      aria-hidden
+      data-testid={testId ?? "ticket-setup-inline-dotted-guide"}
+    />
+  )
+}
+
 export function TicketSetupAckField({
   label,
   writingLines = 1,
+  showWritingGuides = true,
+  inlineGuide = false,
+  stackedGuide = false,
   testId,
 }: {
   label: string
   writingLines?: number
+  showWritingGuides?: boolean
+  inlineGuide?: boolean
+  stackedGuide?: boolean
   testId?: string
 }) {
+  if (inlineGuide) {
+    return (
+      <div className="receipt-setup-ack-field w-full min-w-0 space-y-1" data-testid={testId}>
+        <div className="receipt-setup-ack-inline-guide-row flex w-full items-end gap-1">
+          <div className={`${proportionalLineClass} shrink-0 font-semibold`}>{label}</div>
+          <TicketSetupInlineDottedGuide
+            testId={indexToInlineGuideTestId(testId, "inline-guide")}
+          />
+        </div>
+        <div className="receipt-setup-ack-writing-space">
+          {Array.from({ length: writingLines }, (_, index) => (
+            <div
+              key={index}
+              className="receipt-setup-ack-blank-line"
+              aria-hidden
+              data-testid={
+                index === 0 ? `${testId ?? "ticket-setup-ack"}-blank-line` : undefined
+              }
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (stackedGuide) {
+    return (
+      <div className="receipt-setup-ack-field w-full min-w-0 space-y-1" data-testid={testId}>
+        <div className={`${proportionalLineClass} font-semibold`}>{label}</div>
+        {showWritingGuides ? (
+          <TicketSetupDottedLine
+            testId={indexToInlineGuideTestId(testId, "stacked-guide")}
+          />
+        ) : (
+          <div className="receipt-setup-ack-blank-line" aria-hidden />
+        )}
+        <div className="receipt-setup-ack-writing-space">
+          {Array.from({ length: writingLines }, (_, index) => (
+            <div
+              key={index}
+              className="receipt-setup-ack-blank-line"
+              aria-hidden
+              data-testid={
+                index === 0 ? `${testId ?? "ticket-setup-ack"}-blank-line` : undefined
+              }
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="receipt-setup-ack-field w-full min-w-0 space-y-1" data-testid={testId}>
       <div className={`${proportionalLineClass} font-semibold`}>{label}</div>
       <div className="receipt-setup-ack-writing-space">
-        {Array.from({ length: writingLines }, (_, index) => (
-          <TicketSetupDottedLine
-            key={index}
-            testId={index === 0 ? `${testId ?? "ticket-setup-ack"}-line` : undefined}
-          />
-        ))}
+        {Array.from({ length: writingLines }, (_, index) =>
+          showWritingGuides ? (
+            <TicketSetupDottedLine
+              key={index}
+              testId={index === 0 ? `${testId ?? "ticket-setup-ack"}-line` : undefined}
+            />
+          ) : (
+            <div
+              key={index}
+              className="receipt-setup-ack-blank-line"
+              aria-hidden
+              data-testid={
+                index === 0 ? `${testId ?? "ticket-setup-ack"}-blank-line` : undefined
+              }
+            />
+          )
+        )}
       </div>
     </div>
   )
+}
+
+function indexToInlineGuideTestId(testId: string | undefined, suffix: string): string | undefined {
+  if (!testId) return undefined
+  return `${testId}-${suffix}`
 }

@@ -88,6 +88,7 @@ export function buildRefundSetupSampleContext(input: {
     saleId: "sale",
     originalReceiptId: "receipt",
     originalReceiptNo: `REC-${branch.code}-202606-0001`,
+    originalReceiptTotal: "860.00",
     thermalLayouts: layouts,
     thermalLayout: layouts.REFUND,
   }

@@ -1,14 +1,20 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { PosRepairTicketSlip } from "@/components/pos/PosRepairTicketSlip"
-import { blobUrl } from "@/lib/blob-url"
+import {
+  PosRepairTicketPhotoPreviewSlot,
+  type SelectedRepairPhoto,
+} from "@/components/pos/PosRepairTicketPhotoPreviewSlot"
 import {
   appendRepairTicketRecord,
   buildRepairTicketNo,
   loadRepairTicketsFromStorage,
   type RepairTicketRecord,
 } from "@/lib/pos-ui/repair-ticket-storage"
+import { repairPhotoBlobPath, resolveRepairPhotoUrl } from "@/lib/pos/repair-photo-url"
+import type { RepairPhotoListItem } from "@/lib/pos/repair-photo-list"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import { printThermalSlipClone, thermalPrintSourceSelector } from "@/lib/thermal/print-dom"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
@@ -17,12 +23,15 @@ type PosRepairTicketOverlayProps = {
   session: PosTerminalSession
   onClose: () => void
   repairLayout: ResolvedThermalLayout
+  /** Keypad-side host for list-mode photo preview (sibling of list panel). */
+  photoPreviewHost?: HTMLElement | null
 }
 
 export function PosRepairTicketOverlay({
   session,
   onClose,
   repairLayout,
+  photoPreviewHost = null,
 }: PosRepairTicketOverlayProps) {
   const cameraVideoRef = useRef<HTMLVideoElement>(null)
   const repairSessionFilesRef = useRef<string[]>([])
@@ -35,11 +44,82 @@ export function PosRepairTicketOverlay({
   const [receiptAt, setReceiptAt] = useState("")
   const [uploadBusy, setUploadBusy] = useState(false)
   const [ticketList, setTicketList] = useState<RepairTicketRecord[]>([])
-  const [hoverFile, setHoverFile] = useState<string | null>(null)
-  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 })
+  const [photoByFileName, setPhotoByFileName] = useState<Record<string, RepairPhotoListItem>>({})
+  const [selectedRepairPhoto, setSelectedRepairPhoto] = useState<SelectedRepairPhoto | null>(null)
+  const [previewImageError, setPreviewImageError] = useState(false)
+
+  const resolvePhotoUrl = useCallback(
+    (fileName: string): string => {
+      const fromApi = photoByFileName[fileName]
+      if (fromApi?.url) return fromApi.url
+      const record = ticketList.find((t) => t.fileName === fileName)
+      return resolveRepairPhotoUrl(fileName, {
+        url: record?.url,
+        blobPath: record?.blobPath,
+      })
+    },
+    [photoByFileName, ticketList]
+  )
+
+  const loadRepairPhotoList = useCallback(async () => {
+    try {
+      const res = await fetch("/api/repair-photo", { method: "GET" })
+      const data = (await res.json().catch(() => ({}))) as {
+        photos?: RepairPhotoListItem[]
+        error?: string
+      }
+      if (!res.ok || !Array.isArray(data.photos)) {
+        console.error("REPAIR_PHOTO_LIST_FETCH_ERROR:", data.error ?? res.status)
+        return
+      }
+      const next: Record<string, RepairPhotoListItem> = {}
+      for (const photo of data.photos) {
+        if (photo.fileName && photo.url) {
+          next[photo.fileName] = photo
+        }
+      }
+      setPhotoByFileName(next)
+    } catch (err) {
+      console.error("REPAIR_PHOTO_LIST_FETCH_ERROR:", err)
+    }
+  }, [])
+
+  function closePhotoPreview() {
+    setSelectedRepairPhoto(null)
+    setPreviewImageError(false)
+  }
+
+  function handlePhotoClick(fileName: string, ticketNo: string) {
+    if (selectedRepairPhoto?.fileName === fileName) {
+      closePhotoPreview()
+      return
+    }
+    const url = resolvePhotoUrl(fileName)
+    setSelectedRepairPhoto({ fileName, url, ticketNo })
+    setPreviewImageError(false)
+  }
+
+  useEffect(() => {
+    if (panel !== "list") return
+    void loadRepairPhotoList()
+  }, [panel, loadRepairPhotoList])
+
+  useEffect(() => {
+    if (!selectedRepairPhoto) return
+    const refreshed = resolvePhotoUrl(selectedRepairPhoto.fileName)
+    if (refreshed !== selectedRepairPhoto.url) {
+      setSelectedRepairPhoto({ ...selectedRepairPhoto, url: refreshed })
+      setPreviewImageError(false)
+    }
+  }, [photoByFileName, selectedRepairPhoto, resolvePhotoUrl])
 
   function handlePrintRepairTicket() {
-    printThermalSlipClone(thermalPrintSourceSelector("repair-ticket"))
+    const printed = printThermalSlipClone(thermalPrintSourceSelector("repair-ticket"))
+    if (!printed) {
+      alert("พิมพ์ใบรับซ่อมไม่สำเร็จ")
+      return
+    }
+    handleClose()
   }
 
   useEffect(() => {
@@ -71,7 +151,7 @@ export function PosRepairTicketOverlay({
     setSessionTicketNo(null)
     setSessionFileNames([])
     setShowReceipt(false)
-    setHoverFile(null)
+    closePhotoPreview()
   }
 
   function handleClose() {
@@ -124,11 +204,19 @@ export function PosRepairTicketOverlay({
     setUploadBusy(true)
     try {
       const res = await fetch("/api/repair-photo", { method: "POST", body: fd })
-      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string
+        url?: string
+        pathname?: string
+        fileName?: string
+      }
       if (!res.ok) {
         alert(typeof data?.error === "string" ? data.error : "บันทึกรูปไม่สำเร็จ")
         return
       }
+      const uploadedUrl = typeof data.url === "string" ? data.url.trim() : ""
+      const uploadedPath =
+        typeof data.pathname === "string" ? data.pathname.trim() : repairPhotoBlobPath(fileName)
       if (!sessionTicketNo) {
         setSessionTicketNo(ticketNo)
         pendingRepairTicketNoRef.current = null
@@ -138,11 +226,23 @@ export function PosRepairTicketOverlay({
       const list = appendRepairTicketRecord({
         ticketNo,
         fileName,
+        url: uploadedUrl || undefined,
+        blobPath: uploadedPath,
         createdAt: new Date().toISOString(),
         branchCode: branchCode.toUpperCase(),
         staffId: String(session.staffId || ""),
       })
       setTicketList(list)
+      if (uploadedUrl) {
+        setPhotoByFileName((prev) => ({
+          ...prev,
+          [fileName]: {
+            fileName,
+            blobPath: uploadedPath,
+            url: uploadedUrl,
+          },
+        }))
+      }
       setReceiptAt(new Date().toISOString())
       setShowReceipt(true)
     } catch {
@@ -153,6 +253,21 @@ export function PosRepairTicketOverlay({
   }
 
   return (
+    <>
+      {panel === "list" && photoPreviewHost
+        ? createPortal(
+            <PosRepairTicketPhotoPreviewSlot
+              selected={selectedRepairPhoto}
+              previewImageError={previewImageError}
+              onClose={closePhotoPreview}
+              onImageError={(url) => {
+                console.error("REPAIR_PHOTO_PREVIEW_ERROR:", url)
+                setPreviewImageError(true)
+              }}
+            />,
+            photoPreviewHost
+          )
+        : null}
     <div className="absolute inset-0 z-50 flex min-h-0 flex-col bg-black/90 pt-11 text-white">
       <button
         type="button"
@@ -192,6 +307,9 @@ export function PosRepairTicketOverlay({
                     issuedAt={receiptAt || new Date().toISOString()}
                     fileNames={sessionFileNames}
                     layout={repairLayout}
+                    staffId={session.staffId}
+                    staffName={session.name}
+                    framed
                   />
                 </div>
                 <div className="no-print mt-1 flex shrink-0 flex-wrap justify-center gap-1.5 border-t border-zinc-200 pt-1.5 print:hidden">
@@ -234,7 +352,7 @@ export function PosRepairTicketOverlay({
                 type="button"
                 onClick={() => {
                   setShowReceipt(false)
-                  setHoverFile(null)
+                  closePhotoPreview()
                   setTicketList(loadRepairTicketsFromStorage())
                   setPanel("list")
                 }}
@@ -251,9 +369,12 @@ export function PosRepairTicketOverlay({
             รายการ Repair Ticket (เครื่องนี้)
           </p>
           <p className="shrink-0 text-center text-[10px] text-white/75">
-            จัดกลุ่มตามเลขตั๋ว — ชี้เมาส์ที่ชื่อไฟล์เพื่อดูภาพ
+            จัดกลุ่มตามเลขตั๋ว — แตะชื่อไฟล์เพื่อดูภาพ
           </p>
-          <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-white/20 bg-black/40 p-2">
+          <div
+            className="repairTicketListPanel min-h-0 flex-1 overflow-y-auto rounded-md border border-white/20 bg-black/40 p-2"
+            data-testid="repair-ticket-list-panel"
+          >
             {ticketList.length === 0 ? (
               <p className="py-6 text-center text-sm text-white/60">ยังไม่มีตั๋วในครั้งนี้</p>
             ) : (
@@ -284,34 +405,32 @@ export function PosRepairTicketOverlay({
                         · {sorted[0]?.branchCode}
                         {sorted[0]?.staffId ? ` · staff ${sorted[0].staffId}` : ""}
                       </div>
-                      <ul className="mt-1 list-inside list-disc font-mono text-[10px] text-white/70">
+                      <ul className="mt-1 space-y-0.5 pl-1 font-mono text-[10px]">
                         {sorted.map((r) => {
                           const fn = r.fileName
+                          if (!fn) {
+                            return (
+                              <li key={`${r.createdAt}-${r.ticketNo}`} className="text-white/50">
+                                {`${r.ticketNo}.jpg (เก่า)`}
+                              </li>
+                            )
+                          }
+                          const isSelected = selectedRepairPhoto?.fileName === fn
                           return (
-                            <li
-                              key={`${r.createdAt}-${fn ?? r.ticketNo}`}
-                              className={
-                                fn
-                                  ? "cursor-default marker:text-lime-400 hover:text-lime-200"
-                                  : ""
-                              }
-                              onMouseEnter={
-                                fn
-                                  ? (e) => {
-                                      setHoverFile(fn)
-                                      setHoverPos({ x: e.clientX, y: e.clientY })
-                                    }
-                                  : undefined
-                              }
-                              onMouseMove={
-                                fn
-                                  ? (e) =>
-                                      setHoverPos({ x: e.clientX, y: e.clientY })
-                                  : undefined
-                              }
-                              onMouseLeave={fn ? () => setHoverFile(null) : undefined}
-                            >
-                              {fn ?? `${r.ticketNo}.jpg (เก่า)`}
+                            <li key={`${r.createdAt}-${fn}`}>
+                              <button
+                                type="button"
+                                onClick={() => handlePhotoClick(fn, ticketNo)}
+                                className={`flex w-full items-center gap-1 rounded px-1 py-0.5 text-left transition-colors touch-manipulation ${
+                                  isSelected
+                                    ? "bg-lime-600/25 text-lime-100"
+                                    : "text-white/70 hover:bg-white/10 active:bg-white/15"
+                                }`}
+                                aria-pressed={isSelected}
+                                aria-label={`${isSelected ? "ปิด" : "เปิด"} ${fn}`}
+                              >
+                                <span className="min-w-0 break-all">{fn}</span>
+                              </button>
                             </li>
                           )
                         })}
@@ -326,7 +445,7 @@ export function PosRepairTicketOverlay({
             <button
               type="button"
               onClick={() => {
-                setHoverFile(null)
+                closePhotoPreview()
                 setPanel("capture")
               }}
               className="rounded-lg bg-lime-600 px-4 py-2.5 text-sm font-bold text-white shadow-md"
@@ -334,35 +453,9 @@ export function PosRepairTicketOverlay({
               กลับไปถ่ายรูป
             </button>
           </div>
-          {hoverFile ? (
-            <div
-              className="pointer-events-none fixed z-[9999]"
-              style={{
-                left: Math.min(
-                  hoverPos.x + 14,
-                  Math.max(8, (typeof window !== "undefined" ? window.innerWidth : 9999) - 224)
-                ),
-                top: Math.min(
-                  hoverPos.y + 14,
-                  Math.max(8, (typeof window !== "undefined" ? window.innerHeight : 9999) - 240)
-                ),
-              }}
-            >
-              <div className="w-52 rounded-xl border bg-white p-2 shadow-2xl">
-                <img
-                  src={blobUrl(`repair/${hoverFile}`)}
-                  alt={hoverFile}
-                  className="h-52 w-full object-contain"
-                  loading="eager"
-                />
-                <p className="truncate pt-1 text-center font-mono text-[9px] text-zinc-600">
-                  {hoverFile}
-                </p>
-              </div>
-            </div>
-          ) : null}
         </div>
       )}
     </div>
+    </>
   )
 }

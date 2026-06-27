@@ -157,6 +157,7 @@ describe("PosSaleReceiptSlip", () => {
     expect(container.textContent).toContain("103-Somsak Kamnuch")
     const slip = container.querySelector(".thermal-ticket-slip") as HTMLElement
     expect(slip).toBeTruthy()
+    expect(container.querySelector('[data-testid="receipt-lookup-copy-watermark"]')).toBeNull()
     act(() => root.unmount())
   })
 })

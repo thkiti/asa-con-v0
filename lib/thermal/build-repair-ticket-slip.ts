@@ -1,44 +1,76 @@
 import type { ResolvedThermalLayout } from "./types"
 import {
   THERMAL_COLUMNS,
-  appendThermalFooterLines,
-  appendThermalHeaderLines,
-  repeatThermalChar,
+  formatThermalDateTime,
+  wrapThermalTextLines,
 } from "./format"
+import { appendRepairTicketPhotoLines } from "./repair-ticket-photo-lines"
 import { buildTicketLayout } from "./build-ticket-layout"
 import { serializeTicketLayoutToText } from "./serialize-ticket-layout-text"
+import type { ThermalSlipInfoBlockRow } from "./thermal-slip-info-block"
 
 export type RepairTicketSlipInput = {
   ticketNo: string
   branchName: string
   issuedAt: string
   fileNames: string[]
+  customerName?: string | null
+  customerPhone?: string | null
+  repairDescription?: string | null
+  pickupNote?: string | null
 }
 
-/** Slip body only — header/footer are layout blocks. */
-export function buildRepairTicketSlipBodyText(input: RepairTicketSlipInput): string {
+export function buildRepairTicketSlipInfoBlock(
+  input: RepairTicketSlipInput
+): ThermalSlipInfoBlockRow[] {
+  const rows: ThermalSlipInfoBlockRow[] = [
+    { kind: "label-value", label: "Ticket No:", value: input.ticketNo },
+    {
+      kind: "label-value",
+      label: "Repair:",
+      value: formatThermalDateTime(input.issuedAt),
+    },
+  ]
+
+  const customerName = input.customerName?.trim()
+  if (customerName) {
+    rows.push({ kind: "label-value", label: "Customer:", value: customerName })
+  }
+
+  const customerPhone = input.customerPhone?.trim()
+  if (customerPhone) {
+    rows.push({ kind: "label-value", label: "Phone:", value: customerPhone })
+  }
+
+  rows.push({ kind: "blank" })
+  return rows
+}
+
+/** Slip body only — header/footer/identity are layout blocks. */
+export function buildRepairTicketSlipBodyText(
+  input: RepairTicketSlipInput,
+  options?: { omitPhotoList?: boolean }
+): string {
   const w = THERMAL_COLUMNS
   const lines: string[] = []
 
-  const branchLine = input.branchName.trim().slice(0, w)
-  if (branchLine) lines.push(branchLine)
-  lines.push(repeatThermalChar("-", w))
-  lines.push(input.ticketNo.slice(0, w))
-  lines.push(
-    new Date(input.issuedAt).toLocaleString("th-TH", {
-      timeZone: "Asia/Bangkok",
-    }).slice(0, w)
-  )
-  lines.push(repeatThermalChar("-", w))
-  lines.push(`Photos (${input.fileNames.length})`.slice(0, w))
-  for (let i = 0; i < input.fileNames.length; i++) {
-    const prefix = `${i + 1}. `
-    const name = input.fileNames[i]
-    const maxName = w - prefix.length
-    lines.push(`${prefix}${name.length > maxName ? name.slice(0, maxName) : name}`)
+  const description = input.repairDescription?.trim()
+  if (description) {
+    lines.push(...wrapThermalTextLines(description, w))
+    lines.push("")
   }
 
-  return lines.join("\n")
+  const pickupNote = input.pickupNote?.trim()
+  if (pickupNote) {
+    lines.push(...wrapThermalTextLines(pickupNote, w))
+    lines.push("")
+  }
+
+  if (!options?.omitPhotoList && input.fileNames.length > 0) {
+    appendRepairTicketPhotoLines(lines, input.fileNames, w)
+  }
+
+  return lines.join("\n").trimEnd()
 }
 
 export function buildRepairTicketSlipText(

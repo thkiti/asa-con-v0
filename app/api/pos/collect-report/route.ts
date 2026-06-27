@@ -8,6 +8,7 @@ import {
 } from "@/lib/pos/build-pos-read-report"
 import { requirePosReportContext } from "@/lib/pos/pos-report-context"
 import { verifyPosReportStaffCredentials } from "@/lib/pos/verifyPosReportStaffCredentials"
+import { persistCollectorReport } from "@/lib/pos/persist-collector-report"
 import { prisma } from "@/lib/shared/prisma"
 
 type Body = {
@@ -15,11 +16,14 @@ type Body = {
   password?: string
   dateFrom?: string
   dateTo?: string
+  /** Preview only — skip CollectorReport persistence until PRINT REPORT. */
+  persist?: boolean
 }
 
 export async function POST(req: Request) {
   try {
-    const ctx = requirePosReportContext(await getSession())
+    const session = await getSession()
+    const ctx = requirePosReportContext(session)
 
     const body = (await req.json()) as Body
     const staffCode = String(body.staffId || "").trim()
@@ -54,8 +58,7 @@ export async function POST(req: Request) {
       if (auth.code === "no_collect_permission") {
         return NextResponse.json(
           {
-            error:
-              "บัญชีนี้ยังไม่ได้รับสิทธิ์ COLLECTOR — ให้ HO เปิดในเมนูพนักงาน",
+            error: "COLLECTOR is available to HO staff only",
           },
           { status: 403 }
         )
@@ -76,7 +79,18 @@ export async function POST(req: Request) {
       dateTo,
     })
 
-    return NextResponse.json({ ok: true, ...report })
+    const shouldPersist = body.persist === true
+    if (!shouldPersist) {
+      return NextResponse.json({ ok: true, ...report })
+    }
+
+    const persisted = await persistCollectorReport(prisma, {
+      branchId: ctx.branchId,
+      staffId: auth.staff.staffId,
+      report,
+    })
+
+    return NextResponse.json({ ok: true, ...persisted.report })
   } catch (err: unknown) {
     return posApiErrorResponse(err, "POST /api/pos/collect-report")
   }

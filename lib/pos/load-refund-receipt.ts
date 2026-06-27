@@ -16,6 +16,8 @@ export type RefundReceiptView = {
   saleId: string | null
   originalReceiptId: string | null
   originalReceiptNo: string | null
+  /** Original sale receipt total — shown as TOTAL AMOUNT on sale-linked refunds. */
+  originalReceiptTotal: string | null
 }
 
 export type RefundReceiptDb = Pick<PrismaClient, "refund" | "staff">
@@ -38,6 +40,7 @@ export async function loadRefundReceiptForPrint(
     include: {
       branch: { select: { code: true, name: true } },
       originalReceipt: { select: { id: true, receiptNo: true } },
+      sale: { select: { total: true } },
     },
   })
 
@@ -80,5 +83,6 @@ export async function loadRefundReceiptForPrint(
     saleId: refund.saleId,
     originalReceiptId: refund.originalReceiptId,
     originalReceiptNo: refund.originalReceipt?.receiptNo ?? null,
+    originalReceiptTotal: refund.sale ? refund.sale.total.toFixed(2) : null,
   }
 }

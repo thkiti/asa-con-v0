@@ -9,9 +9,14 @@ import {
 import { buildSlipIdentityParts } from "./receipt-slip-identity"
 import { buildReceiptSlipParts, type ReceiptSlipParts } from "./build-receipt-slip"
 import { buildRefundSlipParts, type RefundSlipParts } from "./build-refund-slip"
-import { buildCollectorSlipBodyText } from "./build-collector-slip"
-import { buildRepairTicketSlipBodyText, type RepairTicketSlipInput } from "./build-repair-ticket-slip"
-import { buildReadZSlipBodyText } from "./build-read-z-slip"
+import { buildCollectorSlipParts, ticketLayoutFromCollectorParts } from "./build-collector-slip"
+import {
+  buildRepairTicketSlipBodyText,
+  buildRepairTicketSlipInfoBlock,
+  type RepairTicketSlipInput,
+} from "./build-repair-ticket-slip"
+import { buildReadZSlipBodyText, buildReadZSlipTailText } from "./build-read-z-slip"
+import { buildReadZSlipInfoBlock } from "./build-read-z-info-block"
 import { formatThermalBangkokPrintTime, formatThermalDateTime } from "./format"
 import type { ResolvedThermalLayout, ThermalDocumentType } from "./types"
 import type { ThermalTicketLayout } from "./ticket-layout-types"
@@ -77,15 +82,26 @@ export function ticketLayoutFromRefundParts(parts: RefundSlipParts): ThermalTick
     identityAfterMachineLines: parts.identityAfterMachineLines,
     infoBlockFontSize: parts.infoBlockFontSize,
     infoBlockBold: parts.infoBlockBold,
-    refStaff: parts.refStaff,
+    refStaff: null,
+    infoBlockRows: parts.infoBlockRows,
     subHeaderLines: parts.subHeaderLines,
     subHeaderFontSize: parts.subHeaderFontSize,
     subHeaderBold: parts.subHeaderBold,
     bodyText: parts.refundBodyText,
+    refundReason: parts.refundReason,
+    summaryRows: parts.summaryRows,
     footerLines: parts.footerLines,
     footerFontSize: parts.footerFontSize,
     footerBold: parts.footerBold,
     showCustomerAck: true,
+    customerAckWritingGuides: true,
+    customerAckPhoneLabel: "Phone No.",
+    customerAckSignLabel: "Sign",
+    customerAckLeadingDivider: false,
+    customerAckLeadingBlank: true,
+    customerAckInlineGuides: true,
+    customerAckBodyIndent: true,
+    customerAckCutSeparator: true,
   }
 }
 
@@ -131,6 +147,8 @@ function buildReportTicketLayout(input: {
   refLine: string
   bodyText: string
   identityContext?: SlipIdentityContext
+  infoBlockRows?: import("./thermal-slip-info-block").ThermalSlipInfoBlockRow[]
+  readZGroupLines?: import("@/lib/pos/aggregatePosReadReport").ReadReportGroupLine[]
 }): ThermalTicketLayout {
   const identity = buildSlipIdentityParts({
     branchCode: input.branchCode,
@@ -151,6 +169,8 @@ function buildReportTicketLayout(input: {
       staffId: input.staffId,
       staffName: input.staffName,
     }),
+    infoBlockRows: input.infoBlockRows,
+    readZGroupLines: input.readZGroupLines,
     bodyText: input.bodyText,
     showCustomerAck: true,
   }
@@ -201,22 +221,9 @@ export function buildTicketLayout(input: BuildTicketLayoutInput): ThermalTicketL
       )
     case "COLLECTOR": {
       const { report, layout, identityContext } = input
-      const bodyText = stripLeadingBranchFromBodyText(
-        buildCollectorSlipBodyText(report),
-        { code: report.branchCode, name: report.branchName }
+      return ticketLayoutFromCollectorParts(
+        buildCollectorSlipParts(report, layout, identityContext)
       )
-      const dateKey = (report.bangkokDateFrom ?? report.bangkokDate).replace(/-/g, "")
-      return buildReportTicketLayout({
-        layout,
-        branchCode: report.branchCode,
-        branchName: report.branchName,
-        generatedAt: report.generatedAt,
-        staffId: report.staffId,
-        staffName: report.staffName,
-        refLine: `Ref. COL-${report.branchCode}-${dateKey}`,
-        bodyText,
-        identityContext,
-      })
     }
     case "REPAIR_TICKET":
       return buildRepairTicketLayout({
@@ -230,10 +237,17 @@ export function buildTicketLayout(input: BuildTicketLayoutInput): ThermalTicketL
     case "READ_Z": {
       const { report, layout, identityContext } = input
       const bodyText = stripLeadingBranchFromBodyText(
-        buildReadZSlipBodyText(report),
+        buildReadZSlipTailText(report),
         { code: report.branchCode, name: report.branchName }
       )
-      const dateKey = report.bangkokDate.replace(/-/g, "")
+      const viewYmd =
+        report.bangkokDateTo ??
+        report.readZViewDate ??
+        report.bangkokDate.split(" – ").pop()?.trim() ??
+        report.bangkokDate
+      const dateKey = viewYmd.replace(/-/g, "")
+      const refSuffix =
+        report.readZScope === "cumulative-to-date" ? "-YTD" : ""
       return buildReportTicketLayout({
         layout,
         branchCode: report.branchCode,
@@ -241,8 +255,10 @@ export function buildTicketLayout(input: BuildTicketLayoutInput): ThermalTicketL
         generatedAt: report.generatedAt,
         staffId: report.staffId,
         staffName: report.staffName,
-        refLine: `Ref. READZ-${report.branchCode}-${dateKey}`,
+        refLine: `Ref. READZ-${report.branchCode}-${dateKey}${refSuffix}`,
         bodyText,
+        infoBlockRows: buildReadZSlipInfoBlock(report),
+        readZGroupLines: report.groupLines,
         identityContext,
       })
     }
@@ -269,22 +285,28 @@ export function buildRepairTicketLayout(input: {
   staffName?: string
   identityContext?: SlipIdentityContext
 }): ThermalTicketLayout {
-  const bodyText = stripLeadingBranchFromBodyText(
-    buildRepairTicketSlipBodyText(input.ticket),
-    { code: input.branchCode, name: input.ticket.branchName }
-  )
-
-  return buildReportTicketLayout({
-    layout: input.layout,
-    branchCode: input.branchCode,
-    branchName: input.ticket.branchName,
-    generatedAt: input.ticket.issuedAt,
-    staffId: input.staffId ?? "",
-    staffName: input.staffName ?? "",
-    refLine: `Ref. ${input.ticket.ticketNo}`,
-    bodyText,
-    identityContext: input.identityContext,
-  })
+  return {
+    ...buildReportTicketLayout({
+      layout: input.layout,
+      branchCode: input.branchCode,
+      branchName: input.ticket.branchName,
+      generatedAt: input.ticket.issuedAt,
+      staffId: input.staffId ?? "",
+      staffName: input.staffName ?? "",
+      refLine: `Ref. ${input.ticket.ticketNo}`,
+      bodyText: buildRepairTicketSlipBodyText(input.ticket, { omitPhotoList: true }),
+      infoBlockRows: buildRepairTicketSlipInfoBlock(input.ticket),
+      identityContext: input.identityContext,
+    }),
+    repairPhotoFileNames:
+      input.ticket.fileNames.length > 0 ? [...input.ticket.fileNames] : undefined,
+    customerAckWritingGuides: true,
+    customerAckLeadingDivider: false,
+    customerAckLeadingBlank: true,
+    customerAckInlineGuides: true,
+    customerAckBodyIndent: true,
+    customerAckCutSeparator: true,
+  }
 }
 
 export function buildReceiptRefStaffFromContext(receipt: ReceiptPrintContext) {

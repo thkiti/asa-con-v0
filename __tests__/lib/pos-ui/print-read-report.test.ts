@@ -3,10 +3,21 @@
  */
 import {
   canPrintPosReadReport,
+  printCollectorReportAndExit,
   printPosReadReport,
   printReadZReportAndExit,
 } from "@/lib/pos-ui/print-read-report"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+
+jest.mock("@/lib/pos-ui/read-report-client", () => ({
+  fetchPosCollectReport: jest.fn(),
+}))
+
+import { fetchPosCollectReport } from "@/lib/pos-ui/read-report-client"
+
+const mockedFetchCollect = fetchPosCollectReport as jest.MockedFunction<
+  typeof fetchPosCollectReport
+>
 
 const baseReport: ReadReportPayload = {
   mode: "Z",
@@ -95,6 +106,81 @@ describe("printPosReadReport", () => {
     const onExit = jest.fn()
     const result = printReadZReportAndExit({ ...baseReport, mode: "Z" }, onExit)
     expect(result).toBe(false)
+    expect(onExit).not.toHaveBeenCalled()
+  })
+
+  it("persists, prints COLLECT, and exits on printCollectorReportAndExit", async () => {
+    document.body.innerHTML = `
+      <div data-thermal-print-source="collector" class="thermal-print-area">
+        <pre>ticket</pre>
+      </div>
+    `
+    const onExit = jest.fn()
+    mockedFetchCollect.mockResolvedValue({
+      ok: true,
+      report: { ...baseReport, mode: "COLLECT" },
+    })
+
+    const result = await printCollectorReportAndExit(
+      {
+        staffId: "001",
+        password: "secret",
+        dateFrom: "2026-06-01",
+        dateTo: "2026-06-07",
+      },
+      onExit
+    )
+
+    expect(result).toEqual({ ok: true })
+    expect(mockedFetchCollect).toHaveBeenCalledWith(
+      expect.objectContaining({ persist: true })
+    )
+    expect(printSpy).toHaveBeenCalledTimes(1)
+    expect(onExit).toHaveBeenCalledTimes(1)
+  })
+
+  it("stays open when COLLECT persist fails", async () => {
+    const onExit = jest.fn()
+    mockedFetchCollect.mockResolvedValue({ ok: false, error: "Save failed" })
+
+    const result = await printCollectorReportAndExit(
+      {
+        staffId: "001",
+        password: "secret",
+        dateFrom: "2026-06-01",
+        dateTo: "2026-06-07",
+      },
+      onExit
+    )
+
+    expect(result).toEqual({ ok: false, error: "Save failed", phase: "save" })
+    expect(onExit).not.toHaveBeenCalled()
+    expect(printSpy).not.toHaveBeenCalled()
+  })
+
+  it("stays open when COLLECT print source is missing after save", async () => {
+    document.body.innerHTML = ""
+    const onExit = jest.fn()
+    mockedFetchCollect.mockResolvedValue({
+      ok: true,
+      report: { ...baseReport, mode: "COLLECT" },
+    })
+
+    const result = await printCollectorReportAndExit(
+      {
+        staffId: "001",
+        password: "secret",
+        dateFrom: "2026-06-01",
+        dateTo: "2026-06-07",
+      },
+      onExit
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      error: "พิมพ์ตั๋ว Collector ไม่สำเร็จ",
+      phase: "print",
+    })
     expect(onExit).not.toHaveBeenCalled()
   })
 })

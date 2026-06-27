@@ -153,7 +153,7 @@ describe("PosRefundOverlay", () => {
     })
 
     const confirmButton = Array.from(container.querySelectorAll("button")).find((btn) =>
-      btn.textContent?.includes("Process refund")
+      btn.textContent?.includes("Preview refund ticket")
     )
     expect(confirmButton?.disabled).toBe(true)
 
@@ -167,7 +167,7 @@ describe("PosRefundOverlay", () => {
     })
 
     const enabledButton = Array.from(enabled.container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Process refund")
+      (btn) => btn.textContent?.includes("Preview refund ticket")
     )
     expect(enabledButton?.disabled).toBe(false)
 

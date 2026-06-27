@@ -24,6 +24,7 @@ export type RefundReceiptPrintContext = {
   saleId: string | null
   originalReceiptId: string | null
   originalReceiptNo: string | null
+  originalReceiptTotal: string | null
   thermalLayouts: ThermalLayoutMap
   thermalLayout: ResolvedThermalLayout
 }
@@ -72,6 +73,7 @@ export async function loadRefundReceiptPrintContext(
     saleId: refundView.saleId,
     originalReceiptId: refundView.originalReceiptId,
     originalReceiptNo: refundView.originalReceiptNo,
+    originalReceiptTotal: refundView.originalReceiptTotal,
     thermalLayouts,
     thermalLayout,
   }

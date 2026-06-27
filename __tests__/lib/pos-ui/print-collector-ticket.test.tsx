@@ -17,23 +17,19 @@ import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 
 const collectReport: ReadReportPayload = {
   mode: "COLLECT",
-  bangkokDate: "2026-06-01 – 2026-06-07",
-  bangkokDateFrom: "2026-06-01",
-  bangkokDateTo: "2026-06-07",
-  generatedAt: "2026-06-07T10:00:00.000Z",
+  bangkokDate: "2026-06-03 – 2026-06-05",
+  bangkokDateFrom: "2026-06-03",
+  bangkokDateTo: "2026-06-05",
+  generatedAt: "2026-06-26T08:16:00.000Z",
   staffId: "001",
-  staffName: "Collector",
+  staffName: "Kiti Thengtrirat",
   branchCode: "SH001",
   branchName: "Chidlom",
-  groupLines: [
-    {
-      lineKey: "1",
-      displayLeft: "0101001-Widget",
-      qty: 1,
-      amount: 50,
-    },
+  groupLines: [],
+  paymentLines: [],
+  dailyCashLines: [
+    { salesDateYmd: "2026-06-03", cashAmount: 50, ticketCount: 1 },
   ],
-  paymentLines: [{ key: "CASH", label: "CASH", amount: 50 }],
   grandTotal: 50,
   saleCount: 1,
   refundCount: 0,
@@ -76,7 +72,7 @@ describe("printCollectorTicket", () => {
     expect(document.querySelector("[data-thermal-print-clone]")).not.toBeNull()
     expect(
       document.querySelector('[data-thermal-print-source="collector"]')?.textContent
-    ).toContain("0101001-Widget")
+    ).toContain("03/06/2026")
   })
 
   it("includes Phone No / Sign acknowledgement in print source", () => {

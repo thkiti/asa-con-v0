@@ -12,9 +12,11 @@ export type PosPlaceholderId =
 
 export type PosKeypadActionId =
   | PosPlaceholderId
+  | "read-z-lookup"
   | "checkout"
   | "logout"
   | "refund"
+  | "receipt-lookup"
   | "order"
   | "stock-count"
   | "digit-7"
@@ -41,6 +43,7 @@ export type PosKeypadButtonVariant =
   | "control"
   | "enter"
   | "refund"
+  | "lookup"
   | "order"
   | "stock-count"
   | "repair"

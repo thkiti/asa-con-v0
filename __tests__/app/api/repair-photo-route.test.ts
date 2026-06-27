@@ -1,4 +1,4 @@
-import { POST } from "@/app/api/repair-photo/route"
+import { GET, POST } from "@/app/api/repair-photo/route"
 
 jest.mock("@/lib/auth/session", () => ({
   getSession: jest.fn(),
@@ -8,11 +8,17 @@ jest.mock("@vercel/blob", () => ({
   put: jest.fn(),
 }))
 
+jest.mock("@/lib/pos/repair-photo-list", () => ({
+  listRepairPhotos: jest.fn(),
+}))
+
 import { getSession } from "@/lib/auth/session"
 import { put } from "@vercel/blob"
+import { listRepairPhotos } from "@/lib/pos/repair-photo-list"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
 const mockedPut = put as jest.MockedFunction<typeof put>
+const mockedListRepairPhotos = listRepairPhotos as jest.MockedFunction<typeof listRepairPhotos>
 
 const shopSession = {
   sessionId: "s1",
@@ -104,5 +110,41 @@ describe("POST /api/repair-photo", () => {
       })
     )
     expect(mockedPut.mock.calls[0]?.[2]).not.toHaveProperty("token")
+  })
+})
+
+describe("GET /api/repair-photo", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockedGetSession.mockResolvedValue(shopSession)
+    mockedListRepairPhotos.mockResolvedValue([
+      {
+        fileName: "REP-SH001-202606-0004-01.jpg",
+        blobPath: "repair/REP-SH001-202606-0004-01.jpg",
+        url: "https://blob.example/repair/REP-SH001-202606-0004-01.jpg",
+      },
+    ])
+  })
+
+  it("returns 401 when session is missing", async () => {
+    mockedGetSession.mockResolvedValue(null)
+    const res = await GET()
+    expect(res.status).toBe(401)
+    expect(mockedListRepairPhotos).not.toHaveBeenCalled()
+  })
+
+  it("returns branch-scoped photos with public urls", async () => {
+    const res = await GET()
+    expect(res.status).toBe(200)
+    expect(mockedListRepairPhotos).toHaveBeenCalledWith("SH001")
+    await expect(res.json()).resolves.toEqual({
+      photos: [
+        {
+          fileName: "REP-SH001-202606-0004-01.jpg",
+          blobPath: "repair/REP-SH001-202606-0004-01.jpg",
+          url: "https://blob.example/repair/REP-SH001-202606-0004-01.jpg",
+        },
+      ],
+    })
   })
 })

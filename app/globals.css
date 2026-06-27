@@ -987,6 +987,10 @@ span.finance-account .finance-account-name-part {
   overflow: hidden;
 }
 
+.receipt-setup-structured-preview .receipt-setup-ack-body-indent {
+  box-sizing: border-box;
+}
+
 .receipt-setup-structured-preview .receipt-setup-ack-field {
   width: 100%;
   max-width: 100%;
@@ -999,8 +1003,24 @@ span.finance-account .finance-account-name-part {
   gap: 0.45rem;
 }
 
-.receipt-setup-structured-preview .receipt-setup-ack-writing-space .receipt-setup-dotted-line {
+.receipt-setup-structured-preview .receipt-setup-ack-writing-space .receipt-setup-dotted-line,
+.receipt-setup-structured-preview .receipt-setup-ack-writing-space .receipt-setup-ack-blank-line {
   min-height: 1.05em;
+}
+
+.receipt-setup-structured-preview .receipt-setup-ack-inline-guide-row {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.receipt-setup-structured-preview .refund-ticket-reason-text {
+  padding-left: 4.75em;
+  text-indent: -4.75em;
+}
+
+.receipt-setup-structured-preview .receipt-setup-ack-trailing-space {
+  min-height: 0.5rem;
 }
 
 .receipt-setup-structured-preview .receipt-slip-mono-line {
@@ -1025,6 +1045,371 @@ span.finance-account .finance-account-name-part {
 .receipt-setup-structured-preview .receipt-setup-mono-text-line,
 .receipt-setup-structured-preview .receipt-setup-mono-amount-row {
   white-space: nowrap;
+}
+
+.receipt-setup-structured-preview .repair-ticket-photo-list {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.receipt-setup-structured-preview .repairTicketPhotoRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 4px;
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1.25;
+  color: #18181b;
+}
+
+.receipt-setup-structured-preview .repairTicketPhotoIndex {
+  white-space: nowrap;
+}
+
+.receipt-setup-structured-preview .repairTicketPhotoFileName {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.receipt-setup-structured-preview .read-z-group-table,
+.receipt-setup-structured-preview .readZScrollableGroupArea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #18181b;
+}
+
+.receipt-setup-read-z-preview .receipt-setup-preview-slip,
+.receipt-setup-read-z-preview .thermal-ticket-slip {
+  display: flex;
+  flex-direction: column;
+}
+
+.receipt-setup-read-z-preview .receipt-setup-printable-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* POS READ Z — shared column: HO controls, ticket, print button */
+.readZReportColumn {
+  --read-z-ticket-width: var(--thermal-paper-width, 80mm);
+  width: 100%;
+  max-width: var(--read-z-ticket-width);
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.readZHoControlRow {
+  flex: 0 0 auto;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.readZHoControlRow > * {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Explicit ticket height — avoids collapsed % height chain */
+.readZReportColumn .readZTicketCard {
+  width: 100%;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  height: 360px;
+  max-height: min(360px, calc(100vh - 220px));
+  min-height: 280px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.readZReportColumn .readZTicketPreview,
+.readZReportColumn .readZTicketPreview .thermal-print-area,
+.readZReportColumn .readZTicketPreview .receipt-setup-preview-slip,
+.readZReportColumn .readZTicketPreview .thermal-ticket-slip,
+.readZReportColumn .readZTicketPrintableInner {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.readZReportColumn .readZTicketPreview .receipt-setup-preview-slip,
+.readZReportColumn .readZTicketPreview .thermal-ticket-slip {
+  max-width: 100%;
+  margin: 0;
+  /* Override global flex: 0 0 auto so slip fills the card */
+  flex: 1 1 auto;
+}
+
+.readZReportColumn .readZTicketHeader {
+  flex: 0 0 auto;
+}
+
+.readZReportColumn .readZScrollableGroupArea {
+  flex: 1 1 auto;
+  min-height: 80px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.08);
+}
+
+.readZReportColumn .readZScrollableGroupArea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.readZReportColumn .readZScrollableGroupArea::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.readZReportColumn .readZScrollableGroupArea::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 999px;
+}
+
+.readZReportColumn .readZTicketTotals,
+.readZReportColumn .readZTicketPreview .receipt-setup-footer-block {
+  flex: 0 0 auto;
+}
+
+/* POS screen — hide customer-ack writing block; print clone unchanged */
+.readZReportColumn .readZTicketPreview .receipt-setup-ack-section {
+  display: none;
+}
+
+.readZReportColumn .readZPrintButton,
+.readZReportColumn .readZPrintHint {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  box-sizing: border-box;
+}
+
+.readZPrintActions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+/* READ Z Today — wider preview ticket, print block anchored toward panel bottom */
+.readZTodayWorkspace .readZReportColumn {
+  --read-z-ticket-width: min(105mm, calc(100% - 2.5rem));
+}
+
+.readZTodayWorkspace .readZReportColumn .readZTicketPreview .receipt-setup-preview-slip,
+.readZTodayWorkspace .readZReportColumn .readZTicketPreview .thermal-ticket-slip {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Today — ticket grows into space above print button; group area scrolls inside */
+.readZTodayWorkspace .readZReportColumn .readZTicketCard {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 280px;
+  max-height: none;
+}
+
+.readZTodayWorkspace .readZPrintActions {
+  margin-top: auto;
+  padding-top: 8px;
+  padding-bottom: 4px;
+}
+
+/* READ Z Lookup — doc type / date / cumulative controls + wider ticket */
+.readZLookupControlRow {
+  flex: 0 0 auto;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.readZLookupControlRow > * {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.readZLookupWorkspace .readZReportColumn {
+  --read-z-ticket-width: min(105mm, calc(100% - 2.5rem));
+}
+
+.readZLookupWorkspace .readZReportColumn .readZTicketPreview .receipt-setup-preview-slip,
+.readZLookupWorkspace .readZReportColumn .readZTicketPreview .thermal-ticket-slip {
+  width: 100%;
+  max-width: 100%;
+}
+
+.readZLookupWorkspace .readZReportColumn .readZTicketCard {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 280px;
+  max-height: none;
+}
+
+.readZLookupEmptyState {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem;
+}
+
+/* READ Z inside Document Lookup — match Today/Lookup ticket width; scroll ticket in panel */
+[data-testid="receipt-lookup-preview-panel"]:has(.readZDocumentLookupPreview) {
+  overflow: hidden;
+}
+
+.readZDocumentLookupPreview {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.12);
+}
+
+.readZDocumentLookupPreview::-webkit-scrollbar {
+  width: 6px;
+}
+
+.readZDocumentLookupPreview::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.readZDocumentLookupPreview::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+}
+
+.readZDocumentLookupPreview .readZReportColumn {
+  --read-z-ticket-width: min(105mm, calc(100% - 2.5rem));
+  flex: 0 0 auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.readZDocumentLookupPreview .readZReportColumn .readZTicketPreview .receipt-setup-preview-slip,
+.readZDocumentLookupPreview .readZReportColumn .readZTicketPreview .thermal-ticket-slip {
+  width: 100%;
+  max-width: 100%;
+}
+
+.readZDocumentLookupPreview .readZReportColumn .readZTicketCard {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 240px;
+  max-height: none;
+  overflow: visible;
+}
+
+.readZDocumentLookupPreview .readZReportColumn .readZTicketPreview,
+.readZDocumentLookupPreview .readZReportColumn .readZTicketPreview .thermal-print-area,
+.readZDocumentLookupPreview .readZReportColumn .readZTicketPreview .receipt-setup-preview-slip,
+.readZDocumentLookupPreview .readZReportColumn .readZTicketPreview .thermal-ticket-slip,
+.readZDocumentLookupPreview .readZReportColumn .readZTicketPrintableInner {
+  overflow: visible;
+  flex: 0 0 auto;
+  height: auto;
+  max-height: none;
+}
+
+.receipt-setup-structured-preview .readZGroupStickyHeader {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+}
+
+.receipt-setup-structured-preview .readZGroupTableHeader,
+.receipt-setup-structured-preview .readZGroupHeaderRow,
+.receipt-setup-structured-preview .readZGroupTableRow,
+.receipt-setup-structured-preview .readZGroupRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px 56px;
+  column-gap: 8px;
+  align-items: baseline;
+}
+
+.receipt-setup-structured-preview .readZGroupTableRows,
+.receipt-setup-structured-preview .readZGroupRows {
+  min-height: 0;
+}
+
+.receipt-setup-structured-preview .readZGroupName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.receipt-setup-structured-preview .readZGroupQty,
+.receipt-setup-structured-preview .readZGroupAmount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.receipt-setup-structured-preview .readZGroupQty {
+  margin-right: 5ch;
+}
+
+.receipt-setup-structured-preview .readZGroupSeparator {
+  border-top: 1px dashed #000;
+  margin-top: 2px;
+  margin-bottom: 3px;
+}
+
+@media print {
+  .receipt-setup-structured-preview .readZScrollableGroupArea {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .receipt-setup-structured-preview .readZGroupStickyHeader {
+    position: static !important;
+  }
 }
 
 .receipt-setup-structured-preview .receipt-slip-proportional {
@@ -1130,6 +1515,21 @@ span.finance-account .finance-account-name-part {
   background: #f8f8f8 !important;
   color: #111 !important;
   overflow: hidden;
+}
+
+/* POS Document Lookup — widen preview frame; thermal slip scale unchanged */
+[data-testid="pos-receipt-lookup-panel"] [data-testid="receipt-lookup-preview-panel"] .receipt-setup-preview {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0;
+  padding: 0;
+}
+
+[data-testid="pos-collector-report-panel"] [data-testid="pos-collector-report-preview"] .receipt-setup-preview {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0;
+  padding: 0;
 }
 
 .receipt-setup-printable-inner {

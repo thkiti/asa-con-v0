@@ -4,6 +4,7 @@ import { buildRefundSlipText } from "@/lib/pos/refund-slip-format"
 import { RECEIPT_COLUMNS } from "@/lib/pos/receipt-slip-format"
 import { resolveThermalLayout } from "@/lib/thermal/layout"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
+import { THERMAL_COLUMNS } from "@/lib/thermal/format"
 
 function expectSlipLinesWithinColumns(text: string): void {
   for (const line of text.split("\n")) {
@@ -34,6 +35,7 @@ function sampleContext(
     saleId: "sale-1",
     originalReceiptId: "rcpt-1",
     originalReceiptNo: "REC-SH001-202606-0001",
+    originalReceiptTotal: "860.00",
     thermalLayouts: DEFAULT_THERMAL_LAYOUTS,
     thermalLayout: resolveThermalLayout("REFUND", DEFAULT_THERMAL_LAYOUTS),
     ...overrides,
@@ -41,34 +43,43 @@ function sampleContext(
 }
 
 describe("buildRefundSlipText", () => {
-  it("includes REFUND RECEIPT title and refundNo", () => {
+  it("uses operational document fields without duplicate refund title", () => {
     const text = buildRefundSlipText(sampleContext())
-    expect(text).toContain("REFUND RECEIPT")
-    expect(text).toContain("REF-SH001-202606-0001")
+    expect(text).not.toContain("REFUND RECEIPT")
+    expect(text).toMatch(/Ref\. No\.?\s+REF-SH001-202606-0001/)
+    expect(text).not.toContain("Refund No")
   })
 
-  it("includes original receipt for SALE_LINKED", () => {
+  it("includes original receipt and total amount for SALE_LINKED", () => {
     const text = buildRefundSlipText(sampleContext())
-    expect(text).toContain("ORIGINAL RECEIPT NO")
+    expect(text).toContain("Original Receipt No.")
     expect(text).toContain("REC-SH001-202606-0001")
+    expect(text).toContain("TOTAL AMOUNT")
+    expect(text).toContain("860.00")
+    expect(text).not.toContain("ORIGINAL RECEIPT NO")
   })
 
-  it("includes reason and refund amount", () => {
+  it("includes reason and refund amount without type", () => {
     const text = buildRefundSlipText(
       sampleContext({
-        reason: "ผิดแบบ (Key Blank mistake) ใส่ไม่เข้า",
+        reason: "ลูกค้าไม่รับ งานไม่เรียบร้อย",
       })
     )
-    expect(text).toContain("Reason")
-    expect(text).toContain("ผิดแบบ (Key Blank mistake)")
-    expect(text).toContain("REFUND")
+    expect(text.replace(/\s+/g, "")).toContain("ลูกค้าไม่รับงานไม่เรียบร้อย")
+    expect(text).toContain("REFUND AMOUNT")
     expect(text).toContain("50.00")
+    expect(text).not.toContain("REFUND AMOUNT :")
+    expect(text).not.toContain("SALE LINKED")
+    expect(text).not.toContain("Type")
+    expect(text).not.toContain("Reason\n")
   })
 
-  it("includes staff and type for SALE_LINKED", () => {
+  it("formats staff with bullet separator and date label", () => {
     const text = buildRefundSlipText(sampleContext())
-    expect(text).toContain("103-Somsak Kamnuch")
-    expect(text).toContain("SALE LINKED")
+    expect(text).toContain("103 • Somsak Kamnuch")
+    expect(text).toContain("Date:")
+    expect(text).toContain("Staff:")
+    expect(text).not.toContain("103-Somsak Kamnuch")
   })
 
   it("formats GOODWILL without original receipt line", () => {
@@ -78,19 +89,19 @@ describe("buildRefundSlipText", () => {
         saleId: null,
         originalReceiptId: null,
         originalReceiptNo: null,
+        originalReceiptTotal: null,
         reason: "Customer goodwill",
       })
     )
-    expect(text).toContain("GOODWILL")
+    expect(text).not.toContain("GOODWILL")
     expect(text).toContain("Customer goodwill")
-    expect(text).not.toContain("ORIGINAL RECEIPT NO")
+    expect(text).not.toContain("Original Rec. No.")
   })
 
   it("does not include sale line items, CASH, or CHANGE", () => {
     const text = buildRefundSlipText(sampleContext())
     expect(text).not.toContain("CASH")
     expect(text).not.toContain("CHANGE")
-    expect(text).not.toContain("TOTAL")
     expect(text).not.toContain("VAT 7%")
     expect(text).not.toContain("0101001")
     expect(text).not.toContain("Widget")
@@ -99,19 +110,22 @@ describe("buildRefundSlipText", () => {
   it("includes receipt sub-header from inherited layout before refund body", () => {
     const text = buildRefundSlipText(sampleContext())
     const subIdx = text.indexOf("ใบกำกับภาษีอย่างย่อ")
-    const refundTitleIdx = text.indexOf("REFUND RECEIPT")
-    expect(subIdx).toBeGreaterThan(-1)
-    expect(refundTitleIdx).toBeGreaterThan(subIdx)
+    const refIdx = text.search(/Ref\. No/)
+    expect(refIdx).toBeGreaterThan(-1)
+    expect(subIdx).toBeGreaterThan(refIdx)
   })
 
-  it("keeps lines within receipt column width", () => {
+  it("wraps long reason text across multiple lines", () => {
     const text = buildRefundSlipText(
       sampleContext({
-        reason: "A very long reason that should truncate cleanly on the slip",
-        cashierDisplay: "999-Extra Long Staff Name Here",
+        reason: "A very long reason that should wrap cleanly on the slip",
+        cashierDisplay: "999-Staff",
       })
     )
     expectSlipLinesWithinColumns(text)
+    expect(text).toContain("REASON: A very long reason tha")
+    expect(text).toContain("t should wrap cleanly")
+    expect(text).toContain("slip")
   })
 
   it("reuses footer block from receipt layout", () => {
@@ -151,8 +165,8 @@ describe("buildRefundSlipText", () => {
     expect(text).toContain("ASA HEADER")
     expect(text).toContain("SUB HEADER LINE")
     expect(text).toContain("ASA FOOTER")
-    expect(text).toContain("REFUND RECEIPT")
     expect(text).toContain("REF-SH001-202606-0001")
+    expect(text).not.toContain("REFUND RECEIPT")
   })
 
   it("places receipt footer before Phone No / Sign acknowledgement", () => {
@@ -169,28 +183,28 @@ describe("buildRefundSlipText", () => {
         thermalLayouts: layouts,
       })
     )
+    const amountIdx = text.indexOf("REFUND AMOUNT")
     const footerIdx = text.indexOf("Footer thanks")
-    const phoneIdx = text.indexOf("Phone No")
+    const phoneIdx = text.indexOf("Phone No.")
     const signIdx = text.indexOf("Sign")
-    expect(footerIdx).toBeGreaterThan(-1)
+    expect(amountIdx).toBeGreaterThan(-1)
+    expect(footerIdx).toBeGreaterThan(amountIdx)
     expect(phoneIdx).toBeGreaterThan(footerIdx)
     expect(signIdx).toBeGreaterThan(phoneIdx)
   })
 
-  it("includes customer acknowledgement section after footer", () => {
+  it("includes customer acknowledgement with inline dotted guides and cut separator", () => {
     const text = buildRefundSlipText(sampleContext())
-    const phoneIdx = text.indexOf("Phone No")
-    const signIdx = text.indexOf("Sign")
-    const refundIdx = text.indexOf("REFUND")
+    const lines = text.split("\n")
+    const phoneIdx = lines.findIndex((line) => line.startsWith("Phone No."))
+    const signIdx = lines.findIndex((line) => line.startsWith("Sign"))
+    const amountLineIdx = lines.findIndex((line) => line.includes("REFUND AMOUNT"))
 
     expect(phoneIdx).toBeGreaterThan(-1)
     expect(signIdx).toBeGreaterThan(phoneIdx)
-    expect(phoneIdx).toBeGreaterThan(refundIdx)
-
-    const dotLine = ".".repeat(30)
-    const phoneBlock = text.slice(phoneIdx, signIdx)
-    const signBlock = text.slice(signIdx)
-    expect(phoneBlock.split(dotLine).length - 1).toBe(2)
-    expect(signBlock.split(dotLine).length - 1).toBe(3)
+    expect(phoneIdx).toBeGreaterThan(amountLineIdx)
+    expect(lines[phoneIdx]).toMatch(/^Phone No\.\s+\.+/)
+    expect(lines[signIdx]).toMatch(/^Sign\s+\.+/)
+    expect(lines.at(-2)).toBe("-".repeat(THERMAL_COLUMNS))
   })
 })

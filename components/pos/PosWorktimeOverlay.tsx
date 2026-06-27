@@ -193,12 +193,17 @@ type PosWorktimeOverlayProps = {
   onClose: () => void
   branchCode?: string
   branchName?: string
+  /** After READ Z Today print — staff must clock OUT, then POS session exits. */
+  readZLogoutPending?: boolean
+  onReadZLogoutComplete?: () => void
 }
 
 export function PosWorktimeOverlay({
   onClose,
   branchCode = "",
   branchName = "",
+  readZLogoutPending = false,
+  onReadZLogoutComplete,
 }: PosWorktimeOverlayProps) {
   const [loading, setLoading] = useState(true)
   const [actionPending, setActionPending] = useState(false)
@@ -256,6 +261,9 @@ export function PosWorktimeOverlay({
       setError(result.error)
     } else {
       setView(result.view)
+      if (readZLogoutPending) {
+        onReadZLogoutComplete?.()
+      }
     }
     setActionPending(false)
   }
@@ -293,6 +301,14 @@ export function PosWorktimeOverlay({
             {view?.monthLabel ? (
               <p className="text-sm text-zinc-400">{view.monthLabel}</p>
             ) : null}
+            {readZLogoutPending ? (
+              <p
+                className="mt-1 text-sm font-semibold text-amber-300"
+                data-testid="pos-worktime-read-z-logout-hint"
+              >
+                READ Z completed — record OUT to exit POS
+              </p>
+            ) : null}
           </div>
           <div
             className="flex shrink-0 items-center gap-2"
@@ -311,7 +327,11 @@ export function PosWorktimeOverlay({
               type="button"
               onClick={() => void handleClockOut()}
               disabled={actionPending || loading}
-              className="rounded-md border border-emerald-600/60 bg-emerald-900/40 px-4 py-2 text-sm font-bold text-emerald-300 shadow-sm hover:bg-emerald-900/60 disabled:opacity-50"
+              className={`rounded-md border px-4 py-2 text-sm font-bold shadow-sm disabled:opacity-50 ${
+                readZLogoutPending
+                  ? "border-amber-400 bg-amber-900/50 text-amber-200 hover:bg-amber-900/70"
+                  : "border-emerald-600/60 bg-emerald-900/40 text-emerald-300 hover:bg-emerald-900/60"
+              }`}
               data-testid="pos-worktime-out-btn"
             >
               OUT

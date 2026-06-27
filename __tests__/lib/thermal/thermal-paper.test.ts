@@ -34,18 +34,21 @@ describe("buildCollectorSlipBodyText", () => {
 
     const report = {
       mode: "COLLECT" as const,
-      bangkokDate: "2026-06-07",
-      bangkokDateFrom: "2026-06-01",
-      bangkokDateTo: "2026-06-07",
-      generatedAt: "2026-06-07T10:00:00.000Z",
-      staffId: "103",
-      staffName: "Somsak",
+      bangkokDate: "2026-06-03 – 2026-06-05",
+      bangkokDateFrom: "2026-06-03",
+      bangkokDateTo: "2026-06-05",
+      generatedAt: "2026-06-26T08:16:00.000Z",
+      staffId: "001",
+      staffName: "Kiti Thengtrirat",
       branchCode: "SH001",
       branchName: "Shop One",
-      groupLines: [{ lineKey: "g1", displayLeft: "010-Sample", qty: 2, amount: 120 }],
-      paymentLines: [{ key: "CASH", label: "Cash", amount: 120 }],
+      groupLines: [],
+      paymentLines: [],
+      dailyCashLines: [
+        { salesDateYmd: "2026-06-03", cashAmount: 120, ticketCount: 1 },
+      ],
       grandTotal: 120,
-      saleCount: 2,
+      saleCount: 1,
       refundCount: 0,
       refundTotal: 0,
       netTotal: 120,
@@ -57,8 +60,11 @@ describe("buildCollectorSlipBodyText", () => {
     const ticketLayout = buildTicketLayout({ documentType: "COLLECTOR", report, layout })
 
     expect(full).toContain(ticketLayout.bodyText)
-    expect(body).toContain("Collector 103")
-    expect(body).toContain("TOTAL")
+    expect(body).toContain("03/06/2026")
+    expect(body).toContain("TOTAL CASH")
+    expect(body).toContain("120.00")
     expect(full).toContain("Phone No")
+    expect(full).toContain("Collector:")
+    expect(full).toContain("001")
   })
 })

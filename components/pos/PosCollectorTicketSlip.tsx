@@ -9,9 +9,15 @@ import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 type PosCollectorTicketSlipProps = {
   report: ReadReportPayload
   layout: ResolvedThermalLayout
+  /** Admin / POS preview — white paper frame matching Receipt Setup. */
+  framed?: boolean
 }
 
-export function PosCollectorTicketSlip({ report, layout }: PosCollectorTicketSlipProps) {
+export function PosCollectorTicketSlip({
+  report,
+  layout,
+  framed = false,
+}: PosCollectorTicketSlipProps) {
   const ticketLayout = buildTicketLayout({
     documentType: "COLLECTOR",
     report,
@@ -20,7 +26,7 @@ export function PosCollectorTicketSlip({ report, layout }: PosCollectorTicketSli
 
   return (
     <ThermalPrintSource kind="collector">
-      <ThermalTicketSlipView layout={ticketLayout} />
+      <ThermalTicketSlipView layout={ticketLayout} framed={framed} />
     </ThermalPrintSource>
   )
 }

@@ -53,7 +53,7 @@ function ResultField({
         {label}
       </span>
       <span
-        className={`text-right font-bold tabular-nums ${compact ? "text-xs" : "text-base"} ${label === "Receipt" ? "font-mono" : ""}`}
+        className={`text-right font-bold tabular-nums ${compact ? "text-xs" : "text-base"} ${label === "Receipt No" || label === "Receipt" ? "font-mono" : ""}`}
       >
         {value}
       </span>
@@ -67,6 +67,46 @@ const FUTURE_ACTIONS = [
   "Attachments",
   "Audit History",
 ] as const
+
+function ReceiptLookupItemList({
+  receipt,
+  compact,
+}: {
+  receipt: ReceiptLookupRow
+  compact?: boolean
+}) {
+  return (
+    <div
+      className={`rounded-lg border border-white/30 bg-white/10 text-left ${compact ? "px-3 py-2" : "px-4 py-3"}`}
+      data-testid="receipt-lookup-items"
+    >
+      <div
+        className={`mb-2 font-semibold uppercase tracking-wide text-white/80 ${compact ? "text-[10px]" : "text-xs"}`}
+      >
+        Sold items
+      </div>
+      <div className="mb-1 grid grid-cols-[1.5rem_1fr_2.5rem_4.5rem] gap-1 text-[10px] font-semibold uppercase tracking-wide text-white/70">
+        <div>#</div>
+        <div>Name</div>
+        <div className="text-center">Qty</div>
+        <div className="text-right">Amount</div>
+      </div>
+      {receipt.items.map((item, index) => (
+        <div
+          key={`${item.name}-${index}`}
+          className="grid grid-cols-[1.5rem_1fr_2.5rem_4.5rem] gap-1 py-0.5 text-xs leading-snug"
+        >
+          <div className="tabular-nums text-white/80">{index + 1}</div>
+          <div className="min-w-0 truncate font-medium">{item.name}</div>
+          <div className="text-center tabular-nums">{item.qty}</div>
+          <div className="text-right font-mono tabular-nums">
+            {formatMoney(item.lineTotal)}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function ReceiptLookupResult({
   receipt,
@@ -94,6 +134,7 @@ export function ReceiptLookupResult({
   if (!receipt) return null
 
   const pdfReady = receipt.archiveStatus === "ready" && Boolean(receipt.pdfUrl)
+  const showLegacyMessage = receipt.archiveStatus === "legacy"
 
   return (
     <div
@@ -104,7 +145,11 @@ export function ReceiptLookupResult({
         className={`rounded-lg border-2 border-white/60 bg-white/10 text-left ${compact ? "px-3 py-2" : "px-4 py-3"}`}
         data-testid="receipt-lookup-result-card"
       >
-        <ResultField compact={compact} label="Receipt" value={receipt.receiptNo} />
+        <ResultField
+          compact={compact}
+          label={compact ? "Receipt No" : "Receipt"}
+          value={receipt.receiptNo}
+        />
         <ResultField
           compact={compact}
           label="Date / Time"
@@ -138,6 +183,19 @@ export function ReceiptLookupResult({
         </div>
       </div>
 
+      {receipt.items.length > 0 ? (
+        <ReceiptLookupItemList receipt={receipt} compact={compact} />
+      ) : null}
+
+      {showLegacyMessage ? (
+        <p
+          className="text-center text-sm text-white/85"
+          data-testid="receipt-lookup-legacy-message"
+        >
+          Legacy receipt — PDF archive not available
+        </p>
+      ) : null}
+
       <div className="flex w-full flex-col gap-2">
         {pdfReady ? (
           <>
@@ -158,34 +216,36 @@ export function ReceiptLookupResult({
               Print PDF
             </button>
           </>
-        ) : compact ? null : (
+        ) : compact ? null : !showLegacyMessage ? (
           <p className="text-center text-sm text-white/80">
             PDF actions available when archive is ready.
           </p>
-        )}
+        ) : null}
       </div>
 
-      <div
-        className={`border-t border-white/30 ${compact ? "pt-3" : "pt-4"}`}
-        data-testid="receipt-lookup-future-actions"
-      >
-        <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-white/60">
-          Coming soon
-        </p>
-        <div className="grid grid-cols-2 gap-1.5">
-          {FUTURE_ACTIONS.map((label) => (
-            <button
-              key={label}
-              type="button"
-              disabled
-              aria-disabled
-              className="rounded border border-white/30 bg-white/5 px-2 py-1.5 text-[10px] font-bold text-white/45 cursor-not-allowed"
-            >
-              {label}
-            </button>
-          ))}
+      {!compact ? (
+        <div
+          className="border-t border-white/30 pt-4"
+          data-testid="receipt-lookup-future-actions"
+        >
+          <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-white/60">
+            Coming soon
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {FUTURE_ACTIONS.map((label) => (
+              <button
+                key={label}
+                type="button"
+                disabled
+                aria-disabled
+                className="rounded border border-white/30 bg-white/5 px-2 py-1.5 text-[10px] font-bold text-white/45 cursor-not-allowed"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   )
 }

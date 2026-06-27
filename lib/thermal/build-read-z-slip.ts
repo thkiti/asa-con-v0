@@ -2,65 +2,23 @@ import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import type { ResolvedThermalLayout } from "./types"
 import {
   THERMAL_COLUMNS,
-  appendThermalFooterLines,
-  appendThermalHeaderLines,
-  centerThermalLine,
-  formatThermalBangkokPrintTime,
   formatThermalMoney2,
   padThermalLine,
   repeatThermalChar,
 } from "./format"
+import { buildReadZGroupTableText } from "./read-z-group-table-text"
+export { buildReadZGroupTableText } from "./read-z-group-table-text"
 import { buildTicketLayout } from "./build-ticket-layout"
 import { serializeTicketLayoutToText } from "./serialize-ticket-layout-text"
 
-function formatRowQty(q: number): string {
-  if (Number.isInteger(q)) return String(q)
-  return q.toFixed(2)
-}
-
-function formatDetailLine(
-  left: string,
-  qty: number,
-  amount: number,
-  width = THERMAL_COLUMNS
-): string {
-  const amt = formatThermalMoney2(amount)
-  const qtyStr = formatRowQty(qty)
-  const rightPart = `${qtyStr.padStart(4)} ${amt}`
-  const maxLeft = width - rightPart.length
-  const leftPart =
-    left.length > maxLeft ? `${left.slice(0, Math.max(0, maxLeft - 1))}…` : left
-  const gap = width - leftPart.length - rightPart.length
-  return `${leftPart}${" ".repeat(Math.max(1, gap))}${rightPart}`
-}
-
-/** Slip body only — header/footer are layout blocks. */
-export function buildReadZSlipBodyText(report: ReadReportPayload): string {
+/** Payment + summary tail — group table is rendered separately in preview. */
+export function buildReadZSlipTailText(report: ReadReportPayload): string {
   if (report.mode !== "Z") {
-    throw new Error("buildReadZSlipBodyText requires Z report")
+    throw new Error("buildReadZSlipTailText requires Z report")
   }
 
   const w = THERMAL_COLUMNS
   const lines: string[] = []
-
-  const branchLine = centerThermalLine(`${report.branchCode} ${report.branchName}`.trim(), w)
-  if (branchLine) lines.push(branchLine)
-  lines.push(`Date ${report.bangkokDate}`.slice(0, w))
-  lines.push(`Printed ${formatThermalBangkokPrintTime(report.generatedAt)}`.slice(0, w))
-  lines.push(`STAFF ${report.staffId}`.slice(0, w))
-  if (report.staffName.trim()) {
-    lines.push(report.staffName.trim().slice(0, w))
-  }
-  lines.push("")
-
-  lines.push(repeatThermalChar("-", w))
-  lines.push(
-    `${"Group Code-Name".padEnd(17)}${"Qty".padStart(4)} ${"Amount".padStart(8)}`.slice(0, w)
-  )
-
-  for (const row of report.groupLines) {
-    lines.push(formatDetailLine(row.displayLeft, row.qty, row.amount, w))
-  }
 
   lines.push("")
   lines.push(repeatThermalChar("-", w))
@@ -82,6 +40,15 @@ export function buildReadZSlipBodyText(report: ReadReportPayload): string {
   lines.push(padThermalLine("TOTAL", formatThermalMoney2(report.netTotal), w))
 
   return lines.join("\n")
+}
+
+/** Slip body only — header/identity/ref-staff are layout blocks. */
+export function buildReadZSlipBodyText(report: ReadReportPayload): string {
+  if (report.mode !== "Z") {
+    throw new Error("buildReadZSlipBodyText requires Z report")
+  }
+
+  return [buildReadZGroupTableText(report.groupLines), buildReadZSlipTailText(report)].join("\n")
 }
 
 /** READ Z slip: Header → Group → Payment → Summary → Total → Footer. */
