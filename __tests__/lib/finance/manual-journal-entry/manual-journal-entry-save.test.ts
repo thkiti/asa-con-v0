@@ -182,6 +182,46 @@ function createSaveMockTx(initialAccounts: GlAccountRow[]) {
 
         return { ...entry }
       }),
+      findFirst: jest.fn(async ({ where, select, include }: {
+        where: { id?: string; legalEntityCode?: string }
+        select?: Record<string, boolean>
+        include?: { lines?: { orderBy?: { lineNo: "asc" } } }
+      }) => {
+        const entry = entries.find((row) => {
+          if (where.id && row.id !== where.id) return false
+          if (where.legalEntityCode && row.legalEntityCode !== where.legalEntityCode) {
+            return false
+          }
+          return true
+        })
+        if (!entry) return null
+
+        if (select) {
+          const picked: Record<string, unknown> = {}
+          for (const key of Object.keys(select)) {
+            picked[key] = entry[key as keyof ManualJournalEntryWithLines]
+          }
+          return picked
+        }
+
+        if (include?.lines) {
+          const entryLines = lines
+            .filter((line) => line.manualJournalEntryId === entry.id)
+            .sort((a, b) => a.lineNo - b.lineNo)
+            .map((line) => ({
+              id: line.id,
+              manualJournalEntryId: line.manualJournalEntryId,
+              lineNo: line.lineNo,
+              glAccountId: line.glAccountId,
+              debit: line.debit,
+              credit: line.credit,
+              memo: line.memo,
+            }))
+          return { ...entry, lines: entryLines }
+        }
+
+        return { ...entry }
+      }),
       update: jest.fn(async ({ where, data }: {
         where: { id: string }
         data: Partial<ManualJournalEntryWithLines>
@@ -268,7 +308,7 @@ describe("manual-journal-entry-save", () => {
     const created = await createManualJournalEntryDraft({
       tx: tx as never,
       branchId: "branch-1",
-      legalEntityCode: "ASAS",
+      legalEntityCode: "AS",
       entryDate,
       entryType: "MANUAL",
       description: "Test draft",
@@ -290,7 +330,7 @@ describe("manual-journal-entry-save", () => {
     const created = await createManualJournalEntryDraft({
       tx: tx as never,
       branchId: "branch-1",
-      legalEntityCode: "ASAS",
+      legalEntityCode: "AS",
       entryDate,
       entryType: "MANUAL",
       createdByStaffId: "staff-1",
@@ -307,7 +347,7 @@ describe("manual-journal-entry-save", () => {
     const created = await createManualJournalEntryDraft({
       tx: tx as never,
       branchId: "branch-1",
-      legalEntityCode: "ASAS",
+      legalEntityCode: "AS",
       entryDate,
       entryType: "MANUAL",
       createdByStaffId: "staff-1",
@@ -328,7 +368,7 @@ describe("manual-journal-entry-save", () => {
     const created = await createManualJournalEntryDraft({
       tx: tx as never,
       branchId: "branch-1",
-      legalEntityCode: "ASAS",
+      legalEntityCode: "AS",
       entryDate,
       entryType: "MANUAL",
       createdByStaffId: "staff-1",
@@ -338,6 +378,7 @@ describe("manual-journal-entry-save", () => {
     const updated = await updateManualJournalEntryDraft({
       tx: tx as never,
       entryId: created.id,
+      legalEntityCode: "AS",
       description: "Revised",
       lines: [
         { accountCode: "5000", debit: 0, credit: 40 },
@@ -366,7 +407,7 @@ describe("manual-journal-entry-save", () => {
       entryType: "MANUAL",
       status,
       branchId: "branch-1",
-      legalEntityCode: "ASAS",
+      legalEntityCode: "AS",
       entryDate,
       description: null,
       refNo: null,
@@ -392,6 +433,7 @@ describe("manual-journal-entry-save", () => {
       updateManualJournalEntryDraft({
         tx: tx as never,
         entryId: "locked-entry",
+        legalEntityCode: "AS",
         lines: [{ accountCode: "1100", debit: 10, credit: 0 }],
       })
     ).rejects.toMatchObject({ code })

@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
 import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
 import { allocateInvoiceVoucherNo } from "./invoice-voucher-allocate-no"
 import {
@@ -133,6 +134,7 @@ export async function updateInvoiceVoucherDraft(
   input: UpdateInvoiceVoucherDraftInput
 ): Promise<InvoiceVoucherWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   if (!entryId) {
     throw new InvoiceVoucherError(
       "entryId is required",
@@ -141,8 +143,9 @@ export async function updateInvoiceVoucherDraft(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<InvoiceVoucherWithLines> => {
-    const existing = await tx.invoiceVoucher.findUnique({
-      where: { id: entryId },
+    const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+    const existing = await tx.invoiceVoucher.findFirst({
+      where: { id, legalEntityCode },
       include: { lines: true },
     })
 

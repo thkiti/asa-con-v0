@@ -6,11 +6,8 @@ import {
   parseEntryDate,
   parsePaymentVoucherSaveLines,
 } from "@/app/api/finance/payment-vouchers/shared/parse-payment-voucher-body"
-import {
-  getSession,
-  PeriodAdminAuthError,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
 import { getPaymentVoucherById } from "@/lib/finance/payment-voucher/payment-voucher-read"
 import { updatePaymentVoucherDraft } from "@/lib/finance/payment-voucher/payment-voucher-save"
 import { deleteDraftPaymentVoucher } from "@/lib/finance/payment-voucher/payment-voucher-workflow"
@@ -22,9 +19,9 @@ type Context = {
 
 export async function GET(_req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
-    const entry = await getPaymentVoucherById(prisma, id)
+    const entry = await getPaymentVoucherById(prisma, id, legalEntityCode)
     return NextResponse.json({ entry })
   } catch (err: unknown) {
     return paymentVoucherErrorResponse(err, "GET payment-vouchers/[id]")
@@ -33,12 +30,13 @@ export async function GET(_req: NextRequest, context: Context) {
 
 export async function PATCH(req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const body = (await req.json()) as Record<string, unknown>
 
     const entry = await updatePaymentVoucherDraft({
       entryId: id,
+      legalEntityCode,
       ...(body.entryDate != null
         ? { entryDate: parseEntryDate(body.entryDate) }
         : {}),
@@ -66,7 +64,7 @@ export async function PATCH(req: NextRequest, context: Context) {
       lines: parsePaymentVoucherSaveLines(body.lines),
     })
 
-    const detail = await getPaymentVoucherById(prisma, entry.id)
+    const detail = await getPaymentVoucherById(prisma, entry.id, legalEntityCode)
     return NextResponse.json({ entry: detail })
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {
@@ -84,9 +82,9 @@ export async function PATCH(req: NextRequest, context: Context) {
 
 export async function DELETE(_req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
-    await deleteDraftPaymentVoucher({ entryId: id })
+    await deleteDraftPaymentVoucher({ entryId: id, legalEntityCode })
     return NextResponse.json({ deleted: true })
   } catch (err: unknown) {
     return paymentVoucherErrorResponse(err, "DELETE payment-vouchers/[id]")

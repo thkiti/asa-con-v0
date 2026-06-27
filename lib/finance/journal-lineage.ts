@@ -1,4 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { FinancePostingError } from "./posting-errors"
 
 export type JournalLineagePrisma = Pick<
@@ -28,10 +30,12 @@ const lineageSelect = {
 
 export async function loadJournalLineage(
   prisma: JournalLineagePrisma,
-  journalEntryId: string
+  journalEntryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<JournalLineageResult> {
-  const journal = await prisma.journalEntry.findUnique({
-    where: { id: journalEntryId },
+  const { id } = entityScopedIdWhere(journalEntryId, legalEntityCode)
+  const journal = await prisma.journalEntry.findFirst({
+    where: { id, legalEntityCode },
     select: {
       ...lineageSelect,
       reverses: { select: lineageSelect },
@@ -57,10 +61,12 @@ export async function loadJournalLineage(
 
 export async function loadJournalEntryWithLines(
   prisma: Pick<PrismaClient, "journalEntry">,
-  journalEntryId: string
+  journalEntryId: string,
+  legalEntityCode: DocumentEntityCode
 ) {
-  const entry = await prisma.journalEntry.findUnique({
-    where: { id: journalEntryId },
+  const { id } = entityScopedIdWhere(journalEntryId, legalEntityCode)
+  const entry = await prisma.journalEntry.findFirst({
+    where: { id, legalEntityCode },
     select: {
       id: true,
       voucherId: true,

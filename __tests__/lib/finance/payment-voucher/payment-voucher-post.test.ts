@@ -60,6 +60,7 @@ describe("postPaymentVoucher", () => {
     const tx = {
       paymentVoucher: {
         findUnique: jest.fn().mockResolvedValue(entry),
+        findFirst: jest.fn().mockResolvedValue(entry),
         update: jest.fn().mockImplementation(({ data }) =>
           Promise.resolve({ ...entry, ...data, lines: entry.lines, status: "POSTED" })
         ),
@@ -97,6 +98,7 @@ describe("postPaymentVoucher", () => {
 
     await postPaymentVoucher({
       entryId: "PAV-1",
+      legalEntityCode: "AS",
       postedByStaffId: "staff-1",
       tx: tx as never,
     })

@@ -1,9 +1,15 @@
 import {
   buildFinanceVoucherPrintModelFromManualJournalEntry,
   buildFinanceVoucherPrintModelFromPaymentVoucher,
+  buildFinanceVoucherPrintModelFromInvoiceVoucher,
+  buildFinanceVoucherPrintModelFromRevenueVoucher,
+  buildFinanceVoucherPrintModelFromPettyCashVoucher,
 } from "@/lib/finance-ui/finance-voucher-print"
 import type { ManualJournalEntryRead } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read-types"
 import type { PaymentVoucherRead } from "@/lib/finance/payment-voucher/payment-voucher-read-types"
+import type { InvoiceVoucherRead } from "@/lib/finance/invoice-voucher/invoice-voucher-read-types"
+import type { RevenueVoucherRead } from "@/lib/finance/revenue-voucher/revenue-voucher-read-types"
+import type { PettyCashVoucherRead } from "@/lib/finance/petty-cash-voucher/petty-cash-voucher-read-types"
 
 function baseEntry(overrides: Partial<ManualJournalEntryRead> = {}): ManualJournalEntryRead {
   return {
@@ -181,5 +187,209 @@ describe("buildFinanceVoucherPrintModelFromPaymentVoucher", () => {
     expect(model.lines).toHaveLength(2)
     expect(model.lines[1].accountCode).toBe("10101001")
     expect(model.lines[1].credit).toBe("2000.00")
+  })
+})
+
+function baseInvoiceVoucher(
+  overrides: Partial<InvoiceVoucherRead> = {}
+): InvoiceVoucherRead {
+  return {
+    id: "inv-1",
+    entryNo: "INV-260001",
+    status: "POSTED",
+    branchId: "branch-1",
+    legalEntityCode: "AD",
+    invoiceDate: "2026-06-21T12:00:00.000Z",
+    dueDate: "2026-07-21T12:00:00.000Z",
+    customerName: "Customer Co.",
+    refNo: "PO-100",
+    description: "June invoice",
+    createdByStaffId: "staff-prep",
+    submittedAt: null,
+    submittedByStaffId: null,
+    confirmedAt: null,
+    confirmedByStaffId: null,
+    postedAt: "2026-06-21T15:00:00.000Z",
+    postedByStaffId: "staff-post",
+    cancelledAt: null,
+    cancelledByStaffId: null,
+    cancelReason: null,
+    postedVoucherId: "voucher-inv-1",
+    postedJournalEntryId: "journal-inv-1",
+    createdAt: "2026-06-21T11:00:00.000Z",
+    updatedAt: "2026-06-21T15:00:00.000Z",
+    lines: [
+      {
+        id: "line-1",
+        lineNo: 1,
+        glAccountId: "acc-1",
+        accountCode: "1100",
+        accountName: "AR",
+        debit: "500.00",
+        credit: "0.00",
+        memo: null,
+      },
+      {
+        id: "line-2",
+        lineNo: 2,
+        glAccountId: "acc-2",
+        accountCode: "4100",
+        accountName: "Revenue",
+        debit: "0.00",
+        credit: "500.00",
+        memo: null,
+      },
+    ],
+    ...overrides,
+  }
+}
+
+function baseRevenueVoucher(
+  overrides: Partial<RevenueVoucherRead> = {}
+): RevenueVoucherRead {
+  return {
+    id: "rev-1",
+    entryNo: "REV-260001",
+    status: "POSTED",
+    branchId: "branch-1",
+    legalEntityCode: "AD",
+    entryDate: "2026-06-21T12:00:00.000Z",
+    receiveToAccountId: "acc-bank",
+    receiveToAccountCode: "10101001",
+    receiveToAccountName: "Kasikorn Current",
+    receivedFromName: "Walk-in customer",
+    refNo: "REF-1",
+    receiptNo: "RCPT-99",
+    description: "Cash sale",
+    createdByStaffId: "staff-prep",
+    submittedAt: null,
+    submittedByStaffId: null,
+    confirmedAt: null,
+    confirmedByStaffId: null,
+    postedAt: "2026-06-21T15:00:00.000Z",
+    postedByStaffId: "staff-post",
+    cancelledAt: null,
+    cancelledByStaffId: null,
+    cancelReason: null,
+    postedVoucherId: "voucher-rev-1",
+    postedJournalEntryId: "journal-rev-1",
+    createdAt: "2026-06-21T11:00:00.000Z",
+    updatedAt: "2026-06-21T15:00:00.000Z",
+    lines: [
+      {
+        id: "line-1",
+        lineNo: 1,
+        glAccountId: "acc-bank",
+        accountCode: "10101001",
+        accountName: "Kasikorn Current",
+        debit: "300.00",
+        credit: "0.00",
+        memo: null,
+      },
+      {
+        id: "line-2",
+        lineNo: 2,
+        glAccountId: "acc-rev",
+        accountCode: "4100",
+        accountName: "Revenue",
+        debit: "0.00",
+        credit: "300.00",
+        memo: null,
+      },
+    ],
+    ...overrides,
+  }
+}
+
+function basePettyCashVoucher(
+  overrides: Partial<PettyCashVoucherRead> = {}
+): PettyCashVoucherRead {
+  return {
+    id: "pcv-1",
+    entryNo: "PCV-260001",
+    status: "POSTED",
+    branchId: "branch-1",
+    legalEntityCode: "AD",
+    entryDate: "2026-06-21T12:00:00.000Z",
+    pettyCashAccountId: "acc-petty",
+    pettyCashAccountCode: "10102001",
+    pettyCashAccountName: "Petty cash",
+    payeeName: "Stationery shop",
+    refNo: "REF-PCV",
+    description: "Supplies",
+    createdByStaffId: "staff-prep",
+    submittedAt: null,
+    submittedByStaffId: null,
+    confirmedAt: null,
+    confirmedByStaffId: null,
+    postedAt: "2026-06-21T15:00:00.000Z",
+    postedByStaffId: "staff-post",
+    cancelledAt: null,
+    cancelledByStaffId: null,
+    cancelReason: null,
+    postedVoucherId: "voucher-pcv-1",
+    postedJournalEntryId: "journal-pcv-1",
+    createdAt: "2026-06-21T11:00:00.000Z",
+    updatedAt: "2026-06-21T15:00:00.000Z",
+    lines: [
+      {
+        id: "line-1",
+        lineNo: 1,
+        glAccountId: "acc-exp",
+        accountCode: "50101001",
+        accountName: "Office supplies",
+        debit: "150.00",
+        credit: "0.00",
+        memo: null,
+      },
+      {
+        id: "line-2",
+        lineNo: 2,
+        glAccountId: "acc-petty",
+        accountCode: "10102001",
+        accountName: "Petty cash",
+        debit: "0.00",
+        credit: "150.00",
+        memo: null,
+      },
+    ],
+    ...overrides,
+  }
+}
+
+describe("canonical voucher print models", () => {
+  it("INV print model legalEntityLabel matches saved entry entity", () => {
+    const model = buildFinanceVoucherPrintModelFromInvoiceVoucher(baseInvoiceVoucher())
+    expect(model.documentTypeCode).toBe("INV")
+    expect(model.legalEntityLabel).toBe("ASAD")
+    expect(model.customerName).toBe("Customer Co.")
+    expect(model.dueDate).toBeTruthy()
+  })
+
+  it("REV print model legalEntityLabel matches saved entry entity", () => {
+    const model = buildFinanceVoucherPrintModelFromRevenueVoucher(baseRevenueVoucher())
+    expect(model.documentTypeCode).toBe("REV")
+    expect(model.legalEntityLabel).toBe("ASAD")
+    expect(model.receivedFromName).toBe("Walk-in customer")
+    expect(model.receiptNo).toBe("RCPT-99")
+  })
+
+  it("PCV print model legalEntityLabel matches saved entry entity", () => {
+    const model = buildFinanceVoucherPrintModelFromPettyCashVoucher(basePettyCashVoucher())
+    expect(model.documentTypeCode).toBe("PCV")
+    expect(model.legalEntityLabel).toBe("ASAD")
+    expect(model.payeeName).toBe("Stationery shop")
+    expect(model.pettyCashAccountLabel).toContain("10102001")
+  })
+
+  it("MJV and PAV print models keep header entity aligned with entry entity", () => {
+    const mjv = buildFinanceVoucherPrintModelFromManualJournalEntry(
+      baseEntry({ legalEntityCode: "AD" })
+    )
+    const pav = buildFinanceVoucherPrintModelFromPaymentVoucher(
+      basePaymentVoucher({ legalEntityCode: "AD" })
+    )
+    expect(mjv.legalEntityLabel).toBe("ASAD")
+    expect(pav.legalEntityLabel).toBe("ASAD")
   })
 })

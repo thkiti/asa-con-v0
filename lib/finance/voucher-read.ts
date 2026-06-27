@@ -1,4 +1,6 @@
 ﻿import type { PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { toMoney } from "./decimal"
 import {
   resolveFinanceDocumentHeaderContext,
@@ -41,10 +43,12 @@ function mapLine(line: {
 
 export async function getVoucherDetailById(
   prisma: VoucherReadPrisma,
-  id: string
+  id: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<VoucherDetail> {
-  const voucher = await prisma.voucher.findUnique({
-    where: { id },
+  const scoped = entityScopedIdWhere(id, legalEntityCode)
+  const voucher = await prisma.voucher.findFirst({
+    where: scoped,
     select: {
       id: true,
       voucherNo: true,

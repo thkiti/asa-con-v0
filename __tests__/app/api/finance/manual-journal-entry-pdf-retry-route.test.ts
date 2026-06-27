@@ -1,7 +1,7 @@
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
     manualJournalEntry: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
   },
 }))
@@ -30,10 +30,11 @@ import { getManualJournalEntryById } from "@/lib/finance/manual-journal-entry/ma
 import { retryManualJournalEntryPdfAttach } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf"
 import { prisma } from "@/lib/shared/prisma"
 
-const mockFindUnique = prisma.manualJournalEntry.findUnique as jest.Mock
+const mockFindFirst = prisma.manualJournalEntry.findFirst as jest.Mock
 const mockGet = getManualJournalEntryById as jest.Mock
 const mockRetryAttach = retryManualJournalEntryPdfAttach as jest.Mock
 const context = { params: Promise.resolve({ id: "entry-1" }) }
+const sessionAs = { documentEntityCode: "AS" as const }
 
 const postedEntry = {
   id: "entry-1",
@@ -46,14 +47,14 @@ const postedEntry = {
 describe("POST manual-journal-entries/[id]/pdf/retry", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(getSession as jest.Mock).mockResolvedValue({})
+    ;(getSession as jest.Mock).mockResolvedValue(sessionAs)
     ;(requirePeriodAdminActor as jest.Mock).mockReturnValue({
       staffId: "staff-1",
     })
   })
 
   it("attaches PDF for posted entry without pdfPath", async () => {
-    mockFindUnique.mockResolvedValue({ status: "POSTED", pdfPath: null })
+    mockFindFirst.mockResolvedValue({ status: "POSTED", pdfPath: null })
     mockRetryAttach.mockResolvedValue({
       ok: true,
       pdfPath: "manual-journal/entry-1.pdf",
@@ -75,7 +76,7 @@ describe("POST manual-journal-entries/[id]/pdf/retry", () => {
     )
 
     expect(res.status).toBe(200)
-    expect(mockRetryAttach).toHaveBeenCalledWith("entry-1")
+    expect(mockRetryAttach).toHaveBeenCalledWith("entry-1", "AS")
     await expect(res.json()).resolves.toEqual({
       entry: {
         ...postedEntry,
@@ -88,7 +89,7 @@ describe("POST manual-journal-entries/[id]/pdf/retry", () => {
   })
 
   it("returns pending and pdfError when attach fails", async () => {
-    mockFindUnique.mockResolvedValue({ status: "POSTED", pdfPath: null })
+    mockFindFirst.mockResolvedValue({ status: "POSTED", pdfPath: null })
     mockRetryAttach.mockResolvedValue({
       ok: false,
       error: "Vercel Blob: This blob already exists",
@@ -112,7 +113,7 @@ describe("POST manual-journal-entries/[id]/pdf/retry", () => {
   })
 
   it("skips attach when pdfPath already exists", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: "manual-journal/entry-1.pdf",
     })

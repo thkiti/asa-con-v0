@@ -3,10 +3,7 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 import { manualJournalEntryErrorResponse } from "@/app/api/finance/manual-journal-entries/shared/manual-journal-entry-api-errors"
-import {
-  getSession,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
 import { getManualJournalEntryById } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read"
 import { attachManualJournalEntryPdfFromSnapshot } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf"
 import { buildManualJournalPdfApiPayload } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-readiness"
@@ -19,19 +16,22 @@ type Context = {
 
 export async function POST(_req: NextRequest, context: Context) {
   try {
-    const actor = requirePeriodAdminActor(await getSession())
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const { entry, pdfSnapshot } = await postManualJournalEntry({
       entryId: id,
+      legalEntityCode,
       postedByStaffId: actor.staffId,
     })
 
     let attachResult = null
     if (pdfSnapshot && !entry.pdfPath) {
-      attachResult = await attachManualJournalEntryPdfFromSnapshot(id, pdfSnapshot)
+      attachResult = await attachManualJournalEntryPdfFromSnapshot(id, pdfSnapshot, {
+        legalEntityCode,
+      })
     }
 
-    const fresh = await getManualJournalEntryById(prisma, id)
+    const fresh = await getManualJournalEntryById(prisma, id, legalEntityCode)
     return NextResponse.json({
       entry: fresh,
       ...buildManualJournalPdfApiPayload(fresh, attachResult),

@@ -1,7 +1,7 @@
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
     manualJournalEntry: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
   },
 }))
@@ -26,21 +26,22 @@ import { ManualJournalEntryErrorCodes } from "@/lib/finance/manual-journal-entry
 import { readStoredManualJournalPdf } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-storage"
 import { prisma } from "@/lib/shared/prisma"
 
-const mockFindUnique = prisma.manualJournalEntry.findUnique as jest.Mock
+const mockFindFirst = prisma.manualJournalEntry.findFirst as jest.Mock
 const mockReadPdf = readStoredManualJournalPdf as jest.Mock
 const context = { params: Promise.resolve({ id: "entry-1" }) }
+const sessionAs = { documentEntityCode: "AS" as const }
 
 describe("GET manual-journal-entries/[id]/pdf", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(getSession as jest.Mock).mockResolvedValue({})
+    ;(getSession as jest.Mock).mockResolvedValue(sessionAs)
     ;(requirePeriodAdminActor as jest.Mock).mockReturnValue({
       staffId: "staff-1",
     })
   })
 
   it("returns stored PDF bytes for posted entry", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: "manual-journal/entry-1.pdf",
       pdfBlobUrl: "https://blob.example/manual-journal/entry-1.pdf",
@@ -58,14 +59,34 @@ describe("GET manual-journal-entries/[id]/pdf", () => {
     expect(res.status).toBe(200)
     expect(res.headers.get("Content-Type")).toBe("application/pdf")
     expect(res.headers.get("Content-Disposition")).toContain("inline")
+    expect(mockFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "entry-1", legalEntityCode: "AS" },
+      })
+    )
     expect(mockReadPdf).toHaveBeenCalledWith({
       pdfPath: "manual-journal/entry-1.pdf",
       pdfBlobUrl: "https://blob.example/manual-journal/entry-1.pdf",
     })
   })
 
+  it("returns 404 for cross-entity archived PDF", async () => {
+    mockFindFirst.mockResolvedValue(null)
+
+    const res = await pdfRoute(
+      new NextRequest("http://localhost/api/finance/manual-journal-entries/entry-ad/pdf"),
+      { params: Promise.resolve({ id: "entry-ad" }) }
+    )
+
+    expect(res.status).toBe(404)
+    expect(mockReadPdf).not.toHaveBeenCalled()
+    await expect(res.json()).resolves.toMatchObject({
+      code: ManualJournalEntryErrorCodes.ENTRY_NOT_FOUND,
+    })
+  })
+
   it("returns PDF_PENDING when posted entry has no pdfPath", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: null,
       pdfBlobUrl: null,
@@ -83,7 +104,7 @@ describe("GET manual-journal-entries/[id]/pdf", () => {
   })
 
   it("returns PDF_MISSING when stored blob/file is gone", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: "manual-journal/entry-1.pdf",
       pdfBlobUrl: "https://blob.example/manual-journal/entry-1.pdf",

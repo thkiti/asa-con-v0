@@ -1,5 +1,7 @@
 import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import type { PrismaClient } from "@/generated/prisma/client"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { addMoney, toMoney, ZERO } from "@/lib/finance/decimal"
 import { getGeneralLedger } from "@/lib/finance/reports/general-ledger"
 import { getTrialBalance } from "@/lib/finance/reports/trial-balance"
@@ -26,9 +28,10 @@ function periodKeyFromDate(date: Date): string {
 
 export async function getManualJournalEntryPostingVerification(
   prisma: ManualJournalPostingVerificationPrisma,
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<ManualJournalEntryPostingVerification> {
-  const id = String(entryId ?? "").trim()
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
   if (!id) {
     throw new ManualJournalEntryError(
       "entryId is required",
@@ -36,8 +39,8 @@ export async function getManualJournalEntryPostingVerification(
     )
   }
 
-  const entry = await prisma.manualJournalEntry.findUnique({
-    where: { id },
+  const entry = await prisma.manualJournalEntry.findFirst({
+    where: { id, legalEntityCode },
     include: {
       lines: {
         orderBy: { lineNo: "asc" },

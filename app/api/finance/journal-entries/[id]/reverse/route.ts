@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 
 import { financeErrorResponse } from "@/app/api/finance/shared/finance-api-errors"
-import {
-  getSession,
-  PeriodAdminAuthError,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
+import { loadJournalEntryWithLines } from "@/lib/finance/journal-lineage"
 import { postJournalReversal } from "@/lib/finance/posting"
 import { prisma } from "@/lib/shared/prisma"
 
@@ -16,7 +14,7 @@ type Context = {
 
 export async function POST(req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const body = (await req.json().catch(() => ({}))) as {
       reversalDate?: unknown
@@ -46,6 +44,8 @@ export async function POST(req: NextRequest, context: Context) {
         { status: 400 }
       )
     }
+
+    await loadJournalEntryWithLines(prisma, id, legalEntityCode)
 
     const result = await prisma.$transaction((tx) =>
       postJournalReversal({

@@ -4,6 +4,7 @@ import {
 } from "./petty-cash-voucher-errors"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { PeriodAdminAuthError } from "@/lib/auth"
+import { ReportError } from "@/lib/reporting/report-errors"
 
 export type PettyCashVoucherRouteErrorBody = {
   error: string
@@ -47,6 +48,13 @@ export function mapPettyCashVoucherRouteError(
   if (err instanceof PeriodAdminAuthError) {
     return {
       status: err.httpStatus,
+      body: { error: err.message, code: err.code },
+    }
+  }
+
+  if (err instanceof ReportError) {
+    return {
+      status: err.code === "UNAUTHORIZED" ? 401 : 400,
       body: { error: err.message, code: err.code },
     }
   }

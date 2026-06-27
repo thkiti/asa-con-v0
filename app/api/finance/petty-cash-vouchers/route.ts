@@ -4,15 +4,14 @@ export const dynamic = "force-dynamic"
 import { pettyCashVoucherErrorResponse } from "@/app/api/finance/petty-cash-vouchers/shared/petty-cash-voucher-api-errors"
 import {
   parseEntryDate,
-  parseLegalEntityCode,
   parsePettyCashVoucherSaveLines,
 } from "@/app/api/finance/petty-cash-vouchers/shared/parse-petty-cash-voucher-body"
 import { parsePettyCashVoucherListQuery } from "@/app/api/finance/petty-cash-vouchers/shared/parse-petty-cash-voucher-query"
 import {
-  getSession,
-  PeriodAdminAuthError,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+  applyFinanceVoucherListScope,
+  requireFinanceVoucherScope,
+} from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
 import { createPettyCashVoucherDraft } from "@/lib/finance/petty-cash-voucher/petty-cash-voucher-save"
 import {
   getPettyCashVoucherById,
@@ -22,18 +21,24 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    requirePeriodAdminActor(await getSession())
-    const filter = parsePettyCashVoucherListQuery(req.nextUrl.searchParams)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const filter = applyFinanceVoucherListScope(
+      parsePettyCashVoucherListQuery(req.nextUrl.searchParams),
+      legalEntityCode
+    )
     const result = await listPettyCashVouchers(prisma, filter)
     return NextResponse.json(result)
   } catch (err: unknown) {
+    if (err instanceof PeriodAdminAuthError) {
+      return pettyCashVoucherErrorResponse(err, "GET petty-cash-vouchers")
+    }
     return pettyCashVoucherErrorResponse(err, "GET petty-cash-vouchers")
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = requirePeriodAdminActor(await getSession())
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const body = (await req.json()) as Record<string, unknown>
 
     const branchId = String(body.branchId ?? "").trim()
@@ -61,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     const entry = await createPettyCashVoucherDraft({
       branchId,
-      legalEntityCode: parseLegalEntityCode(body.legalEntityCode),
+      legalEntityCode,
       entryDate: parseEntryDate(body.entryDate),
       pettyCashAccountId,
       payeeName,
@@ -72,7 +77,7 @@ export async function POST(req: NextRequest) {
       lines: parsePettyCashVoucherSaveLines(body.lines),
     })
 
-    const detail = await getPettyCashVoucherById(prisma, entry.id)
+    const detail = await getPettyCashVoucherById(prisma, entry.id, legalEntityCode)
     return NextResponse.json({ entry: detail })
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {

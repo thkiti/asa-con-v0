@@ -1,4 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
 import {
   RevenueVoucherError,
@@ -21,10 +23,12 @@ import { assertCanSubmitRevenueVoucher } from "./revenue-voucher-validation"
 
 async function loadEntryOrThrow(
   tx: Prisma.TransactionClient,
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<RevenueVoucherWithLines> {
-  const entry = await tx.revenueVoucher.findUnique({
-    where: { id: entryId },
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  const entry = await tx.revenueVoucher.findFirst({
+    where: { id, legalEntityCode },
     include: { lines: true },
   })
 
@@ -43,6 +47,7 @@ export async function submitRevenueVoucher(
   input: SubmitRevenueVoucherInput
 ): Promise<RevenueVoucherWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const submittedByStaffId = String(input.submittedByStaffId ?? "").trim()
 
   if (!entryId || !submittedByStaffId) {
@@ -53,7 +58,7 @@ export async function submitRevenueVoucher(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<RevenueVoucherWithLines> => {
-    const entry = await loadEntryOrThrow(tx, entryId)
+    const entry = await loadEntryOrThrow(tx, entryId, legalEntityCode)
     await assertCanSubmitRevenueVoucher(tx, entry)
     return applySubmittedStatus(tx, { entryId, submittedByStaffId })
   }
@@ -66,6 +71,7 @@ export async function confirmRevenueVoucher(
   input: ConfirmRevenueVoucherInput
 ): Promise<RevenueVoucherWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const confirmedByStaffId = String(input.confirmedByStaffId ?? "").trim()
 
   if (!entryId || !confirmedByStaffId) {
@@ -76,7 +82,7 @@ export async function confirmRevenueVoucher(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<RevenueVoucherWithLines> => {
-    const entry = await loadEntryOrThrow(tx, entryId)
+    const entry = await loadEntryOrThrow(tx, entryId, legalEntityCode)
 
     if (isImmutableRevenueVoucherStatus(entry.status)) {
       throw new RevenueVoucherError(
@@ -103,6 +109,7 @@ export async function cancelRevenueVoucher(
   input: CancelRevenueVoucherInput
 ): Promise<RevenueVoucherWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const cancelledByStaffId = String(input.cancelledByStaffId ?? "").trim()
 
   if (!entryId || !cancelledByStaffId) {
@@ -112,12 +119,14 @@ export async function cancelRevenueVoucher(
     )
   }
 
-  const run = async (tx: Prisma.TransactionClient): Promise<RevenueVoucherWithLines> =>
-    applyCancelledStatus(tx, {
+  const run = async (tx: Prisma.TransactionClient): Promise<RevenueVoucherWithLines> => {
+    await loadEntryOrThrow(tx, entryId, legalEntityCode)
+    return applyCancelledStatus(tx, {
       entryId,
       cancelledByStaffId,
       cancelReason: input.cancelReason,
     })
+  }
 
   if (input.tx) return run(input.tx)
   return prisma.$transaction(run)
@@ -127,6 +136,7 @@ export async function deleteDraftRevenueVoucher(
   input: DeleteDraftRevenueVoucherInput
 ): Promise<void> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   if (!entryId) {
     throw new RevenueVoucherError(
       "entryId is required",
@@ -135,7 +145,7 @@ export async function deleteDraftRevenueVoucher(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<void> => {
-    const entry = await loadEntryOrThrow(tx, entryId)
+    const entry = await loadEntryOrThrow(tx, entryId, legalEntityCode)
 
     if (isImmutableRevenueVoucherStatus(entry.status)) {
       throw new RevenueVoucherError(

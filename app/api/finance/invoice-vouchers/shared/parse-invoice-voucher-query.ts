@@ -9,7 +9,6 @@ const STATUSES: InvoiceVoucherStatus[] = [
 ]
 
 export type InvoiceVoucherListQuery = {
-  legalEntityCode?: string
   status?: InvoiceVoucherStatus
   branchId?: string
   search?: string
@@ -23,9 +22,6 @@ export function parseInvoiceVoucherListQuery(
   params: URLSearchParams
 ): InvoiceVoucherListQuery {
   const filter: InvoiceVoucherListQuery = {}
-
-  const legalEntityCode = params.get("legalEntityCode")?.trim()
-  if (legalEntityCode) filter.legalEntityCode = legalEntityCode
 
   const status = params.get("status")?.trim().toUpperCase()
   if (status && STATUSES.includes(status as InvoiceVoucherStatus)) {

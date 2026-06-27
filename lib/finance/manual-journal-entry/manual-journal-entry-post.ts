@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { toMoney } from "@/lib/finance/decimal"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
 import { postOperationalVoucher } from "@/lib/finance/posting"
@@ -67,10 +68,12 @@ function journalLinesFromEntry(entry: ManualJournalEntryWithLines): JournalLineD
 
 async function loadEntryWithGlAccountsOrThrow(
   tx: Prisma.TransactionClient,
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<EntryWithGlLines> {
-  const entry = await tx.manualJournalEntry.findUnique({
-    where: { id: entryId },
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  const entry = await tx.manualJournalEntry.findFirst({
+    where: { id, legalEntityCode },
     include: {
       lines: {
         orderBy: { lineNo: "asc" },
@@ -130,6 +133,7 @@ export async function postManualJournalEntry(
   input: PostManualJournalEntryInput
 ): Promise<PostManualJournalEntryResult> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const postedByStaffId = String(input.postedByStaffId ?? "").trim()
 
   if (!entryId) {
@@ -146,7 +150,7 @@ export async function postManualJournalEntry(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<PostManualJournalEntryResult> => {
-    const entry = await loadEntryWithGlAccountsOrThrow(tx, entryId)
+    const entry = await loadEntryWithGlAccountsOrThrow(tx, entryId, legalEntityCode)
 
     if (
       entry.status === "POSTED" &&

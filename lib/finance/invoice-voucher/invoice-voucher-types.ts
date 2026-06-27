@@ -4,6 +4,7 @@ import type {
   InvoiceVoucherStatus,
   Prisma,
 } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 
 export type InvoiceVoucherWithLines = InvoiceVoucher & {
   lines: InvoiceVoucherLine[]
@@ -47,6 +48,7 @@ export type CreateInvoiceVoucherDraftInput = {
 
 export type UpdateInvoiceVoucherDraftInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   invoiceDate?: Date | string
   dueDate?: Date | string | null
   customerName?: string
@@ -58,23 +60,27 @@ export type UpdateInvoiceVoucherDraftInput = {
 
 export type DeleteDraftInvoiceVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   tx?: Prisma.TransactionClient
 }
 
 export type SubmitInvoiceVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   submittedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type ConfirmInvoiceVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   confirmedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type CancelInvoiceVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   cancelledByStaffId: string
   cancelReason?: string | null
   tx?: Prisma.TransactionClient
@@ -82,6 +88,7 @@ export type CancelInvoiceVoucherInput = {
 
 export type PostInvoiceVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   postedByStaffId: string
   tx?: Prisma.TransactionClient
 }

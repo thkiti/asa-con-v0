@@ -58,6 +58,12 @@ export function FinanceVoucherPrintSheet({
     payeeName: model.payeeName,
     payFromLabel: model.payFromLabel,
     chequeNo: model.chequeNo,
+    customerName: model.customerName,
+    dueDate: model.dueDate,
+    receivedFromName: model.receivedFromName,
+    receiveToLabel: model.receiveToLabel,
+    receiptNo: model.receiptNo,
+    pettyCashAccountLabel: model.pettyCashAccountLabel,
   })
 
   return (

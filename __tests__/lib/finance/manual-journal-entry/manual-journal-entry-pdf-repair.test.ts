@@ -22,7 +22,7 @@ jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-pdf", () => {
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
     manualJournalEntry: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
   },
@@ -43,7 +43,7 @@ import {
 } from "@/lib/finance/manual-journal-entry/manual-journal-entry-status"
 import { prisma } from "@/lib/shared/prisma"
 
-const mockFindUnique = prisma.manualJournalEntry.findUnique as jest.Mock
+const mockFindFirst = prisma.manualJournalEntry.findFirst as jest.Mock
 const mockRender = renderManualJournalEntryPdf as jest.Mock
 const mockStore = storeManualJournalPdf as jest.Mock
 const mockApplyPdfSnapshot = applyPdfSnapshot as jest.Mock
@@ -91,16 +91,16 @@ describe("regenerateManualJournalEntryArchivedPdf", () => {
   })
 
   it("re-renders and replaces an existing archived PDF for POSTED entries", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: `manual-journal/${entryId}.pdf`,
       pdfBlobUrl: null,
     })
 
-    const result = await regenerateManualJournalEntryArchivedPdf(entryId)
+    const result = await regenerateManualJournalEntryArchivedPdf(entryId, "AS")
 
     expect(result.ok).toBe(true)
-    expect(mockLoadSnapshot).toHaveBeenCalledWith(prisma, entryId)
+    expect(mockLoadSnapshot).toHaveBeenCalledWith(prisma, entryId, "AS")
     expect(mockRender).toHaveBeenCalledWith(snapshot)
     expect(mockStore).toHaveBeenCalledWith(entryId, expect.any(Buffer))
     expect(mockApplyPdfSnapshotRepair).toHaveBeenCalledWith(
@@ -114,13 +114,13 @@ describe("regenerateManualJournalEntryArchivedPdf", () => {
   })
 
   it("rejects repair for non-POSTED entries", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "CONFIRMED",
       pdfPath: `manual-journal/${entryId}.pdf`,
       pdfBlobUrl: null,
     })
 
-    const result = await regenerateManualJournalEntryArchivedPdf(entryId)
+    const result = await regenerateManualJournalEntryArchivedPdf(entryId, "AS")
 
     expect(result).toEqual({
       ok: false,
@@ -130,13 +130,13 @@ describe("regenerateManualJournalEntryArchivedPdf", () => {
   })
 
   it("rejects repair when no archived PDF metadata exists", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: null,
       pdfBlobUrl: null,
     })
 
-    const result = await regenerateManualJournalEntryArchivedPdf(entryId)
+    const result = await regenerateManualJournalEntryArchivedPdf(entryId, "AS")
 
     expect(result.ok).toBe(false)
     if (!result.ok) {
@@ -161,13 +161,15 @@ describe("attachManualJournalEntryPdfFromSnapshot", () => {
   })
 
   it("still skips render when pdfPath already exists (normal attach path)", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: `manual-journal/${entryId}.pdf`,
       pdfGeneratedAt: new Date("2026-06-15T10:01:00.000Z"),
     })
 
-    const result = await attachManualJournalEntryPdfFromSnapshot(entryId, snapshot)
+    const result = await attachManualJournalEntryPdfFromSnapshot(entryId, snapshot, {
+      legalEntityCode: "AS",
+    })
 
     expect(result.ok).toBe(true)
     expect(mockRender).not.toHaveBeenCalled()

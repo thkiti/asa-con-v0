@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import type { FinanceDocumentHeaderContext } from "@/lib/finance-ui/finance-document-display"
 import type { ManualJournalEntryTypeCode } from "@/lib/finance-ui/manual-journal-entry-display"
 import { FINANCE_REF_TYPES } from "./posting-types"
@@ -32,7 +33,7 @@ export function financeRefTypeMapsToOperationalDocument(refType: string): boolea
 type FinanceDocumentInquiryPrisma = {
   manualJournalEntry?: Pick<
     PrismaClient["manualJournalEntry"],
-    "findUnique"
+    "findFirst"
   >
 }
 
@@ -45,8 +46,11 @@ export async function resolveFinanceDocumentHeaderContext(
   if (!mappedEntryType) return null
 
   const manualEntry = prisma.manualJournalEntry
-    ? await prisma.manualJournalEntry.findUnique({
-        where: { id: link.refId },
+    ? await prisma.manualJournalEntry.findFirst({
+        where: {
+          id: link.refId,
+          legalEntityCode: link.legalEntityCode as DocumentEntityCode,
+        },
         select: {
           entryNo: true,
           entryType: true,

@@ -9,7 +9,7 @@ jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-storage",
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {
     manualJournalEntry: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
   },
@@ -25,7 +25,7 @@ jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-status", () =
   applyPdfSnapshot: jest.fn(),
 }))
 
-const mockFindUnique = prisma.manualJournalEntry.findUnique as jest.Mock
+const mockFindFirst = prisma.manualJournalEntry.findFirst as jest.Mock
 const mockRender = renderManualJournalEntryPdf as jest.Mock
 const mockStore = storeManualJournalPdf as jest.Mock
 const mockApplyPdfSnapshot = applyPdfSnapshot as jest.Mock
@@ -69,7 +69,7 @@ describe("attachManualJournalEntryPdfFromSnapshot", () => {
   })
 
   it("renders frozen snapshot once and persists pdfPath", async () => {
-    mockFindUnique.mockResolvedValue({ status: "POSTED", pdfPath: null, pdfGeneratedAt: null })
+    mockFindFirst.mockResolvedValue({ status: "POSTED", pdfPath: null, pdfGeneratedAt: null })
 
     const result = await attachManualJournalEntryPdfFromSnapshot(snapshot.entryId, snapshot)
 
@@ -80,7 +80,7 @@ describe("attachManualJournalEntryPdfFromSnapshot", () => {
   })
 
   it("skips render when pdfPath already exists", async () => {
-    mockFindUnique.mockResolvedValue({
+    mockFindFirst.mockResolvedValue({
       status: "POSTED",
       pdfPath: "manual-journal/11111111-1111-1111-1111-111111111111.pdf",
       pdfGeneratedAt: new Date("2026-06-15T10:01:00.000Z"),
@@ -94,7 +94,7 @@ describe("attachManualJournalEntryPdfFromSnapshot", () => {
   })
 
   it("returns ok false when render fails without throwing", async () => {
-    mockFindUnique.mockResolvedValue({ status: "POSTED", pdfPath: null, pdfGeneratedAt: null })
+    mockFindFirst.mockResolvedValue({ status: "POSTED", pdfPath: null, pdfGeneratedAt: null })
     mockRender.mockRejectedValue(new Error("render failed"))
 
     const result = await attachManualJournalEntryPdfFromSnapshot(snapshot.entryId, snapshot)

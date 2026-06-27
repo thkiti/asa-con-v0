@@ -963,6 +963,34 @@ export function createFinanceMockTx(branchId = "branch-1") {
         }
         return result
       },
+      findFirst: async ({
+        where,
+        include,
+        select,
+      }: {
+        where: { voucherId?: string; id?: string; legalEntityCode?: string }
+        include?: {
+          lines?: { orderBy?: { lineNo: "asc" } }
+          voucher?: { select: Record<string, boolean> }
+          reversedBy?: { select: Record<string, unknown> }
+          reverses?: { select: Record<string, unknown> }
+        }
+        select?: Record<string, unknown>
+      }) => {
+        const result = await tx.journalEntry.findUnique({
+          where: { voucherId: where.voucherId, id: where.id },
+          include,
+          select,
+        })
+        if (!result) return null
+        if (
+          where.legalEntityCode &&
+          (result as JournalEntryRow).legalEntityCode !== where.legalEntityCode
+        ) {
+          return null
+        }
+        return result
+      },
       findMany: async ({
         where,
         orderBy,

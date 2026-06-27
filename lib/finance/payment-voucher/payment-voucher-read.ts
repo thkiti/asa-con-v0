@@ -1,5 +1,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { toMoney } from "@/lib/finance/decimal"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import {
   PaymentVoucherError,
   PaymentVoucherErrorCodes,
@@ -36,7 +38,13 @@ function parseFilterDate(value: Date | string | undefined): Date | undefined {
 function buildWhere(filter: PaymentVoucherListFilter): Prisma.PaymentVoucherWhereInput {
   const where: Prisma.PaymentVoucherWhereInput = {}
 
-  if (filter.legalEntityCode) where.legalEntityCode = filter.legalEntityCode
+  if (!filter.legalEntityCode) {
+    throw new PaymentVoucherError(
+      "legalEntityCode is required",
+      PaymentVoucherErrorCodes.INVALID_LINE
+    )
+  }
+  where.legalEntityCode = filter.legalEntityCode
   if (filter.status) where.status = filter.status
   if (filter.branchId) where.branchId = filter.branchId
 
@@ -128,10 +136,19 @@ function mapEntry(entry: EntryDetail): PaymentVoucherRead {
 
 export async function getPaymentVoucherById(
   db: PaymentVoucherReadPrisma,
-  entryId: string
-): Promise<PaymentVoucherRead | null> {
-  const entry = await db.paymentVoucher.findUnique({
-    where: { id: entryId },
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
+): Promise<PaymentVoucherRead> {
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  if (!id) {
+    throw new PaymentVoucherError(
+      "entryId is required",
+      PaymentVoucherErrorCodes.INVALID_LINE
+    )
+  }
+
+  const entry = await db.paymentVoucher.findFirst({
+    where: { id, legalEntityCode },
     include: {
       payFromAccount: { select: { code: true, name: true } },
       lines: {
@@ -143,7 +160,13 @@ export async function getPaymentVoucherById(
     },
   })
 
-  if (!entry) return null
+  if (!entry) {
+    throw new PaymentVoucherError(
+      "Payment voucher not found",
+      PaymentVoucherErrorCodes.ENTRY_NOT_FOUND,
+      404
+    )
+  }
   return mapEntry(entry as EntryDetail)
 }
 

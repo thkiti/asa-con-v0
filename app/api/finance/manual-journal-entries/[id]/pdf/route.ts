@@ -3,10 +3,7 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 import { manualJournalEntryErrorResponse } from "@/app/api/finance/manual-journal-entries/shared/manual-journal-entry-api-errors"
-import {
-  getSession,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
 import {
   ManualJournalEntryError,
   ManualJournalEntryErrorCodes,
@@ -25,11 +22,11 @@ function safePdfFileName(entryNo: string, entryId: string): string {
 
 export async function GET(req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
 
-    const entry = await prisma.manualJournalEntry.findUnique({
-      where: { id },
+    const entry = await prisma.manualJournalEntry.findFirst({
+      where: { id, legalEntityCode },
       select: { status: true, pdfPath: true, pdfBlobUrl: true, entryNo: true },
     })
 

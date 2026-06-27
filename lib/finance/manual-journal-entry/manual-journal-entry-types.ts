@@ -5,6 +5,7 @@ import type {
   ManualJournalEntryType,
   Prisma,
 } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 
 export type ManualJournalEntryWithLines = ManualJournalEntry & {
   lines: ManualJournalEntryLine[]
@@ -52,6 +53,7 @@ export type CreateManualJournalEntryDraftInput = {
 
 export type UpdateManualJournalEntryDraftInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   entryDate?: Date | string
   description?: string | null
   refNo?: string | null
@@ -61,23 +63,27 @@ export type UpdateManualJournalEntryDraftInput = {
 
 export type DeleteDraftManualJournalEntryInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   tx?: Prisma.TransactionClient
 }
 
 export type SubmitManualJournalEntryInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   submittedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type ConfirmManualJournalEntryInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   confirmedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type CancelManualJournalEntryInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   cancelledByStaffId: string
   cancelReason?: string | null
   tx?: Prisma.TransactionClient
@@ -85,6 +91,7 @@ export type CancelManualJournalEntryInput = {
 
 export type PostManualJournalEntryInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   postedByStaffId: string
   tx?: Prisma.TransactionClient
 }

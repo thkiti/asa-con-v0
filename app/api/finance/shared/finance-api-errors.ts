@@ -21,6 +21,9 @@ export function parseAccountingPeriodStatus(
 }
 
 function statusForCode(code: string): number {
+  if (code === "UNAUTHORIZED") {
+    return 401
+  }
   if (
     code === "PERIOD_NOT_FOUND" ||
     code === "CLOSE_EVIDENCE_NOT_FOUND" ||

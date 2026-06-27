@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { toMoney } from "./decimal"
 import {
   resolveFinanceDocumentHeaderContext,
@@ -48,9 +49,10 @@ export type JournalInquiryPrisma = Pick<PrismaClient, "journalEntry" | "manualJo
 
 export async function getJournalInquiryById(
   prisma: JournalInquiryPrisma,
-  journalEntryId: string
+  journalEntryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<JournalInquiryResult> {
-  const entry = await loadJournalEntryWithLines(prisma, journalEntryId)
+  const entry = await loadJournalEntryWithLines(prisma, journalEntryId, legalEntityCode)
 
   const inquiryLink: FinanceDocumentInquiryLink = {
     legalEntityCode: entry.legalEntityCode,

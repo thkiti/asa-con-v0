@@ -288,14 +288,16 @@ describe("journal list and inquiry", () => {
 
     const inquiry = await getJournalInquiryById(
       tx as unknown as Parameters<typeof getJournalInquiryById>[0],
-      original.journalEntryId
+      original.journalEntryId,
+      "AS"
     )
     expect(inquiry.isReversed).toBe(true)
     expect(inquiry.reversedBy?.id).toBe(reversal.journalEntryId)
 
     const reversalInquiry = await getJournalInquiryById(
       tx as unknown as Parameters<typeof getJournalInquiryById>[0],
-      reversal.journalEntryId
+      reversal.journalEntryId,
+      "AS"
     )
     expect(reversalInquiry.isReversal).toBe(true)
     expect(reversalInquiry.reverses?.id).toBe(original.journalEntryId)

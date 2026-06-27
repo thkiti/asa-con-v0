@@ -71,11 +71,13 @@ async function createConfirmedEntry(
   const submitted = await submitManualJournalEntry({
     tx: env.finance.tx as never,
     entryId: draft.id,
+    legalEntityCode: "AS",
     submittedByStaffId: "staff-submit",
   })
   return confirmManualJournalEntry({
     tx: env.finance.tx as never,
     entryId: submitted.id,
+    legalEntityCode: "AS",
     confirmedByStaffId: "staff-confirm",
   })
 }
@@ -94,6 +96,7 @@ describe("manual-journal-entry-post", () => {
     const { entry: posted, pdfSnapshot } = await postManualJournalEntry({
       tx: env.finance.tx as never,
       entryId: confirmed.id,
+      legalEntityCode: "AS",
       postedByStaffId: "staff-post",
     })
 
@@ -121,11 +124,13 @@ describe("manual-journal-entry-post", () => {
     const { entry: first } = await postManualJournalEntry({
       tx: env.finance.tx as never,
       entryId: confirmed.id,
+      legalEntityCode: "AS",
       postedByStaffId: "staff-post",
     })
     const { entry: second, pdfSnapshot } = await postManualJournalEntry({
       tx: env.finance.tx as never,
       entryId: confirmed.id,
+      legalEntityCode: "AS",
       postedByStaffId: "staff-post",
     })
 
@@ -159,6 +164,7 @@ describe("manual-journal-entry-post", () => {
       postManualJournalEntry({
         tx: env.finance.tx as never,
         entryId: draft.id,
+        legalEntityCode: "AS",
         postedByStaffId: "staff-post",
       })
     ).rejects.toMatchObject({
@@ -186,6 +192,7 @@ describe("manual-journal-entry-post", () => {
     const submitted = await submitManualJournalEntry({
       tx: env.finance.tx as never,
       entryId: draft.id,
+      legalEntityCode: "AS",
       submittedByStaffId: "staff-submit",
     })
 
@@ -193,6 +200,7 @@ describe("manual-journal-entry-post", () => {
       postManualJournalEntry({
         tx: env.finance.tx as never,
         entryId: submitted.id,
+        legalEntityCode: "AS",
         postedByStaffId: "staff-post",
       })
     ).rejects.toMatchObject({
@@ -209,6 +217,7 @@ describe("manual-journal-entry-post", () => {
       postManualJournalEntry({
         tx: env.finance.tx as never,
         entryId: "cancelled-entry",
+        legalEntityCode: "AS",
         postedByStaffId: "staff-post",
       })
     ).rejects.toMatchObject({
@@ -233,6 +242,7 @@ describe("manual-journal-entry-post", () => {
       postManualJournalEntry({
         tx: env.finance.tx as never,
         entryId: confirmed.id,
+        legalEntityCode: "AS",
         postedByStaffId: "staff-post",
       })
     ).rejects.toBeInstanceOf(FinancePostingError)

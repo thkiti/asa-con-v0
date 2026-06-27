@@ -59,6 +59,7 @@ describe("postPettyCashVoucher", () => {
 
     const tx = {
       pettyCashVoucher: {
+        findFirst: jest.fn().mockResolvedValue(entry),
         findUnique: jest.fn().mockResolvedValue(entry),
         update: jest.fn().mockImplementation(({ data }) =>
           Promise.resolve({ ...entry, ...data, lines: entry.lines, status: "POSTED" })
@@ -83,6 +84,7 @@ describe("postPettyCashVoucher", () => {
 
     await postPettyCashVoucher({
       entryId: "PCV-1",
+      legalEntityCode: "AS",
       postedByStaffId: "staff-1",
       tx: tx as never,
     })

@@ -9,7 +9,6 @@ const STATUSES: PaymentVoucherStatus[] = [
 ]
 
 export type PaymentVoucherListQuery = {
-  legalEntityCode?: string
   status?: PaymentVoucherStatus
   branchId?: string
   search?: string
@@ -23,9 +22,6 @@ export function parsePaymentVoucherListQuery(
   params: URLSearchParams
 ): PaymentVoucherListQuery {
   const filter: PaymentVoucherListQuery = {}
-
-  const legalEntityCode = params.get("legalEntityCode")?.trim()
-  if (legalEntityCode) filter.legalEntityCode = legalEntityCode
 
   const status = params.get("status")?.trim().toUpperCase()
   if (status && STATUSES.includes(status as PaymentVoucherStatus)) {

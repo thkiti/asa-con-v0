@@ -71,7 +71,7 @@ jest.mock("@/lib/finance/reports/general-ledger", () => ({
 describe("getManualJournalEntryPostingVerification", () => {
   const prisma = {
     manualJournalEntry: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     journalEntry: {
       findUnique: jest.fn(),
@@ -83,13 +83,13 @@ describe("getManualJournalEntryPostingVerification", () => {
   })
 
   it("returns verification for posted OPENING_BALANCE", async () => {
-    prisma.manualJournalEntry.findUnique.mockResolvedValue({
+    prisma.manualJournalEntry.findFirst.mockResolvedValue({
       id: "opb-1",
       entryNo: "OPB-260001",
       entryType: "OPENING_BALANCE",
       status: "POSTED",
       branchId: "branch-1",
-      legalEntityCode: "ASAD",
+      legalEntityCode: "AD",
       entryDate: new Date("2026-01-01T00:00:00.000Z"),
       postedJournalEntryId: "journal-1",
       postedVoucherId: "voucher-1",
@@ -122,7 +122,8 @@ describe("getManualJournalEntryPostingVerification", () => {
 
     const result = await getManualJournalEntryPostingVerification(
       prisma as never,
-      "opb-1"
+      "opb-1",
+      "AD"
     )
 
     expect(result.entryNo).toBe("OPB-260001")
@@ -136,13 +137,13 @@ describe("getManualJournalEntryPostingVerification", () => {
   })
 
   it("returns distinct lineId for repeated account codes on multiple lines", async () => {
-    prisma.manualJournalEntry.findUnique.mockResolvedValue({
+    prisma.manualJournalEntry.findFirst.mockResolvedValue({
       id: "opb-2",
       entryNo: "OPB-260002",
       entryType: "OPENING_BALANCE",
       status: "POSTED",
       branchId: "branch-1",
-      legalEntityCode: "ASAD",
+      legalEntityCode: "AD",
       entryDate: new Date("2026-01-01T00:00:00.000Z"),
       postedJournalEntryId: "journal-1",
       postedVoucherId: "voucher-1",
@@ -183,7 +184,8 @@ describe("getManualJournalEntryPostingVerification", () => {
 
     const result = await getManualJournalEntryPostingVerification(
       prisma as never,
-      "opb-2"
+      "opb-2",
+      "AD"
     )
 
     expect(result.accountChecks.map((row) => row.lineId)).toEqual([
@@ -199,7 +201,7 @@ describe("getManualJournalEntryPostingVerification", () => {
   })
 
   it("rejects non-OPENING_BALANCE entries", async () => {
-    prisma.manualJournalEntry.findUnique.mockResolvedValue({
+    prisma.manualJournalEntry.findFirst.mockResolvedValue({
       id: "maj-1",
       entryType: "MANUAL",
       status: "POSTED",
@@ -208,14 +210,14 @@ describe("getManualJournalEntryPostingVerification", () => {
     })
 
     await expect(
-      getManualJournalEntryPostingVerification(prisma as never, "maj-1")
+      getManualJournalEntryPostingVerification(prisma as never, "maj-1", "AS")
     ).rejects.toMatchObject({
       code: ManualJournalEntryErrorCodes.INVALID_LINE,
     })
   })
 
   it("rejects unposted entries", async () => {
-    prisma.manualJournalEntry.findUnique.mockResolvedValue({
+    prisma.manualJournalEntry.findFirst.mockResolvedValue({
       id: "opb-draft",
       entryType: "OPENING_BALANCE",
       status: "DRAFT",
@@ -224,7 +226,7 @@ describe("getManualJournalEntryPostingVerification", () => {
     })
 
     await expect(
-      getManualJournalEntryPostingVerification(prisma as never, "opb-draft")
+      getManualJournalEntryPostingVerification(prisma as never, "opb-draft", "AD")
     ).rejects.toMatchObject({
       code: ManualJournalEntryErrorCodes.INVALID_TRANSITION,
     })

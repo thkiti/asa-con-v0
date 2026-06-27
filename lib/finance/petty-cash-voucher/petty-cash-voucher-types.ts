@@ -4,6 +4,7 @@ import type {
   PettyCashVoucherStatus,
   Prisma,
 } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 
 export type PettyCashVoucherWithLines = PettyCashVoucher & {
   lines: PettyCashVoucherLine[]
@@ -47,6 +48,7 @@ export type CreatePettyCashVoucherDraftInput = {
 
 export type UpdatePettyCashVoucherDraftInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   entryDate?: Date | string
   pettyCashAccountId?: string
   payeeName?: string
@@ -58,23 +60,27 @@ export type UpdatePettyCashVoucherDraftInput = {
 
 export type DeleteDraftPettyCashVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   tx?: Prisma.TransactionClient
 }
 
 export type SubmitPettyCashVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   submittedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type ConfirmPettyCashVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   confirmedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type CancelPettyCashVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   cancelledByStaffId: string
   cancelReason?: string | null
   tx?: Prisma.TransactionClient
@@ -82,6 +88,7 @@ export type CancelPettyCashVoucherInput = {
 
 export type PostPettyCashVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   postedByStaffId: string
   tx?: Prisma.TransactionClient
 }

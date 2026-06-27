@@ -1,5 +1,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { toMoney } from "@/lib/finance/decimal"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import {
   InvoiceVoucherError,
   InvoiceVoucherErrorCodes,
@@ -36,7 +38,13 @@ function parseFilterDate(value: Date | string | undefined): Date | undefined {
 function buildWhere(filter: InvoiceVoucherListFilter): Prisma.InvoiceVoucherWhereInput {
   const where: Prisma.InvoiceVoucherWhereInput = {}
 
-  if (filter.legalEntityCode) where.legalEntityCode = filter.legalEntityCode
+  if (!filter.legalEntityCode) {
+    throw new InvoiceVoucherError(
+      "legalEntityCode is required",
+      InvoiceVoucherErrorCodes.INVALID_LINE
+    )
+  }
+  where.legalEntityCode = filter.legalEntityCode
   if (filter.status) where.status = filter.status
   if (filter.branchId) where.branchId = filter.branchId
 
@@ -124,10 +132,19 @@ function mapEntry(entry: EntryDetail): InvoiceVoucherRead {
 
 export async function getInvoiceVoucherById(
   db: InvoiceVoucherReadPrisma,
-  entryId: string
-): Promise<InvoiceVoucherRead | null> {
-  const entry = await db.invoiceVoucher.findUnique({
-    where: { id: entryId },
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
+): Promise<InvoiceVoucherRead> {
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  if (!id) {
+    throw new InvoiceVoucherError(
+      "entryId is required",
+      InvoiceVoucherErrorCodes.INVALID_LINE
+    )
+  }
+
+  const entry = await db.invoiceVoucher.findFirst({
+    where: { id, legalEntityCode },
     include: {
       lines: {
         orderBy: { lineNo: "asc" },
@@ -138,7 +155,13 @@ export async function getInvoiceVoucherById(
     },
   })
 
-  if (!entry) return null
+  if (!entry) {
+    throw new InvoiceVoucherError(
+      "Invoice voucher not found",
+      InvoiceVoucherErrorCodes.ENTRY_NOT_FOUND,
+      404
+    )
+  }
   return mapEntry(entry as EntryDetail)
 }
 

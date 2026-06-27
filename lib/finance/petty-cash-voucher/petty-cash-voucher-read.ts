@@ -1,5 +1,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { toMoney } from "@/lib/finance/decimal"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import {
   PettyCashVoucherError,
   PettyCashVoucherErrorCodes,
@@ -36,7 +38,13 @@ function parseFilterDate(value: Date | string | undefined): Date | undefined {
 function buildWhere(filter: PettyCashVoucherListFilter): Prisma.PettyCashVoucherWhereInput {
   const where: Prisma.PettyCashVoucherWhereInput = {}
 
-  if (filter.legalEntityCode) where.legalEntityCode = filter.legalEntityCode
+  if (!filter.legalEntityCode) {
+    throw new PettyCashVoucherError(
+      "legalEntityCode is required",
+      PettyCashVoucherErrorCodes.INVALID_LINE
+    )
+  }
+  where.legalEntityCode = filter.legalEntityCode
   if (filter.status) where.status = filter.status
   if (filter.branchId) where.branchId = filter.branchId
 
@@ -127,10 +135,19 @@ function mapEntry(entry: EntryDetail): PettyCashVoucherRead {
 
 export async function getPettyCashVoucherById(
   db: PettyCashVoucherReadPrisma,
-  entryId: string
-): Promise<PettyCashVoucherRead | null> {
-  const entry = await db.pettyCashVoucher.findUnique({
-    where: { id: entryId },
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
+): Promise<PettyCashVoucherRead> {
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  if (!id) {
+    throw new PettyCashVoucherError(
+      "entryId is required",
+      PettyCashVoucherErrorCodes.INVALID_LINE
+    )
+  }
+
+  const entry = await db.pettyCashVoucher.findFirst({
+    where: { id, legalEntityCode },
     include: {
       pettyCashAccount: { select: { code: true, name: true } },
       lines: {
@@ -142,7 +159,13 @@ export async function getPettyCashVoucherById(
     },
   })
 
-  if (!entry) return null
+  if (!entry) {
+    throw new PettyCashVoucherError(
+      "Petty cash voucher not found",
+      PettyCashVoucherErrorCodes.ENTRY_NOT_FOUND,
+      404
+    )
+  }
   return mapEntry(entry as EntryDetail)
 }
 

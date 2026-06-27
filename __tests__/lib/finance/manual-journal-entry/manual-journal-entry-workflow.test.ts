@@ -27,6 +27,8 @@ const defaultAccounts = [
   { id: "acc-5000", code: "5000", isActive: true, deleted: false },
 ]
 
+const entityAs = "AS" as const
+
 describe("manual-journal-entry-workflow", () => {
   const entryDate = new Date("2026-06-14T12:00:00.000Z")
 
@@ -38,7 +40,7 @@ describe("manual-journal-entry-workflow", () => {
     const draft = await createManualJournalEntryDraft({
       tx: tx as never,
       branchId: "branch-1",
-      legalEntityCode: "ASAS",
+      legalEntityCode: "AS",
       entryDate,
       entryType: "MANUAL",
       createdByStaffId: "staff-create",
@@ -58,6 +60,7 @@ describe("manual-journal-entry-workflow", () => {
       const submitted = await submitManualJournalEntry({
         tx: tx as never,
         entryId: draft.id,
+        legalEntityCode: entityAs,
         submittedByStaffId: "staff-submit",
       })
 
@@ -73,7 +76,7 @@ describe("manual-journal-entry-workflow", () => {
       const draft = await createManualJournalEntryDraft({
         tx: tx as never,
         branchId: "branch-1",
-        legalEntityCode: "ASAS",
+        legalEntityCode: "AS",
         entryDate,
         entryType: "MANUAL",
         createdByStaffId: "staff-create",
@@ -96,7 +99,7 @@ describe("manual-journal-entry-workflow", () => {
       const draft = await createManualJournalEntryDraft({
         tx: tx as never,
         branchId: "branch-1",
-        legalEntityCode: "ASAS",
+        legalEntityCode: "AS",
         entryDate,
         entryType: "MANUAL",
         createdByStaffId: "staff-create",
@@ -125,12 +128,14 @@ describe("manual-journal-entry-workflow", () => {
       const submitted = await submitManualJournalEntry({
         tx: tx as never,
         entryId: draft.id,
+        legalEntityCode: entityAs,
         submittedByStaffId: "staff-submit",
       })
 
       const confirmed = await confirmManualJournalEntry({
         tx: tx as never,
         entryId: submitted.id,
+        legalEntityCode: entityAs,
         confirmedByStaffId: "staff-confirm",
       })
 
@@ -149,6 +154,7 @@ describe("manual-journal-entry-workflow", () => {
         confirmManualJournalEntry({
           tx: tx as never,
           entryId: draft.id,
+          legalEntityCode: entityAs,
           confirmedByStaffId: "staff-confirm",
         })
       ).rejects.toMatchObject({
@@ -164,12 +170,14 @@ describe("manual-journal-entry-workflow", () => {
       const submitted = await submitManualJournalEntry({
         tx: tx as never,
         entryId: draft.id,
+        legalEntityCode: entityAs,
         submittedByStaffId: "staff-submit",
       })
 
       const cancelled = await cancelManualJournalEntry({
         tx: tx as never,
         entryId: submitted.id,
+        legalEntityCode: entityAs,
         cancelledByStaffId: "staff-cancel",
         cancelReason: "wrong period",
       })
@@ -187,17 +195,20 @@ describe("manual-journal-entry-workflow", () => {
       const submitted = await submitManualJournalEntry({
         tx: tx as never,
         entryId: draft.id,
+        legalEntityCode: entityAs,
         submittedByStaffId: "staff-submit",
       })
       const confirmed = await confirmManualJournalEntry({
         tx: tx as never,
         entryId: submitted.id,
+        legalEntityCode: entityAs,
         confirmedByStaffId: "staff-confirm",
       })
 
       const cancelled = await cancelManualJournalEntry({
         tx: tx as never,
         entryId: confirmed.id,
+        legalEntityCode: entityAs,
         cancelledByStaffId: "staff-cancel",
       })
 
@@ -212,6 +223,7 @@ describe("manual-journal-entry-workflow", () => {
         cancelManualJournalEntry({
           tx: tx as never,
           entryId: draft.id,
+          legalEntityCode: entityAs,
           cancelledByStaffId: "staff-cancel",
         })
       ).rejects.toMatchObject({
@@ -235,6 +247,7 @@ describe("manual-journal-entry-workflow", () => {
           cancelManualJournalEntry({
             tx: tx as never,
             entryId: "terminal-entry",
+            legalEntityCode: entityAs,
             cancelledByStaffId: "staff-cancel",
           })
         ).rejects.toMatchObject({
@@ -252,6 +265,7 @@ describe("manual-journal-entry-workflow", () => {
       await deleteDraftManualJournalEntry({
         tx: tx as never,
         entryId: draft.id,
+        legalEntityCode: entityAs,
       })
 
       expect(entries.find((e) => e.id === draft.id)).toBeUndefined()
@@ -275,6 +289,7 @@ describe("manual-journal-entry-workflow", () => {
         deleteDraftManualJournalEntry({
           tx: tx as never,
           entryId: "locked-entry",
+          legalEntityCode: entityAs,
         })
       ).rejects.toMatchObject({ code })
     })

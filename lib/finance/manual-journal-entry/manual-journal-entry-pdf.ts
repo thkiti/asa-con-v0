@@ -1,4 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
 import {
   ManualJournalEntryError,
@@ -42,7 +44,10 @@ async function attachPdfSnapshotInDb(
 export async function attachManualJournalEntryPdfFromSnapshot(
   entryId: string,
   snapshot: ManualJournalEntryPdfSnapshot,
-  options?: { tx?: Prisma.TransactionClient }
+  options?: {
+    tx?: Prisma.TransactionClient
+    legalEntityCode?: DocumentEntityCode
+  }
 ): Promise<AttachManualJournalEntryPdfResult> {
   const id = String(entryId ?? "").trim()
   if (!id) {
@@ -54,8 +59,10 @@ export async function attachManualJournalEntryPdfFromSnapshot(
   }
 
   const client = options?.tx ?? prisma
-  const existing = await client.manualJournalEntry.findUnique({
-    where: { id },
+  const entityCode = options?.legalEntityCode ?? snapshot.legalEntityCode
+  const { id: scopedId } = entityScopedIdWhere(id, entityCode as DocumentEntityCode)
+  const existing = await client.manualJournalEntry.findFirst({
+    where: { id: scopedId, legalEntityCode: entityCode },
     select: { status: true, pdfPath: true, pdfGeneratedAt: true },
   })
 
@@ -92,24 +99,33 @@ export async function attachManualJournalEntryPdfFromSnapshot(
 }
 
 export async function retryManualJournalEntryPdfAttach(
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<AttachManualJournalEntryPdfResult> {
-  const snapshot = await loadPostedManualJournalEntryPdfSnapshot(prisma, entryId)
+  const snapshot = await loadPostedManualJournalEntryPdfSnapshot(
+    prisma,
+    entryId,
+    legalEntityCode
+  )
   if (!snapshot) {
     return {
       ok: false,
       error: "PDF snapshot is only available for fully posted manual journal entries",
     }
   }
-  return attachManualJournalEntryPdfFromSnapshot(entryId, snapshot)
+  return attachManualJournalEntryPdfFromSnapshot(entryId, snapshot, {
+    legalEntityCode,
+  })
 }
 
 export async function loadPostedManualJournalEntryPdfSnapshot(
   tx: Pick<Prisma.TransactionClient, "manualJournalEntry" | "voucher">,
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<ManualJournalEntryPdfSnapshot | null> {
-  const entry = await tx.manualJournalEntry.findUnique({
-    where: { id: entryId },
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  const entry = await tx.manualJournalEntry.findFirst({
+    where: { id, legalEntityCode },
     include: {
       lines: {
         orderBy: { lineNo: "asc" },

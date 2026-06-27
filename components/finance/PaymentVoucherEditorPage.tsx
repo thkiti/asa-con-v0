@@ -5,13 +5,10 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
-import { FinancePrintActions } from "@/components/finance/FinancePrintActions"
-import { FinanceVoucherPrintFontProbe } from "@/components/finance/FinanceVoucherPrintFontProbe"
-import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
+import { FinanceVoucherPostedPrintView } from "@/components/finance/FinanceVoucherPostedPrintView"
 import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
 import { buildFinanceVoucherPrintModelFromPaymentVoucher } from "@/lib/finance-ui/finance-voucher-print"
-import { financeVoucherLocalFont } from "@/lib/finance-ui/finance-voucher-local-font"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
 import { formatAmount } from "@/lib/finance-ui/format"
 import { formatThaiBahtAmountInWords } from "@/lib/finance-ui/format-thai-baht-words"
@@ -254,7 +251,6 @@ export function PaymentVoucherEditorPage({
   const applyEntry = useCallback((loaded: PaymentVoucherRead) => {
     setEntry(loaded)
     setBranchId(loaded.branchId)
-    setLegalEntityCode(loaded.legalEntityCode as DocumentEntityCode)
     setEntryDate(loaded.entryDate.slice(0, 10))
     setPayFromAccountId(loaded.payFromAccountId)
     setPayFromAccountCode(loaded.payFromAccountCode)
@@ -269,9 +265,9 @@ export function PaymentVoucherEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
+      setLegalEntityCode(session.documentEntityCode)
       if (mode === "create") {
         setBranchId(session.branchId)
-        setLegalEntityCode(session.documentEntityCode)
       }
       const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
       setBranchLabel(label || session.branchId)
@@ -585,40 +581,22 @@ export function PaymentVoucherEditorPage({
   return (
     <div className="space-y-4" data-testid="payment-voucher-editor">
       {isPosted && entry && voucherPrintModel ? (
-        <div
-          className={`finance-voucher-print-root finance-document-container finance-voucher-print-font ${financeVoucherLocalFont.variable} ${financeVoucherLocalFont.className}`}
-          data-testid="finance-voucher-print-root"
-        >
-          <div className="no-print flex w-full flex-col gap-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <FinancePrintActions disabled={busyAction !== null} />
-              {postedJournalHref ? (
-                <Link
-                  href={postedJournalHref}
-                  className={`text-sm ${themeLinkMuted}`}
-                  data-testid="posted-journal-link"
-                >
-                  View posted GL journal
-                </Link>
-              ) : null}
-            </div>
-            <Link
-              href={listHref}
-              className={`text-sm ${themeLinkMuted}`}
-              data-testid="action-back"
-            >
-              ← Back to payment vouchers
-            </Link>
-          </div>
-          <FinanceVoucherPrintSheet
-            model={voucherPrintModel}
-            entryType={PAYMENT_VOUCHER_ENTRY_TYPE}
-            legalEntityCode={legalEntityCode}
-            entryDate={entryDate}
-            description={description}
-          />
-          <FinanceVoucherPrintFontProbe />
-        </div>
+        <FinanceVoucherPostedPrintView
+          model={voucherPrintModel}
+          entryType={PAYMENT_VOUCHER_ENTRY_TYPE}
+          legalEntityCode={legalEntityCode}
+          entryDate={entryDate}
+          description={description}
+          listHref={listHref}
+          listBackLabel="Back to payment vouchers"
+          postedJournalHref={postedJournalHref}
+          disabled={busyAction !== null}
+          archive={{
+            entryId: entry.id,
+            entryNo: documentNo,
+            pdfSnapshotReady: false,
+          }}
+        />
       ) : isCancelled && entry ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">

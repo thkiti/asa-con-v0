@@ -6,11 +6,8 @@ import {
   parseEntryDate,
   parseManualJournalSaveLines,
 } from "@/app/api/finance/manual-journal-entries/shared/parse-manual-journal-entry-body"
-import {
-  getSession,
-  PeriodAdminAuthError,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
 import { getManualJournalEntryById } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read"
 import { updateManualJournalEntryDraft } from "@/lib/finance/manual-journal-entry/manual-journal-entry-save"
 import { deleteDraftManualJournalEntry } from "@/lib/finance/manual-journal-entry/manual-journal-entry-workflow"
@@ -22,9 +19,9 @@ type Context = {
 
 export async function GET(_req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
-    const entry = await getManualJournalEntryById(prisma, id)
+    const entry = await getManualJournalEntryById(prisma, id, legalEntityCode)
     return NextResponse.json({ entry })
   } catch (err: unknown) {
     return manualJournalEntryErrorResponse(err, "GET manual-journal-entries/[id]")
@@ -33,12 +30,13 @@ export async function GET(_req: NextRequest, context: Context) {
 
 export async function PATCH(req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const body = (await req.json()) as Record<string, unknown>
 
     const entry = await updateManualJournalEntryDraft({
       entryId: id,
+      legalEntityCode,
       ...(body.entryDate != null
         ? { entryDate: parseEntryDate(body.entryDate) }
         : {}),
@@ -51,7 +49,7 @@ export async function PATCH(req: NextRequest, context: Context) {
       lines: parseManualJournalSaveLines(body.lines),
     })
 
-    const detail = await getManualJournalEntryById(prisma, entry.id)
+    const detail = await getManualJournalEntryById(prisma, entry.id, legalEntityCode)
     return NextResponse.json({ entry: detail })
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {
@@ -75,9 +73,9 @@ export async function PATCH(req: NextRequest, context: Context) {
 
 export async function DELETE(_req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
-    await deleteDraftManualJournalEntry({ entryId: id })
+    await deleteDraftManualJournalEntry({ entryId: id, legalEntityCode })
     return NextResponse.json({ deleted: true })
   } catch (err: unknown) {
     return manualJournalEntryErrorResponse(err, "DELETE manual-journal-entries/[id]")

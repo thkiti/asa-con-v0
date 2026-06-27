@@ -2,11 +2,21 @@
 import { VoucherReadError } from "@/lib/finance/voucher-read-errors"
 import { getVoucherDetailById } from "@/lib/finance/voucher-read"
 import { GET } from "@/app/api/finance/vouchers/[id]/route"
+import { getSession, requirePeriodAdminActor } from "@/lib/auth"
 import { prisma } from "@/lib/shared/prisma"
 
 jest.mock("@/lib/finance/voucher-read", () => ({
   getVoucherDetailById: jest.fn(),
 }))
+
+jest.mock("@/lib/auth", () => {
+  const actual = jest.requireActual("@/lib/auth")
+  return {
+    ...actual,
+    getSession: jest.fn(),
+    requirePeriodAdminActor: jest.fn(),
+  }
+})
 
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: { mocked: true },
@@ -15,6 +25,8 @@ jest.mock("@/lib/shared/prisma", () => ({
 const mockGetVoucherDetailById = getVoucherDetailById as jest.MockedFunction<
   typeof getVoucherDetailById
 >
+
+const sessionAs = { documentEntityCode: "AS" as const }
 
 const voucherDetail = {
   id: "voucher-1",
@@ -36,9 +48,11 @@ const voucherDetail = {
 describe("GET finance/vouchers/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(getSession as jest.Mock).mockResolvedValue(sessionAs)
+    ;(requirePeriodAdminActor as jest.Mock).mockReturnValue({ staffId: "staff-1" })
   })
 
-  it("returns voucher detail", async () => {
+  it("returns voucher detail scoped to session entity", async () => {
     mockGetVoucherDetailById.mockResolvedValue(voucherDetail)
 
     const req = new NextRequest("http://localhost/api/finance/vouchers/voucher-1")
@@ -46,10 +60,10 @@ describe("GET finance/vouchers/[id]", () => {
 
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toEqual({ voucher: voucherDetail })
-    expect(mockGetVoucherDetailById).toHaveBeenCalledWith(prisma, "voucher-1")
+    expect(mockGetVoucherDetailById).toHaveBeenCalledWith(prisma, "voucher-1", "AS")
   })
 
-  it("returns 404 when voucher is missing", async () => {
+  it("returns 404 when voucher belongs to another entity", async () => {
     mockGetVoucherDetailById.mockRejectedValue(
       new VoucherReadError("Voucher not found", "NOT_FOUND")
     )
@@ -62,5 +76,6 @@ describe("GET finance/vouchers/[id]", () => {
       error: "Voucher not found",
       code: "NOT_FOUND",
     })
+    expect(mockGetVoucherDetailById).toHaveBeenCalledWith(prisma, "missing", "AS")
   })
 })

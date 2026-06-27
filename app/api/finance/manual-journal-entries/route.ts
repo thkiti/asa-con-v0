@@ -4,16 +4,15 @@ export const dynamic = "force-dynamic"
 import { manualJournalEntryErrorResponse } from "@/app/api/finance/manual-journal-entries/shared/manual-journal-entry-api-errors"
 import {
   parseEntryDate,
-  parseLegalEntityCode,
   parseManualJournalEntryType,
   parseManualJournalSaveLines,
 } from "@/app/api/finance/manual-journal-entries/shared/parse-manual-journal-entry-body"
 import { parseManualJournalEntryListQuery } from "@/app/api/finance/manual-journal-entries/shared/parse-manual-journal-entry-query"
 import {
-  getSession,
-  PeriodAdminAuthError,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+  applyFinanceVoucherListScope,
+  requireFinanceVoucherScope,
+} from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
 import { createManualJournalEntryDraft } from "@/lib/finance/manual-journal-entry/manual-journal-entry-save"
 import {
   getManualJournalEntryById,
@@ -23,8 +22,11 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    requirePeriodAdminActor(await getSession())
-    const filter = parseManualJournalEntryListQuery(req.nextUrl.searchParams)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const filter = applyFinanceVoucherListScope(
+      parseManualJournalEntryListQuery(req.nextUrl.searchParams),
+      legalEntityCode
+    )
     const result = await listManualJournalEntries(prisma, filter)
     return NextResponse.json(result)
   } catch (err: unknown) {
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = requirePeriodAdminActor(await getSession())
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const body = (await req.json()) as Record<string, unknown>
 
     const branchId = String(body.branchId ?? "").trim()
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     const entry = await createManualJournalEntryDraft({
       branchId,
-      legalEntityCode: parseLegalEntityCode(body.legalEntityCode),
+      legalEntityCode,
       entryDate: parseEntryDate(body.entryDate),
       entryType: parseManualJournalEntryType(body.entryType),
       description:
@@ -60,7 +62,7 @@ export async function POST(req: NextRequest) {
       lines: parseManualJournalSaveLines(body.lines),
     })
 
-    const detail = await getManualJournalEntryById(prisma, entry.id)
+    const detail = await getManualJournalEntryById(prisma, entry.id, legalEntityCode)
     return NextResponse.json({ entry: detail })
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {

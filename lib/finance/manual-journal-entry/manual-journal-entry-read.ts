@@ -9,6 +9,8 @@ import {
   ManualJournalEntryError,
   ManualJournalEntryErrorCodes,
 } from "./manual-journal-entry-errors"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import type {
   ManualJournalEntryLineRead,
   ManualJournalEntryListFilter,
@@ -57,9 +59,13 @@ function normalizeOffset(offset: number | undefined): number {
 function buildWhere(filter: ManualJournalEntryListFilter): Prisma.ManualJournalEntryWhereInput {
   const where: Prisma.ManualJournalEntryWhereInput = {}
 
-  if (filter.legalEntityCode) {
-    where.legalEntityCode = filter.legalEntityCode
+  if (!filter.legalEntityCode) {
+    throw new ManualJournalEntryError(
+      "legalEntityCode is required",
+      ManualJournalEntryErrorCodes.INVALID_LINE
+    )
   }
+  where.legalEntityCode = filter.legalEntityCode
   if (filter.status) {
     where.status = filter.status
   }
@@ -245,9 +251,10 @@ export async function listManualJournalEntries(
 
 export async function getManualJournalEntryById(
   prisma: ManualJournalEntryReadPrisma,
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<ManualJournalEntryRead> {
-  const id = String(entryId ?? "").trim()
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
   if (!id) {
     throw new ManualJournalEntryError(
       "entryId is required",
@@ -255,8 +262,8 @@ export async function getManualJournalEntryById(
     )
   }
 
-  const entry = await prisma.manualJournalEntry.findUnique({
-    where: { id },
+  const entry = await prisma.manualJournalEntry.findFirst({
+    where: { id, legalEntityCode },
     include: {
       lines: {
         orderBy: { lineNo: "asc" },

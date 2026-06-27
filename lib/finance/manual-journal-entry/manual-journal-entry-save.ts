@@ -1,5 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client"
 import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
 import { allocateManualJournalEntryNo } from "./manual-journal-entry-allocate-no"
 import {
@@ -128,6 +130,7 @@ export async function updateManualJournalEntryDraft(
   input: UpdateManualJournalEntryDraftInput
 ): Promise<ManualJournalEntryWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   if (!entryId) {
     throw new ManualJournalEntryError(
       "entryId is required",
@@ -136,8 +139,9 @@ export async function updateManualJournalEntryDraft(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> => {
-    const existing = await tx.manualJournalEntry.findUnique({
-      where: { id: entryId },
+    const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+    const existing = await tx.manualJournalEntry.findFirst({
+      where: { id, legalEntityCode },
       select: { id: true, status: true },
     })
 

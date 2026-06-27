@@ -36,6 +36,7 @@ async function listRepairCandidates(entryId: string | null) {
         id: true,
         entryNo: true,
         status: true,
+        legalEntityCode: true,
         pdfPath: true,
         pdfBlobUrl: true,
         pdfGeneratedAt: true,
@@ -53,6 +54,7 @@ async function listRepairCandidates(entryId: string | null) {
       id: true,
       entryNo: true,
       status: true,
+      legalEntityCode: true,
       pdfPath: true,
       pdfBlobUrl: true,
       pdfGeneratedAt: true,
@@ -113,7 +115,10 @@ async function main() {
       continue
     }
 
-    const result = await regenerateManualJournalEntryArchivedPdf(entry.id)
+    const result = await regenerateManualJournalEntryArchivedPdf(
+      entry.id,
+      entry.legalEntityCode as "AS" | "AD"
+    )
     if (result.ok) {
       console.log(
         `OK   | ${label} | pdfPath=${result.pdfPath} pdfGeneratedAt=${result.pdfGeneratedAt.toISOString()}`

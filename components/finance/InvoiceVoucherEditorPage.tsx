@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
+import { FinanceVoucherPostedPrintView } from "@/components/finance/FinanceVoucherPostedPrintView"
 import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
@@ -50,6 +51,7 @@ import {
 } from "@/lib/finance-ui/finance-visual-classes"
 import { type DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { themeInput, themeLinkMuted } from "@/lib/theme/theme-classes"
+import { buildFinanceVoucherPrintModelFromInvoiceVoucher } from "@/lib/finance-ui/finance-voucher-print"
 
 type LineField = "account" | "debit" | "credit" | "memo"
 
@@ -208,6 +210,7 @@ export function InvoiceVoucherEditorPage({
   const [focusedAccountLineKey, setFocusedAccountLineKey] = useState<string | null>(
     null
   )
+  const [branchLabel, setBranchLabel] = useState("")
   const accountEnterCommitRef = useRef<string | null>(null)
 
   const status: InvoiceVoucherStatusCode | "NEW" =
@@ -233,7 +236,6 @@ export function InvoiceVoucherEditorPage({
   const applyEntry = useCallback((loaded: InvoiceVoucherRead) => {
     setEntry(loaded)
     setBranchId(loaded.branchId)
-    setLegalEntityCode(loaded.legalEntityCode as DocumentEntityCode)
     setInvoiceDate(loaded.invoiceDate.slice(0, 10))
     setDueDate(loaded.dueDate?.slice(0, 10) ?? "")
     setCustomerName(loaded.customerName)
@@ -245,10 +247,12 @@ export function InvoiceVoucherEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
+      setLegalEntityCode(session.documentEntityCode)
       if (mode === "create") {
         setBranchId(session.branchId)
-        setLegalEntityCode(session.documentEntityCode)
       }
+      const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
+      setBranchLabel(label || session.branchId)
     })
   }, [mode])
 
@@ -507,6 +511,11 @@ export function InvoiceVoucherEditorPage({
       ? buildFinanceJournalInquiryPath(entry.postedJournalEntryId, currentReturnPath)
       : null
 
+  const voucherPrintModel =
+    isPosted && entry
+      ? buildFinanceVoucherPrintModelFromInvoiceVoucher(entry, { branchLabel })
+      : null
+
   const amountInWords = formatThaiBahtAmountInWords(lineTotals.debit)
   const showNotBalanced = lineTotals.debit > 0 || lineTotals.credit > 0 ? !totalsBalanced : false
 
@@ -516,7 +525,24 @@ export function InvoiceVoucherEditorPage({
 
   return (
     <div className="space-y-4" data-testid="invoice-voucher-editor">
-      {(isPosted || isCancelled) && entry ? (
+      {isPosted && entry && voucherPrintModel ? (
+        <FinanceVoucherPostedPrintView
+          model={voucherPrintModel}
+          entryType={INVOICE_VOUCHER_ENTRY_TYPE}
+          legalEntityCode={legalEntityCode}
+          entryDate={invoiceDate}
+          description={description}
+          listHref={listHref}
+          listBackLabel="Back to invoice vouchers"
+          postedJournalHref={postedJournalHref}
+          disabled={busyAction !== null}
+          archive={{
+            entryId: entry.id,
+            entryNo: documentNo,
+            pdfSnapshotReady: false,
+          }}
+        />
+      ) : isCancelled && entry ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <FinanceDocumentCanonicalHeader

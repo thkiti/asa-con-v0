@@ -4,7 +4,7 @@ import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 describe("resolveFinanceDocumentHeaderContext", () => {
   const prisma = {
     manualJournalEntry: {
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
   }
 
@@ -12,8 +12,8 @@ describe("resolveFinanceDocumentHeaderContext", () => {
     jest.clearAllMocks()
   })
 
-  it("builds header from linked manual journal entry", async () => {
-    prisma.manualJournalEntry.findUnique.mockResolvedValue({
+  it("builds header from linked manual journal entry scoped by entity", async () => {
+    prisma.manualJournalEntry.findFirst.mockResolvedValue({
       entryNo: "OPB-260001",
       entryType: "OPENING_BALANCE",
       entryDate: new Date("2026-01-01T00:00:00.000Z"),
@@ -37,6 +37,10 @@ describe("resolveFinanceDocumentHeaderContext", () => {
       postedAt: "2026-06-18T09:59:00.000Z",
     })
 
+    expect(prisma.manualJournalEntry.findFirst).toHaveBeenCalledWith({
+      where: { id: "entry-1", legalEntityCode: "AD" },
+      select: expect.any(Object),
+    })
     expect(header).toEqual({
       legalEntityCode: "AD",
       entryType: "OPENING_BALANCE",
@@ -52,8 +56,8 @@ describe("resolveFinanceDocumentHeaderContext", () => {
     })
   })
 
-  it("falls back to refNo when manual journal entry is not found", async () => {
-    prisma.manualJournalEntry.findUnique.mockResolvedValue(null)
+  it("falls back to refNo when manual journal entry is not found for entity", async () => {
+    prisma.manualJournalEntry.findFirst.mockResolvedValue(null)
 
     const header = await resolveFinanceDocumentHeaderContext(prisma as never, {
       legalEntityCode: "AS",
@@ -86,6 +90,6 @@ describe("resolveFinanceDocumentHeaderContext", () => {
     })
 
     expect(header).toBeNull()
-    expect(prisma.manualJournalEntry.findUnique).not.toHaveBeenCalled()
+    expect(prisma.manualJournalEntry.findFirst).not.toHaveBeenCalled()
   })
 })

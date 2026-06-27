@@ -85,6 +85,7 @@ const mockPost = postManualJournalEntry as jest.Mock
 const mockAttachPdf = attachManualJournalEntryPdfFromSnapshot as jest.Mock
 
 const actor = { staffId: "staff-1", name: "Admin", role: "HO_FINANCE" }
+const sessionAs = { documentEntityCode: "AS" as const }
 
 const sampleEntry = {
   id: "entry-1",
@@ -134,7 +135,7 @@ const context = { params: Promise.resolve({ id: "entry-1" }) }
 describe("manual journal entries API routes", () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(getSession as jest.Mock).mockResolvedValue({})
+    ;(getSession as jest.Mock).mockResolvedValue(sessionAs)
     ;(requirePeriodAdminActor as jest.Mock).mockReturnValue(actor)
     mockGet.mockResolvedValue(sampleEntry)
   })
@@ -215,7 +216,7 @@ describe("manual journal entries API routes", () => {
         context
       )
       expect(res.status).toBe(200)
-      expect(mockGet).toHaveBeenCalledWith(prisma, "entry-1")
+      expect(mockGet).toHaveBeenCalledWith(prisma, "entry-1", "AS")
       await expect(res.json()).resolves.toEqual({ entry: sampleEntry })
     })
 
@@ -256,6 +257,7 @@ describe("manual journal entries API routes", () => {
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           entryId: "entry-1",
+          legalEntityCode: "AS",
           description: "Updated",
         })
       )
@@ -273,7 +275,7 @@ describe("manual journal entries API routes", () => {
         context
       )
       expect(res.status).toBe(200)
-      expect(mockDelete).toHaveBeenCalledWith({ entryId: "entry-1" })
+      expect(mockDelete).toHaveBeenCalledWith({ entryId: "entry-1", legalEntityCode: "AS" })
       await expect(res.json()).resolves.toEqual({ deleted: true })
     })
   })
@@ -290,6 +292,7 @@ describe("manual journal entries API routes", () => {
       expect(res.status).toBe(200)
       expect(mockSubmit).toHaveBeenCalledWith({
         entryId: "entry-1",
+        legalEntityCode: "AS",
         submittedByStaffId: "staff-1",
       })
       await expect(res.json()).resolves.toEqual({ entry: sampleEntry })
@@ -306,6 +309,7 @@ describe("manual journal entries API routes", () => {
       expect(res.status).toBe(200)
       expect(mockConfirm).toHaveBeenCalledWith({
         entryId: "entry-1",
+        legalEntityCode: "AS",
         confirmedByStaffId: "staff-1",
       })
     })
@@ -323,6 +327,7 @@ describe("manual journal entries API routes", () => {
       expect(res.status).toBe(200)
       expect(mockCancel).toHaveBeenCalledWith({
         entryId: "entry-1",
+        legalEntityCode: "AS",
         cancelledByStaffId: "staff-1",
         cancelReason: "Mistake",
       })
@@ -350,6 +355,7 @@ describe("manual journal entries API routes", () => {
       expect(res.status).toBe(200)
       expect(mockPost).toHaveBeenCalledWith({
         entryId: "entry-1",
+        legalEntityCode: "AS",
         postedByStaffId: "staff-1",
       })
       expect(mockAttachPdf).toHaveBeenCalled()
@@ -399,6 +405,46 @@ describe("manual journal entries API routes", () => {
         pdfStatus: "pending",
         pdfError: "Vercel Blob: This blob already exists",
       })
+    })
+  })
+
+  describe("legal entity isolation", () => {
+    it("list scopes to session entity even when query requests AD", async () => {
+      mockList.mockResolvedValue({ entries: [], total: 0 })
+      const req = new NextRequest(
+        "http://localhost/api/finance/manual-journal-entries?legalEntityCode=AD"
+      )
+      const res = await listRoute(req)
+      expect(res.status).toBe(200)
+      expect(mockList).toHaveBeenCalledWith(
+        prisma,
+        expect.objectContaining({ legalEntityCode: "AS" })
+      )
+    })
+
+    it("detail returns 404 for cross-entity voucher id", async () => {
+      mockGet.mockRejectedValue(
+        new ManualJournalEntryError(
+          "Manual journal entry not found",
+          ManualJournalEntryErrorCodes.ENTRY_NOT_FOUND,
+          404
+        )
+      )
+      const res = await detailRoute(
+        new NextRequest("http://localhost/api/finance/manual-journal-entries/entry-ad"),
+        { params: Promise.resolve({ id: "entry-ad" }) }
+      )
+      expect(res.status).toBe(404)
+      expect(mockGet).toHaveBeenCalledWith(prisma, "entry-ad", "AS")
+    })
+
+    it("returns 401 when session documentEntityCode is missing", async () => {
+      ;(getSession as jest.Mock).mockResolvedValue({})
+      const res = await listRoute(
+        new NextRequest("http://localhost/api/finance/manual-journal-entries")
+      )
+      expect(res.status).toBe(401)
+      expect(mockList).not.toHaveBeenCalled()
     })
   })
 

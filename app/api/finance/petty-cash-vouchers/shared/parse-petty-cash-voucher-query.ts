@@ -9,7 +9,6 @@ const STATUSES: PettyCashVoucherStatus[] = [
 ]
 
 export type PettyCashVoucherListQuery = {
-  legalEntityCode?: string
   status?: PettyCashVoucherStatus
   branchId?: string
   search?: string
@@ -23,9 +22,6 @@ export function parsePettyCashVoucherListQuery(
   params: URLSearchParams
 ): PettyCashVoucherListQuery {
   const filter: PettyCashVoucherListQuery = {}
-
-  const legalEntityCode = params.get("legalEntityCode")?.trim()
-  if (legalEntityCode) filter.legalEntityCode = legalEntityCode
 
   const status = params.get("status")?.trim().toUpperCase()
   if (status && STATUSES.includes(status as PettyCashVoucherStatus)) {

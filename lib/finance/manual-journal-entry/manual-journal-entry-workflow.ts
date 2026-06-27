@@ -1,4 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
 import {
   ManualJournalEntryError,
@@ -21,10 +23,12 @@ import { assertCanSubmitManualJournalEntry } from "./manual-journal-entry-valida
 
 async function loadEntryOrThrow(
   tx: Prisma.TransactionClient,
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<ManualJournalEntryWithLines> {
-  const entry = await tx.manualJournalEntry.findUnique({
-    where: { id: entryId },
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  const entry = await tx.manualJournalEntry.findFirst({
+    where: { id, legalEntityCode },
     include: { lines: true },
   })
 
@@ -46,6 +50,7 @@ export async function submitManualJournalEntry(
   input: SubmitManualJournalEntryInput
 ): Promise<ManualJournalEntryWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const submittedByStaffId = String(input.submittedByStaffId ?? "").trim()
 
   if (!entryId) {
@@ -62,7 +67,7 @@ export async function submitManualJournalEntry(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> => {
-    const entry = await loadEntryOrThrow(tx, entryId)
+    const entry = await loadEntryOrThrow(tx, entryId, legalEntityCode)
     await assertCanSubmitManualJournalEntry(tx, entry)
     return applySubmittedStatus(tx, { entryId, submittedByStaffId })
   }
@@ -78,6 +83,7 @@ export async function confirmManualJournalEntry(
   input: ConfirmManualJournalEntryInput
 ): Promise<ManualJournalEntryWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const confirmedByStaffId = String(input.confirmedByStaffId ?? "").trim()
 
   if (!entryId) {
@@ -94,7 +100,7 @@ export async function confirmManualJournalEntry(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> => {
-    const entry = await loadEntryOrThrow(tx, entryId)
+    const entry = await loadEntryOrThrow(tx, entryId, legalEntityCode)
 
     if (isImmutableStatus(entry.status)) {
       throw new ManualJournalEntryError(
@@ -124,6 +130,7 @@ export async function cancelManualJournalEntry(
   input: CancelManualJournalEntryInput
 ): Promise<ManualJournalEntryWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const cancelledByStaffId = String(input.cancelledByStaffId ?? "").trim()
 
   if (!entryId) {
@@ -139,12 +146,14 @@ export async function cancelManualJournalEntry(
     )
   }
 
-  const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> =>
-    applyCancelledStatus(tx, {
+  const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> => {
+    await loadEntryOrThrow(tx, entryId, legalEntityCode)
+    return applyCancelledStatus(tx, {
       entryId,
       cancelledByStaffId,
       cancelReason: input.cancelReason,
     })
+  }
 
   if (input.tx) return run(input.tx)
   return prisma.$transaction(run)
@@ -157,6 +166,7 @@ export async function deleteDraftManualJournalEntry(
   input: DeleteDraftManualJournalEntryInput
 ): Promise<void> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   if (!entryId) {
     throw new ManualJournalEntryError(
       "entryId is required",
@@ -165,7 +175,7 @@ export async function deleteDraftManualJournalEntry(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<void> => {
-    const entry = await loadEntryOrThrow(tx, entryId)
+    const entry = await loadEntryOrThrow(tx, entryId, legalEntityCode)
 
     if (isImmutableStatus(entry.status)) {
       throw new ManualJournalEntryError(

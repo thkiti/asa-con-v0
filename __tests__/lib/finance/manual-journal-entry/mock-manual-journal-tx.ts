@@ -217,6 +217,55 @@ export function createManualJournalMockTx(initialAccounts: GlAccountRow[]) {
 
         return withLines
       }),
+      findFirst: jest.fn(async ({ where, select, include }: {
+        where: { id?: string; legalEntityCode?: string }
+        select?: Record<string, boolean>
+        include?: { lines?: boolean | { orderBy?: { lineNo: "asc" }; include?: { glAccount?: { select?: { code: boolean; name: boolean } } } } }
+      }) => {
+        const entry = entries.find((row) => {
+          if (where.id && row.id !== where.id) return false
+          if (where.legalEntityCode && row.legalEntityCode !== where.legalEntityCode) {
+            return false
+          }
+          return true
+        })
+        if (!entry) return null
+
+        if (select) {
+          const picked: Record<string, unknown> = {}
+          for (const key of Object.keys(select)) {
+            picked[key] = entry[key as keyof ManualJournalEntryWithLines]
+          }
+          return picked
+        }
+
+        const withLines = include?.lines
+          ? {
+              ...entry,
+              lines: entryLines(entry.id).map((line) => {
+                const nestedInclude =
+                  typeof include.lines === "object" &&
+                  include.lines !== null &&
+                  "include" in include.lines
+                    ? (include.lines as { include?: { glAccount?: boolean } }).include
+                    : undefined
+                if (nestedInclude?.glAccount) {
+                  const account = accounts.find((row) => row.id === line.glAccountId)
+                  return {
+                    ...line,
+                    glAccount: {
+                      code: account?.code ?? line.glAccountId,
+                      name: account?.code ?? line.glAccountId,
+                    },
+                  }
+                }
+                return line
+              }),
+            }
+          : { ...entry }
+
+        return withLines
+      }),
       update: jest.fn(async ({ where, data, include }: {
         where: { id: string; pdfPath?: null }
         data: Partial<ManualJournalEntryWithLines>
@@ -329,7 +378,7 @@ export function draftEntry(
     entryType: partial.entryType ?? "MANUAL",
     status: partial.status,
     branchId: partial.branchId ?? "branch-1",
-    legalEntityCode: partial.legalEntityCode ?? "ASAS",
+    legalEntityCode: partial.legalEntityCode ?? "AS",
     entryDate: partial.entryDate ?? new Date("2026-06-14"),
     description: partial.description ?? null,
     refNo: partial.refNo ?? null,

@@ -1,3 +1,5 @@
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
 import { renderManualJournalEntryPdf } from "./manual-journal-entry-pdf-render"
 import { loadPostedManualJournalEntryPdfSnapshot } from "./manual-journal-entry-pdf"
@@ -13,15 +15,17 @@ export type RegenerateManualJournalEntryArchivedPdfResult =
  * Does not use attachManualJournalEntryPdfFromSnapshot (which skips when pdfPath exists).
  */
 export async function regenerateManualJournalEntryArchivedPdf(
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<RegenerateManualJournalEntryArchivedPdfResult> {
   const id = String(entryId ?? "").trim()
   if (!id) {
     return { ok: false, error: "entryId is required" }
   }
 
-  const existing = await prisma.manualJournalEntry.findUnique({
-    where: { id },
+  const { id: scopedId } = entityScopedIdWhere(id, legalEntityCode)
+  const existing = await prisma.manualJournalEntry.findFirst({
+    where: { id: scopedId, legalEntityCode },
     select: {
       status: true,
       pdfPath: true,
@@ -51,7 +55,11 @@ export async function regenerateManualJournalEntryArchivedPdf(
     }
   }
 
-  const snapshot = await loadPostedManualJournalEntryPdfSnapshot(prisma, id)
+  const snapshot = await loadPostedManualJournalEntryPdfSnapshot(
+    prisma,
+    id,
+    legalEntityCode
+  )
   if (!snapshot) {
     return {
       ok: false,

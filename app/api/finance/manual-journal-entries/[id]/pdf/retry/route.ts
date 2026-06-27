@@ -3,10 +3,7 @@ export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
 import { manualJournalEntryErrorResponse } from "@/app/api/finance/manual-journal-entries/shared/manual-journal-entry-api-errors"
-import {
-  getSession,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
 import { getManualJournalEntryById } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read"
 import { retryManualJournalEntryPdfAttach } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf"
 import { buildManualJournalPdfApiPayload } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-readiness"
@@ -22,11 +19,11 @@ type Context = {
 
 export async function POST(_req: NextRequest, context: Context) {
   try {
-    requirePeriodAdminActor(await getSession())
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
 
-    const existing = await prisma.manualJournalEntry.findUnique({
-      where: { id },
+    const existing = await prisma.manualJournalEntry.findFirst({
+      where: { id, legalEntityCode },
       select: { status: true, pdfPath: true },
     })
 
@@ -47,15 +44,15 @@ export async function POST(_req: NextRequest, context: Context) {
     }
 
     if (existing.pdfPath) {
-      const fresh = await getManualJournalEntryById(prisma, id)
+      const fresh = await getManualJournalEntryById(prisma, id, legalEntityCode)
       return NextResponse.json({
         entry: fresh,
         ...buildManualJournalPdfApiPayload(fresh),
       })
     }
 
-    const attachResult = await retryManualJournalEntryPdfAttach(id)
-    const fresh = await getManualJournalEntryById(prisma, id)
+    const attachResult = await retryManualJournalEntryPdfAttach(id, legalEntityCode)
+    const fresh = await getManualJournalEntryById(prisma, id, legalEntityCode)
     return NextResponse.json({
       entry: fresh,
       ...buildManualJournalPdfApiPayload(fresh, attachResult),

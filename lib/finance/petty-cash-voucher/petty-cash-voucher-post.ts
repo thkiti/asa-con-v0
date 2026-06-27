@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { toMoney } from "@/lib/finance/decimal"
 import { assertPostingPeriodOpen } from "@/lib/finance/posting-period"
 import { postOperationalVoucher } from "@/lib/finance/posting"
@@ -39,10 +40,12 @@ function materializeJournalLines(entry: EntryWithGlLines): JournalLineDraft[] {
 
 async function loadEntryWithGlAccountsOrThrow(
   tx: Prisma.TransactionClient,
-  entryId: string
+  entryId: string,
+  legalEntityCode: DocumentEntityCode
 ): Promise<EntryWithGlLines> {
-  const entry = await tx.pettyCashVoucher.findUnique({
-    where: { id: entryId },
+  const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+  const entry = await tx.pettyCashVoucher.findFirst({
+    where: { id, legalEntityCode },
     include: {
       lines: {
         orderBy: { lineNo: "asc" },
@@ -68,6 +71,7 @@ export async function postPettyCashVoucher(
   input: PostPettyCashVoucherInput
 ): Promise<PettyCashVoucherWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   const postedByStaffId = String(input.postedByStaffId ?? "").trim()
 
   if (!entryId || !postedByStaffId) {
@@ -78,7 +82,7 @@ export async function postPettyCashVoucher(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<PettyCashVoucherWithLines> => {
-    const entry = await loadEntryWithGlAccountsOrThrow(tx, entryId)
+    const entry = await loadEntryWithGlAccountsOrThrow(tx, entryId, legalEntityCode)
 
     if (
       entry.status === "POSTED" &&

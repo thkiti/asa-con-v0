@@ -4,6 +4,7 @@ import type {
   RevenueVoucherStatus,
   Prisma,
 } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 
 export type RevenueVoucherWithLines = RevenueVoucher & {
   lines: RevenueVoucherLine[]
@@ -48,6 +49,7 @@ export type CreateRevenueVoucherDraftInput = {
 
 export type UpdateRevenueVoucherDraftInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   entryDate?: Date | string
   receiveToAccountId?: string
   receivedFromName?: string
@@ -60,23 +62,27 @@ export type UpdateRevenueVoucherDraftInput = {
 
 export type DeleteDraftRevenueVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   tx?: Prisma.TransactionClient
 }
 
 export type SubmitRevenueVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   submittedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type ConfirmRevenueVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   confirmedByStaffId: string
   tx?: Prisma.TransactionClient
 }
 
 export type CancelRevenueVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   cancelledByStaffId: string
   cancelReason?: string | null
   tx?: Prisma.TransactionClient
@@ -84,6 +90,7 @@ export type CancelRevenueVoucherInput = {
 
 export type PostRevenueVoucherInput = {
   entryId: string
+  legalEntityCode: DocumentEntityCode
   postedByStaffId: string
   tx?: Prisma.TransactionClient
 }

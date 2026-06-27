@@ -30,10 +30,7 @@ import {
   updateManualJournalEntryDraft,
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
-import { FinancePrintActions } from "@/components/finance/FinancePrintActions"
-import { FinanceLegacyPdfSnapshotPanel } from "@/components/finance/FinanceLegacyPdfSnapshotPanel"
-import { FinanceVoucherPrintFontProbe } from "@/components/finance/FinanceVoucherPrintFontProbe"
-import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
+import { FinanceVoucherPostedPrintView } from "@/components/finance/FinanceVoucherPostedPrintView"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
@@ -61,7 +58,6 @@ import {
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeInput } from "@/lib/theme/theme-classes"
 import { buildFinanceVoucherPrintModelFromManualJournalEntry } from "@/lib/finance-ui/finance-voucher-print"
-import { financeVoucherLocalFont } from "@/lib/finance-ui/finance-voucher-local-font"
 
 type LineField = "account" | "debit" | "credit" | "memo"
 
@@ -248,7 +244,6 @@ export function ManualJournalEntryEditorPage({
   const applyEntry = useCallback((loaded: ManualJournalEntryRead) => {
     setEntry(loaded)
     setBranchId(loaded.branchId)
-    setLegalEntityCode(loaded.legalEntityCode as DocumentEntityCode)
     setEntryDate(loaded.entryDate.slice(0, 10))
     setEntryType(loaded.entryType)
     setDescription(loaded.description ?? "")
@@ -259,9 +254,9 @@ export function ManualJournalEntryEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
+      setLegalEntityCode(session.documentEntityCode)
       if (mode === "create") {
         setBranchId(session.branchId)
-        setLegalEntityCode(session.documentEntityCode)
       }
       const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
       setBranchLabel(label || session.branchId)
@@ -573,42 +568,27 @@ export function ManualJournalEntryEditorPage({
   return (
     <div className="space-y-4" data-testid="manual-journal-entry-editor">
       {isPosted && entry && voucherPrintModel ? (
-        <div
-          className={`finance-voucher-print-root finance-document-container finance-voucher-print-font ${financeVoucherLocalFont.variable} ${financeVoucherLocalFont.className}`}
-          data-testid="finance-voucher-print-root"
-        >
-          <div className="no-print flex w-full flex-col gap-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <FinancePrintActions disabled={busyAction !== null} />
-              {postedJournalHref ? (
-                <Link
-                  href={postedJournalHref}
-                  className="text-sm text-zinc-600 underline"
-                  data-testid="posted-journal-link"
-                >
-                  View posted GL journal
-                </Link>
-              ) : null}
-            </div>
-            <FinanceLegacyPdfSnapshotPanel
-              entryId={entry.id}
-              entryNo={documentNo}
-              pdfSnapshotReady={entry.pdfSnapshotReady}
-              disabled={busyAction !== null}
-              onRetry={() => void handleRetryPdf()}
-              retrying={busyAction === "Retry PDF"}
-              retryError={pdfError}
-            />
-          </div>
-          <FinanceVoucherPrintSheet
-            model={voucherPrintModel}
-            entryType={entry.entryType}
-            legalEntityCode={legalEntityCode}
-            entryDate={entryDate}
-            description={description}
-          />
-          <FinanceVoucherPrintFontProbe />
-        </div>
+        <FinanceVoucherPostedPrintView
+          model={voucherPrintModel}
+          entryType={entry.entryType}
+          legalEntityCode={legalEntityCode}
+          entryDate={entryDate}
+          description={description}
+          listHref={listHref}
+          listBackLabel={
+            openingBalanceMode ? "Back to opening balance" : "Back to manual journal entries"
+          }
+          postedJournalHref={postedJournalHref}
+          disabled={busyAction !== null}
+          archive={{
+            entryId: entry.id,
+            entryNo: documentNo,
+            pdfSnapshotReady: entry.pdfSnapshotReady,
+            onRetry: () => void handleRetryPdf(),
+            retrying: busyAction === "Retry PDF",
+            retryError: pdfError,
+          }}
+        />
       ) : (
         <div
           className={`${financeDocumentContainer} space-y-3`}

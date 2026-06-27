@@ -9,7 +9,6 @@ const STATUSES: RevenueVoucherStatus[] = [
 ]
 
 export type RevenueVoucherListQuery = {
-  legalEntityCode?: string
   status?: RevenueVoucherStatus
   branchId?: string
   search?: string
@@ -23,9 +22,6 @@ export function parseRevenueVoucherListQuery(
   params: URLSearchParams
 ): RevenueVoucherListQuery {
   const filter: RevenueVoucherListQuery = {}
-
-  const legalEntityCode = params.get("legalEntityCode")?.trim()
-  if (legalEntityCode) filter.legalEntityCode = legalEntityCode
 
   const status = params.get("status")?.trim().toUpperCase()
   if (status && STATUSES.includes(status as RevenueVoucherStatus)) {

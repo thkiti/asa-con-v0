@@ -4,33 +4,38 @@ export const dynamic = "force-dynamic"
 import { paymentVoucherErrorResponse } from "@/app/api/finance/payment-vouchers/shared/payment-voucher-api-errors"
 import {
   parseEntryDate,
-  parseLegalEntityCode,
   parsePaymentVoucherSaveLines,
 } from "@/app/api/finance/payment-vouchers/shared/parse-payment-voucher-body"
 import { parsePaymentVoucherListQuery } from "@/app/api/finance/payment-vouchers/shared/parse-payment-voucher-query"
 import {
-  getSession,
-  PeriodAdminAuthError,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+  applyFinanceVoucherListScope,
+  requireFinanceVoucherScope,
+} from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
 import { createPaymentVoucherDraft } from "@/lib/finance/payment-voucher/payment-voucher-save"
 import { getPaymentVoucherById, listPaymentVouchers } from "@/lib/finance/payment-voucher/payment-voucher-read"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    requirePeriodAdminActor(await getSession())
-    const filter = parsePaymentVoucherListQuery(req.nextUrl.searchParams)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const filter = applyFinanceVoucherListScope(
+      parsePaymentVoucherListQuery(req.nextUrl.searchParams),
+      legalEntityCode
+    )
     const result = await listPaymentVouchers(prisma, filter)
     return NextResponse.json(result)
   } catch (err: unknown) {
+    if (err instanceof PeriodAdminAuthError) {
+      return paymentVoucherErrorResponse(err, "GET payment-vouchers")
+    }
     return paymentVoucherErrorResponse(err, "GET payment-vouchers")
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = requirePeriodAdminActor(await getSession())
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const body = (await req.json()) as Record<string, unknown>
 
     const branchId = String(body.branchId ?? "").trim()
@@ -58,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     const entry = await createPaymentVoucherDraft({
       branchId,
-      legalEntityCode: parseLegalEntityCode(body.legalEntityCode),
+      legalEntityCode,
       entryDate: parseEntryDate(body.entryDate),
       payFromAccountId,
       payeeName,
@@ -70,7 +75,7 @@ export async function POST(req: NextRequest) {
       lines: parsePaymentVoucherSaveLines(body.lines),
     })
 
-    const detail = await getPaymentVoucherById(prisma, entry.id)
+    const detail = await getPaymentVoucherById(prisma, entry.id, legalEntityCode)
     return NextResponse.json({ entry: detail })
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {

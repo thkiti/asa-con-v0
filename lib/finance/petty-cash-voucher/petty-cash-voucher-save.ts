@@ -1,5 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client"
 import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
+import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
 import { allocatePettyCashVoucherNo } from "./petty-cash-voucher-allocate-no"
 import {
@@ -140,6 +141,7 @@ export async function updatePettyCashVoucherDraft(
   input: UpdatePettyCashVoucherDraftInput
 ): Promise<PettyCashVoucherWithLines> {
   const entryId = String(input.entryId ?? "").trim()
+  const legalEntityCode = input.legalEntityCode
   if (!entryId) {
     throw new PettyCashVoucherError(
       "entryId is required",
@@ -148,8 +150,9 @@ export async function updatePettyCashVoucherDraft(
   }
 
   const run = async (tx: Prisma.TransactionClient): Promise<PettyCashVoucherWithLines> => {
-    const existing = await tx.pettyCashVoucher.findUnique({
-      where: { id: entryId },
+    const { id } = entityScopedIdWhere(entryId, legalEntityCode)
+    const existing = await tx.pettyCashVoucher.findFirst({
+      where: { id, legalEntityCode },
       include: { lines: true },
     })
 

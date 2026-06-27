@@ -6,32 +6,37 @@ import {
   parseDueDate,
   parseInvoiceDate,
   parseInvoiceVoucherSaveLines,
-  parseLegalEntityCode,
 } from "@/app/api/finance/invoice-vouchers/shared/parse-invoice-voucher-body"
 import { parseInvoiceVoucherListQuery } from "@/app/api/finance/invoice-vouchers/shared/parse-invoice-voucher-query"
 import {
-  getSession,
-  PeriodAdminAuthError,
-  requirePeriodAdminActor,
-} from "@/lib/auth"
+  applyFinanceVoucherListScope,
+  requireFinanceVoucherScope,
+} from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
 import { createInvoiceVoucherDraft } from "@/lib/finance/invoice-voucher/invoice-voucher-save"
 import { getInvoiceVoucherById, listInvoiceVouchers } from "@/lib/finance/invoice-voucher/invoice-voucher-read"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    requirePeriodAdminActor(await getSession())
-    const filter = parseInvoiceVoucherListQuery(req.nextUrl.searchParams)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const filter = applyFinanceVoucherListScope(
+      parseInvoiceVoucherListQuery(req.nextUrl.searchParams),
+      legalEntityCode
+    )
     const result = await listInvoiceVouchers(prisma, filter)
     return NextResponse.json(result)
   } catch (err: unknown) {
+    if (err instanceof PeriodAdminAuthError) {
+      return invoiceVoucherErrorResponse(err, "GET invoice-vouchers")
+    }
     return invoiceVoucherErrorResponse(err, "GET invoice-vouchers")
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const actor = requirePeriodAdminActor(await getSession())
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const body = (await req.json()) as Record<string, unknown>
 
     const branchId = String(body.branchId ?? "").trim()
@@ -52,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     const entry = await createInvoiceVoucherDraft({
       branchId,
-      legalEntityCode: parseLegalEntityCode(body.legalEntityCode),
+      legalEntityCode,
       invoiceDate: parseInvoiceDate(body.invoiceDate),
       dueDate: parseDueDate(body.dueDate),
       customerName,
@@ -63,7 +68,7 @@ export async function POST(req: NextRequest) {
       lines: parseInvoiceVoucherSaveLines(body.lines),
     })
 
-    const detail = await getInvoiceVoucherById(prisma, entry.id)
+    const detail = await getInvoiceVoucherById(prisma, entry.id, legalEntityCode)
     return NextResponse.json({ entry: detail })
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {

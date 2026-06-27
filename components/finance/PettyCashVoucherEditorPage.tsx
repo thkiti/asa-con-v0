@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
+import { FinanceVoucherPostedPrintView } from "@/components/finance/FinanceVoucherPostedPrintView"
 import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
@@ -56,6 +57,7 @@ import {
   type DocumentEntityCode,
 } from "@/lib/legal-entity/constants"
 import { themeInput, themeLinkMuted } from "@/lib/theme/theme-classes"
+import { buildFinanceVoucherPrintModelFromPettyCashVoucher } from "@/lib/finance-ui/finance-voucher-print"
 
 type LineField = "account" | "debit" | "credit" | "memo"
 
@@ -216,6 +218,7 @@ export function PettyCashVoucherEditorPage({
   const [lines, setLines] = useState<LineRow[]>(seed.lines)
   const [cancelReason, setCancelReason] = useState("")
   const [showCancelReason, setShowCancelReason] = useState(false)
+  const [branchLabel, setBranchLabel] = useState("")
   const [focusedAccountLineKey, setFocusedAccountLineKey] = useState<string | null>(null)
   const accountEnterCommitRef = useRef<string | null>(null)
 
@@ -252,7 +255,6 @@ export function PettyCashVoucherEditorPage({
   const applyEntry = useCallback((loaded: PettyCashVoucherRead) => {
     setEntry(loaded)
     setBranchId(loaded.branchId)
-    setLegalEntityCode(loaded.legalEntityCode as DocumentEntityCode)
     setEntryDate(loaded.entryDate.slice(0, 10))
     setPettyCashAccountId(loaded.pettyCashAccountId)
     setPettyCashAccountCode(loaded.pettyCashAccountCode)
@@ -266,10 +268,12 @@ export function PettyCashVoucherEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
+      setLegalEntityCode(session.documentEntityCode)
       if (mode === "create") {
         setBranchId(session.branchId)
-        setLegalEntityCode(session.documentEntityCode)
       }
+      const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
+      setBranchLabel(label || session.branchId)
     })
   }, [mode])
 
@@ -555,6 +559,11 @@ export function PettyCashVoucherEditorPage({
       ? buildFinanceJournalInquiryPath(entry.postedJournalEntryId, currentReturnPath)
       : null
 
+  const voucherPrintModel =
+    isPosted && entry
+      ? buildFinanceVoucherPrintModelFromPettyCashVoucher(entry, { branchLabel })
+      : null
+
   const showNotBalanced = lineTotals.debit > 0 || lineTotals.credit > 0 ? !totalsBalanced : false
 
   if (loading) {
@@ -563,7 +572,24 @@ export function PettyCashVoucherEditorPage({
 
   return (
     <div className="space-y-4" data-testid="petty-cash-voucher-editor">
-      {(isPosted || isCancelled) && entry ? (
+      {isPosted && entry && voucherPrintModel ? (
+        <FinanceVoucherPostedPrintView
+          model={voucherPrintModel}
+          entryType={PETTY_CASH_VOUCHER_ENTRY_TYPE}
+          legalEntityCode={legalEntityCode}
+          entryDate={entryDate}
+          description={description}
+          listHref={listHref}
+          listBackLabel="Back to petty cash vouchers"
+          postedJournalHref={postedJournalHref}
+          disabled={busyAction !== null}
+          archive={{
+            entryId: entry.id,
+            entryNo: documentNo,
+            pdfSnapshotReady: false,
+          }}
+        />
+      ) : isCancelled && entry ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <FinanceDocumentCanonicalHeader
