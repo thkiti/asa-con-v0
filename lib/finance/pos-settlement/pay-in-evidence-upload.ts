@@ -16,6 +16,7 @@ const MAX_SLIP_BYTES = 12 * 1024 * 1024
 
 export type UploadPayInEvidenceInput = {
   collectorReportId: string
+  staffId: string
   fileBuffer: Buffer
   contentType?: string
   originalFilename?: string | null
@@ -66,6 +67,15 @@ export async function uploadPayInEvidenceForCollectorReport(
   }
 
   const source = await loadCollectorReportForSettlement(db, collectorReportId)
+  const staffId = String(input.staffId ?? "").trim()
+  if (!staffId) {
+    throw new PosSettlementError(
+      "staffId is required for PAY-IN slip upload",
+      PosSettlementErrorCodes.INVALID_SOURCE,
+      400
+    )
+  }
+
   const evidence = await ensurePayInEvidenceRow(db, {
     collectorReportId: source.id,
     collectNo: source.collectNo,
@@ -75,7 +85,8 @@ export async function uploadPayInEvidenceForCollectorReport(
   let uploaded: { blobPathname: string; blobUrl: string }
   try {
     uploaded = await uploadPayInSlipToBlob({
-      collectorReportId: source.id,
+      collectNo: source.collectNo,
+      staffId,
       fileBuffer: input.fileBuffer,
       contentType: input.contentType,
     })
@@ -92,8 +103,10 @@ export async function uploadPayInEvidenceForCollectorReport(
     blobUrl: uploaded.blobUrl,
     byteSize: input.fileBuffer.length,
     mimeType: input.contentType?.trim() || "image/jpeg",
-    originalFilename: input.originalFilename,
-    uploadedByStaffId: input.uploadedByStaffId,
+    originalFilename:
+      input.originalFilename?.trim() ||
+      `${source.collectNo}-${staffId}.jpg`,
+    uploadedByStaffId: input.uploadedByStaffId ?? staffId,
   })
 
   return toUploadResult(updated)

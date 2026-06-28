@@ -3,10 +3,14 @@
 import { useCallback, useEffect, useState } from "react"
 import { CollectorPickupSettlementTable } from "@/components/finance/CollectorPickupSettlementTable"
 import {
-  PayInConfirmModal,
-  type PayInConfirmModalRow,
-} from "@/components/finance/PayInConfirmModal"
+  PayInSlipUploadModal,
+  type PayInSlipUploadModalRow,
+} from "@/components/finance/PayInSlipUploadModal"
 import { PayInSlipPreviewModal } from "@/components/finance/PayInSlipPreviewModal"
+import {
+  PayInStaffCredentialGate,
+  type PayInVerifiedStaff,
+} from "@/components/finance/PayInStaffCredentialGate"
 import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
   fetchCollectorPickupSettlementStatusList,
@@ -14,6 +18,11 @@ import {
   postCollectorPickupSettlement,
   type CollectorPickupSettlementReconciliation,
 } from "@/lib/finance-ui/collector-pickup-settlement"
+import {
+  formatPayInConfirmError,
+  postDepositSettlement,
+} from "@/lib/finance-ui/pay-in-settlement"
+import { isPayInSlipUploaded } from "@/lib/finance-ui/collector-pickup-settlement-display"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
@@ -26,9 +35,9 @@ function defaultDateRange(): FinanceFilterValues {
   return { from: toYmd(start), to: toYmd(end) }
 }
 
-function toPayInModalRow(
+function toUploadModalRow(
   row: CollectorPickupSettlementReconciliation
-): PayInConfirmModalRow {
+): PayInSlipUploadModalRow {
   const code = row.branchCode?.trim()
   const name = row.branchName?.trim()
   const branchLabel =
@@ -38,9 +47,6 @@ function toPayInModalRow(
     collectorReportId: row.collectorReportId,
     collectNo: row.collectNo,
     branchLabel,
-    inTransitAmount: row.inTransitAmount,
-    payInEvidenceStatus: row.payInEvidenceStatus,
-    payInEvidenceUrl: row.payInEvidenceUrl,
   }
 }
 
@@ -48,12 +54,19 @@ export function CollectorPickupSettlementPage() {
   const [filter, setFilter] = useState<FinanceFilterValues>(defaultDateRange)
   const [items, setItems] = useState<CollectorPickupSettlementReconciliation[]>([])
   const [loading, setLoading] = useState(false)
-  const [postingReportId, setPostingReportId] = useState<string | null>(null)
-  const [payInReportId, setPayInReportId] = useState<string | null>(null)
+  const [depositPostingReportId, setDepositPostingReportId] = useState<string | null>(
+    null
+  )
+  const [repairPostingReportId, setRepairPostingReportId] = useState<string | null>(
+    null
+  )
   const [error, setError] = useState<string | null>(null)
-  const [postError, setPostError] = useState<string | null>(null)
+  const [depositPostError, setDepositPostError] = useState<string | null>(null)
   const [entityBlocked, setEntityBlocked] = useState(false)
-  const [payInRow, setPayInRow] = useState<PayInConfirmModalRow | null>(null)
+  const [staffGateRow, setStaffGateRow] =
+    useState<CollectorPickupSettlementReconciliation | null>(null)
+  const [uploadRow, setUploadRow] = useState<PayInSlipUploadModalRow | null>(null)
+  const [verifiedStaff, setVerifiedStaff] = useState<PayInVerifiedStaff | null>(null)
   const [previewRow, setPreviewRow] =
     useState<CollectorPickupSettlementReconciliation | null>(null)
 
@@ -88,29 +101,54 @@ export function CollectorPickupSettlementPage() {
     await load(filter)
   }
 
-  async function handlePost(collectorReportId: string) {
-    setPostingReportId(collectorReportId)
-    setPostError(null)
+  function handleOpenUpload(row: CollectorPickupSettlementReconciliation) {
+    setStaffGateRow(row)
+  }
+
+  function handleStaffVerified(staff: PayInVerifiedStaff) {
+    if (!staffGateRow) return
+    setVerifiedStaff(staff)
+    setUploadRow(toUploadModalRow(staffGateRow))
+    setStaffGateRow(null)
+  }
+
+  async function handleUploadSaved() {
+    await load(filter)
+    setVerifiedStaff(null)
+    setUploadRow(null)
+  }
+
+  async function handleDepositPost(collectorReportId: string) {
+    const row = items.find((item) => item.collectorReportId === collectorReportId)
+    if (!row) return
+
+    if (!isPayInSlipUploaded(row.payInEvidenceStatus)) {
+      setDepositPostError("Upload PAY-IN Slip first.")
+      return
+    }
+
+    setDepositPostingReportId(collectorReportId)
+    setDepositPostError(null)
+    try {
+      await postDepositSettlement(collectorReportId)
+      await load(filter)
+    } catch (err) {
+      setDepositPostError(formatPayInConfirmError(err))
+    } finally {
+      setDepositPostingReportId(null)
+    }
+  }
+
+  async function handleRepairPickup(collectorReportId: string) {
+    setRepairPostingReportId(collectorReportId)
+    setDepositPostError(null)
     try {
       await postCollectorPickupSettlement(collectorReportId)
       await load(filter)
     } catch (err) {
-      setPostError(formatCollectorPickupPostError(err))
+      setDepositPostError(formatCollectorPickupPostError(err))
     } finally {
-      setPostingReportId(null)
-    }
-  }
-
-  function handleOpenPayIn(row: CollectorPickupSettlementReconciliation) {
-    setPayInRow(toPayInModalRow(row))
-  }
-
-  async function handlePayInConfirmed() {
-    setPayInReportId(payInRow?.collectorReportId ?? null)
-    try {
-      await load(filter)
-    } finally {
-      setPayInReportId(null)
+      setRepairPostingReportId(null)
     }
   }
 
@@ -139,33 +177,36 @@ export function CollectorPickupSettlementPage() {
         </p>
       ) : null}
 
-      {postError ? (
-        <p
-          className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          data-testid="collector-pickup-post-error"
-        >
-          {postError}
-        </p>
-      ) : null}
-
       {loading && items.length === 0 ? (
-        <p className="mt-4 text-zinc-600">Loading collector pickup statuses…</p>
+        <p className="mt-4 text-zinc-600">Loading collector reports…</p>
       ) : null}
 
       <CollectorPickupSettlementTable
         items={items}
-        postingReportId={postingReportId}
-        payInReportId={payInReportId}
-        onPost={entityBlocked ? undefined : handlePost}
-        onPayIn={entityBlocked ? undefined : handleOpenPayIn}
+        depositPostingReportId={depositPostingReportId ?? repairPostingReportId}
+        depositPostError={depositPostError}
+        onUploadSlip={entityBlocked ? undefined : handleOpenUpload}
         onPreviewPayInSlip={setPreviewRow}
+        onDepositPost={entityBlocked ? undefined : handleDepositPost}
+        onRepairPickup={entityBlocked ? undefined : handleRepairPickup}
       />
 
-      <PayInConfirmModal
-        row={payInRow}
-        open={payInRow != null}
-        onClose={() => setPayInRow(null)}
-        onConfirmed={handlePayInConfirmed}
+      <PayInStaffCredentialGate
+        open={staffGateRow != null}
+        collectNo={staffGateRow?.collectNo ?? ""}
+        onClose={() => setStaffGateRow(null)}
+        onVerified={handleStaffVerified}
+      />
+
+      <PayInSlipUploadModal
+        row={uploadRow}
+        verifiedStaff={verifiedStaff}
+        open={uploadRow != null && verifiedStaff != null}
+        onClose={() => {
+          setUploadRow(null)
+          setVerifiedStaff(null)
+        }}
+        onSaved={handleUploadSaved}
       />
 
       <PayInSlipPreviewModal

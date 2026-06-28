@@ -1,6 +1,7 @@
 import type { PayInEvidenceUiStatus } from "@/lib/finance-ui/pay-in-display"
 import type { BankDepositSettlementPostResult } from "@/lib/finance-ui/bank-deposit-settlement"
 import { BankDepositSettlementApiError } from "@/lib/finance-ui/bank-deposit-settlement"
+import { bangkokTodayYmdClient } from "@/lib/pos-ui/pos-staff-credential"
 
 export type PayInEvidenceUploadResult = {
   ok: true
@@ -12,11 +13,9 @@ export type PayInEvidenceUploadResult = {
   blobUrl: string
 }
 
-export type PayInConfirmInput = {
-  collectorReportId: string
-  bankDepositDate: string
-  bankAccountCode?: string
-}
+export type PayInVerifyStaffResult =
+  | { ok: true; staffId: string; staffName: string }
+  | { ok: false; error: string }
 
 async function parseApiError(res: Response): Promise<BankDepositSettlementApiError> {
   let message = res.statusText || "Request failed"
@@ -31,13 +30,43 @@ async function parseApiError(res: Response): Promise<BankDepositSettlementApiErr
   return new BankDepositSettlementApiError(message, code, res.status)
 }
 
-export function uploadPayInSlipEvidence(
-  collectorReportId: string,
+export async function verifyPayInUploadStaffCredential(input: {
+  staffId: string
+  password: string
+}): Promise<PayInVerifyStaffResult> {
+  try {
+    const res = await fetch("/api/finance/pos-settlement/pay-in/verify-staff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    })
+    const data = (await res.json()) as {
+      error?: string
+      staffId?: string
+      staffName?: string
+    }
+    if (!res.ok) {
+      return { ok: false, error: data.error || "Staff verification failed" }
+    }
+    return {
+      ok: true,
+      staffId: String(data.staffId ?? input.staffId),
+      staffName: String(data.staffName ?? ""),
+    }
+  } catch {
+    return { ok: false, error: "Could not reach server" }
+  }
+}
+
+export function uploadPayInSlipEvidence(input: {
+  collectorReportId: string
+  staffId: string
   file: File
-): Promise<PayInEvidenceUploadResult> {
+}): Promise<PayInEvidenceUploadResult> {
   const form = new FormData()
-  form.append("collectorReportId", collectorReportId)
-  form.append("file", file)
+  form.append("collectorReportId", input.collectorReportId)
+  form.append("staffId", input.staffId)
+  form.append("file", input.file)
 
   return fetch("/api/finance/pos-settlement/pay-in/evidence/upload", {
     method: "POST",
@@ -50,13 +79,17 @@ export function uploadPayInSlipEvidence(
   })
 }
 
-export function confirmPayInSettlement(
-  input: PayInConfirmInput
+export function postDepositSettlement(
+  collectorReportId: string,
+  bankDepositDate?: string
 ): Promise<BankDepositSettlementPostResult> {
   return fetch("/api/finance/pos-settlement/pay-in/confirm", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      collectorReportId,
+      bankDepositDate: bankDepositDate ?? bangkokTodayYmdClient(),
+    }),
   }).then(async (res) => {
     if (!res.ok) {
       throw await parseApiError(res)
@@ -68,13 +101,13 @@ export function confirmPayInSettlement(
 export function formatPayInConfirmError(err: unknown): string {
   if (err instanceof BankDepositSettlementApiError) {
     if (err.code === "PAY_IN_SLIP_REQUIRED") {
-      return "Upload the PAY-IN slip before confirming bank deposit."
+      return "Upload PAY-IN Slip first."
     }
     if (err.code === "DUPLICATE_SOURCE") {
       return "Bank deposit already posted for this collector report."
     }
     if (err.code === "COLLECTOR_PICKUP_NOT_POSTED") {
-      return "Collector pickup settlement must be posted before PAY-IN."
+      return "Collector pickup must be posted before bank deposit."
     }
     if (err.code === "PERIOD_CLOSED" || err.code === "PERIOD_NOT_OPENED") {
       return "Accounting period is closed — cannot post settlement."
@@ -82,5 +115,8 @@ export function formatPayInConfirmError(err: unknown): string {
     return err.message
   }
   if (err instanceof Error) return err.message
-  return "PAY-IN confirmation failed"
+  return "Request failed"
 }
+
+/** @deprecated Use postDepositSettlement — upload no longer posts */
+export const confirmPayInSettlement = postDepositSettlement

@@ -23,13 +23,13 @@ describe("pay-in evidence summary", () => {
         collectNo: "COL-SH001-202606-0001",
         branchId: "branch-1",
         status: PaymentEvidenceStatus.UPLOADED,
-        blobPathname: "finance/pos-settlement/pay-in/collector-report-1.jpg",
+        blobPathname: "finance/pos-settlement/pay-in/COL-SH001-202606-0001-001.jpg",
         blobUrl: "https://example.test/pay-in.jpg",
         mimeType: "image/jpeg",
         byteSize: 1024,
-        originalFilename: "slip.jpg",
+        originalFilename: "COL-SH001-202606-0001-001.jpg",
         uploadedAt: new Date(),
-        uploadedByStaffId: "staff-1",
+        uploadedByStaffId: "001",
         bankDepositDate: null,
         bankAccountCode: "1021",
         bankDepositVoucherId: null,
@@ -46,12 +46,12 @@ describe("pay-in evidence summary", () => {
 })
 
 describe("buildPayInSlipBlobPath", () => {
-  it("uses finance/pos-settlement/pay-in prefix", async () => {
+  it("uses collectNo-staffId filename under pay-in prefix", async () => {
     const { buildPayInSlipBlobPath } = await import(
       "@/lib/finance/pos-settlement/pay-in-evidence-blob"
     )
-    expect(
-      buildPayInSlipBlobPath("550e8400-e29b-41d4-a716-446655440000")
-    ).toBe("finance/pos-settlement/pay-in/550e8400-e29b-41d4-a716-446655440000.jpg")
+    expect(buildPayInSlipBlobPath("COL-SH001-202606-0001", "001")).toBe(
+      "finance/pos-settlement/pay-in/COL-SH001-202606-0001-001.jpg"
+    )
   })
 })

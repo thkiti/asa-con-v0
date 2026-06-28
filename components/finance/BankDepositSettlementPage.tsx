@@ -1,11 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
 import { BankDepositSettlementTable } from "@/components/finance/BankDepositSettlementTable"
-import {
-  PayInConfirmModal,
-  type PayInConfirmModalRow,
-} from "@/components/finance/PayInConfirmModal"
 import { PayInSlipPreviewModal } from "@/components/finance/PayInSlipPreviewModal"
 import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
@@ -24,32 +21,12 @@ function defaultDateRange(): FinanceFilterValues {
   return { from: toYmd(start), to: toYmd(end) }
 }
 
-function toPayInModalRow(
-  row: BankDepositSettlementReconciliation
-): PayInConfirmModalRow {
-  const code = row.branchCode?.trim()
-  const name = row.branchName?.trim()
-  const branchLabel =
-    code && name ? `${code} — ${name}` : code ?? name ?? row.branchId
-
-  return {
-    collectorReportId: row.collectorReportId,
-    collectNo: row.collectNo,
-    branchLabel,
-    inTransitAmount: row.inTransitAmount,
-    payInEvidenceStatus: row.payInEvidenceStatus,
-    payInEvidenceUrl: row.payInEvidenceUrl,
-  }
-}
-
 export function BankDepositSettlementPage() {
   const [filter, setFilter] = useState<FinanceFilterValues>(defaultDateRange)
   const [items, setItems] = useState<BankDepositSettlementReconciliation[]>([])
   const [loading, setLoading] = useState(false)
-  const [payInReportId, setPayInReportId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [entityBlocked, setEntityBlocked] = useState(false)
-  const [payInRow, setPayInRow] = useState<PayInConfirmModalRow | null>(null)
   const [previewRow, setPreviewRow] =
     useState<BankDepositSettlementReconciliation | null>(null)
 
@@ -84,21 +61,22 @@ export function BankDepositSettlementPage() {
     await load(filter)
   }
 
-  function handleOpenPayIn(row: BankDepositSettlementReconciliation) {
-    setPayInRow(toPayInModalRow(row))
-  }
-
-  async function handlePayInConfirmed() {
-    setPayInReportId(payInRow?.collectorReportId ?? null)
-    try {
-      await load(filter)
-    } finally {
-      setPayInReportId(null)
-    }
-  }
-
   return (
     <div>
+      <p
+        className="mb-4 rounded border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900"
+        data-testid="bank-deposit-debug-banner"
+      >
+        Debug / review view only. Normal PAY-IN and deposit posting workflow is on{" "}
+        <Link
+          href="/finance/pos-settlement/collector-pickup"
+          className="font-medium underline"
+        >
+          Collector Pickup Settlement
+        </Link>
+        .
+      </p>
+
       {entityBlocked ? (
         <p
           className="mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
@@ -128,16 +106,7 @@ export function BankDepositSettlementPage() {
 
       <BankDepositSettlementTable
         items={items}
-        payInReportId={payInReportId}
-        onPayIn={entityBlocked ? undefined : handleOpenPayIn}
         onPreviewPayInSlip={setPreviewRow}
-      />
-
-      <PayInConfirmModal
-        row={payInRow}
-        open={payInRow != null}
-        onClose={() => setPayInRow(null)}
-        onConfirmed={handlePayInConfirmed}
       />
 
       <PayInSlipPreviewModal

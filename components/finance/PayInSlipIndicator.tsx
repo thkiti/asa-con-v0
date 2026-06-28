@@ -10,15 +10,6 @@ type PayInSlipIndicatorProps = {
   testId?: string
 }
 
-function payInSlipIndicatorTitle(input: {
-  uploaded: boolean
-  missingWarning?: boolean
-}): string {
-  if (input.missingWarning) return "Missing PAY-IN slip"
-  if (input.uploaded) return "View PAY-IN Slip"
-  return "Upload PAY-IN Slip"
-}
-
 export function PayInSlipIndicator({
   status,
   missingWarning = false,
@@ -27,7 +18,11 @@ export function PayInSlipIndicator({
   testId,
 }: PayInSlipIndicatorProps) {
   const uploaded = status === "UPLOADED"
-  const title = payInSlipIndicatorTitle({ uploaded, missingWarning })
+  const title = missingWarning
+    ? "Missing PAY-IN slip"
+    : uploaded
+      ? "View PAY-IN Slip"
+      : "Upload PAY-IN Slip"
 
   const handleClick = () => {
     if (uploaded && onPreview) {
@@ -50,19 +45,18 @@ export function PayInSlipIndicator({
       disabled={!canClick}
       onClick={handleClick}
       className={[
-        "inline-flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
-        missingWarning
-          ? "border-amber-500 bg-amber-50 text-amber-700"
-          : uploaded
-            ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
-            : "border-zinc-300 bg-zinc-50 text-zinc-400 hover:border-zinc-400 hover:bg-zinc-100",
+        "inline-flex h-6 w-6 items-center justify-center rounded-full border-0 bg-transparent p-0",
         canClick ? "cursor-pointer" : "cursor-default opacity-70",
       ].join(" ")}
     >
       <span
         className={[
-          "block rounded-full",
-          uploaded ? "h-3 w-3 bg-white" : "h-4 w-4 border-2 border-current bg-transparent",
+          "block h-3 w-3 rounded-full border",
+          missingWarning
+            ? "border-amber-500 bg-amber-100"
+            : uploaded
+              ? "border-emerald-600 bg-emerald-500"
+              : "border-zinc-300 bg-zinc-200",
         ].join(" ")}
         aria-hidden
       />

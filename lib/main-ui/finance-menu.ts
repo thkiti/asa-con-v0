@@ -126,13 +126,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
           "collector-pickup-settlement",
           "Collector Pickup Settlement",
           "/finance/pos-settlement/collector-pickup",
-          "Review COLLECT reports and post Dr 1031 / Cr 1001 settlement"
-        ),
-        done(
-          "bank-deposit-settlement",
-          "Bank Deposit Settlement",
-          "/finance/pos-settlement/bank-deposit",
-          "Review in-transit cash and post Dr 1021 / Cr 1031 bank deposit"
+          "Review collector tickets, PAY-IN slip evidence, and post bank deposit"
         ),
       ],
     },

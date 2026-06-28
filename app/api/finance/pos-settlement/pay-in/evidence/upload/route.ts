@@ -36,6 +36,10 @@ export async function POST(req: Request) {
     }
 
     const collectorReportId = collectorReportIdRaw.trim()
+    const staffIdRaw = form.get("staffId")
+    const staffId =
+      typeof staffIdRaw === "string" ? staffIdRaw.trim() : actor.staffId?.trim() ?? ""
+
     if (!collectorReportId) {
       throw new PosSettlementError(
         "collectorReportId is required",
@@ -54,6 +58,7 @@ export async function POST(req: Request) {
 
     const result = await uploadPayInEvidenceForCollectorReport(prisma, {
       collectorReportId,
+      staffId,
       fileBuffer: buf,
       contentType,
       originalFilename,

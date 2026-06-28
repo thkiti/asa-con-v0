@@ -17,12 +17,13 @@ function blobPutOptions(contentType: string) {
 }
 
 export async function uploadPayInSlipToBlob(input: {
-  collectorReportId: string
+  collectNo: string
+  staffId: string
   fileBuffer: Buffer
   contentType?: string
 }): Promise<{ blobPathname: string; blobUrl: string }> {
   const contentType = input.contentType?.trim() || "image/jpeg"
-  const blobPathname = buildPayInSlipBlobPath(input.collectorReportId)
+  const blobPathname = buildPayInSlipBlobPath(input.collectNo, input.staffId)
 
   try {
     const blob = await put(blobPathname, input.fileBuffer, blobPutOptions(contentType))

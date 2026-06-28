@@ -416,35 +416,40 @@ GET /api/finance/pos-settlement/bank-deposit/status-list?from=YYYY-MM-DD&to=YYYY
 
 **Not in scope:** Full PSV DRAFT → SUBMITTED → CONFIRMED → POSTED workflow; direct post only.
 
-### P2.4C — PAY-IN slip evidence (implemented)
+### P2.4C — PAY-IN slip evidence + simplified finance workflow (implemented)
 
 | Field | Value |
 |-------|-------|
-| Business rule | Bank PAY-IN slip image is **required evidence** before `PSV-BANK-DEP` posting |
-| Storage | Vercel Blob at `finance/pos-settlement/pay-in/{collectorReportId}.jpg` |
-| Metadata | `PosPayInEvidence` — collectorReportId, collectNo, blobUrl, uploadedAt, uploadedByStaffId, bankDepositDate, bankAccountCode (default `1021`), bankDepositVoucherId |
-| Upload API | `POST /api/finance/pos-settlement/pay-in/evidence/upload` (multipart: `file`, `collectorReportId`) |
-| Confirm API | `POST /api/finance/pos-settlement/pay-in/confirm` — body: `{ collectorReportId, bankDepositDate, bankAccountCode? }` |
-| Post gate | `postBankDepositSettlement` rejects with `PAY_IN_SLIP_REQUIRED` (409) when slip not uploaded |
-| Legacy | Deposits posted before evidence feature show **Missing slip** warning in UI; no crash |
+| Normal workflow | **Collector Pickup Settlement page only** — not a separate Bank Deposit menu |
+| Business status | Collector ticket posted → **COLLECTED**; legacy GL not posted → **NEEDS REPAIR** |
+| PAY-IN slip | Small dot — dim = upload (staff verify → photo → Save); green = preview |
+| Storage key | `finance/pos-settlement/pay-in/{collectNo}-{staffId}.jpg` |
+| Upload API | `POST /api/finance/pos-settlement/pay-in/evidence/upload` (multipart: `file`, `collectorReportId`, `staffId`) |
+| Staff verify API | `POST /api/finance/pos-settlement/pay-in/verify-staff` |
+| Deposit POST | `POST /api/finance/pos-settlement/pay-in/confirm` — posts `PSV-BANK-DEP` Dr `1021` / Cr `1031` (requires slip) |
+| Post gate | Upload alone does **not** post; Deposit column **POST** triggers bank deposit |
 
-**Collector Pickup Settlement page** is the primary **cash movement review + PAY-IN** workflow:
+**Table columns (Collector Pickup Settlement):** Collect No · Branch · Expected · Status · PAY-IN Slip · Deposit
 
-1. Post collector pickup (`PSV-COL-PICK`) when pickup status is `NOT_POSTED`.
-2. Upload PAY-IN slip and confirm via **PAY-IN** modal (posts `PSV-BANK-DEP` Dr `1021` / Cr `1031`).
-3. Table columns: Collect No, Branch, Expected, Pickup Status, Pickup Voucher, PAY-IN Slip, Deposit Status, Bank Voucher, Action.
+1. Collector ticket exists → Status **COLLECTED** (pickup GL posted).
+2. Finance clicks dim PAY-IN dot → staff code/password → upload slip (Save stores evidence only).
+3. Green dot → preview slip.
+4. Deposit column **POST** → bank deposit journal (blocked without slip → shows error).
+5. After POST → Deposit shows **POSTED**.
 
-**Bank Deposit Settlement page** remains compatible — rows posted via PAY-IN from Collector Pickup appear as `POSTED` with slip indicator viewable.
+Legacy pickup-not-posted rows show **NEEDS REPAIR** with secondary **Repair** link (posts `PSV-COL-PICK`).
+
+**Bank Deposit Settlement route** (`/finance/pos-settlement/bank-deposit`) remains for debug/review — **removed from Daily Work menu**.
 
 **Domain:** `lib/finance/pos-settlement/pay-in-evidence*.ts`, `execute-pay-in-confirm.ts`  
-**UI:** `PayInConfirmModal`, `PayInSlipIndicator`, `PayInSlipPreviewModal`
+**UI:** `PayInStaffCredentialGate`, `PayInSlipUploadModal`, `PayInSlipIndicator`, `PayInSlipPreviewModal`
 
-### P2.4B — Bank Deposit minimal finance UI (implemented)
+### P2.4B — Bank Deposit minimal finance UI (implemented — debug route only)
 
 | Item | Detail |
 |------|--------|
-| Page | `/finance/pos-settlement/bank-deposit` |
-| Menu | Finance → Daily Work → **Bank Deposit Settlement** |
+| Page | `/finance/pos-settlement/bank-deposit` (direct URL / debug — **not on Daily Work menu**) |
+| Menu | ~~Finance → Daily Work → Bank Deposit Settlement~~ — use Collector Pickup Settlement instead |
 | Access | `HO_FINANCE` / `HO_ADMIN` only; shop staff / `HO_OPERATIONS` → `/unauthorized` |
 | Entity | AD session shows blocked message; APIs enforce AS-only posting |
 

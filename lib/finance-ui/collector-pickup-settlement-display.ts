@@ -1,63 +1,87 @@
 import type { CollectorPickupSettlementStatus } from "./collector-pickup-settlement"
 import type { BankDepositSettlementStatus } from "./bank-deposit-settlement"
+import { isPayInEvidenceUploadedStatus, type PayInEvidenceUiStatus } from "./pay-in-display"
 
-export function shouldShowCollectorPickupPostButton(
+export type CollectorPickupBusinessStatus =
+  | "COLLECTED"
+  | "NEEDS REPAIR"
+  | "NOT COLLECTED"
+
+export function mapCollectorPickupBusinessStatus(
   status: CollectorPickupSettlementStatus
-): boolean {
-  return status === "NOT_POSTED"
+): CollectorPickupBusinessStatus {
+  switch (status) {
+    case "POSTED":
+      return "COLLECTED"
+    case "NOT_POSTED":
+    case "VARIANCE":
+      return "NEEDS REPAIR"
+    case "INVALID_SOURCE":
+    default:
+      return "NOT COLLECTED"
+  }
 }
 
-export function shouldShowPayInButton(input: {
+export function isPayInSlipUploaded(
+  status: PayInEvidenceUiStatus | null | undefined
+): boolean {
+  return isPayInEvidenceUploadedStatus(status)
+}
+
+export function shouldShowDepositPostButton(input: {
   pickupStatus: CollectorPickupSettlementStatus
   depositStatus: BankDepositSettlementStatus
+  payInEvidenceStatus: PayInEvidenceUiStatus | null
 }): boolean {
   return (
     input.pickupStatus === "POSTED" &&
-    input.depositStatus === "NOT_POSTED"
+    input.depositStatus === "NOT_POSTED" &&
+    isPayInSlipUploaded(input.payInEvidenceStatus)
   )
 }
 
-export function collectorPickupSettlementActionHint(input: {
+export function shouldShowDepositPostDisabled(input: {
   pickupStatus: CollectorPickupSettlementStatus
   depositStatus: BankDepositSettlementStatus
-  payInSlipMissingWarning?: boolean
-}): string | null {
-  if (input.payInSlipMissingWarning) {
-    return "Missing slip"
-  }
-
-  switch (input.pickupStatus) {
-    case "NOT_POSTED":
-      return null
-    case "POSTED":
-      if (input.depositStatus === "POSTED") {
-        return "Deposited"
-      }
-      if (input.depositStatus === "NOT_POSTED") {
-        return null
-      }
-      if (input.depositStatus === "NOT_ELIGIBLE") {
-        return "Awaiting pickup post"
-      }
-      if (input.depositStatus === "VARIANCE") {
-        return "Deposit variance — review journal"
-      }
-      return "Posted"
-    case "VARIANCE":
-      return "Pickup variance — review journal before reposting"
-    case "INVALID_SOURCE":
-      return "Not eligible for settlement"
-    default:
-      return null
-  }
+  payInEvidenceStatus: PayInEvidenceUiStatus | null
+}): boolean {
+  return (
+    input.pickupStatus === "POSTED" &&
+    input.depositStatus === "NOT_POSTED" &&
+    !isPayInSlipUploaded(input.payInEvidenceStatus)
+  )
 }
 
-/** @deprecated Use collectorPickupSettlementActionHint with deposit context */
-export function collectorPickupSettlementActionHintLegacy(
+export function depositColumnLabel(input: {
+  depositStatus: BankDepositSettlementStatus
+}): "POST" | "POSTED" | null {
+  if (input.depositStatus === "POSTED") return "POSTED"
+  if (
+    input.depositStatus === "NOT_POSTED" ||
+    input.depositStatus === "NOT_ELIGIBLE" ||
+    input.depositStatus === "VARIANCE"
+  ) {
+    return "POST"
+  }
+  return null
+}
+
+/** Secondary repair — not shown in normal table flow by default */
+export function shouldShowPickupRepairButton(
   status: CollectorPickupSettlementStatus
-): string | null {
-  return collectorPickupSettlementActionHint({
-    pickupStatus: status,
-    depositStatus: "NOT_ELIGIBLE",
-  })
+): boolean {
+  return status === "NOT_POSTED" || status === "VARIANCE"
+}
+
+export function collectorPickupBusinessStatusTone(
+  status: CollectorPickupBusinessStatus
+): string {
+  switch (status) {
+    case "COLLECTED":
+      return "bg-green-100 text-green-800"
+    case "NEEDS REPAIR":
+      return "bg-amber-100 text-amber-900"
+    case "NOT COLLECTED":
+      return "bg-orange-100 text-orange-900"
+  }
 }

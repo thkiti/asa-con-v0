@@ -1,9 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { BankDepositSettlementTable } from "@/components/finance/BankDepositSettlementTable"
-import {
-  bankDepositSettlementActionHint,
-  shouldShowBankDepositPayInButton,
-} from "@/lib/finance-ui/bank-deposit-settlement-display"
+import { bankDepositSettlementActionHint } from "@/lib/finance-ui/bank-deposit-settlement-display"
 import type { BankDepositSettlementReconciliation } from "@/lib/finance-ui/bank-deposit-settlement"
 
 const baseRow: BankDepositSettlementReconciliation = {
@@ -32,11 +29,6 @@ const baseRow: BankDepositSettlementReconciliation = {
 }
 
 describe("bank deposit settlement display helpers", () => {
-  it("shows PAY-IN button only for NOT_POSTED deposit rows", () => {
-    expect(shouldShowBankDepositPayInButton("NOT_POSTED")).toBe(true)
-    expect(shouldShowBankDepositPayInButton("POSTED")).toBe(false)
-  })
-
   it("shows missing slip warning for legacy posted rows", () => {
     expect(
       bankDepositSettlementActionHint({
@@ -48,56 +40,35 @@ describe("bank deposit settlement display helpers", () => {
 })
 
 describe("BankDepositSettlementTable", () => {
-  it("renders PAY-IN slip column and action", () => {
+  it("renders debug review table with slip preview only", () => {
     const html = renderToStaticMarkup(
       <BankDepositSettlementTable
         items={[baseRow]}
-        onPayIn={() => undefined}
+        onPreviewPayInSlip={() => undefined}
       />
     )
 
     expect(html).toContain("PAY-IN Slip")
-    expect(html).toContain("PAY-IN")
-    expect(html).toContain('data-testid="pay-in-open-collector-report-1"')
+    expect(html).not.toContain('data-testid="pay-in-open-')
   })
 
-  it("shows deposited row with voucher and uploaded slip indicator", () => {
+  it("shows uploaded slip indicator for preview", () => {
     const html = renderToStaticMarkup(
       <BankDepositSettlementTable
         items={[
           {
             ...baseRow,
             status: "POSTED",
-            voucherNo: "V-BANK-001",
             variance: "0.00",
             payInEvidenceStatus: "UPLOADED",
             payInEvidenceUrl: "https://example.test/pay-in.jpg",
           },
         ]}
+        onPreviewPayInSlip={() => undefined}
       />
     )
 
-    expect(html).toContain("V-BANK-001")
-    expect(html).toContain("Deposited")
     expect(html).toContain('data-testid="pay-in-slip-collector-report-1"')
-  })
-
-  it("shows missing slip warning without crashing", () => {
-    const html = renderToStaticMarkup(
-      <BankDepositSettlementTable
-        items={[
-          {
-            ...baseRow,
-            status: "POSTED",
-            voucherNo: "V-BANK-LEGACY",
-            variance: "0.00",
-            payInSlipMissingWarning: true,
-          },
-        ]}
-      />
-    )
-
-    expect(html).toContain("Missing slip")
-    expect(html).toContain("V-BANK-LEGACY")
+    expect(html).toContain("bg-emerald-500")
   })
 })

@@ -1,10 +1,7 @@
 import { BankDepositSettlementStatusBadge } from "@/components/finance/BankDepositSettlementStatusBadge"
 import { PayInSlipIndicator } from "@/components/finance/PayInSlipIndicator"
 import type { BankDepositSettlementReconciliation } from "@/lib/finance-ui/bank-deposit-settlement"
-import {
-  bankDepositSettlementActionHint,
-  shouldShowBankDepositPayInButton,
-} from "@/lib/finance-ui/bank-deposit-settlement-display"
+import { bankDepositSettlementActionHint } from "@/lib/finance-ui/bank-deposit-settlement-display"
 import { formatAmount } from "@/lib/finance-ui/format"
 import {
   financeTable,
@@ -19,8 +16,6 @@ import {
 
 type BankDepositSettlementTableProps = {
   items: BankDepositSettlementReconciliation[]
-  payInReportId?: string | null
-  onPayIn?: (row: BankDepositSettlementReconciliation) => void
   onPreviewPayInSlip?: (row: BankDepositSettlementReconciliation) => void
 }
 
@@ -33,8 +28,6 @@ function formatBranch(row: BankDepositSettlementReconciliation): string {
 
 export function BankDepositSettlementTable({
   items,
-  payInReportId = null,
-  onPayIn,
   onPreviewPayInSlip,
 }: BankDepositSettlementTableProps) {
   if (items.length === 0) {
@@ -57,19 +50,15 @@ export function BankDepositSettlementTable({
             <th className={financeTh}>PAY-IN Slip</th>
             <th className={financeThSettlementStatus}>Status</th>
             <th className={financeThRight}>Variance</th>
-            <th className={financeTh}>Pickup Voucher</th>
-            <th className={financeTh}>Deposit Voucher</th>
-            <th className={financeTh}>Action</th>
           </tr>
         </thead>
         <tbody>
           {items.map((row) => {
-            const showPayIn = shouldShowBankDepositPayInButton(row.status)
-            const isPayInBusy = payInReportId === row.collectorReportId
             const actionHint = bankDepositSettlementActionHint({
               status: row.status,
               payInSlipMissingWarning: row.payInSlipMissingWarning,
             })
+            const slipUploaded = row.payInEvidenceStatus === "UPLOADED"
 
             return (
               <tr key={row.collectorReportId}>
@@ -84,9 +73,8 @@ export function BankDepositSettlementTable({
                     status={row.payInEvidenceStatus}
                     missingWarning={row.payInSlipMissingWarning}
                     testId={`pay-in-slip-${row.collectorReportId}`}
-                    onUpload={showPayIn && onPayIn ? () => onPayIn(row) : undefined}
                     onPreview={
-                      row.payInEvidenceUrl && onPreviewPayInSlip
+                      slipUploaded && row.payInEvidenceUrl && onPreviewPayInSlip
                         ? () => onPreviewPayInSlip(row)
                         : undefined
                     }
@@ -94,39 +82,12 @@ export function BankDepositSettlementTable({
                 </td>
                 <td className={financeTdSettlementStatus}>
                   <BankDepositSettlementStatusBadge status={row.status} />
+                  {actionHint ? (
+                    <span className="ml-1 text-xs text-zinc-600">{actionHint}</span>
+                  ) : null}
                 </td>
                 <td className="text-right tabular-nums text-sm">
                   {formatAmount(row.variance)}
-                </td>
-                <td className="font-mono text-sm">
-                  {row.collectorPickupVoucherNo ?? "—"}
-                </td>
-                <td className="font-mono text-sm">{row.voucherNo ?? "—"}</td>
-                <td>
-                  {showPayIn && onPayIn ? (
-                    <button
-                      type="button"
-                      data-testid={`pay-in-open-${row.collectorReportId}`}
-                      disabled={isPayInBusy}
-                      onClick={() => onPayIn(row)}
-                      className="rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                    >
-                      {isPayInBusy ? "Processing…" : "PAY-IN"}
-                    </button>
-                  ) : actionHint ? (
-                    <span
-                      className={[
-                        "text-xs",
-                        row.payInSlipMissingWarning
-                          ? "font-medium text-amber-700"
-                          : "text-zinc-600",
-                      ].join(" ")}
-                    >
-                      {actionHint}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-zinc-400">—</span>
-                  )}
                 </td>
               </tr>
             )

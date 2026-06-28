@@ -1,13 +1,14 @@
 "use client"
 
-import { CollectorPickupSettlementStatusBadge } from "@/components/finance/CollectorPickupSettlementStatusBadge"
 import { PayInSlipIndicator } from "@/components/finance/PayInSlipIndicator"
 import type { CollectorPickupSettlementReconciliation } from "@/lib/finance-ui/collector-pickup-settlement"
-import type { BankDepositSettlementStatus } from "@/lib/finance-ui/pos-settlement-status-types"
 import {
-  collectorPickupSettlementActionHint,
-  shouldShowCollectorPickupPostButton,
-  shouldShowPayInButton,
+  collectorPickupBusinessStatusTone,
+  isPayInSlipUploaded,
+  mapCollectorPickupBusinessStatus,
+  shouldShowDepositPostButton,
+  shouldShowDepositPostDisabled,
+  shouldShowPickupRepairButton,
 } from "@/lib/finance-ui/collector-pickup-settlement-display"
 import { formatAmount } from "@/lib/finance-ui/format"
 import {
@@ -22,11 +23,12 @@ import {
 
 type CollectorPickupSettlementTableProps = {
   items: CollectorPickupSettlementReconciliation[]
-  postingReportId?: string | null
-  payInReportId?: string | null
-  onPost?: (collectorReportId: string) => void
-  onPayIn?: (row: CollectorPickupSettlementReconciliation) => void
+  depositPostingReportId?: string | null
+  onUploadSlip?: (row: CollectorPickupSettlementReconciliation) => void
   onPreviewPayInSlip?: (row: CollectorPickupSettlementReconciliation) => void
+  onDepositPost?: (collectorReportId: string) => void
+  onRepairPickup?: (collectorReportId: string) => void
+  depositPostError?: string | null
 }
 
 function formatBranch(row: CollectorPickupSettlementReconciliation): string {
@@ -36,31 +38,29 @@ function formatBranch(row: CollectorPickupSettlementReconciliation): string {
   return code ?? name ?? row.branchId
 }
 
-const depositStatusTone: Record<BankDepositSettlementStatus, string> = {
-  NOT_POSTED: "bg-zinc-100 text-zinc-800",
-  POSTED: "bg-green-100 text-green-800",
-  VARIANCE: "bg-amber-100 text-amber-800",
-  INVALID_SOURCE: "bg-orange-100 text-orange-900",
-  NOT_ELIGIBLE: "bg-slate-100 text-slate-700",
-}
-
-function DepositStatusBadge({ status }: { status: BankDepositSettlementStatus }) {
+function BusinessStatusBadge({
+  row,
+}: {
+  row: CollectorPickupSettlementReconciliation
+}) {
+  const label = mapCollectorPickupBusinessStatus(row.status)
   return (
     <span
-      className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${depositStatusTone[status]}`}
+      className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${collectorPickupBusinessStatusTone(label)}`}
     >
-      {status.replace(/_/g, " ")}
+      {label}
     </span>
   )
 }
 
 export function CollectorPickupSettlementTable({
   items,
-  postingReportId = null,
-  payInReportId = null,
-  onPost,
-  onPayIn,
+  depositPostingReportId = null,
+  onUploadSlip,
   onPreviewPayInSlip,
+  onDepositPost,
+  onRepairPickup,
+  depositPostError = null,
 }: CollectorPickupSettlementTableProps) {
   if (items.length === 0) {
     return (
@@ -78,28 +78,28 @@ export function CollectorPickupSettlementTable({
             <th className={financeTh}>Collect No</th>
             <th className={financeTh}>Branch</th>
             <th className={financeThSettlementAmount}>Expected</th>
-            <th className={financeThSettlementStatus}>Pickup Status</th>
-            <th className={financeTh}>Pickup Voucher</th>
+            <th className={financeThSettlementStatus}>Status</th>
             <th className={financeTh}>PAY-IN Slip</th>
-            <th className={financeThSettlementStatus}>Deposit Status</th>
-            <th className={financeTh}>Bank Voucher</th>
-            <th className={financeTh}>Action</th>
+            <th className={financeThSettlementStatus}>Deposit</th>
           </tr>
         </thead>
         <tbody>
           {items.map((row) => {
-            const showPost = shouldShowCollectorPickupPostButton(row.status)
-            const showPayIn = shouldShowPayInButton({
+            const slipUploaded = isPayInSlipUploaded(row.payInEvidenceStatus)
+            const showDepositPost = shouldShowDepositPostButton({
               pickupStatus: row.status,
               depositStatus: row.depositStatus,
+              payInEvidenceStatus: row.payInEvidenceStatus,
             })
-            const isPosting = postingReportId === row.collectorReportId
-            const isPayInBusy = payInReportId === row.collectorReportId
-            const actionHint = collectorPickupSettlementActionHint({
+            const showDepositPostDisabled = shouldShowDepositPostDisabled({
               pickupStatus: row.status,
               depositStatus: row.depositStatus,
-              payInSlipMissingWarning: row.payInSlipMissingWarning,
+              payInEvidenceStatus: row.payInEvidenceStatus,
             })
+            const isDepositPosting = depositPostingReportId === row.collectorReportId
+            const showRepair = shouldShowPickupRepairButton(row.status)
+            const canUploadSlip =
+              row.status === "POSTED" && row.depositStatus === "NOT_POSTED"
 
             return (
               <tr key={row.collectorReportId}>
@@ -109,62 +109,64 @@ export function CollectorPickupSettlementTable({
                   {formatAmount(row.expectedAmount)}
                 </td>
                 <td className={financeTdSettlementStatus}>
-                  <CollectorPickupSettlementStatusBadge status={row.status} />
+                  <BusinessStatusBadge row={row} />
+                  {showRepair && onRepairPickup ? (
+                    <button
+                      type="button"
+                      data-testid={`pickup-repair-${row.collectorReportId}`}
+                      className="ml-2 text-[10px] text-amber-800 underline"
+                      onClick={() => onRepairPickup(row.collectorReportId)}
+                    >
+                      Repair
+                    </button>
+                  ) : null}
                 </td>
-                <td className="font-mono text-sm">{row.voucherNo ?? "—"}</td>
                 <td className="text-center">
                   <PayInSlipIndicator
                     status={row.payInEvidenceStatus}
                     missingWarning={row.payInSlipMissingWarning}
                     testId={`pay-in-slip-${row.collectorReportId}`}
                     onUpload={
-                      showPayIn && onPayIn ? () => onPayIn(row) : undefined
+                      canUploadSlip && onUploadSlip
+                        ? () => onUploadSlip(row)
+                        : undefined
                     }
                     onPreview={
-                      row.payInEvidenceUrl && onPreviewPayInSlip
+                      slipUploaded && row.payInEvidenceUrl && onPreviewPayInSlip
                         ? () => onPreviewPayInSlip(row)
                         : undefined
                     }
                   />
                 </td>
                 <td className={financeTdSettlementStatus}>
-                  <DepositStatusBadge status={row.depositStatus} />
-                </td>
-                <td className="font-mono text-sm">
-                  {row.bankDepositVoucherNo ?? "—"}
-                </td>
-                <td>
-                  {showPost && onPost ? (
-                    <button
-                      type="button"
-                      data-testid={`collector-pickup-post-${row.collectorReportId}`}
-                      disabled={isPosting}
-                      onClick={() => onPost(row.collectorReportId)}
-                      className="rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                    >
-                      {isPosting ? "Posting…" : "Post Settlement"}
-                    </button>
-                  ) : showPayIn && onPayIn ? (
-                    <button
-                      type="button"
-                      data-testid={`pay-in-open-${row.collectorReportId}`}
-                      disabled={isPayInBusy}
-                      onClick={() => onPayIn(row)}
-                      className="rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-                    >
-                      {isPayInBusy ? "Processing…" : "PAY-IN"}
-                    </button>
-                  ) : actionHint ? (
+                  {row.depositStatus === "POSTED" ? (
                     <span
-                      className={[
-                        "text-xs",
-                        row.payInSlipMissingWarning
-                          ? "font-medium text-amber-700"
-                          : "text-zinc-600",
-                      ].join(" ")}
+                      className="inline-block rounded bg-green-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-green-800"
+                      data-testid={`deposit-posted-${row.collectorReportId}`}
                     >
-                      {actionHint}
+                      POSTED
                     </span>
+                  ) : showDepositPost && onDepositPost ? (
+                    <button
+                      type="button"
+                      data-testid={`deposit-post-${row.collectorReportId}`}
+                      disabled={isDepositPosting}
+                      onClick={() => onDepositPost(row.collectorReportId)}
+                      className="rounded bg-zinc-900 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white disabled:opacity-50"
+                    >
+                      {isDepositPosting ? "Posting…" : "POST"}
+                    </button>
+                  ) : showDepositPostDisabled ? (
+                    <button
+                      type="button"
+                      data-testid={`deposit-post-disabled-${row.collectorReportId}`}
+                      disabled={isDepositPosting}
+                      title="Upload PAY-IN Slip first"
+                      onClick={() => onDepositPost?.(row.collectorReportId)}
+                      className="rounded bg-zinc-300 px-3 py-1 text-xs font-medium uppercase tracking-wide text-zinc-600"
+                    >
+                      POST
+                    </button>
                   ) : (
                     <span className="text-xs text-zinc-400">—</span>
                   )}
@@ -174,6 +176,14 @@ export function CollectorPickupSettlementTable({
           })}
         </tbody>
       </table>
+      {depositPostError ? (
+        <p
+          className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+          data-testid="deposit-post-error"
+        >
+          {depositPostError}
+        </p>
+      ) : null}
     </div>
   )
 }
