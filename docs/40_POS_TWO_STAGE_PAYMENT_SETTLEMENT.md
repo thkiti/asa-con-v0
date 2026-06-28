@@ -1,6 +1,6 @@
 # POS Two-Stage Payment Settlement
 
-Status: **Implemented through P2.3B** — Stage 1 checkout/refund, reconciliation bridges, and Collector Pickup Stage 2 (post API, status APIs, minimal finance UI)  
+Status: **Implemented through P2.4 / P3** — Stage 1 checkout/refund, reconciliation bridges, Collector Pickup Stage 2, and Bank Deposit Settlement (post API, status APIs, minimal finance UI)  
 Scope: POS tender → clearing/custody GL, settlement documents, READ Z anchor, reconciliation  
 Type: Architecture + implementation record (synced with pushed code)  
 Related: [08_POS_CHECKOUT_ARCHITECTURE.md](./08_POS_CHECKOUT_ARCHITECTURE.md), [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.md), [12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md](./12_FINANCE_RECONCILIATION_AND_CLOSE_POLICY.md), [13_FINANCE_OPERATIONAL_WIRING.md](./13_FINANCE_OPERATIONAL_WIRING.md), [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md), [RECEIPT_SETUP.md](./RECEIPT_SETUP.md), [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md)
@@ -24,7 +24,7 @@ That conflated three distinct economic events:
 
 Money can sit in **Cash in Drawer**, **Mall receivable**, **Card clearing**, or **Bank transfer clearing** for days before it reaches the bank. READ Z closes the **sales day**; it must not be treated as proof that cash is in the bank.
 
-**Current state (P1–P2.3B):** Stage 1 checkout and refund now post **net revenue + output VAT** on the credit side and **method-specific clearing/custody debits/credits** on the tender side. Collector Pickup Stage 2 (`PSV-COL-PICK`) is implemented for HO finance posting from persisted `CollectorReport` rows.
+**Current state (P1–P2.4 / P3):** Stage 1 checkout and refund now post **net revenue + output VAT** on the credit side and **method-specific clearing/custody debits/credits** on the tender side. Collector Pickup Stage 2 (`PSV-COL-PICK`) and Bank Deposit Stage 2 (`PSV-BANK-DEP`) are implemented for HO finance posting from persisted `CollectorReport` rows.
 
 ---
 
@@ -79,8 +79,7 @@ flowchart LR
 
 **Moves balances** between clearing/custody accounts and Bank (or the next custody hop). **Never credits revenue or VAT.**
 
-**Implemented:** `PSV-COL-PICK` (Collector Pickup).  
-**Future:** mall handover, bank deposit, card settlement, transfer match.
+**Implemented:** `PSV-COL-PICK` (Collector Pickup), `PSV-BANK-DEP` (Bank Deposit).
 
 ---
 
@@ -207,7 +206,7 @@ POS Settlement Vouchers (PSV) follow the existing posting kernel pattern ([FINAN
 | Code | Business name | Status | refType |
 |------|---------------|--------|---------|
 | `PSV-COL-PICK` | Collector pickup | **Implemented (P2–P2.3B)** | `POS_SETTLEMENT_COLLECTOR_PICKUP` |
-| `PSV-BANK-DEP` | Bank deposit | Future (P2.4 / P3) | `POS_SETTLEMENT_BANK_DEPOSIT` |
+| `PSV-BANK-DEP` | Bank deposit | **Implemented (P2.4 / P3)** | `POS_SETTLEMENT_BANK_DEPOSIT` |
 | `PSV-CARD-SET` | Card settlement | Future | `POS_SETTLEMENT_CARD` |
 | `PSV-TRF-MATCH` | Bank transfer match | Future | `POS_SETTLEMENT_TRANSFER_MATCH` |
 | `PSV-MALL-HO` | Cash handover to mall | Future (P4) | `POS_SETTLEMENT_MALL_HANDOVER` |
@@ -233,16 +232,42 @@ Dr  1031  เงินสดระหว่างทาง  (Cash in Transit)
 
 - Stage 2 never touches revenue or VAT.
 - Collector pickup never debits bank (`1021`).
-- Bank deposit from `1031` → `1021` is **future work** (`PSV-BANK-DEP`).
+- Bank deposit from `1031` → `1021` is **implemented** (`PSV-BANK-DEP`).
 - One posted settlement per `CollectorReport.id`; duplicate returns `DUPLICATE_SOURCE` (409).
 - AS / ASAS entity only (`DEFAULT_DOCUMENT_ENTITY_CODE`).
 - Respects `assertPostingPeriodOpen` like other finance documents.
 
 **Domain:** `lib/finance/pos-settlement/post-collector-pickup.ts`, `execute-collector-pickup-post.ts`
 
+### Bank Deposit — implemented (P2.4 / P3)
+
+| Field | Value |
+|-------|-------|
+| Business code | `PSV-BANK-DEP` |
+| GL `refType` | `POS_SETTLEMENT_BANK_DEPOSIT` |
+| Source | `CollectorReport.id` with posted `PSV-COL-PICK` |
+| `refNo` | `CollectorReport.collectNo` |
+| Prerequisite | Collector pickup settlement must be posted (`COLLECTOR_PICKUP_NOT_POSTED` → 409) |
+
+**Posting journal:**
+```
+Dr  1021  เงินฝากธนาคาร  (Bank)
+    Cr  1031  เงินสดระหว่างทาง  (Cash in Transit)
+```
+
+**Invariants:**
+
+- Stage 2 never touches revenue or VAT.
+- Bank deposit never debits or credits cash drawer (`1001`).
+- One posted bank deposit per `CollectorReport.id`; duplicate returns `DUPLICATE_SOURCE` (409).
+- AS / ASAS entity only (`DEFAULT_DOCUMENT_ENTITY_CODE`).
+- Respects `assertPostingPeriodOpen` like other finance documents.
+
+**Domain:** `lib/finance/pos-settlement/post-bank-deposit.ts`, `execute-bank-deposit-post.ts`
+
 ### Future Stage 2 GL patterns
 
-**Bank deposit** *(P2.4 / P3 — not implemented)*
+**Bank deposit** *(implemented — P2.4 / P3)*
 
 ```
 Dr  1021  Bank
@@ -342,13 +367,84 @@ GET /api/finance/pos-settlement/collector-pickup/status-list?from=YYYY-MM-DD&to=
 
 **Not in scope:** Full PSV DRAFT → SUBMITTED → CONFIRMED → POSTED workflow; direct post only.
 
+### P2.4 — Bank Deposit post API (implemented)
+
+```
+POST /api/finance/pos-settlement/bank-deposit/post
+```
+
+| Item | Detail |
+|------|--------|
+| Body | `{ "collectorReportId": "<uuid>" }` |
+| Auth | `HO_FINANCE` / `HO_ADMIN` via `requireFinanceVoucherScope()` |
+| Entity | AS session only; AD → 403 |
+| Prerequisite | Posted `PSV-COL-PICK` for same `collectorReportId` |
+| Success | Posted voucher id/no, collectNo, amount |
+| Errors | `DUPLICATE_SOURCE` (409), `COLLECTOR_PICKUP_NOT_POSTED` (409), `PERIOD_CLOSED` (409), `VALIDATION_ERROR`, `INVALID_SOURCE`, `COLLECTOR_REPORT_NOT_FOUND` |
+
+### P2.4 — Bank Deposit reconciliation library (implemented)
+
+`lib/finance/pos-settlement/bank-deposit-reconciliation.ts`
+
+- `getBankDepositSettlementStatus(db, collectorReportId)`
+- `listBankDepositSettlementStatuses(db, { branchId?, from?, to? })`
+
+Compares posted collector pickup in-transit amount against linked bank deposit voucher journal lines on accounts **1021** (debit) and **1031** (credit) only.
+
+**Status values:**
+
+| Status | Meaning |
+|--------|---------|
+| `NOT_ELIGIBLE` | Valid COLLECT report but collector pickup not posted |
+| `NOT_POSTED` | Pickup posted; no bank deposit voucher |
+| `POSTED` | Bank deposit posted; amounts match |
+| `VARIANCE` | Voucher exists but 1021/1031 amounts ≠ expected |
+| `INVALID_SOURCE` | Not a COLLECT report or invalid payload |
+
+### P2.4A — Bank Deposit status APIs (implemented)
+
+```
+GET /api/finance/pos-settlement/bank-deposit/status?collectorReportId=<uuid>
+GET /api/finance/pos-settlement/bank-deposit/status-list?from=YYYY-MM-DD&to=YYYY-MM-DD&branchId=<optional>
+```
+
+| Item | Detail |
+|------|--------|
+| Auth | Same as post API — `HO_FINANCE` / `HO_ADMIN`, AS session only |
+| `INVALID_SOURCE` | Returns **200** with status in body (not thrown) |
+| `status-list` | Date-range query on `CollectorReport.createdAt`; no pagination cap yet |
+
+### P2.4B — Bank Deposit minimal finance UI (implemented)
+
+| Item | Detail |
+|------|--------|
+| Page | `/finance/pos-settlement/bank-deposit` |
+| Menu | Finance → Daily Work → **Bank Deposit Settlement** |
+| Access | `HO_FINANCE` / `HO_ADMIN` only; shop staff / `HO_OPERATIONS` → `/unauthorized` |
+| Entity | AD session shows blocked message; APIs enforce AS-only posting |
+
+**UI behavior:**
+
+1. Date range filter (required) + optional branch filter.
+2. Loads `status-list` API on Apply.
+3. Table columns: `collectNo`, branch code/name, mode, `inTransitAmount`, status badge, variance, pickup `voucherNo`, deposit `voucherNo`, action hint.
+4. `NOT_POSTED` → **Post Deposit** button → `POST .../post` → refresh list.
+5. `POSTED` → shows deposit `voucherNo`; no post button.
+6. `NOT_ELIGIBLE` / `VARIANCE` / `INVALID_SOURCE` → warning hint; **no post button**.
+7. Duplicate-source / closed-period / pickup-not-posted / validation errors displayed inline.
+
+**Components:** `components/finance/BankDepositSettlementPage.tsx`, `BankDepositSettlementTable.tsx`  
+**Client helpers:** `lib/finance-ui/bank-deposit-settlement.ts`
+
+**Not in scope:** Full PSV DRAFT → SUBMITTED → CONFIRMED → POSTED workflow; direct post only.
+
 ### Module placement
 
 | Layer | Path | Responsibility |
 |-------|------|----------------|
 | Domain | `lib/finance/pos-settlement/` | Validation, line builders, POST, reconciliation, types |
-| API | `app/api/finance/pos-settlement/collector-pickup/*` | Parse, auth, call domain |
-| UI | `app/(main)/finance/pos-settlement/collector-pickup/` | HO finance review + post |
+| API | `app/api/finance/pos-settlement/collector-pickup/*`, `.../bank-deposit/*` | Parse, auth, call domain |
+| UI | `app/(main)/finance/pos-settlement/collector-pickup/`, `.../bank-deposit/` | HO finance review + post |
 | POS integration | `lib/pos/persist-collector-report.ts` | Persist CollectorReport (unchanged — no auto-post) |
 
 Settlement business logic **must not** live in React pages or API routes ([01_MODULAR_MONOLITH_BOUNDARIES.md](./01_MODULAR_MONOLITH_BOUNDARIES.md)).
@@ -386,7 +482,7 @@ sequenceDiagram
   POS->>GL: Stage 1 CASH sale → Dr 1001, Cr Rev+VAT
   Note over POS: READ Z end of day (sales anchor)
   Collector->>GL: Stage 2 PSV-COL-PICK → Dr 1031, Cr 1001
-  Bank->>GL: Stage 2 PSV-BANK-DEP (future) → Dr 1021, Cr 1031
+  Bank->>GL: Stage 2 PSV-BANK-DEP → Dr 1021, Cr 1031
 ```
 
 Cash remains **`1001`** from checkout until collector pickup. READ Z does not move it.
@@ -463,7 +559,11 @@ Variance policy: **explain first** — operational fix (missing sale/refund) or 
 | Collector Pickup reconciliation library | **Done (P2.2)** |
 | Status APIs | **Done (P2.3A)** |
 | Minimal finance UI | **Done (P2.3B)** |
-| Bank deposit `1031` → `1021` | Not started |
+| Bank deposit posting domain | **Done (P2.4 / P3)** |
+| Bank deposit post API | **Done (P2.4)** |
+| Bank deposit reconciliation library | **Done (P2.4)** |
+| Bank deposit status APIs | **Done (P2.4A)** |
+| Bank deposit minimal finance UI | **Done (P2.4B)** |
 | Card / transfer settlement | Not started |
 | Mall handover + settlement | Not started |
 | READ Z day-close record + aging report | Not started |
@@ -486,8 +586,8 @@ Variance policy: **explain first** — operational fix (missing sale/refund) or 
 | **P2.2** | Collector Pickup reconciliation library + status values | **Done** |
 | **P2.3A** | Status + status-list finance APIs | **Done** |
 | **P2.3B** | Minimal finance UI at `/finance/pos-settlement/collector-pickup` | **Done** |
-| **P2.4 / P3** | **Bank Deposit Settlement** — Dr `1021` Bank, Cr `1031` Cash in Transit | **Next recommended** |
-| **P3** | PSV-CARD-SET, PSV-TRF-MATCH (finance UI) | Planned |
+| **P2.4 / P3** | **Bank Deposit Settlement** — Dr `1021` Bank, Cr `1031` Cash in Transit | **Done** |
+| **P3** | PSV-CARD-SET, PSV-TRF-MATCH (finance UI) | **Next recommended** |
 | **P4** | Mall handover + settlement (PSV-MALL-*) + branch custody mode | Planned |
 | **P5** | READ Z day-close record + reconciliation aging report | Planned |
 
@@ -505,7 +605,7 @@ Each Stage 1 phase keeps **same-transaction** posting in checkout ([13_FINANCE_O
 6. **Entity isolation** — all journals carry session `legalEntityCode`; POS settlement is AS/ASAS only.
 7. **Operational truth for tender** — `Payment.method` and amounts remain authoritative; GL is derived.
 8. **Refund reverses sale snapshot economics** — original receipt immutable; refund is separate; GL splits gross into net + VAT using sale snapshot, not refund-date policy.
-9. **Collector pickup never debits bank** — `1031` ← `1001` only; bank deposit is a separate future document.
+9. **Collector pickup never debits bank** — `1031` ← `1001` only; bank deposit is a separate document (`PSV-BANK-DEP`).
 
 ---
 
@@ -519,7 +619,7 @@ Each Stage 1 phase keeps **same-transaction** posting in checkout ([13_FINANCE_O
 | 4 | Reversed/cancelled vouchers not specially handled in collector settlement reconciliation |
 | 5 | `status-list` uses small date-range queries with no pagination cap |
 | 6 | Card/transfer/other clearing accounts `1110`/`1120`/`1190` need verification against production legacy CoA |
-| 7 | Bank deposit settlement `1031` → `1021` not implemented |
+| 7 | Bank deposit settlement `1031` → `1021` implemented (direct post only) |
 | 8 | Mall cash handover/settlement not implemented |
 | 9 | Card settlement and transfer match not implemented |
 | 10 | Auto-post collector pickup on persist vs finance confirm — **finance posts separately** (collector slip is operational) |
@@ -550,9 +650,11 @@ Each Stage 1 phase keeps **same-transaction** posting in checkout ([13_FINANCE_O
 | Sales/tender reconciliation | `lib/finance/reconciliation.ts`, `lib/finance/pos-sales-reconciliation.ts` |
 | Collector pickup POST | `lib/finance/pos-settlement/post-collector-pickup.ts` |
 | Collector pickup reconciliation | `lib/finance/pos-settlement/collector-pickup-reconciliation.ts` |
-| Post API | `app/api/finance/pos-settlement/collector-pickup/post/route.ts` |
-| Status APIs | `app/api/finance/pos-settlement/collector-pickup/status/route.ts`, `.../status-list/route.ts` |
-| Finance UI | `app/(main)/finance/pos-settlement/collector-pickup/page.tsx`, `components/finance/CollectorPickupSettlement*.tsx` |
+| Bank deposit POST | `lib/finance/pos-settlement/post-bank-deposit.ts` |
+| Bank deposit reconciliation | `lib/finance/pos-settlement/bank-deposit-reconciliation.ts` |
+| Post API | `app/api/finance/pos-settlement/collector-pickup/post/route.ts`, `.../bank-deposit/post/route.ts` |
+| Status APIs | `app/api/finance/pos-settlement/collector-pickup/status/route.ts`, `.../status-list/route.ts`, `.../bank-deposit/status/route.ts`, `.../status-list/route.ts` |
+| Finance UI | `app/(main)/finance/pos-settlement/collector-pickup/page.tsx`, `.../bank-deposit/page.tsx`, `components/finance/CollectorPickupSettlement*.tsx`, `BankDepositSettlement*.tsx` |
 | READ Z aggregation | `lib/pos/aggregatePosReadReport.ts`, `lib/pos/readReportPayment.ts` |
 | Collector persist | `lib/pos/persist-collector-report.ts` |
 | CoA seed | `scripts/seed-finance-accounts.ts` |

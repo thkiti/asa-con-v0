@@ -292,6 +292,63 @@ export function resolveAccountsForPosCollectorPickup(
   return lines
 }
 
+/** Bank deposit Stage 2 must never touch revenue, VAT, clearing, or cash drawer. */
+export const POS_BANK_DEPOSIT_FORBIDDEN_ACCOUNT_CODES = [
+  DEFAULT_ACCOUNT_CODES.REVENUE,
+  DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+  DEFAULT_ACCOUNT_CODES.CARD_CLEARING,
+  DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING,
+  DEFAULT_ACCOUNT_CODES.POS_OTHER_CLEARING,
+  DEFAULT_ACCOUNT_CODES.CASH,
+] as const
+
+export function assertPosBankDepositJournalAccountCodes(
+  accountCodes: readonly string[]
+): void {
+  for (const code of accountCodes) {
+    if (
+      (POS_BANK_DEPOSIT_FORBIDDEN_ACCOUNT_CODES as readonly string[]).includes(
+        code
+      )
+    ) {
+      throw new FinancePostingError(
+        `Bank deposit settlement must not use account ${code}`,
+        "FORBIDDEN_STAGE2_ACCOUNT"
+      )
+    }
+  }
+}
+
+export function resolveAccountsForPosBankDeposit(
+  amount: Parameters<typeof toMoney>[0]
+): JournalLineCodeDraft[] {
+  const depositAmount = toMoney(amount)
+  if (depositAmount.lte(ZERO)) {
+    throw new FinancePostingError(
+      "Bank deposit amount must be positive",
+      "INVALID_AMOUNT"
+    )
+  }
+
+  const lines: JournalLineCodeDraft[] = [
+    {
+      accountCode: DEFAULT_ACCOUNT_CODES.BANK,
+      debit: depositAmount,
+      credit: ZERO,
+      memo: "Bank — cash deposit from collector in transit",
+    },
+    {
+      accountCode: DEFAULT_ACCOUNT_CODES.CASH_IN_TRANSIT_COLLECTOR,
+      debit: ZERO,
+      credit: depositAmount,
+      memo: "Cash in transit — bank deposit",
+    },
+  ]
+
+  assertPosBankDepositJournalAccountCodes(lines.map((line) => line.accountCode))
+  return lines
+}
+
 export function buildJournalLineDraftsFromCodes(
   codeLines: JournalLineCodeDraft[],
   codeToId: Map<string, string>

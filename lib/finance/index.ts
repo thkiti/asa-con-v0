@@ -3,6 +3,7 @@ export {
   DEFAULT_ACCOUNT_CODES,
   buildJournalLineDraftsFromCodes,
   resolveAccountsForPosCollectorPickup,
+  resolveAccountsForPosBankDeposit,
   resolveAccountsForPosRefund,
   resolveAccountsForPosSale,
   resolveAccountsForStockDocument,
@@ -444,14 +445,19 @@ export type {
 } from "./journal-lineage"
 export {
   PSV_COLLECTOR_PICKUP_DOCUMENT_CODE,
+  PSV_BANK_DEPOSIT_DOCUMENT_CODE,
   PosSettlementError,
   PosSettlementErrorCodes,
   extractCollectorPickupCashAmount,
   postCollectorPickupSettlement,
+  postBankDepositSettlement,
   executeCollectorPickupSettlementPost,
+  executeBankDepositSettlementPost,
 } from "./pos-settlement"
 export type {
   PostCollectorPickupSettlementInput,
+  PostBankDepositSettlementInput,
   PosSettlementErrorCode,
   CollectorPickupSettlementPostResult,
+  BankDepositSettlementPostResult,
 } from "./pos-settlement"
