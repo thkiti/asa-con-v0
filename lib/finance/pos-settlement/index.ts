@@ -18,6 +18,13 @@ export {
   type CollectorPickupSettlementPostResult,
   type ExecuteCollectorPickupSettlementPostInput,
 } from "./collector-pickup-post-response"
+export {
+  getCollectorPickupSettlementStatus,
+  listCollectorPickupSettlementStatuses,
+  type CollectorPickupSettlementReconciliation,
+  type CollectorPickupSettlementStatus,
+  type ListCollectorPickupSettlementStatusesInput,
+} from "./collector-pickup-reconciliation"
 export { executeCollectorPickupSettlementPost } from "./execute-collector-pickup-post"
 export {
   mapCollectorPickupRouteError,

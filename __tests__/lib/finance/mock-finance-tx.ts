@@ -644,7 +644,18 @@ export function createFinanceMockTx(branchId = "branch-1") {
           id?: string
           refType_refId?: { refType: string; refId: string }
         }
-        include?: { journalEntry?: boolean }
+        include?: {
+          journalEntry?:
+            | boolean
+            | {
+                include?: {
+                  lines?: {
+                    orderBy?: { lineNo: "asc" | "desc" }
+                    include?: { glAccount?: { select: { code?: boolean; name?: boolean } } }
+                  }
+                }
+              }
+        }
         select?: { legalEntityCode?: boolean }
       }) => {
         let voucher: VoucherRow | null = null
@@ -666,7 +677,45 @@ export function createFinanceMockTx(branchId = "branch-1") {
         if (include?.journalEntry) {
           const journalEntry =
             state.journalEntries.find((j) => j.voucherId === voucher!.id) ?? null
-          return { ...voucher, journalEntry }
+          if (!journalEntry) {
+            return { ...voucher, journalEntry: null }
+          }
+
+          const journalInclude =
+            typeof include.journalEntry === "object"
+              ? include.journalEntry.include
+              : undefined
+
+          if (!journalInclude?.lines) {
+            return { ...voucher, journalEntry }
+          }
+
+          let lines = state.journalEntryLines.filter(
+            (line) => line.journalEntryId === journalEntry.id
+          )
+          if (journalInclude.lines.orderBy?.lineNo === "asc") {
+            lines = [...lines].sort((a, b) => a.lineNo - b.lineNo)
+          }
+
+          const mappedLines = lines.map((line) => {
+            const account = state.glAccounts.find((a) => a.id === line.glAccountId)!
+            const glAccount: { code: string; name?: string } = { code: account.code }
+            if (journalInclude.lines?.include?.glAccount?.select?.name) {
+              glAccount.name = account.name
+            }
+            return {
+              ...line,
+              glAccount,
+            }
+          })
+
+          return {
+            ...voucher,
+            journalEntry: {
+              ...journalEntry,
+              lines: mappedLines,
+            },
+          }
         }
         return voucher
       },

@@ -122,6 +122,12 @@ function buildPrimaryFinanceMenuHubs(): Record<
           "/finance/petty-cash-vouchers",
           "Small cash disbursements and replenishment (PCV)"
         ),
+        done(
+          "collector-pickup-settlement",
+          "Collector Pickup Settlement",
+          "/finance/pos-settlement/collector-pickup",
+          "Review COLLECT reports and post Dr 1031 / Cr 1001 settlement"
+        ),
       ],
     },
     dashboard: {
