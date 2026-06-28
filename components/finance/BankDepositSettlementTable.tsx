@@ -8,8 +8,12 @@ import { formatAmount } from "@/lib/finance-ui/format"
 import {
   financeTable,
   financeTableScroll,
+  financeTdSettlementAmount,
+  financeTdSettlementStatus,
   financeTh,
   financeThRight,
+  financeThSettlementAmount,
+  financeThSettlementStatus,
 } from "@/lib/finance-ui/finance-visual-classes"
 
 type BankDepositSettlementTableProps = {
@@ -46,8 +50,8 @@ export function BankDepositSettlementTable({
             <th className={financeTh}>Collect No</th>
             <th className={financeTh}>Branch</th>
             <th className={financeTh}>Mode</th>
-            <th className={financeThRight}>In Transit</th>
-            <th className={financeTh}>Status</th>
+            <th className={financeThSettlementAmount}>In Transit</th>
+            <th className={financeThSettlementStatus}>Status</th>
             <th className={financeThRight}>Variance</th>
             <th className={financeTh}>Pickup Voucher</th>
             <th className={financeTh}>Deposit Voucher</th>
@@ -65,10 +69,10 @@ export function BankDepositSettlementTable({
                 <td className="font-mono text-sm">{row.collectNo}</td>
                 <td className="text-sm">{formatBranch(row)}</td>
                 <td className="text-sm">{row.mode ?? "—"}</td>
-                <td className="text-right tabular-nums text-sm">
+                <td className={financeTdSettlementAmount}>
                   {formatAmount(row.inTransitAmount)}
                 </td>
-                <td>
+                <td className={financeTdSettlementStatus}>
                   <BankDepositSettlementStatusBadge status={row.status} />
                 </td>
                 <td className="text-right tabular-nums text-sm">

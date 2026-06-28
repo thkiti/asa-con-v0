@@ -647,6 +647,35 @@ span.finance-account .finance-account-name-part {
   color-scheme: dark;
 }
 
+/* Finance settlement — native date picker readable in light and dark themes */
+.finance-settlement-date-input {
+  color-scheme: light;
+}
+
+[data-theme="dark"] .finance-settlement-date-input {
+  color-scheme: dark;
+}
+
+.finance-settlement-date-input:hover {
+  border-color: var(--border-strong);
+}
+
+.finance-settlement-date-input:focus-visible {
+  outline: 2px solid var(--link-primary);
+  outline-offset: 1px;
+  border-color: var(--link-primary);
+}
+
+.finance-settlement-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+[data-theme="dark"] .finance-settlement-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.95;
+}
+
 @keyframes pos-evidence-pending-blink {
   0%,
   100% {

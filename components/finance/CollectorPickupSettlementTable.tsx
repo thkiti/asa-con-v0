@@ -8,8 +8,12 @@ import { formatAmount } from "@/lib/finance-ui/format"
 import {
   financeTable,
   financeTableScroll,
+  financeTdSettlementAmount,
+  financeTdSettlementStatus,
   financeTh,
   financeThRight,
+  financeThSettlementAmount,
+  financeThSettlementStatus,
 } from "@/lib/finance-ui/finance-visual-classes"
 
 type CollectorPickupSettlementTableProps = {
@@ -46,8 +50,8 @@ export function CollectorPickupSettlementTable({
             <th className={financeTh}>Collect No</th>
             <th className={financeTh}>Branch</th>
             <th className={financeTh}>Mode</th>
-            <th className={financeThRight}>Expected</th>
-            <th className={financeTh}>Status</th>
+            <th className={financeThSettlementAmount}>Expected</th>
+            <th className={financeThSettlementStatus}>Status</th>
             <th className={financeThRight}>Variance</th>
             <th className={financeTh}>Voucher</th>
             <th className={financeTh}>Action</th>
@@ -64,10 +68,10 @@ export function CollectorPickupSettlementTable({
                 <td className="font-mono text-sm">{row.collectNo}</td>
                 <td className="text-sm">{formatBranch(row)}</td>
                 <td className="text-sm">{row.mode ?? "—"}</td>
-                <td className="text-right tabular-nums text-sm">
+                <td className={financeTdSettlementAmount}>
                   {formatAmount(row.expectedAmount)}
                 </td>
-                <td>
+                <td className={financeTdSettlementStatus}>
                   <CollectorPickupSettlementStatusBadge status={row.status} />
                 </td>
                 <td className="text-right tabular-nums text-sm">

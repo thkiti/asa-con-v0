@@ -20,6 +20,12 @@ export const financeTableScroll = "finance-table-scroll overflow-x-auto"
 export const financeTh = "px-2 py-2"
 export const financeThRight = `${numericTh} px-2 py-2`
 export const financeTd = "px-2 py-1"
+/** Amount column immediately before a status badge — extra right padding for separation */
+export const financeThSettlementAmount = `${numericTh} px-2 py-2 pr-8`
+export const financeTdSettlementAmount = `${numericCell} px-2 py-1 pr-8 tabular-nums text-sm`
+/** Status column immediately after a numeric amount column */
+export const financeThSettlementStatus = "px-2 py-2 pl-4"
+export const financeTdSettlementStatus = "px-2 py-1 pl-4"
 /** Amount column cell — apply to td/th, not inner spans */
 export const financeTdRight = `${numericCell} px-2 py-1`
 export const financeAmountCell = financeTdRight

@@ -1,12 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { FinanceSettlementDateInput } from "@/components/finance/FinanceSettlementDateInput"
 import {
   fetchPosSettlementBranches,
   formatPosSettlementBranchLabel,
   type PosSettlementBranchOption,
 } from "@/lib/finance-ui/pos-settlement-branches"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
+import {
+  themeBtnPrimary,
+  themeLabel,
+  themeSelect,
+} from "@/lib/theme/theme-classes"
 
 type PosSettlementFilterBarProps = {
   values: FinanceFilterValues
@@ -44,8 +50,8 @@ export function PosSettlementFilterBar({
         onApply()
       }}
     >
-      <label className="flex flex-col gap-1 text-sm text-zinc-600">
-        Branch
+      <label className="flex flex-col gap-1 text-sm">
+        <span className={themeLabel}>Branch</span>
         <select
           data-testid="pos-settlement-branch-select"
           value={values.branchId ?? ""}
@@ -55,7 +61,7 @@ export function PosSettlementFilterBar({
               branchId: event.target.value || undefined,
             })
           }
-          className="min-w-[14rem] rounded border border-zinc-300 bg-white px-3 py-2 text-zinc-900"
+          className={`${themeSelect} min-w-[14rem] px-3 py-2`}
         >
           <option value="">All SH branches</option>
           {branches.map((branch) => (
@@ -68,32 +74,25 @@ export function PosSettlementFilterBar({
           <span className="text-xs text-red-600">{branchesError}</span>
         ) : null}
       </label>
-      <label className="flex flex-col gap-1 text-sm text-zinc-600">
-        From
-        <input
-          type="date"
-          value={values.from ?? ""}
-          onChange={(event) =>
-            onChange({ ...values, from: event.target.value })
-          }
-          className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-zinc-600">
-        To
-        <input
-          type="date"
-          value={values.to ?? ""}
-          onChange={(event) =>
-            onChange({ ...values, to: event.target.value })
-          }
-          className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
-        />
-      </label>
+      <FinanceSettlementDateInput
+        label="From"
+        value={values.from ?? ""}
+        onChange={(from) => onChange({ ...values, from })}
+        data-testid="pos-settlement-date-from"
+        required
+      />
+      <FinanceSettlementDateInput
+        label="To"
+        value={values.to ?? ""}
+        onChange={(to) => onChange({ ...values, to })}
+        data-testid="pos-settlement-date-to"
+        required
+      />
       <button
         type="submit"
         disabled={loading}
-        className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className={themeBtnPrimary}
+        data-testid="pos-settlement-apply"
       >
         {loading ? "Loading…" : "Apply"}
       </button>
