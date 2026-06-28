@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { BankDepositSettlementTable } from "@/components/finance/BankDepositSettlementTable"
+import {
+  PayInConfirmModal,
+  type PayInConfirmModalRow,
+} from "@/components/finance/PayInConfirmModal"
+import { PayInSlipPreviewModal } from "@/components/finance/PayInSlipPreviewModal"
 import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
   fetchBankDepositSettlementStatusList,
-  formatBankDepositPostError,
-  postBankDepositSettlement,
   type BankDepositSettlementReconciliation,
 } from "@/lib/finance-ui/bank-deposit-settlement"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
@@ -21,14 +24,34 @@ function defaultDateRange(): FinanceFilterValues {
   return { from: toYmd(start), to: toYmd(end) }
 }
 
+function toPayInModalRow(
+  row: BankDepositSettlementReconciliation
+): PayInConfirmModalRow {
+  const code = row.branchCode?.trim()
+  const name = row.branchName?.trim()
+  const branchLabel =
+    code && name ? `${code} — ${name}` : code ?? name ?? row.branchId
+
+  return {
+    collectorReportId: row.collectorReportId,
+    collectNo: row.collectNo,
+    branchLabel,
+    inTransitAmount: row.inTransitAmount,
+    payInEvidenceStatus: row.payInEvidenceStatus,
+    payInEvidenceUrl: row.payInEvidenceUrl,
+  }
+}
+
 export function BankDepositSettlementPage() {
   const [filter, setFilter] = useState<FinanceFilterValues>(defaultDateRange)
   const [items, setItems] = useState<BankDepositSettlementReconciliation[]>([])
   const [loading, setLoading] = useState(false)
-  const [postingReportId, setPostingReportId] = useState<string | null>(null)
+  const [payInReportId, setPayInReportId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [postError, setPostError] = useState<string | null>(null)
   const [entityBlocked, setEntityBlocked] = useState(false)
+  const [payInRow, setPayInRow] = useState<PayInConfirmModalRow | null>(null)
+  const [previewRow, setPreviewRow] =
+    useState<BankDepositSettlementReconciliation | null>(null)
 
   const load = useCallback(async (values: FinanceFilterValues) => {
     if (!values.from?.trim() || !values.to?.trim()) {
@@ -61,16 +84,16 @@ export function BankDepositSettlementPage() {
     await load(filter)
   }
 
-  async function handlePost(collectorReportId: string) {
-    setPostingReportId(collectorReportId)
-    setPostError(null)
+  function handleOpenPayIn(row: BankDepositSettlementReconciliation) {
+    setPayInRow(toPayInModalRow(row))
+  }
+
+  async function handlePayInConfirmed() {
+    setPayInReportId(payInRow?.collectorReportId ?? null)
     try {
-      await postBankDepositSettlement(collectorReportId)
       await load(filter)
-    } catch (err) {
-      setPostError(formatBankDepositPostError(err))
     } finally {
-      setPostingReportId(null)
+      setPayInReportId(null)
     }
   }
 
@@ -99,23 +122,29 @@ export function BankDepositSettlementPage() {
         </p>
       ) : null}
 
-      {postError ? (
-        <p
-          className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-          data-testid="bank-deposit-post-error"
-        >
-          {postError}
-        </p>
-      ) : null}
-
       {loading && items.length === 0 ? (
         <p className="mt-4 text-zinc-600">Loading bank deposit statuses…</p>
       ) : null}
 
       <BankDepositSettlementTable
         items={items}
-        postingReportId={postingReportId}
-        onPost={entityBlocked ? undefined : handlePost}
+        payInReportId={payInReportId}
+        onPayIn={entityBlocked ? undefined : handleOpenPayIn}
+        onPreviewPayInSlip={setPreviewRow}
+      />
+
+      <PayInConfirmModal
+        row={payInRow}
+        open={payInRow != null}
+        onClose={() => setPayInRow(null)}
+        onConfirmed={handlePayInConfirmed}
+      />
+
+      <PayInSlipPreviewModal
+        open={previewRow != null}
+        imageUrl={previewRow?.payInEvidenceUrl ?? null}
+        collectNo={previewRow?.collectNo}
+        onClose={() => setPreviewRow(null)}
       />
     </div>
   )

@@ -1,4 +1,6 @@
-import type { BankDepositSettlementStatus } from "@/lib/finance-ui/bank-deposit-settlement"
+"use client"
+
+import type { BankDepositSettlementStatus } from "@/lib/finance-ui/pos-settlement-status-types"
 
 const toneClasses: Record<BankDepositSettlementStatus, string> = {
   NOT_POSTED: "bg-zinc-100 text-zinc-800",
@@ -19,7 +21,7 @@ export function BankDepositSettlementStatusBadge({
     <span
       className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${toneClasses[status]}`}
     >
-      {status.replaceAll("_", " ")}
+      {status.replace(/_/g, " ")}
     </span>
   )
 }

@@ -414,6 +414,31 @@ GET /api/finance/pos-settlement/bank-deposit/status-list?from=YYYY-MM-DD&to=YYYY
 | `INVALID_SOURCE` | Returns **200** with status in body (not thrown) |
 | `status-list` | Date-range query on `CollectorReport.createdAt`; no pagination cap yet |
 
+**Not in scope:** Full PSV DRAFT → SUBMITTED → CONFIRMED → POSTED workflow; direct post only.
+
+### P2.4C — PAY-IN slip evidence (implemented)
+
+| Field | Value |
+|-------|-------|
+| Business rule | Bank PAY-IN slip image is **required evidence** before `PSV-BANK-DEP` posting |
+| Storage | Vercel Blob at `finance/pos-settlement/pay-in/{collectorReportId}.jpg` |
+| Metadata | `PosPayInEvidence` — collectorReportId, collectNo, blobUrl, uploadedAt, uploadedByStaffId, bankDepositDate, bankAccountCode (default `1021`), bankDepositVoucherId |
+| Upload API | `POST /api/finance/pos-settlement/pay-in/evidence/upload` (multipart: `file`, `collectorReportId`) |
+| Confirm API | `POST /api/finance/pos-settlement/pay-in/confirm` — body: `{ collectorReportId, bankDepositDate, bankAccountCode? }` |
+| Post gate | `postBankDepositSettlement` rejects with `PAY_IN_SLIP_REQUIRED` (409) when slip not uploaded |
+| Legacy | Deposits posted before evidence feature show **Missing slip** warning in UI; no crash |
+
+**Collector Pickup Settlement page** is the primary **cash movement review + PAY-IN** workflow:
+
+1. Post collector pickup (`PSV-COL-PICK`) when pickup status is `NOT_POSTED`.
+2. Upload PAY-IN slip and confirm via **PAY-IN** modal (posts `PSV-BANK-DEP` Dr `1021` / Cr `1031`).
+3. Table columns: Collect No, Branch, Expected, Pickup Status, Pickup Voucher, PAY-IN Slip, Deposit Status, Bank Voucher, Action.
+
+**Bank Deposit Settlement page** remains compatible — rows posted via PAY-IN from Collector Pickup appear as `POSTED` with slip indicator viewable.
+
+**Domain:** `lib/finance/pos-settlement/pay-in-evidence*.ts`, `execute-pay-in-confirm.ts`  
+**UI:** `PayInConfirmModal`, `PayInSlipIndicator`, `PayInSlipPreviewModal`
+
 ### P2.4B — Bank Deposit minimal finance UI (implemented)
 
 | Item | Detail |
@@ -564,6 +589,7 @@ Variance policy: **explain first** — operational fix (missing sale/refund) or 
 | Bank deposit reconciliation library | **Done (P2.4)** |
 | Bank deposit status APIs | **Done (P2.4A)** |
 | Bank deposit minimal finance UI | **Done (P2.4B)** |
+| PAY-IN slip evidence + confirm workflow | **Done (P2.4C)** |
 | Card / transfer settlement | Not started |
 | Mall handover + settlement | Not started |
 | READ Z day-close record + aging report | Not started |
@@ -619,10 +645,11 @@ Each Stage 1 phase keeps **same-transaction** posting in checkout ([13_FINANCE_O
 | 4 | Reversed/cancelled vouchers not specially handled in collector settlement reconciliation |
 | 5 | `status-list` uses small date-range queries with no pagination cap |
 | 6 | Card/transfer/other clearing accounts `1110`/`1120`/`1190` need verification against production legacy CoA |
-| 7 | Bank deposit settlement `1031` → `1021` implemented (direct post only) |
+| 7 | Bank deposit settlement `1031` → `1021` implemented (PAY-IN slip required for new posts) |
 | 8 | Mall cash handover/settlement not implemented |
 | 9 | Card settlement and transfer match not implemented |
 | 10 | Auto-post collector pickup on persist vs finance confirm — **finance posts separately** (collector slip is operational) |
+| 11 | Legacy bank deposits without PAY-IN slip show **Missing slip** warning only (no repair post from normal UI) |
 
 ---
 
@@ -651,6 +678,7 @@ Each Stage 1 phase keeps **same-transaction** posting in checkout ([13_FINANCE_O
 | Collector pickup POST | `lib/finance/pos-settlement/post-collector-pickup.ts` |
 | Collector pickup reconciliation | `lib/finance/pos-settlement/collector-pickup-reconciliation.ts` |
 | Bank deposit POST | `lib/finance/pos-settlement/post-bank-deposit.ts` |
+| PAY-IN evidence | `lib/finance/pos-settlement/pay-in-evidence.ts`, `pay-in-evidence-upload.ts`, `execute-pay-in-confirm.ts` |
 | Bank deposit reconciliation | `lib/finance/pos-settlement/bank-deposit-reconciliation.ts` |
 | Post API | `app/api/finance/pos-settlement/collector-pickup/post/route.ts`, `.../bank-deposit/post/route.ts` |
 | Status APIs | `app/api/finance/pos-settlement/collector-pickup/status/route.ts`, `.../status-list/route.ts`, `.../bank-deposit/status/route.ts`, `.../status-list/route.ts` |

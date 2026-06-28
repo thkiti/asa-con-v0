@@ -47,6 +47,23 @@ export {
 } from "./bank-deposit-reconciliation"
 export { executeCollectorPickupSettlementPost } from "./execute-collector-pickup-post"
 export { executeBankDepositSettlementPost } from "./execute-bank-deposit-post"
+export { executePayInConfirm, type ExecutePayInConfirmInput } from "./execute-pay-in-confirm"
+export {
+  buildPayInEvidenceSummary,
+  ensurePayInEvidenceRow,
+  getPayInEvidenceByCollectorReportId,
+  isPayInEvidenceUploaded,
+  assertPayInEvidenceUploadedForPosting,
+  DEFAULT_BANK_ACCOUNT_CODE,
+  type PayInEvidenceRecord,
+  type PayInEvidenceSummary,
+} from "./pay-in-evidence"
+export {
+  uploadPayInEvidenceForCollectorReport,
+  type UploadPayInEvidenceInput,
+  type UploadPayInEvidenceResult,
+} from "./pay-in-evidence-upload"
+export { buildPayInSlipBlobPath } from "./pay-in-evidence-blob"
 export {
   mapCollectorPickupRouteError,
   collectorPickupRouteErrorMessage,

@@ -1,8 +1,9 @@
 import { BankDepositSettlementStatusBadge } from "@/components/finance/BankDepositSettlementStatusBadge"
+import { PayInSlipIndicator } from "@/components/finance/PayInSlipIndicator"
 import type { BankDepositSettlementReconciliation } from "@/lib/finance-ui/bank-deposit-settlement"
 import {
   bankDepositSettlementActionHint,
-  shouldShowBankDepositPostButton,
+  shouldShowBankDepositPayInButton,
 } from "@/lib/finance-ui/bank-deposit-settlement-display"
 import { formatAmount } from "@/lib/finance-ui/format"
 import {
@@ -18,8 +19,9 @@ import {
 
 type BankDepositSettlementTableProps = {
   items: BankDepositSettlementReconciliation[]
-  postingReportId?: string | null
-  onPost?: (collectorReportId: string) => void
+  payInReportId?: string | null
+  onPayIn?: (row: BankDepositSettlementReconciliation) => void
+  onPreviewPayInSlip?: (row: BankDepositSettlementReconciliation) => void
 }
 
 function formatBranch(row: BankDepositSettlementReconciliation): string {
@@ -31,8 +33,9 @@ function formatBranch(row: BankDepositSettlementReconciliation): string {
 
 export function BankDepositSettlementTable({
   items,
-  postingReportId = null,
-  onPost,
+  payInReportId = null,
+  onPayIn,
+  onPreviewPayInSlip,
 }: BankDepositSettlementTableProps) {
   if (items.length === 0) {
     return (
@@ -51,6 +54,7 @@ export function BankDepositSettlementTable({
             <th className={financeTh}>Branch</th>
             <th className={financeTh}>Mode</th>
             <th className={financeThSettlementAmount}>In Transit</th>
+            <th className={financeTh}>PAY-IN Slip</th>
             <th className={financeThSettlementStatus}>Status</th>
             <th className={financeThRight}>Variance</th>
             <th className={financeTh}>Pickup Voucher</th>
@@ -60,9 +64,12 @@ export function BankDepositSettlementTable({
         </thead>
         <tbody>
           {items.map((row) => {
-            const showPost = shouldShowBankDepositPostButton(row.status)
-            const isPosting = postingReportId === row.collectorReportId
-            const actionHint = bankDepositSettlementActionHint(row.status)
+            const showPayIn = shouldShowBankDepositPayInButton(row.status)
+            const isPayInBusy = payInReportId === row.collectorReportId
+            const actionHint = bankDepositSettlementActionHint({
+              status: row.status,
+              payInSlipMissingWarning: row.payInSlipMissingWarning,
+            })
 
             return (
               <tr key={row.collectorReportId}>
@@ -71,6 +78,19 @@ export function BankDepositSettlementTable({
                 <td className="text-sm">{row.mode ?? "—"}</td>
                 <td className={financeTdSettlementAmount}>
                   {formatAmount(row.inTransitAmount)}
+                </td>
+                <td className="text-center">
+                  <PayInSlipIndicator
+                    status={row.payInEvidenceStatus}
+                    missingWarning={row.payInSlipMissingWarning}
+                    testId={`pay-in-slip-${row.collectorReportId}`}
+                    onUpload={showPayIn && onPayIn ? () => onPayIn(row) : undefined}
+                    onPreview={
+                      row.payInEvidenceUrl && onPreviewPayInSlip
+                        ? () => onPreviewPayInSlip(row)
+                        : undefined
+                    }
+                  />
                 </td>
                 <td className={financeTdSettlementStatus}>
                   <BankDepositSettlementStatusBadge status={row.status} />
@@ -83,18 +103,27 @@ export function BankDepositSettlementTable({
                 </td>
                 <td className="font-mono text-sm">{row.voucherNo ?? "—"}</td>
                 <td>
-                  {showPost && onPost ? (
+                  {showPayIn && onPayIn ? (
                     <button
                       type="button"
-                      data-testid={`bank-deposit-post-${row.collectorReportId}`}
-                      disabled={isPosting}
-                      onClick={() => onPost(row.collectorReportId)}
+                      data-testid={`pay-in-open-${row.collectorReportId}`}
+                      disabled={isPayInBusy}
+                      onClick={() => onPayIn(row)}
                       className="rounded bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
                     >
-                      {isPosting ? "Posting…" : "Post Deposit"}
+                      {isPayInBusy ? "Processing…" : "PAY-IN"}
                     </button>
                   ) : actionHint ? (
-                    <span className="text-xs text-zinc-600">{actionHint}</span>
+                    <span
+                      className={[
+                        "text-xs",
+                        row.payInSlipMissingWarning
+                          ? "font-medium text-amber-700"
+                          : "text-zinc-600",
+                      ].join(" ")}
+                    >
+                      {actionHint}
+                    </span>
                   ) : (
                     <span className="text-xs text-zinc-400">—</span>
                   )}

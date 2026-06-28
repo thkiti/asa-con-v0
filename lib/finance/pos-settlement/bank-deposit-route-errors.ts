@@ -21,7 +21,8 @@ function statusForPosSettlementCode(code: string): number {
   if (code === PosSettlementErrorCodes.FORBIDDEN_LEGAL_ENTITY) return 403
   if (
     code === PosSettlementErrorCodes.DUPLICATE_SOURCE ||
-    code === PosSettlementErrorCodes.COLLECTOR_PICKUP_NOT_POSTED
+    code === PosSettlementErrorCodes.COLLECTOR_PICKUP_NOT_POSTED ||
+    code === PosSettlementErrorCodes.PAY_IN_SLIP_REQUIRED
   ) {
     return 409
   }

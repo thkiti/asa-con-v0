@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { CollectorPickupSettlementTable } from "@/components/finance/CollectorPickupSettlementTable"
+import {
+  PayInConfirmModal,
+  type PayInConfirmModalRow,
+} from "@/components/finance/PayInConfirmModal"
+import { PayInSlipPreviewModal } from "@/components/finance/PayInSlipPreviewModal"
 import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
   fetchCollectorPickupSettlementStatusList,
@@ -21,14 +26,36 @@ function defaultDateRange(): FinanceFilterValues {
   return { from: toYmd(start), to: toYmd(end) }
 }
 
+function toPayInModalRow(
+  row: CollectorPickupSettlementReconciliation
+): PayInConfirmModalRow {
+  const code = row.branchCode?.trim()
+  const name = row.branchName?.trim()
+  const branchLabel =
+    code && name ? `${code} — ${name}` : code ?? name ?? row.branchId
+
+  return {
+    collectorReportId: row.collectorReportId,
+    collectNo: row.collectNo,
+    branchLabel,
+    inTransitAmount: row.inTransitAmount,
+    payInEvidenceStatus: row.payInEvidenceStatus,
+    payInEvidenceUrl: row.payInEvidenceUrl,
+  }
+}
+
 export function CollectorPickupSettlementPage() {
   const [filter, setFilter] = useState<FinanceFilterValues>(defaultDateRange)
   const [items, setItems] = useState<CollectorPickupSettlementReconciliation[]>([])
   const [loading, setLoading] = useState(false)
   const [postingReportId, setPostingReportId] = useState<string | null>(null)
+  const [payInReportId, setPayInReportId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [postError, setPostError] = useState<string | null>(null)
   const [entityBlocked, setEntityBlocked] = useState(false)
+  const [payInRow, setPayInRow] = useState<PayInConfirmModalRow | null>(null)
+  const [previewRow, setPreviewRow] =
+    useState<CollectorPickupSettlementReconciliation | null>(null)
 
   const load = useCallback(async (values: FinanceFilterValues) => {
     if (!values.from?.trim() || !values.to?.trim()) {
@@ -74,6 +101,19 @@ export function CollectorPickupSettlementPage() {
     }
   }
 
+  function handleOpenPayIn(row: CollectorPickupSettlementReconciliation) {
+    setPayInRow(toPayInModalRow(row))
+  }
+
+  async function handlePayInConfirmed() {
+    setPayInReportId(payInRow?.collectorReportId ?? null)
+    try {
+      await load(filter)
+    } finally {
+      setPayInReportId(null)
+    }
+  }
+
   return (
     <div>
       {entityBlocked ? (
@@ -115,7 +155,24 @@ export function CollectorPickupSettlementPage() {
       <CollectorPickupSettlementTable
         items={items}
         postingReportId={postingReportId}
+        payInReportId={payInReportId}
         onPost={entityBlocked ? undefined : handlePost}
+        onPayIn={entityBlocked ? undefined : handleOpenPayIn}
+        onPreviewPayInSlip={setPreviewRow}
+      />
+
+      <PayInConfirmModal
+        row={payInRow}
+        open={payInRow != null}
+        onClose={() => setPayInRow(null)}
+        onConfirmed={handlePayInConfirmed}
+      />
+
+      <PayInSlipPreviewModal
+        open={previewRow != null}
+        imageUrl={previewRow?.payInEvidenceUrl ?? null}
+        collectNo={previewRow?.collectNo}
+        onClose={() => setPreviewRow(null)}
       />
     </div>
   )

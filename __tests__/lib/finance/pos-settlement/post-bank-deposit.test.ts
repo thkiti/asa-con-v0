@@ -16,6 +16,10 @@ import {
 } from "@/lib/finance/pos-settlement"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import { createFinanceMockTx } from "../mock-finance-tx"
+import {
+  extendFinanceTxWithCollectorReportAndPayInEvidence,
+  seedUploadedPayInEvidence,
+} from "./pay-in-evidence-test-helpers"
 
 function collectReport(overrides: Partial<ReadReportPayload> = {}): ReadReportPayload {
   return {
@@ -88,35 +92,12 @@ function seedCollectorReport(
 function extendFinanceTxWithCollectorReport(
   base: ReturnType<typeof createFinanceMockTx>
 ) {
-  const { tx, state } = base
-  state.collectorReports = state.collectorReports ?? []
-
-  const extendedTx = {
-    ...tx,
-    collectorReport: {
-      findUnique: async ({
-        where,
-        select,
-      }: {
-        where: { id: string }
-        select?: Record<string, boolean>
-      }) => {
-        const row = state.collectorReports!.find((r) => r.id === where.id) ?? null
-        if (!row || !select) return row
-        const result: Record<string, unknown> = {}
-        for (const key of Object.keys(select)) {
-          if (select[key]) result[key] = row[key as keyof typeof row]
-        }
-        return result
-      },
-    },
-  }
-
-  return { tx: extendedTx, state }
+  return extendFinanceTxWithCollectorReportAndPayInEvidence(base)
 }
 
 async function seedCollectorPickupPosted(
   tx: ReturnType<typeof extendFinanceTxWithCollectorReport>["tx"],
+  state: ReturnType<typeof extendFinanceTxWithCollectorReport>["state"],
   collectorReportId: string,
   createdAt: Date
 ) {
@@ -124,6 +105,12 @@ async function seedCollectorPickupPosted(
   await postCollectorPickupSettlement({
     tx: tx as never,
     collectorReportId,
+  })
+  const report = state.collectorReports!.find((row) => row.id === collectorReportId)!
+  seedUploadedPayInEvidence(state, {
+    id: report.id,
+    collectNo: report.collectNo,
+    branchId: report.branchId,
   })
 }
 
@@ -153,7 +140,7 @@ describe("postBankDepositSettlement", () => {
     const { tx, state } = extendFinanceTxWithCollectorReport(base)
     const createdAt = new Date("2026-06-26T10:00:00.000Z")
     seedCollectorReport(state, { createdAt })
-    await seedCollectorPickupPosted(tx, "collector-report-1", createdAt)
+    await seedCollectorPickupPosted(tx, state, "collector-report-1", createdAt)
 
     const result = await postBankDepositSettlement({
       tx: tx as never,
@@ -218,7 +205,7 @@ describe("postBankDepositSettlement", () => {
     const { tx, state } = extendFinanceTxWithCollectorReport(base)
     const createdAt = new Date("2026-06-26T10:00:00.000Z")
     seedCollectorReport(state, { createdAt })
-    await seedCollectorPickupPosted(tx, "collector-report-1", createdAt)
+    await seedCollectorPickupPosted(tx, state, "collector-report-1", createdAt)
 
     await postBankDepositSettlement({
       tx: tx as never,
@@ -246,7 +233,7 @@ describe("postBankDepositSettlement", () => {
     const { tx, state } = extendFinanceTxWithCollectorReport(base)
     const createdAt = new Date("2026-06-26T10:00:00.000Z")
     seedCollectorReport(state, { createdAt })
-    await seedCollectorPickupPosted(tx, "collector-report-1", createdAt)
+    await seedCollectorPickupPosted(tx, state, "collector-report-1", createdAt)
 
     await postBankDepositSettlement({
       tx: tx as never,
@@ -277,6 +264,11 @@ describe("postBankDepositSettlement", () => {
       tx: tx as never,
       collectorReportId: "collector-report-1",
     })
+    seedUploadedPayInEvidence(state, {
+      id: "collector-report-1",
+      collectNo: "COL-SH001-202606-0001",
+      branchId: "branch-1",
+    })
 
     state.accountingPeriods[0]!.status = AccountingPeriodStatus.CLOSED
 
@@ -299,7 +291,7 @@ describe("postBankDepositSettlement", () => {
     const { tx, state } = extendFinanceTxWithCollectorReport(base)
     const createdAt = new Date("2026-06-26T10:00:00.000Z")
     seedCollectorReport(state, { createdAt })
-    await seedCollectorPickupPosted(tx, "collector-report-1", createdAt)
+    await seedCollectorPickupPosted(tx, state, "collector-report-1", createdAt)
 
     await expect(
       postBankDepositSettlement({
@@ -309,6 +301,27 @@ describe("postBankDepositSettlement", () => {
       })
     ).rejects.toMatchObject({
       code: PosSettlementErrorCodes.FORBIDDEN_LEGAL_ENTITY,
+    })
+  })
+
+  it("rejects bank deposit when PAY-IN slip evidence is missing", async () => {
+    const base = createFinanceMockTx()
+    const { tx, state } = extendFinanceTxWithCollectorReport(base)
+    const createdAt = new Date("2026-06-26T10:00:00.000Z")
+    await seedOpenPeriod(tx, createdAt)
+    seedCollectorReport(state, { createdAt })
+    await postCollectorPickupSettlement({
+      tx: tx as never,
+      collectorReportId: "collector-report-1",
+    })
+
+    await expect(
+      postBankDepositSettlement({
+        tx: tx as never,
+        collectorReportId: "collector-report-1",
+      })
+    ).rejects.toMatchObject({
+      code: PosSettlementErrorCodes.PAY_IN_SLIP_REQUIRED,
     })
   })
 

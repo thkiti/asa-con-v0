@@ -9,6 +9,11 @@ import {
   parseCollectorReportPayload,
 } from "./collector-report-source"
 import {
+  buildPayInEvidenceSummary,
+  getPayInEvidenceByCollectorReportId,
+  type PayInEvidenceSummary,
+} from "./pay-in-evidence"
+import {
   PosSettlementError,
   PosSettlementErrorCodes,
 } from "./pos-settlement-errors"
@@ -37,7 +42,7 @@ export type BankDepositSettlementReconciliation = {
   postedAmountEquivalent: string
   variance: string
   status: BankDepositSettlementStatus
-}
+} & PayInEvidenceSummary
 
 export type ListBankDepositSettlementStatusesInput = {
   branchId?: string
@@ -47,7 +52,7 @@ export type ListBankDepositSettlementStatusesInput = {
 
 type BankDepositReconciliationDb = Pick<
   PrismaClient,
-  "collectorReport" | "voucher"
+  "collectorReport" | "voucher" | "posPayInEvidence"
 >
 
 type SettlementJournalLine = {
@@ -216,7 +221,8 @@ function buildBankDepositSettlementReconciliation(
   source: CollectorReportRow,
   report: ReadReportPayload | null,
   pickupVoucher: LinkedSettlementVoucher,
-  depositVoucher: LinkedSettlementVoucher
+  depositVoucher: LinkedSettlementVoucher,
+  evidenceSummary: PayInEvidenceSummary
 ): BankDepositSettlementReconciliation {
   const { mode, inTransitAmount, isValidSource } = deriveInTransitAmount(report)
   const pickupPosted =
@@ -261,6 +267,7 @@ function buildBankDepositSettlementReconciliation(
     postedAmountEquivalent: statusFields.postedAmountEquivalent,
     variance: statusFields.variance,
     status: statusFields.status,
+    ...evidenceSummary,
   }
 }
 
@@ -334,12 +341,21 @@ export async function getBankDepositSettlementStatus(
     FINANCE_REF_TYPES.POS_SETTLEMENT_BANK_DEPOSIT,
     source.id
   )
+  const evidence = await getPayInEvidenceByCollectorReportId(db, source.id)
+  const depositPosted =
+    depositVoucher?.journalEntry != null &&
+    depositVoucher.journalEntry.lines.length > 0
+  const evidenceSummary = buildPayInEvidenceSummary({
+    evidence,
+    depositPosted,
+  })
 
   return buildBankDepositSettlementReconciliation(
     source,
     report,
     pickupVoucher,
-    depositVoucher
+    depositVoucher,
+    evidenceSummary
   )
 }
 

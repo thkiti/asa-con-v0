@@ -86,6 +86,9 @@ export function formatBankDepositPostError(err: unknown): string {
     if (err.code === "COLLECTOR_PICKUP_NOT_POSTED") {
       return "Collector pickup settlement must be posted before bank deposit."
     }
+    if (err.code === "PAY_IN_SLIP_REQUIRED") {
+      return "Upload the PAY-IN slip before posting bank deposit."
+    }
     if (err.code === "PERIOD_CLOSED" || err.code === "PERIOD_NOT_OPENED") {
       return "Accounting period is closed — cannot post settlement."
     }

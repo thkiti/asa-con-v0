@@ -11,6 +11,7 @@ import {
 } from "@/lib/finance/pos-settlement"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import { createFinanceMockTx } from "../mock-finance-tx"
+import { extendFinanceTxWithCollectorReportAndPayInEvidence } from "./pay-in-evidence-test-helpers"
 
 function collectReport(overrides: Partial<ReadReportPayload> = {}): ReadReportPayload {
   return {
@@ -89,72 +90,7 @@ function seedCollectorReport(
 function extendFinanceTxWithCollectorReport(
   base: ReturnType<typeof createFinanceMockTx>
 ) {
-  const { tx, state } = base
-  state.collectorReports = state.collectorReports ?? []
-
-  const extendedTx = {
-    ...tx,
-    collectorReport: {
-      findUnique: async ({
-        where,
-        select,
-      }: {
-        where: { id: string }
-        select?: Record<string, boolean | object>
-      }) => {
-        const row = state.collectorReports!.find((r) => r.id === where.id) ?? null
-        if (!row || !select) return row
-
-        const result: Record<string, unknown> = {}
-        for (const [key, value] of Object.entries(select)) {
-          if (!value) continue
-          if (key === "branch") {
-            result.branch = row.branch ?? null
-          } else {
-            result[key] = row[key as keyof typeof row]
-          }
-        }
-        return result
-      },
-      findMany: async ({
-        where,
-        orderBy,
-        select,
-      }: {
-        where?: {
-          branchId?: string
-          createdAt?: { gte?: Date; lt?: Date }
-        }
-        orderBy?: { createdAt?: "asc" | "desc" }
-        select?: { id?: boolean; reportJson?: boolean }
-      }) => {
-        let rows = [...state.collectorReports!]
-        if (where?.branchId) {
-          rows = rows.filter((row) => row.branchId === where.branchId)
-        }
-        if (where?.createdAt?.gte) {
-          rows = rows.filter((row) => row.createdAt >= where.createdAt!.gte!)
-        }
-        if (where?.createdAt?.lt) {
-          rows = rows.filter((row) => row.createdAt < where.createdAt!.lt!)
-        }
-        if (orderBy?.createdAt === "desc") {
-          rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-        }
-        if (select) {
-          return rows.map((row) => {
-            const result: Record<string, unknown> = {}
-            if (select.id) result.id = row.id
-            if (select.reportJson) result.reportJson = row.reportJson
-            return result
-          })
-        }
-        return rows
-      },
-    },
-  }
-
-  return { tx: extendedTx, state }
+  return extendFinanceTxWithCollectorReportAndPayInEvidence(base)
 }
 
 function accountId(state: ReturnType<typeof createFinanceMockTx>["state"], code: string) {

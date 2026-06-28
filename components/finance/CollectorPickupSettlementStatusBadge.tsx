@@ -1,4 +1,4 @@
-import type { CollectorPickupSettlementStatus } from "@/lib/finance-ui/collector-pickup-settlement"
+import type { CollectorPickupSettlementStatus } from "@/lib/finance-ui/pos-settlement-status-types"
 
 const toneClasses: Record<CollectorPickupSettlementStatus, string> = {
   NOT_POSTED: "bg-zinc-100 text-zinc-800",

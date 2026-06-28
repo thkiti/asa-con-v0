@@ -15,6 +15,10 @@ import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import { PSV_BANK_DEPOSIT_DOCUMENT_CODE } from "./constants"
 import { extractCollectorPickupCashAmount } from "./collector-cash-amount"
 import {
+  assertPayInEvidenceUploadedForPosting,
+  updatePayInEvidenceDepositMeta,
+} from "./pay-in-evidence"
+import {
   loadCollectorReportForSettlement,
   type CollectorReportSettlementSource,
 } from "./post-collector-pickup"
@@ -29,6 +33,8 @@ export type PostBankDepositSettlementInput = {
   /** Defaults to collector report createdAt when omitted. */
   postingDate?: Date
   legalEntityCode?: DocumentEntityCode
+  /** When true (default), requires uploaded PAY-IN slip evidence before posting. */
+  requirePayInEvidence?: boolean
 }
 
 type BankDepositDb = Pick<Prisma.TransactionClient, "collectorReport" | "voucher">
@@ -133,6 +139,16 @@ export async function postBankDepositSettlement(
 
   await assertCollectorPickupPostedForBankDeposit(input.tx, source.id)
   await assertBankDepositNotYetPosted(input.tx, source.id)
+
+  const requirePayInEvidence = input.requirePayInEvidence !== false
+  let payInEvidence = null
+  if (requirePayInEvidence) {
+    payInEvidence = await assertPayInEvidenceUploadedForPosting(
+      input.tx,
+      source.id
+    )
+  }
+
   await assertPostingPeriodOpen(input.tx, postingDate, legalEntityCode)
 
   const codeLines = resolveAccountsForPosBankDeposit(cashAmount)
@@ -156,6 +172,15 @@ export async function postBankDepositSettlement(
       PosSettlementErrorCodes.DUPLICATE_SOURCE,
       409
     )
+  }
+
+  if (payInEvidence) {
+    await updatePayInEvidenceDepositMeta(input.tx, {
+      evidenceId: payInEvidence.id,
+      bankDepositDate: postingDate,
+      bankAccountCode: payInEvidence.bankAccountCode,
+      bankDepositVoucherId: posted.voucherId,
+    })
   }
 
   return posted

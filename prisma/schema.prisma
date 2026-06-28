@@ -526,9 +526,36 @@ model CollectorReport {
   reportJson Json
   createdAt  DateTime @default(now())
 
-  branch Branch @relation(fields: [branchId], references: [id])
+  branch         Branch            @relation(fields: [branchId], references: [id])
+  payInEvidence  PosPayInEvidence?
 
   @@index([branchId, createdAt])
+}
+
+/// Bank PAY-IN slip evidence for PSV-BANK-DEP — keyed by collector report.
+model PosPayInEvidence {
+  id                   String                @id @default(uuid())
+  collectorReportId    String                @unique
+  collectNo            String
+  branchId             String
+  status               PaymentEvidenceStatus @default(PENDING)
+  blobPathname         String?
+  blobUrl              String?
+  mimeType             String                @default("image/jpeg")
+  byteSize             Int?
+  originalFilename     String?
+  uploadedAt           DateTime?
+  uploadedByStaffId    String?
+  bankDepositDate      DateTime?
+  bankAccountCode      String                @default("1021")
+  bankDepositVoucherId String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  collectorReport CollectorReport @relation(fields: [collectorReportId], references: [id], onDelete: Cascade)
+
+  @@index([branchId, status])
+  @@index([collectNo])
 }
 
 /// Singleton receipt layout/footer (id = "default").
