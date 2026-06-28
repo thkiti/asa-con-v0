@@ -165,13 +165,42 @@ export type FinanceMockState = MockTxState & {
   voucherLines: VoucherLineRow[]
   journalEntries: JournalEntryRow[]
   journalEntryLines: JournalEntryLineRow[]
+  collectorReports?: Array<{
+    id: string
+    branchId: string
+    staffId: string
+    collectNo: string
+    reportJson: unknown
+    createdAt: Date
+  }>
 }
 
 const DEFAULT_CHART: { code: string; name: string; accountType: GlAccountType }[] = [
   { code: DEFAULT_ACCOUNT_CODES.INVENTORY, name: "Inventory", accountType: GlAccountType.ASSET },
-  { code: DEFAULT_ACCOUNT_CODES.CASH, name: "Cash", accountType: GlAccountType.ASSET },
-  { code: DEFAULT_ACCOUNT_CODES.CARD_CLEARING, name: "Card clearing", accountType: GlAccountType.ASSET },
-  { code: DEFAULT_ACCOUNT_CODES.REVENUE, name: "Revenue", accountType: GlAccountType.REVENUE },
+  { code: DEFAULT_ACCOUNT_CODES.CASH, name: "Cash in Drawer", accountType: GlAccountType.ASSET },
+  {
+    code: DEFAULT_ACCOUNT_CODES.CASH_IN_TRANSIT_COLLECTOR,
+    name: "Cash in Transit",
+    accountType: GlAccountType.ASSET,
+  },
+  { code: DEFAULT_ACCOUNT_CODES.BANK, name: "Bank Account", accountType: GlAccountType.ASSET },
+  { code: DEFAULT_ACCOUNT_CODES.CARD_CLEARING, name: "Card Clearing", accountType: GlAccountType.ASSET },
+  {
+    code: DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING,
+    name: "Bank Transfer Clearing",
+    accountType: GlAccountType.ASSET,
+  },
+  {
+    code: DEFAULT_ACCOUNT_CODES.POS_OTHER_CLEARING,
+    name: "POS Other Clearing",
+    accountType: GlAccountType.ASSET,
+  },
+  { code: DEFAULT_ACCOUNT_CODES.REVENUE, name: "Net Sales Revenue", accountType: GlAccountType.REVENUE },
+  {
+    code: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+    name: "Output VAT",
+    accountType: GlAccountType.LIABILITY,
+  },
   { code: DEFAULT_ACCOUNT_CODES.COGS, name: "COGS", accountType: GlAccountType.EXPENSE },
   { code: DEFAULT_ACCOUNT_CODES.AP, name: "Accounts payable", accountType: GlAccountType.LIABILITY },
 ]

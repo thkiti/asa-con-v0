@@ -8,6 +8,7 @@ import { postRefundVoucher } from "@/lib/finance/posting"
 import { cleanGroupDisplayName } from "@/lib/master/build-product-group"
 import { prisma } from "@/lib/shared/prisma"
 import { buildPostRefundVoucherInput } from "./refund-finance"
+import { resolvePosLegalEntityCode } from "./resolve-pos-sale-vat"
 import { toDec, ZERO } from "@/lib/stock/decimal"
 import { allocateRefundNo } from "./refund-receipt-no"
 import { resolveRefundReason } from "./refund-reasons"
@@ -241,11 +242,28 @@ async function createSaleLinkedRefund(
         500
       )
     }
+    if (
+      sale.vatRateBps == null ||
+      !sale.taxCode ||
+      !sale.outputVatAccountCode
+    ) {
+      throw new RefundError(
+        "Sale VAT snapshot is required for finance posting",
+        "MISSING_VAT_SNAPSHOT",
+        500
+      )
+    }
     await postRefundVoucher(
       buildPostRefundVoucherInput({
         tx,
+        legalEntityCode: resolvePosLegalEntityCode(),
         refund: result,
         paymentMethod: sale.payment.method,
+        saleVatSnapshot: {
+          vatRateBps: sale.vatRateBps,
+          taxCode: sale.taxCode,
+          outputVatAccountCode: sale.outputVatAccountCode,
+        },
       })
     )
   }

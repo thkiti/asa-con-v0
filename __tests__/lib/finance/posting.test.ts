@@ -1,6 +1,7 @@
 import fs from "fs"
 import path from "path"
 import { AccountingPeriodStatus, PaymentMethod, Prisma } from "@/generated/prisma/client"
+import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
   postOperationalVoucher,
@@ -9,6 +10,8 @@ import {
 } from "@/lib/finance/posting"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { createFinanceMockTx } from "./mock-finance-tx"
+import { testVatEconomicsForGross } from "./helpers/pos-vat-fixtures"
+import { VAT_OUTPUT_STANDARD_TAX_CODE } from "@/lib/finance/tax-policy"
 
 const ROOT = path.join(__dirname, "..", "..", "..")
 const FINANCE_SOURCES = [
@@ -43,7 +46,7 @@ describe("finance posting", () => {
   it("creates exactly one journal entry per voucher", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, "branch-1", new Date("2026-05-15T12:00:00.000Z"))
-    const cash = state.glAccounts.find((a) => a.code === "1100")!
+    const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
     const revenue = state.glAccounts.find((a) => a.code === "4000")!
 
     await postOperationalVoucher({
@@ -82,7 +85,7 @@ describe("finance posting", () => {
       lines: [] as { glAccountId: string; debit: Prisma.Decimal; credit: Prisma.Decimal }[],
     }
 
-    const cash = state.glAccounts.find((a) => a.code === "1100")!
+    const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
     const revenue = state.glAccounts.find((a) => a.code === "4000")!
     input.lines = [
       { glAccountId: cash.id, debit: new Prisma.Decimal("20"), credit: new Prisma.Decimal("0") },
@@ -125,6 +128,7 @@ describe("finance posting", () => {
         createdAt,
       },
       paymentMethod: PaymentMethod.CASH,
+      vatEconomics: testVatEconomicsForGross("50"),
     })
 
     expect(result.voucherId).toBeTruthy()
@@ -148,6 +152,7 @@ describe("finance posting", () => {
         createdAt,
       },
       paymentMethod: PaymentMethod.CASH,
+      vatEconomics: testVatEconomicsForGross("30"),
     }
     const first = await postRefundVoucher(input)
     const second = await postRefundVoucher(input)
@@ -158,16 +163,24 @@ describe("finance posting", () => {
 
   it("posts sale voucher using sale.id ref", async () => {
     const { tx, state } = createFinanceMockTx()
-    const now = new Date()
-    await seedOpenPeriod(tx, "branch-1", now)
+    const createdAt = new Date("2026-06-15T12:00:00.000Z")
+    await seedOpenPeriod(tx, "branch-1", createdAt)
+    const vatEconomics = testVatEconomicsForGross("107")
     const result = await postSaleVoucher({
       tx,
       sale: {
         id: "sale-uuid-1",
         branchId: "branch-1",
-        total: "100",
+        total: "107",
         paymentMethod: PaymentMethod.CASH,
+        createdAt,
+        netAmount: vatEconomics.net,
+        vatAmount: vatEconomics.vat,
+        vatRateBps: vatEconomics.rateBps,
+        taxCode: VAT_OUTPUT_STANDARD_TAX_CODE,
+        outputVatAccountCode: vatEconomics.outputVatAccountCode,
       },
+      vatEconomics,
       ledgerResult: { cogsAmount: "30" },
     })
 
@@ -175,6 +188,89 @@ describe("finance posting", () => {
     const voucher = state.vouchers[0]
     expect(voucher?.refId).toBe("sale-uuid-1")
     expect(voucher?.refType).toBe(FINANCE_REF_TYPES.POS_SALE)
+
+    const journalLines = state.journalEntryLines
+      .map((line) => {
+        const account = state.glAccounts.find((a) => a.id === line.glAccountId)
+        return {
+          accountCode: account?.code,
+          debit: line.debit.toFixed(2),
+          credit: line.credit.toFixed(2),
+        }
+      })
+      .sort((a, b) => (a.accountCode ?? "").localeCompare(b.accountCode ?? ""))
+
+    expect(journalLines).toEqual(
+      expect.arrayContaining([
+        { accountCode: DEFAULT_ACCOUNT_CODES.CASH, debit: "107.00", credit: "0.00" },
+        { accountCode: DEFAULT_ACCOUNT_CODES.COGS, debit: "30.00", credit: "0.00" },
+        { accountCode: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: "0.00", credit: "30.00" },
+        { accountCode: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT, debit: "0.00", credit: "7.00" },
+        { accountCode: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0.00", credit: "100.00" },
+      ])
+    )
+    expect(
+      journalLines.some(
+        (line) =>
+          line.accountCode === DEFAULT_ACCOUNT_CODES.BANK && line.debit !== "0.00"
+      )
+    ).toBe(false)
+  })
+
+  it("posts CARD sale voucher to card clearing without bank debit", async () => {
+    const { tx, state } = createFinanceMockTx()
+    const createdAt = new Date("2026-06-15T12:00:00.000Z")
+    await seedOpenPeriod(tx, "branch-1", createdAt)
+    const vatEconomics = testVatEconomicsForGross("107")
+    await postSaleVoucher({
+      tx,
+      sale: {
+        id: "sale-card-1",
+        branchId: "branch-1",
+        total: "107",
+        paymentMethod: PaymentMethod.CARD,
+        createdAt,
+        netAmount: vatEconomics.net,
+        vatAmount: vatEconomics.vat,
+        vatRateBps: vatEconomics.rateBps,
+        taxCode: VAT_OUTPUT_STANDARD_TAX_CODE,
+        outputVatAccountCode: vatEconomics.outputVatAccountCode,
+      },
+      vatEconomics,
+      ledgerResult: { cogsAmount: "0" },
+    })
+
+    const economics = state.journalEntryLines
+      .map((line) => {
+        const account = state.glAccounts.find((a) => a.id === line.glAccountId)
+        return {
+          accountCode: account?.code,
+          debit: line.debit.toFixed(2),
+          credit: line.credit.toFixed(2),
+        }
+      })
+      .filter((line) =>
+        [
+          DEFAULT_ACCOUNT_CODES.CARD_CLEARING,
+          DEFAULT_ACCOUNT_CODES.REVENUE,
+          DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+          DEFAULT_ACCOUNT_CODES.BANK,
+        ].includes(line.accountCode as (typeof DEFAULT_ACCOUNT_CODES)[keyof typeof DEFAULT_ACCOUNT_CODES])
+      )
+
+    expect(economics).toEqual(
+      expect.arrayContaining([
+        { accountCode: DEFAULT_ACCOUNT_CODES.CARD_CLEARING, debit: "107.00", credit: "0.00" },
+        { accountCode: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0.00", credit: "100.00" },
+        { accountCode: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT, debit: "0.00", credit: "7.00" },
+      ])
+    )
+    expect(
+      economics.some(
+        (line) =>
+          line.accountCode === DEFAULT_ACCOUNT_CODES.BANK && line.debit !== "0.00"
+      )
+    ).toBe(false)
   })
 
   it("finance sources do not mutate stock or sales", () => {

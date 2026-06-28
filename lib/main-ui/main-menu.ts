@@ -4,7 +4,7 @@ import {
   canAccessProductReference,
 } from "@/lib/permissions/master"
 import { canAccessShopSalesDashboard } from "@/lib/permissions/sales-dashboard"
-import { getAllFinanceMenuItems } from "@/lib/main-ui/finance-menu"
+import { getAllFinanceMenuItems, canAccessFinanceMenu } from "@/lib/main-ui/finance-menu"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import type { Role } from "@/lib/shared"
@@ -137,7 +137,7 @@ export function canAccessMainMenuSection(
     case "shop":
       return canAccessMenu(role, "shop")
     case "system":
-      return canAccessMenu(role, "system")
+      return canAccessMenu(role, "system") || canAccessFinanceMenu(role)
     default:
       return false
   }
@@ -266,8 +266,17 @@ function buildSectionItems(
           )
         )
       }
+      if (canAccessFinanceMenu(role)) {
+        items.push(
+          available(
+            "import-accounting",
+            "Import Accounting Data",
+            "/finance/system",
+            "Chart of accounts, accounting periods, and finance setup imports"
+          )
+        )
+      }
       items.push(
-        planned("import-accounting", "Import Accounting Data"),
         planned("settings", "Settings"),
         planned("maintenance", "Maintenance")
       )

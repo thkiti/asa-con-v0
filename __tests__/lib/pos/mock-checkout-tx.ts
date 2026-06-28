@@ -8,6 +8,11 @@ type SaleRow = {
   branchId: string
   staffId: string | null
   total: Prisma.Decimal
+  netAmount?: Prisma.Decimal | null
+  vatAmount?: Prisma.Decimal | null
+  vatRateBps?: number | null
+  taxCode?: string | null
+  outputVatAccountCode?: string | null
   createdAt: Date
 }
 
@@ -92,6 +97,12 @@ export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
           branchId: string
           staffId: string | null
           total: Prisma.Decimal
+          netAmount?: Prisma.Decimal
+          vatAmount?: Prisma.Decimal
+          vatRateBps?: number
+          taxCode?: string
+          outputVatAccountCode?: string
+          createdAt?: Date
         }
       }) => {
         const row: SaleRow = {
@@ -99,7 +110,12 @@ export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
           branchId: data.branchId,
           staffId: data.staffId,
           total: data.total,
-          createdAt: new Date("2026-01-15T10:00:00.000Z"),
+          netAmount: data.netAmount ?? null,
+          vatAmount: data.vatAmount ?? null,
+          vatRateBps: data.vatRateBps ?? null,
+          taxCode: data.taxCode ?? null,
+          outputVatAccountCode: data.outputVatAccountCode ?? null,
+          createdAt: data.createdAt ?? new Date("2026-01-15T10:00:00.000Z"),
         }
         state.sales.push(row)
         return row
@@ -177,6 +193,9 @@ export function createCheckoutMockTx(initial?: Partial<MockTxState>) {
         state.receipts.push(row)
         return row
       },
+    },
+    taxPolicy: {
+      findMany: async () => [],
     },
     paymentEvidence: {
       create: async ({

@@ -1,4 +1,3 @@
-import { PaymentMethod } from "@/generated/prisma/client"
 import {
   DocStatus,
   Prisma,
@@ -8,6 +7,15 @@ import {
 import { DEFAULT_ACCOUNT_CODES } from "./account-map"
 import { addMoney, roundMoney, toMoney, ZERO } from "./decimal"
 import { getGlAccountBalance } from "./gl-balance"
+import {
+  buildPosRefundTenderReconciliationRows,
+  buildPosTenderReconciliationRows,
+  computePosSalesReconciliationMetrics,
+  POS_SALES_ECONOMICS_GL_ACCOUNT_CODES,
+  POS_STAGE1_TENDER_ACCOUNT_CODES,
+  sumPaymentBreakdownTotal,
+  sumTenderClearingGlNet,
+} from "./pos-sales-reconciliation"
 import { ReconciliationError } from "./reconciliation-errors"
 import type {
   FinanceReconciliationInput,
@@ -24,8 +32,6 @@ import type {
 import { FINANCE_REF_TYPES } from "./posting-types"
 import {
   getRefundSummary,
-  refundCardTotal,
-  refundCashTotal,
 } from "@/lib/pos/refund-summary"
 import { getSalesSummary } from "@/lib/pos/sales-summary"
 import { sumCogsFromLedgerIssues } from "@/lib/pos/checkout-finance"
@@ -51,7 +57,12 @@ export type ReconciliationPrisma = Pick<
 
 export type PosRefundGlTotals = {
   revenueDebitTotal: string
+  outputVatDebitTotal: string
+  grossReversalTotal: string
+  tenderCreditByAccountCode: Record<string, string>
+  /** @deprecated use tenderCreditByAccountCode[1100] */
   cashCreditTotal: string
+  /** @deprecated use tenderCreditByAccountCode[1110] */
   cardCreditTotal: string
 }
 
@@ -93,8 +104,11 @@ export async function sumPosRefundGlTotals(
   })
 
   let revenueDebit = ZERO
-  let cashCredit = ZERO
-  let cardCredit = ZERO
+  let outputVatDebit = ZERO
+  const tenderCreditByAccountCode: Record<string, ReturnType<typeof toMoney>> = {}
+  for (const code of POS_STAGE1_TENDER_ACCOUNT_CODES) {
+    tenderCreditByAccountCode[code] = ZERO
+  }
 
   for (const voucher of vouchers) {
     const lines = (voucher.journalEntry?.lines ?? []) as JournalLineWithAccount[]
@@ -106,24 +120,37 @@ export async function sumPosRefundGlTotals(
         "debit"
       )
     )
-    cashCredit = addMoney(
-      cashCredit,
-      sumJournalSideByAccountCode(lines, DEFAULT_ACCOUNT_CODES.CASH, "credit")
-    )
-    cardCredit = addMoney(
-      cardCredit,
+    outputVatDebit = addMoney(
+      outputVatDebit,
       sumJournalSideByAccountCode(
         lines,
-        DEFAULT_ACCOUNT_CODES.CARD_CLEARING,
-        "credit"
+        DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+        "debit"
       )
     )
+    for (const code of POS_STAGE1_TENDER_ACCOUNT_CODES) {
+      tenderCreditByAccountCode[code] = addMoney(
+        tenderCreditByAccountCode[code],
+        sumJournalSideByAccountCode(lines, code, "credit")
+      )
+    }
   }
+
+  const grossReversalTotal = addMoney(revenueDebit, outputVatDebit)
 
   return {
     revenueDebitTotal: revenueDebit.toString(),
-    cashCreditTotal: cashCredit.toString(),
-    cardCreditTotal: cardCredit.toString(),
+    outputVatDebitTotal: outputVatDebit.toString(),
+    grossReversalTotal: grossReversalTotal.toString(),
+    tenderCreditByAccountCode: Object.fromEntries(
+      POS_STAGE1_TENDER_ACCOUNT_CODES.map((code) => [
+        code,
+        tenderCreditByAccountCode[code].toString(),
+      ])
+    ),
+    cashCreditTotal: tenderCreditByAccountCode[DEFAULT_ACCOUNT_CODES.CASH].toString(),
+    cardCreditTotal:
+      tenderCreditByAccountCode[DEFAULT_ACCOUNT_CODES.CARD_CLEARING].toString(),
   }
 }
 
@@ -207,71 +234,93 @@ export async function reconcileSalesAndTender(
   prisma: ReconciliationPrisma,
   filter: SalesReconciliationFilter = {}
 ): Promise<SalesReconciliationResult> {
-  const salesSummary = await getSalesSummary(prisma, {
-    branchId: filter.branchId,
-    from: filter.from,
-    to: filter.to,
-  })
+  const [salesSummary, refundSummary] = await Promise.all([
+    getSalesSummary(prisma, {
+      branchId: filter.branchId,
+      from: filter.from,
+      to: filter.to,
+    }),
+    getRefundSummary(prisma, {
+      branchId: filter.branchId,
+      from: filter.from,
+      to: filter.to,
+    }),
+  ])
 
   const glBalance = await getGlAccountBalance(prisma, {
     accountCodes: [
-      DEFAULT_ACCOUNT_CODES.REVENUE,
-      DEFAULT_ACCOUNT_CODES.CASH,
-      DEFAULT_ACCOUNT_CODES.CARD_CLEARING,
+      ...POS_SALES_ECONOMICS_GL_ACCOUNT_CODES,
+      ...POS_STAGE1_TENDER_ACCOUNT_CODES,
     ],
     branchId: filter.branchId,
     from: filter.from,
     to: filter.to,
   })
 
-  const glRevenueBalance = glBalanceForCode(
+  const glNetRevenue = glBalanceForCode(
     glBalance.accounts,
     DEFAULT_ACCOUNT_CODES.REVENUE
   )
-  const glCashBalance = glBalanceForCode(
+  const glOutputVat = glBalanceForCode(
     glBalance.accounts,
-    DEFAULT_ACCOUNT_CODES.CASH
-  )
-  const glCardBalance = glBalanceForCode(
-    glBalance.accounts,
-    DEFAULT_ACCOUNT_CODES.CARD_CLEARING
+    DEFAULT_ACCOUNT_CODES.OUTPUT_VAT
   )
 
-  const revenueVariance = buildVariance({
-    domain: "revenue",
-    label: "POS revenue vs revenue GL",
-    operationalAmount: salesSummary.revenue,
-    glAmount: glRevenueBalance,
+  const operationalGrossSales = salesSummary.revenue
+  const operationalGrossRefunds = refundSummary.refundTotal
+  const operationalTenderIn = sumPaymentBreakdownTotal(salesSummary.paymentBreakdown)
+  const operationalTenderRefundOut = sumPaymentBreakdownTotal(
+    refundSummary.paymentBreakdown
+  )
+  const glTenderClearingNet = sumTenderClearingGlNet(glBalance.accounts)
+
+  const metrics = computePosSalesReconciliationMetrics({
+    operationalGrossSales,
+    operationalGrossRefunds,
+    glNetRevenue,
+    glOutputVat,
+    operationalTenderIn,
+    operationalTenderRefundOut,
+    glTenderClearingNet,
   })
 
-  const operationalCash =
-    salesSummary.paymentBreakdown.find((p) => p.method === PaymentMethod.CASH)
-      ?.amount ?? "0"
-  const operationalCard =
-    salesSummary.paymentBreakdown.find((p) => p.method === PaymentMethod.CARD)
-      ?.amount ?? "0"
+  const tenderRows = buildPosTenderReconciliationRows({
+    salesBreakdown: salesSummary.paymentBreakdown,
+    refundBreakdown: refundSummary.paymentBreakdown,
+    glAccounts: glBalance.accounts,
+  })
 
-  const paymentBreakdown: ReconciliationVariance[] = [
-    buildVariance({
-      domain: "tender",
-      label: "Cash tender vs cash GL",
-      operationalAmount: operationalCash,
-      glAmount: glCashBalance,
-    }),
-    buildVariance({
-      domain: "tender",
-      label: "Card tender vs card clearing GL",
-      operationalAmount: operationalCard,
-      glAmount: glCardBalance,
-    }),
-  ]
+  const paymentBreakdown: ReconciliationVariance[] = tenderRows.map((row) => ({
+    domain: "tender",
+    label: row.label,
+    operationalAmount: row.operationalAmount,
+    glAmount: row.glAmount,
+    variance: row.variance,
+  }))
+
+  const salesVarianceRow: ReconciliationVariance = {
+    domain: "revenue",
+    label: "POS gross sales (net of refunds) vs GL net revenue + output VAT",
+    operationalAmount: metrics.operationalNetGross,
+    glAmount: metrics.glGrossEquivalent,
+    variance: metrics.salesVariance,
+  }
+
+  const tenderVarianceRow: ReconciliationVariance = {
+    domain: "tender",
+    label: "POS tender net vs Stage 1 clearing/custody GL",
+    operationalAmount: metrics.operationalTenderNet,
+    glAmount: metrics.glTenderClearingNet,
+    variance: metrics.tenderVariance,
+  }
 
   return {
     filter,
-    operationalRevenue: salesSummary.revenue,
-    glRevenueBalance,
+    ...metrics,
+    operationalRevenue: metrics.operationalNetGross,
+    glRevenueBalance: metrics.glGrossEquivalent,
     paymentBreakdown,
-    variances: [revenueVariance, ...paymentBreakdown],
+    variances: [salesVarianceRow, tenderVarianceRow, ...paymentBreakdown],
   }
 }
 
@@ -288,33 +337,28 @@ export async function reconcileRefunds(
 
   const refundVariance = buildVariance({
     domain: "refund",
-    label: "Refund total vs revenue reversal GL",
+    label: "Refund gross vs GL net revenue + output VAT reversal",
     operationalAmount: refundSummary.refundTotal,
-    glAmount: glTotals.revenueDebitTotal,
+    glAmount: glTotals.grossReversalTotal,
   })
 
-  const operationalCash = refundCashTotal(refundSummary.paymentBreakdown)
-  const operationalCard = refundCardTotal(refundSummary.paymentBreakdown)
+  const tenderRows = buildPosRefundTenderReconciliationRows({
+    refundBreakdown: refundSummary.paymentBreakdown,
+    glTenderCreditByAccountCode: glTotals.tenderCreditByAccountCode,
+  })
 
-  const paymentBreakdown: ReconciliationVariance[] = [
-    buildVariance({
-      domain: "tender",
-      label: "Cash refund vs cash GL credit",
-      operationalAmount: operationalCash,
-      glAmount: glTotals.cashCreditTotal,
-    }),
-    buildVariance({
-      domain: "tender",
-      label: "Card refund vs card clearing GL credit",
-      operationalAmount: operationalCard,
-      glAmount: glTotals.cardCreditTotal,
-    }),
-  ]
+  const paymentBreakdown: ReconciliationVariance[] = tenderRows.map((row) => ({
+    domain: "tender",
+    label: row.label,
+    operationalAmount: row.operationalAmount,
+    glAmount: row.glAmount,
+    variance: row.variance,
+  }))
 
   return {
     filter,
     operationalRefundTotal: refundSummary.refundTotal,
-    glRefundRevenueTotal: glTotals.revenueDebitTotal,
+    glRefundRevenueTotal: glTotals.grossReversalTotal,
     paymentBreakdown,
     variances: [refundVariance, ...paymentBreakdown],
   }
@@ -401,7 +445,11 @@ export function expectedInventoryFromLedgerRows(rows: LedgerMoveRow[]): {
 }
 
 function auditSale(
-  sale: { id: string; total: Prisma.Decimal | number | string },
+  sale: {
+    id: string
+    total: Prisma.Decimal | number | string
+    outputVatAccountCode?: string | null
+  },
   ledgerRows: LedgerMoveRow[],
   vouchers: VoucherWithJournal[]
 ): ReconciliationIssue[] {
@@ -431,26 +479,41 @@ function auditSale(
   }
 
   const journalLines = vouchers[0].journalEntry?.lines ?? []
-  const expectedTotal = round2Amount(sale.total)
-  const actualRevenue = round2Amount(
+  const expectedGross = round2Amount(sale.total)
+  const outputVatCode =
+    sale.outputVatAccountCode ?? DEFAULT_ACCOUNT_CODES.OUTPUT_VAT
+  const actualNetRevenue = round2Amount(
     sumJournalSideByAccountCode(
       journalLines,
       DEFAULT_ACCOUNT_CODES.REVENUE,
       "credit"
+    ).minus(
+      sumJournalSideByAccountCode(
+        journalLines,
+        DEFAULT_ACCOUNT_CODES.REVENUE,
+        "debit"
+      )
     )
   )
+  const actualOutputVat = round2Amount(
+    sumJournalSideByAccountCode(journalLines, outputVatCode, "credit").minus(
+      sumJournalSideByAccountCode(journalLines, outputVatCode, "debit")
+    )
+  )
+  const actualGrossEquivalent = round2Amount(actualNetRevenue + actualOutputVat)
 
-  if (expectedTotal !== actualRevenue) {
+  if (expectedGross !== actualGrossEquivalent) {
     issues.push({
       id: buildIssueId("SALE", sale.id, "TOTAL_MISMATCH"),
       sourceType: "SALE",
       sourceId: sale.id,
       issueType: "TOTAL_MISMATCH",
       severity: "ERROR",
-      message: "Sale total does not match revenue credit on posted voucher",
-      expectedAmount: expectedTotal,
-      actualAmount: actualRevenue,
-      difference: round2Amount(expectedTotal - actualRevenue),
+      message:
+        "Sale gross total does not match net revenue + output VAT credits on posted voucher",
+      expectedAmount: expectedGross,
+      actualAmount: actualGrossEquivalent,
+      difference: round2Amount(expectedGross - actualGrossEquivalent),
     })
   }
 
@@ -570,7 +633,11 @@ function auditStockDocument(
 }
 
 export function auditRefund(
-  refund: { id: string; amount: Prisma.Decimal | number | string },
+  refund: {
+    id: string
+    amount: Prisma.Decimal | number | string
+    sale?: { outputVatAccountCode?: string | null } | null
+  },
   vouchers: VoucherWithJournal[]
 ): ReconciliationIssue[] {
   const issues: ReconciliationIssue[] = []
@@ -599,26 +666,33 @@ export function auditRefund(
   }
 
   const journalLines = vouchers[0].journalEntry?.lines ?? []
-  const expectedTotal = round2Amount(refund.amount)
-  const actualRevenue = round2Amount(
+  const expectedGross = round2Amount(refund.amount)
+  const outputVatCode =
+    refund.sale?.outputVatAccountCode ?? DEFAULT_ACCOUNT_CODES.OUTPUT_VAT
+  const actualNetRevenue = round2Amount(
     sumJournalSideByAccountCode(
       journalLines,
       DEFAULT_ACCOUNT_CODES.REVENUE,
       "debit"
     )
   )
+  const actualOutputVat = round2Amount(
+    sumJournalSideByAccountCode(journalLines, outputVatCode, "debit")
+  )
+  const actualGrossEquivalent = round2Amount(actualNetRevenue + actualOutputVat)
 
-  if (expectedTotal !== actualRevenue) {
+  if (expectedGross !== actualGrossEquivalent) {
     issues.push({
       id: buildIssueId("REFUND", refund.id, "TOTAL_MISMATCH"),
       sourceType: "REFUND",
       sourceId: refund.id,
       issueType: "TOTAL_MISMATCH",
       severity: "ERROR",
-      message: "Refund amount does not match revenue debit on posted voucher",
-      expectedAmount: expectedTotal,
-      actualAmount: actualRevenue,
-      difference: round2Amount(expectedTotal - actualRevenue),
+      message:
+        "Refund gross amount does not match net revenue + output VAT debits on posted voucher",
+      expectedAmount: expectedGross,
+      actualAmount: actualGrossEquivalent,
+      difference: round2Amount(expectedGross - actualGrossEquivalent),
     })
   }
 
@@ -671,7 +745,7 @@ export async function runFinanceReconciliation(
 
   const sales = await prisma.sale.findMany({
     where: saleWhere,
-    select: { id: true, total: true },
+    select: { id: true, total: true, outputVatAccountCode: true },
   })
   const stockDocuments = await prisma.stockDocument.findMany({
     where: docWhere,
@@ -679,7 +753,12 @@ export async function runFinanceReconciliation(
   })
   const refunds = await prisma.refund.findMany({
     where: refundWhere,
-    select: { id: true, amount: true, refundNo: true },
+    select: {
+      id: true,
+      amount: true,
+      refundNo: true,
+      sale: { select: { outputVatAccountCode: true } },
+    },
   })
 
   const saleIds = sales.map((sale) => sale.id)

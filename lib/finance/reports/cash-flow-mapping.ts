@@ -1,6 +1,12 @@
+import { DEFAULT_ACCOUNT_CODES } from "../account-map"
+
 /** v1 active indirect cash-flow account code mappings (config only — no schema). */
 export const CASH_FLOW_V1_MAPPINGS = {
-  cashAndEquivalents: ["1100", "1110"],
+  cashAndEquivalents: [
+    DEFAULT_ACCOUNT_CODES.CASH,
+    DEFAULT_ACCOUNT_CODES.CASH_IN_TRANSIT_COLLECTOR,
+    DEFAULT_ACCOUNT_CODES.BANK,
+  ],
   workingCapitalAssets: ["1000"],
   workingCapitalLiabilities: ["2100"],
 } as const
@@ -61,7 +67,9 @@ export function isCashFlowMappedAccountCode(code: string): boolean {
 }
 
 export function cashFlowMappingLabelForCode(code: string): string | null {
-  if (CASH_FLOW_V1_MAPPINGS.cashAndEquivalents.includes(code as "1100" | "1110")) {
+  if (
+    (CASH_FLOW_V1_MAPPINGS.cashAndEquivalents as readonly string[]).includes(code)
+  ) {
     return "Cash and equivalents"
   }
   if (CASH_FLOW_V1_MAPPINGS.workingCapitalAssets.includes(code as "1000")) {

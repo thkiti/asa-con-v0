@@ -1,11 +1,12 @@
 import { AccountingPeriodStatus, Prisma } from "@/generated/prisma/client"
+import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import { postOperationalVoucher } from "@/lib/finance/posting"
 import { createVoucherWithLines } from "@/lib/finance/voucher"
 import { createFinanceMockTx } from "./mock-finance-tx"
 
 function balancedLines(state: ReturnType<typeof createFinanceMockTx>["state"]) {
-  const cash = state.glAccounts.find((a) => a.code === "1100")!
+  const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
   const revenue = state.glAccounts.find((a) => a.code === "4000")!
   return [
     {

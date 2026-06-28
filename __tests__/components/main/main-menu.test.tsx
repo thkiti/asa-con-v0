@@ -2,8 +2,10 @@
  * @jest-environment jsdom
  */
 import { renderToStaticMarkup } from "react-dom/server"
+import { MainMenuSectionView } from "@/components/main/MainMenuSectionView"
 import { MainMenuView } from "@/components/main/MainMenuView"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
+import { getMainMenuSectionDetail } from "@/lib/main-ui/main-menu"
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -72,13 +74,13 @@ describe("MainMenuView", () => {
     expect(html).not.toContain('href="/shop/stock-documents"')
   })
 
-  it("renders Finance, Operations, Shop cards for HO_FINANCE", () => {
+  it("renders Finance, Operations, Shop, and System cards for HO_FINANCE", () => {
     const html = renderToStaticMarkup(<MainMenuView user={hoFinance} />)
     expect(html).toContain('href="/finance"')
     expect(html).toContain('href="/main/operations"')
     expect(html).toContain('href="/main/shop"')
+    expect(html).toContain('href="/main/system"')
     expect(html).not.toContain('href="/main/administration"')
-    expect(html).not.toContain('href="/main/system"')
   })
 
   it("renders Operations and Shop cards only for HO_OPERATIONS", () => {
@@ -109,5 +111,22 @@ describe("MainMenuView", () => {
     expect(html).not.toContain('data-testid="session-entity-toggle"')
     expect(html).not.toContain('data-testid="session-entity-control"')
     expect(html).not.toContain('data-testid="session-entity-label"')
+  })
+})
+
+describe("MainMenuSectionView system", () => {
+  it("shows Import Accounting Data as active link to finance system hub", () => {
+    const section = getMainMenuSectionDetail("HO_ADMIN", "system")
+    expect(section).not.toBeNull()
+    const html = renderToStaticMarkup(
+      <MainMenuSectionView user={hoAdmin} section={section!} />
+    )
+    expect(html).toContain('href="/finance/system"')
+    expect(html).toContain("Import Accounting Data")
+    expect(html).toContain(
+      "Chart of accounts, accounting periods, and finance setup imports"
+    )
+    const accountingItem = section!.items.find((item) => item.key === "import-accounting")
+    expect(accountingItem?.status).toBe("available")
   })
 })

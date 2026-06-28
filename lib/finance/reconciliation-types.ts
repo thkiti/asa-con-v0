@@ -39,7 +39,33 @@ export type InventoryReconciliationResult = {
 
 export type SalesReconciliationResult = {
   filter: SalesReconciliationFilter
+  /** Gross POS sales in scope (VAT-inclusive). */
+  operationalGrossSales: string
+  /** Gross POS refunds in scope (VAT-inclusive). */
+  operationalGrossRefunds: string
+  /** operationalGrossSales − operationalGrossRefunds. */
+  operationalNetGross: string
+  /** Net credit balance on 4000 for the period. */
+  glNetRevenue: string
+  /** Net credit balance on output VAT account(s) for the period. */
+  glOutputVat: string
+  /** glNetRevenue + glOutputVat — comparable to operationalNetGross. */
+  glGrossEquivalent: string
+  /** operationalNetGross − glGrossEquivalent. */
+  salesVariance: string
+  /** Gross tender inflows from sales payments. */
+  operationalTenderIn: string
+  /** Gross tender outflows from refunds. */
+  operationalTenderRefundOut: string
+  /** operationalTenderIn − operationalTenderRefundOut. */
+  operationalTenderNet: string
+  /** Net debit balance across Stage 1 clearing accounts (1100/1110/1120/1190). */
+  glTenderClearingNet: string
+  /** operationalTenderNet − glTenderClearingNet. */
+  tenderVariance: string
+  /** Legacy alias for operationalNetGross (close evidence / snapshots). */
   operationalRevenue: string
+  /** Legacy alias for glGrossEquivalent (close evidence / snapshots). */
   glRevenueBalance: string
   paymentBreakdown: ReconciliationVariance[]
   variances: ReconciliationVariance[]

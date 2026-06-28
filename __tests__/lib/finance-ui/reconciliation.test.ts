@@ -75,6 +75,18 @@ describe("varianceRowsFromResults", () => {
     }
     const sales: SalesReconciliationResult = {
       filter: {},
+      operationalGrossSales: "500",
+      operationalGrossRefunds: "0",
+      operationalNetGross: "500",
+      glNetRevenue: "467.29",
+      glOutputVat: "32.71",
+      glGrossEquivalent: "500",
+      salesVariance: "0",
+      operationalTenderIn: "500",
+      operationalTenderRefundOut: "0",
+      operationalTenderNet: "500",
+      glTenderClearingNet: "500",
+      tenderVariance: "0",
       operationalRevenue: "500",
       glRevenueBalance: "500",
       paymentBreakdown: [],

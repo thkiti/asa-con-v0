@@ -355,12 +355,22 @@ model DocumentCounter {
 }
 
 model Sale {
-  id        String     @id @default(uuid())
-  branchId  String
-  staffId   String?
-  total     Decimal    @db.Decimal(18, 2)
-  status    SaleStatus @default(COMPLETED)
-  createdAt DateTime   @default(now())
+  id                   String     @id @default(uuid())
+  branchId             String
+  staffId              String?
+  total                Decimal    @db.Decimal(18, 2)
+  /// Net of VAT at checkout — snapshotted from effective tax policy.
+  netAmount            Decimal?   @db.Decimal(18, 2)
+  /// Output VAT amount at checkout — snapshotted for stable receipt/finance history.
+  vatAmount            Decimal?   @db.Decimal(18, 2)
+  /// Tax rate in basis points (700 = 7.00%) applied at checkout.
+  vatRateBps           Int?
+  /// Tax policy code, e.g. VAT_OUTPUT_STANDARD.
+  taxCode              String?
+  /// GL output VAT account used at checkout posting.
+  outputVatAccountCode String?
+  status               SaleStatus @default(COMPLETED)
+  createdAt            DateTime   @default(now())
 
   branch               Branch                @relation(fields: [branchId], references: [id])
   items                SaleItem[]
@@ -690,6 +700,29 @@ model LegalEntity {
   invoiceVouchers      InvoiceVoucher[]
   accountingPeriods    AccountingPeriod[]
   stockDocuments       StockDocument[]
+  taxPolicies          TaxPolicy[]
+}
+
+/// Effective-dated VAT/tax rate policy for finance and POS snapshotting.
+model TaxPolicy {
+  id                   String    @id @default(uuid())
+  legalEntityCode      String
+  taxCode              String
+  /// Rate in basis points — 700 = 7.00%.
+  rateBps              Int
+  inclusive            Boolean   @default(true)
+  outputVatAccountCode String
+  effectiveFrom        DateTime  @db.Date
+  effectiveTo          DateTime? @db.Date
+  isActive             Boolean   @default(true)
+  description          String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  legalEntity LegalEntity @relation(fields: [legalEntityCode], references: [code])
+
+  @@index([legalEntityCode, taxCode, isActive])
+  @@index([legalEntityCode, taxCode, effectiveFrom])
 }
 
 model AccountingPeriod {

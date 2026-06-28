@@ -53,15 +53,15 @@ export function SalesReconciliationView() {
         <div className="mt-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded border border-zinc-200 p-4">
-              <p className="text-sm text-zinc-600">Operational revenue</p>
+              <p className="text-sm text-zinc-600">Operational gross (net of refunds)</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">
-                {formatAmount(result.operationalRevenue)}
+                {formatAmount(result.operationalNetGross)}
               </p>
             </div>
             <div className="rounded border border-zinc-200 p-4">
-              <p className="text-sm text-zinc-600">GL revenue balance</p>
+              <p className="text-sm text-zinc-600">GL gross equivalent (4000 + output VAT)</p>
               <p className="mt-1 text-lg font-semibold tabular-nums">
-                {formatAmount(result.glRevenueBalance)}
+                {formatAmount(result.glGrossEquivalent)}
               </p>
             </div>
             <div className="rounded border border-zinc-200 p-4">

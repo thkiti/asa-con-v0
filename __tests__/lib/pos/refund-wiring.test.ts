@@ -124,4 +124,41 @@ describe("refund finance wiring", () => {
     expect(state.refunds).toHaveLength(0)
     expect(state.transactions).toHaveLength(0)
   })
+
+  it("rejects finance posting when sale lacks VAT snapshot", async () => {
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
+    const { state } = setupWithRollback()
+    const { saleId } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "107.00",
+      skipVatSnapshot: true,
+    })
+
+    await expect(
+      createRefund({ saleId, branchId, reasonCode: defaultReasonCode })
+    ).rejects.toMatchObject({ code: "MISSING_VAT_SNAPSHOT" })
+
+    expect(postRefundVoucher).not.toHaveBeenCalled()
+    expect(state.refunds).toHaveLength(0)
+  })
+
+  it("passes sale VAT snapshot to postRefundVoucher for 107 gross @ 7%", async () => {
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
+    const { state } = setup()
+    const { saleId } = seedSaleWithReceipt(state, {
+      branchId,
+      total: "107.00",
+    })
+
+    await createRefund({ saleId, branchId, reasonCode: defaultReasonCode })
+
+    const payload = (postRefundVoucher as jest.Mock).mock.calls[0][0]
+    expect(payload.vatEconomics).toMatchObject({
+      rateBps: 700,
+      taxCode: "VAT_OUTPUT_STANDARD",
+      outputVatAccountCode: "4602",
+    })
+    expect(payload.vatEconomics.net.toFixed(2)).toBe("100.00")
+    expect(payload.vatEconomics.vat.toFixed(2)).toBe("7.00")
+  })
 })

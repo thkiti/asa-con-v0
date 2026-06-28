@@ -1,6 +1,12 @@
 import { Prisma, RefundKind, SaleStatus } from "@/generated/prisma/client"
 import type { Prisma as PrismaTypes } from "@/generated/prisma/client"
 import type { PaymentMethod } from "@/generated/prisma/client"
+import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
+import {
+  DEFAULT_VAT_OUTPUT_STANDARD_RATE_BPS,
+  VAT_OUTPUT_STANDARD_TAX_CODE,
+} from "@/lib/finance/tax-policy"
+import { testVatEconomicsForGross } from "../finance/helpers/pos-vat-fixtures"
 import { createMockTx, type MockTxState } from "../stock/helpers/mock-tx"
 
 type SaleRow = {
@@ -10,6 +16,11 @@ type SaleRow = {
   total: Prisma.Decimal
   status: SaleStatus
   createdAt: Date
+  vatRateBps?: number | null
+  taxCode?: string | null
+  outputVatAccountCode?: string | null
+  netAmount?: Prisma.Decimal | null
+  vatAmount?: Prisma.Decimal | null
 }
 
 type PaymentRow = {
@@ -60,6 +71,21 @@ const defaultBranchCodes: Record<string, string> = {
   "branch-2": "SH002",
 }
 
+export function buildSaleVatSnapshotForGross(
+  gross: number | string,
+  rateBps = DEFAULT_VAT_OUTPUT_STANDARD_RATE_BPS,
+  outputVatAccountCode = DEFAULT_ACCOUNT_CODES.OUTPUT_VAT
+) {
+  const economics = testVatEconomicsForGross(String(gross), rateBps, outputVatAccountCode)
+  return {
+    vatRateBps: rateBps,
+    taxCode: VAT_OUTPUT_STANDARD_TAX_CODE,
+    outputVatAccountCode,
+    netAmount: new Prisma.Decimal(economics.net),
+    vatAmount: new Prisma.Decimal(economics.vat),
+  }
+}
+
 export function seedSaleWithReceipt(
   state: RefundMockState,
   args: {
@@ -69,10 +95,25 @@ export function seedSaleWithReceipt(
     paymentAmount?: number | string
     change?: number | string
     receiptNo?: string
+    /** Omit P1.25 VAT snapshot fields (for MISSING_VAT_SNAPSHOT negative tests). */
+    skipVatSnapshot?: boolean
+    vatRateBps?: number
+    taxCode?: string
+    outputVatAccountCode?: string
   }
 ): { saleId: string; receiptId: string } {
   const saleId = args.id ?? nextId("sale")
   const total = new Prisma.Decimal(String(args.total))
+  const vatSnapshot = args.skipVatSnapshot
+    ? {}
+    : {
+        ...buildSaleVatSnapshotForGross(
+          args.total,
+          args.vatRateBps ?? DEFAULT_VAT_OUTPUT_STANDARD_RATE_BPS,
+          args.outputVatAccountCode ?? DEFAULT_ACCOUNT_CODES.OUTPUT_VAT
+        ),
+        ...(args.taxCode != null ? { taxCode: args.taxCode } : {}),
+      }
   state.sales.push({
     id: saleId,
     branchId: args.branchId,
@@ -80,6 +121,7 @@ export function seedSaleWithReceipt(
     total,
     status: SaleStatus.COMPLETED,
     createdAt: new Date("2026-01-15T10:00:00.000Z"),
+    ...vatSnapshot,
   })
   state.payments.push({
     id: nextId("pay"),

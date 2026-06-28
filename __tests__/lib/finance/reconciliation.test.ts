@@ -1,6 +1,8 @@
 import * as glBalance from "@/lib/finance/gl-balance"
 import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
+import { buildPosVatEconomics } from "@/lib/finance/pos-sale-vat"
+import { VAT_OUTPUT_STANDARD_TAX_CODE } from "@/lib/finance/tax-policy"
 import {
   auditRefund,
   computeVariance,
@@ -10,7 +12,7 @@ import {
   runFinanceReconciliation,
 } from "@/lib/finance/reconciliation"
 import * as refundSummary from "@/lib/pos/refund-summary"
-import { Prisma } from "@/generated/prisma/client"
+import { Prisma, PaymentMethod } from "@/generated/prisma/client"
 import * as salesSummary from "@/lib/pos/sales-summary"
 import * as stockSummary from "@/lib/stock/stock-summary"
 import { STOCK_REF_TYPES } from "@/lib/stock/transaction-types"
@@ -149,28 +151,63 @@ function voucherWithJournal(input: {
   }
 }
 
-function matchingSaleVoucher(refId: string, total: number, cogs: number) {
+function stage1Economics(gross: number, rateBps = 700) {
+  return buildPosVatEconomics(String(gross), {
+    taxCode: VAT_OUTPUT_STANDARD_TAX_CODE,
+    rateBps,
+    inclusive: true,
+    outputVatAccountCode: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+  })
+}
+
+function matchingSaleVoucher(
+  refId: string,
+  gross: number,
+  cogs: number,
+  tenderCode = DEFAULT_ACCOUNT_CODES.CASH
+) {
+  const econ = stage1Economics(gross)
+  const lines = [
+    { code: tenderCode, debit: gross, credit: 0 },
+    { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: 0, credit: Number(econ.net) },
+    {
+      code: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+      debit: 0,
+      credit: Number(econ.vat),
+    },
+  ]
+  if (cogs > 0) {
+    lines.push(
+      { code: DEFAULT_ACCOUNT_CODES.COGS, debit: cogs, credit: 0 },
+      { code: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: 0, credit: cogs }
+    )
+  }
   return voucherWithJournal({
     id: `voucher-${refId}`,
     refType: FINANCE_REF_TYPES.POS_SALE,
     refId,
-    lines: [
-      { code: DEFAULT_ACCOUNT_CODES.CASH, debit: total, credit: 0 },
-      { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: 0, credit: total },
-      { code: DEFAULT_ACCOUNT_CODES.COGS, debit: cogs, credit: 0 },
-      { code: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: 0, credit: cogs },
-    ],
+    lines,
   })
 }
 
-function matchingRefundVoucher(refId: string, amount: number) {
+function matchingRefundVoucher(
+  refId: string,
+  gross: number,
+  tenderCode = DEFAULT_ACCOUNT_CODES.CASH
+) {
+  const econ = stage1Economics(gross)
   return voucherWithJournal({
     id: `voucher-refund-${refId}`,
     refType: FINANCE_REF_TYPES.POS_REFUND,
     refId,
     lines: [
-      { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: amount, credit: 0 },
-      { code: DEFAULT_ACCOUNT_CODES.CASH, debit: 0, credit: amount },
+      { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: Number(econ.net), credit: 0 },
+      {
+        code: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+        debit: Number(econ.vat),
+        credit: 0,
+      },
+      { code: tenderCode, debit: 0, credit: gross },
     ],
   })
 }
@@ -239,7 +276,182 @@ describe("reconcileSalesAndTender", () => {
     jest.restoreAllMocks()
   })
 
-  it("returns revenue and tender variance DTOs", async () => {
+  function mockStage1GlBalances(
+    input: {
+      netRevenue: string
+      outputVat: string
+      cash?: string
+      card?: string
+      bankTransfer?: string
+      other?: string
+    }
+  ) {
+    jest.spyOn(glBalance, "getGlAccountBalance").mockResolvedValue({
+      filter: {
+        accountCodes: [
+          DEFAULT_ACCOUNT_CODES.REVENUE,
+          DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+          DEFAULT_ACCOUNT_CODES.CASH,
+          DEFAULT_ACCOUNT_CODES.CARD_CLEARING,
+          DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING,
+          DEFAULT_ACCOUNT_CODES.POS_OTHER_CLEARING,
+        ],
+      },
+      accounts: [
+        {
+          accountCode: DEFAULT_ACCOUNT_CODES.REVENUE,
+          accountName: "Revenue",
+          accountType: "REVENUE",
+          debitTotal: "0.00",
+          creditTotal: input.netRevenue,
+          balance: input.netRevenue,
+        },
+        {
+          accountCode: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
+          accountName: "Output VAT",
+          accountType: "LIABILITY",
+          debitTotal: "0.00",
+          creditTotal: input.outputVat,
+          balance: input.outputVat,
+        },
+        {
+          accountCode: DEFAULT_ACCOUNT_CODES.CASH,
+          accountName: "Cash",
+          accountType: "ASSET",
+          debitTotal: input.cash ?? "0.00",
+          creditTotal: "0.00",
+          balance: input.cash ?? "0.00",
+        },
+        {
+          accountCode: DEFAULT_ACCOUNT_CODES.CARD_CLEARING,
+          accountName: "Card clearing",
+          accountType: "ASSET",
+          debitTotal: input.card ?? "0.00",
+          creditTotal: "0.00",
+          balance: input.card ?? "0.00",
+        },
+        {
+          accountCode: DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING,
+          accountName: "Bank transfer clearing",
+          accountType: "ASSET",
+          debitTotal: input.bankTransfer ?? "0.00",
+          creditTotal: "0.00",
+          balance: input.bankTransfer ?? "0.00",
+        },
+        {
+          accountCode: DEFAULT_ACCOUNT_CODES.POS_OTHER_CLEARING,
+          accountName: "POS other clearing",
+          accountType: "ASSET",
+          debitTotal: input.other ?? "0.00",
+          creditTotal: "0.00",
+          balance: input.other ?? "0.00",
+        },
+      ],
+      totals: { debitTotal: "0.00", creditTotal: "0.00" },
+    })
+  }
+
+  it("reconciles sale only 107 gross @ 7% with zero variance", async () => {
+    jest.spyOn(salesSummary, "getSalesSummary").mockResolvedValue({
+      saleCount: 1,
+      revenue: "107.00",
+      paymentBreakdown: [
+        { method: "CASH" as never, amount: "107.00", saleCount: 1 },
+      ],
+      cashierSummary: [],
+      productTypeBreakdown: [],
+    })
+    jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
+      refundCount: 0,
+      refundTotal: "0.00",
+      paymentBreakdown: [],
+      missingPaymentCount: 0,
+    })
+    mockStage1GlBalances({
+      netRevenue: "100.00",
+      outputVat: "7.00",
+      cash: "107.00",
+    })
+
+    const result = await reconcileSalesAndTender({} as never, {})
+
+    expect(result).toMatchObject({
+      operationalGrossSales: "107.00",
+      operationalGrossRefunds: "0.00",
+      operationalNetGross: "107.00",
+      glNetRevenue: "100.00",
+      glOutputVat: "7.00",
+      glGrossEquivalent: "107.00",
+      salesVariance: "0.00",
+      operationalTenderNet: "107.00",
+      glTenderClearingNet: "107.00",
+      tenderVariance: "0.00",
+      operationalRevenue: "107.00",
+      glRevenueBalance: "107.00",
+    })
+  })
+
+  it("reconciles sale + full refund 107 gross with zero variance", async () => {
+    jest.spyOn(salesSummary, "getSalesSummary").mockResolvedValue({
+      saleCount: 1,
+      revenue: "107.00",
+      paymentBreakdown: [
+        { method: "CASH" as never, amount: "107.00", saleCount: 1 },
+      ],
+      cashierSummary: [],
+      productTypeBreakdown: [],
+    })
+    jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
+      refundCount: 1,
+      refundTotal: "107.00",
+      paymentBreakdown: [
+        { method: "CASH" as never, amount: "107.00", saleCount: 1 },
+      ],
+      missingPaymentCount: 0,
+    })
+    mockStage1GlBalances({
+      netRevenue: "0.00",
+      outputVat: "0.00",
+      cash: "0.00",
+    })
+
+    const result = await reconcileSalesAndTender({} as never, {})
+
+    expect(result.operationalNetGross).toBe("0.00")
+    expect(result.glGrossEquivalent).toBe("0.00")
+    expect(result.salesVariance).toBe("0.00")
+    expect(result.tenderVariance).toBe("0.00")
+  })
+
+  it("does not compare gross sales to GL 4000 alone", async () => {
+    jest.spyOn(salesSummary, "getSalesSummary").mockResolvedValue({
+      saleCount: 1,
+      revenue: "107.00",
+      paymentBreakdown: [
+        { method: "CASH" as never, amount: "107.00", saleCount: 1 },
+      ],
+      cashierSummary: [],
+      productTypeBreakdown: [],
+    })
+    jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
+      refundCount: 0,
+      refundTotal: "0.00",
+      paymentBreakdown: [],
+      missingPaymentCount: 0,
+    })
+    mockStage1GlBalances({
+      netRevenue: "100.00",
+      outputVat: "0.00",
+      cash: "107.00",
+    })
+
+    const result = await reconcileSalesAndTender({} as never, {})
+
+    expect(result.salesVariance).toBe("7.00")
+    expect(result.variances[0]?.label).toContain("net revenue + output VAT")
+  })
+
+  it("returns tender breakdown for Stage 1 clearing accounts", async () => {
     jest.spyOn(salesSummary, "getSalesSummary").mockResolvedValue({
       saleCount: 2,
       revenue: "1500.00",
@@ -250,50 +462,29 @@ describe("reconcileSalesAndTender", () => {
       cashierSummary: [],
       productTypeBreakdown: [],
     })
-    jest.spyOn(glBalance, "getGlAccountBalance").mockResolvedValue({
-      filter: { accountCodes: ["4000", "1100", "1110"] },
-      accounts: [
-        {
-          accountCode: "4000",
-          accountName: "Revenue",
-          accountType: "REVENUE",
-          debitTotal: "0.00",
-          creditTotal: "1490.00",
-          balance: "1490.00",
-        },
-        {
-          accountCode: "1100",
-          accountName: "Cash",
-          accountType: "ASSET",
-          debitTotal: "895.00",
-          creditTotal: "0.00",
-          balance: "895.00",
-        },
-        {
-          accountCode: "1110",
-          accountName: "Card clearing",
-          accountType: "ASSET",
-          debitTotal: "600.00",
-          creditTotal: "0.00",
-          balance: "600.00",
-        },
-      ],
-      totals: { debitTotal: "1495.00", creditTotal: "1490.00" },
+    jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
+      refundCount: 0,
+      refundTotal: "0.00",
+      paymentBreakdown: [],
+      missingPaymentCount: 0,
+    })
+    mockStage1GlBalances({
+      netRevenue: "1401.87",
+      outputVat: "98.13",
+      cash: "895.00",
+      card: "600.00",
     })
 
     const result = await reconcileSalesAndTender({} as never, {})
 
-    expect(result.variances[0]).toMatchObject({
-      domain: "revenue",
-      variance: "10",
-    })
+    expect(result.salesVariance).toBe("0.00")
     expect(result.paymentBreakdown[0]).toMatchObject({
-      label: "Cash tender vs cash GL",
-      variance: "5",
+      label: expect.stringContaining(DEFAULT_ACCOUNT_CODES.CASH),
+      variance: "5.00",
     })
     expect(result.paymentBreakdown[1]).toMatchObject({
-      label: "Card tender vs card clearing GL",
-      variance: "0",
+      label: expect.stringContaining(DEFAULT_ACCOUNT_CODES.CARD_CLEARING),
+      variance: "0.00",
     })
   })
 })
@@ -303,14 +494,26 @@ describe("reconcileRefunds", () => {
     jest.restoreAllMocks()
   })
 
-  it("returns zero variance when operational refunds match POS_REFUND GL totals", async () => {
+  function mockRefundSummary(input: {
+    total: string
+    paymentBreakdown: Array<{ method: string; amount: string; saleCount: number }>
+  }) {
     jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
-      refundCount: 1,
-      refundTotal: "50.00",
-      paymentBreakdown: [
-        { method: "CASH" as never, amount: "50.00", saleCount: 1 },
-      ],
+      refundCount: input.paymentBreakdown.length,
+      refundTotal: input.total,
+      paymentBreakdown: input.paymentBreakdown as never,
       missingPaymentCount: 0,
+    })
+  }
+
+  function tenderVariance(result: Awaited<ReturnType<typeof reconcileRefunds>>, accountCode: string) {
+    return result.paymentBreakdown.find((row) => row.label.includes(`(${accountCode})`))
+  }
+
+  it("returns zero variance when operational refunds match POS_REFUND GL totals", async () => {
+    mockRefundSummary({
+      total: "50.00",
+      paymentBreakdown: [{ method: "CASH", amount: "50.00", saleCount: 1 }],
     })
 
     const prisma = createAuditMockPrisma({
@@ -325,16 +528,14 @@ describe("reconcileRefunds", () => {
       domain: "refund",
       variance: "0",
     })
+    expect(result.paymentBreakdown).toHaveLength(4)
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.CASH)).toMatchObject({ variance: "0.00" })
   })
 
   it("reports variance when operational refunds differ from GL reversal", async () => {
-    jest.spyOn(refundSummary, "getRefundSummary").mockResolvedValue({
-      refundCount: 1,
-      refundTotal: "75.00",
-      paymentBreakdown: [
-        { method: "CASH" as never, amount: "75.00", saleCount: 1 },
-      ],
-      missingPaymentCount: 0,
+    mockRefundSummary({
+      total: "75.00",
+      paymentBreakdown: [{ method: "CASH", amount: "75.00", saleCount: 1 }],
     })
 
     const prisma = createAuditMockPrisma({
@@ -348,6 +549,117 @@ describe("reconcileRefunds", () => {
       operationalAmount: "75.00",
       glAmount: "50",
       variance: "25",
+    })
+  })
+
+  it("reconciles CASH refund 107 @ 7% with zero economics and tender variance", async () => {
+    mockRefundSummary({
+      total: "107.00",
+      paymentBreakdown: [{ method: "CASH", amount: "107.00", saleCount: 1 }],
+    })
+
+    const prisma = createAuditMockPrisma({
+      vouchers: [matchingRefundVoucher("refund-1", 107, DEFAULT_ACCOUNT_CODES.CASH)],
+    })
+
+    const result = await reconcileRefunds(prisma as never, {})
+
+    const econ = stage1Economics(107)
+    expect(result.variances[0]).toMatchObject({
+      domain: "refund",
+      operationalAmount: "107.00",
+      glAmount: "107",
+      variance: "0",
+    })
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.CASH)).toMatchObject({
+      operationalAmount: "107.00",
+      glAmount: "107.00",
+      variance: "0.00",
+    })
+    expect(Number(econ.net)).toBe(100)
+    expect(Number(econ.vat)).toBe(7)
+  })
+
+  it("reconciles CARD refund to 1110 card clearing credit", async () => {
+    mockRefundSummary({
+      total: "107.00",
+      paymentBreakdown: [{ method: "CARD", amount: "107.00", saleCount: 1 }],
+    })
+
+    const prisma = createAuditMockPrisma({
+      vouchers: [
+        matchingRefundVoucher("refund-1", 107, DEFAULT_ACCOUNT_CODES.CARD_CLEARING),
+      ],
+    })
+
+    const result = await reconcileRefunds(prisma as never, {})
+
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.CARD_CLEARING)).toMatchObject({
+      operationalAmount: "107.00",
+      glAmount: "107.00",
+      variance: "0.00",
+    })
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.CASH)?.variance).toBe("0.00")
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING)?.variance).toBe("0.00")
+  })
+
+  it.each([
+    ["QR", PaymentMethod.QR],
+    ["TRANSFER", PaymentMethod.TRANSFER],
+    ["BANK_TRANSFER", PaymentMethod.BANK_TRANSFER],
+  ] as const)("reconciles %s refund to 1120 bank transfer clearing credit", async (_label, method) => {
+    mockRefundSummary({
+      total: "107.00",
+      paymentBreakdown: [{ method, amount: "107.00", saleCount: 1 }],
+    })
+
+    const prisma = createAuditMockPrisma({
+      vouchers: [
+        matchingRefundVoucher(
+          "refund-1",
+          107,
+          DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING
+        ),
+      ],
+    })
+
+    const result = await reconcileRefunds(prisma as never, {})
+
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING)).toMatchObject({
+      operationalAmount: "107.00",
+      glAmount: "107.00",
+      variance: "0.00",
+    })
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.POS_OTHER_CLEARING)?.variance).toBe("0.00")
+  })
+
+  it("reconciles OTHER refund to 1190 only, not 1120", async () => {
+    mockRefundSummary({
+      total: "107.00",
+      paymentBreakdown: [{ method: "OTHER", amount: "107.00", saleCount: 1 }],
+    })
+
+    const prisma = createAuditMockPrisma({
+      vouchers: [
+        matchingRefundVoucher(
+          "refund-1",
+          107,
+          DEFAULT_ACCOUNT_CODES.POS_OTHER_CLEARING
+        ),
+      ],
+    })
+
+    const result = await reconcileRefunds(prisma as never, {})
+
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.POS_OTHER_CLEARING)).toMatchObject({
+      operationalAmount: "107.00",
+      glAmount: "107.00",
+      variance: "0.00",
+    })
+    expect(tenderVariance(result, DEFAULT_ACCOUNT_CODES.BANK_TRANSFER_CLEARING)).toMatchObject({
+      operationalAmount: "0.00",
+      glAmount: "0.00",
+      variance: "0.00",
     })
   })
 })

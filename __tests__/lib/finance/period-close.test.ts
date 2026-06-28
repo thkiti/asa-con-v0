@@ -3,6 +3,7 @@
 }))
 
 import { AccountingPeriodStatus, Prisma } from "@/generated/prisma/client"
+import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
 import type { CloseChecklistResult } from "@/lib/finance/close-checklist-types"
 import { buildCloseReadinessWithSnapshotsForPeriod } from "@/lib/finance/close-readiness"
 import { CloseGateError } from "@/lib/finance/close-gate-errors"
@@ -105,7 +106,7 @@ async function seedOpenPeriod(
 }
 
 function balancedLines(state: ReturnType<typeof createFinanceMockTx>["state"]) {
-  const cash = state.glAccounts.find((a) => a.code === "1100")!
+  const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
   const revenue = state.glAccounts.find((a) => a.code === "4000")!
   return [
     {

@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import type { DocType, PaymentMethod } from "@/generated/prisma/client"
+import type { PosVatEconomics } from "./pos-sale-vat"
 
 export const FINANCE_REF_TYPES = {
   POS_SALE: "POS_SALE",
@@ -18,6 +19,7 @@ export const FINANCE_REF_TYPES = {
   REVENUE_VOUCHER: "REVENUE_VOUCHER",
   INVOICE_VOUCHER: "INVOICE_VOUCHER",
   PERIOD_CLOSING_ENTRY: "PERIOD_CLOSING_ENTRY",
+  POS_SETTLEMENT_COLLECTOR_PICKUP: "POS_SETTLEMENT_COLLECTOR_PICKUP",
 } as const
 
 export type FinanceRefType =
@@ -58,15 +60,37 @@ export type PostedVoucherResult = {
 
 export type PostSaleVoucherInput = {
   tx: Prisma.TransactionClient
+  legalEntityCode?: DocumentEntityCode
   sale: {
     id: string
     branchId: string
     total: Prisma.Decimal | number | string
     paymentMethod: PaymentMethod
+    createdAt: Date
+    netAmount?: Prisma.Decimal | number | string | null
+    vatAmount?: Prisma.Decimal | number | string | null
+    vatRateBps?: number | null
+    taxCode?: string | null
+    outputVatAccountCode?: string | null
   }
+  vatEconomics?: PosVatEconomics
   ledgerResult?: {
     cogsAmount?: Prisma.Decimal | number | string
   }
+}
+
+export type PostRefundVoucherInput = {
+  tx: Prisma.TransactionClient
+  legalEntityCode?: DocumentEntityCode
+  refund: {
+    id: string
+    branchId: string
+    refundNo: string
+    amount: Prisma.Decimal | number | string
+    createdAt: Date
+  }
+  paymentMethod: PaymentMethod
+  vatEconomics: PosVatEconomics
 }
 
 export type PostStockDocumentVoucherInput = {
@@ -81,18 +105,6 @@ export type PostStockDocumentVoucherInput = {
     inboundValue: Prisma.Decimal | number | string
     outboundValue?: Prisma.Decimal | number | string
   }
-}
-
-export type PostRefundVoucherInput = {
-  tx: Prisma.TransactionClient
-  refund: {
-    id: string
-    branchId: string
-    refundNo: string
-    amount: Prisma.Decimal | number | string
-    createdAt: Date
-  }
-  paymentMethod: PaymentMethod
 }
 
 export type ManualJournalLineInput = {

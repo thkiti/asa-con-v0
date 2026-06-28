@@ -127,6 +127,7 @@ describe("FinanceMenuHubView", () => {
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
     expect(html).toContain('href="/finance/accounts"')
+    expect(html).toContain('href="/finance/accounts/import"')
     expect(html).toContain('href="/finance/periods"')
   })
 })

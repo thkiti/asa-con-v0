@@ -39,9 +39,9 @@ describe("getMainMenuSections", () => {
     ])
   })
 
-  it("includes Finance, Operations, Shop for HO_FINANCE", () => {
+  it("includes Finance, Operations, Shop, and System for HO_FINANCE", () => {
     const keys = getMainMenuSections("HO_FINANCE").map((section) => section.key)
-    expect(keys).toEqual(["finance", "operations", "shop"])
+    expect(keys).toEqual(["finance", "operations", "shop", "system"])
   })
 
   it("includes Operations and Shop only for HO_OPERATIONS", () => {
@@ -159,6 +159,29 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("HO_ADMIN", "import-master-database")?.href).toBe(
       "/system/import"
     )
+  })
+
+  it("HO_ADMIN and HO_FINANCE see active Import Accounting Data linking to finance system hub", () => {
+    for (const role of ["HO_ADMIN", "HO_FINANCE"] as const) {
+      const item = findItem(role, "import-accounting")
+      expect(item?.status).toBe("available")
+      expect(item?.label).toBe("Import Accounting Data")
+      expect(item?.href).toBe("/finance/system")
+      expect(item?.hint).toBe(
+        "Chart of accounts, accounting periods, and finance setup imports"
+      )
+    }
+  })
+
+  it("HO_FINANCE sees Import Accounting Data but not Import Master Database", () => {
+    expect(findItem("HO_FINANCE", "import-accounting")?.href).toBe("/finance/system")
+    expect(findItem("HO_FINANCE", "import-master-database")).toBeUndefined()
+    expect(getMainMenuSectionDetail("HO_FINANCE", "system")).not.toBeNull()
+  })
+
+  it("HO_OPERATIONS cannot open system section", () => {
+    expect(getMainMenuSectionDetail("HO_OPERATIONS", "system")).toBeNull()
+    expect(findItem("HO_OPERATIONS", "import-accounting")).toBeUndefined()
   })
 
   it("SH_STAFF does not see system import via flat items", () => {

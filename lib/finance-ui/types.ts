@@ -25,6 +25,18 @@ export type InventoryReconciliationResult = {
 
 export type SalesReconciliationResult = {
   filter: FinanceFilterValues
+  operationalGrossSales: string
+  operationalGrossRefunds: string
+  operationalNetGross: string
+  glNetRevenue: string
+  glOutputVat: string
+  glGrossEquivalent: string
+  salesVariance: string
+  operationalTenderIn: string
+  operationalTenderRefundOut: string
+  operationalTenderNet: string
+  glTenderClearingNet: string
+  tenderVariance: string
   operationalRevenue: string
   glRevenueBalance: string
   paymentBreakdown: ReconciliationVariance[]

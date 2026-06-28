@@ -15,6 +15,11 @@ import type { CheckoutInput, CheckoutResult } from "./checkout-types"
 import { createPaymentRow } from "./payment"
 import { allocateReceiptNo, createReceiptRow } from "./receipt"
 import { buildPostSaleVoucherInput } from "./checkout-finance"
+import {
+  resolvePosLegalEntityCode,
+  resolvePosSaleVatEconomics,
+  saleVatSnapshotFields,
+} from "./resolve-pos-sale-vat"
 import { validateAndPrepareCheckout } from "./validation"
 
 const EMPTY_LEDGER = { applied: 0, skippedZeroQty: 0 }
@@ -27,11 +32,19 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
   const prepared = await validateAndPrepareCheckout(prisma, input)
 
   const run = async (tx: Prisma.TransactionClient): Promise<CheckoutResult> => {
+    const documentDate = new Date()
+    const vatEconomics = await resolvePosSaleVatEconomics(tx, {
+      documentDate,
+      grossTotal: prepared.total,
+    })
+
     const sale = await tx.sale.create({
       data: {
         branchId: prepared.branchId,
         staffId: prepared.staffId,
         total: prepared.total,
+        ...saleVatSnapshotFields(vatEconomics),
+        createdAt: documentDate,
       },
     })
 
@@ -121,7 +134,14 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         },
       })
       await postSaleVoucher(
-        buildPostSaleVoucherInput({ tx, sale, payment, ledgerRows })
+        buildPostSaleVoucherInput({
+          tx,
+          sale,
+          payment,
+          ledgerRows,
+          legalEntityCode: resolvePosLegalEntityCode(),
+          vatEconomics,
+        })
       )
     }
 

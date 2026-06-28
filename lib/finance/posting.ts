@@ -1,6 +1,7 @@
 ﻿import type { Prisma } from "@/generated/prisma/client"
 import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import {
   buildJournalLineDraftsFromCodes,
   resolveAccountsForPosRefund,
@@ -9,6 +10,7 @@ import {
 } from "./account-map"
 import { toMoney } from "./decimal"
 import { FinancePostingError } from "./posting-errors"
+import { resolvePosSaleVoucherVatEconomics } from "./resolve-pos-sale-voucher-vat"
 import { assertPostingPeriodOpen } from "./posting-period"
 import { createJournalForVoucher } from "./journal"
 import {
@@ -143,10 +145,18 @@ export async function postSaleVoucher(
     )
   }
 
+  const legalEntityCode = input.legalEntityCode ?? DEFAULT_DOCUMENT_ENTITY_CODE
+  const vatEconomics = await resolvePosSaleVoucherVatEconomics(input.tx, {
+    legalEntityCode,
+    sale: input.sale,
+    vatEconomics: input.vatEconomics,
+  })
+
   const codeLines = resolveAccountsForPosSale({
     paymentMethod: input.sale.paymentMethod,
     total: input.sale.total,
     cogsAmount: input.ledgerResult?.cogsAmount,
+    vatEconomics,
   })
 
   const lines = await resolveAccountIds(input.tx, codeLines)
@@ -154,7 +164,8 @@ export async function postSaleVoucher(
   return postOperationalVoucher({
     tx: input.tx,
     branchId: input.sale.branchId,
-    date: new Date(),
+    date: input.sale["createdAt"],
+    legalEntityCode,
     refType: FINANCE_REF_TYPES.POS_SALE,
     refId: input.sale.id,
     description: "POS sale",
@@ -175,6 +186,7 @@ export async function postRefundVoucher(
   const codeLines = resolveAccountsForPosRefund({
     paymentMethod: input.paymentMethod,
     amount: input.refund.amount,
+    vatEconomics: input.vatEconomics,
   })
 
   const lines = await resolveAccountIds(input.tx, codeLines)
@@ -183,6 +195,7 @@ export async function postRefundVoucher(
     tx: input.tx,
     branchId: input.refund.branchId,
     date: input.refund.createdAt,
+    legalEntityCode: input.legalEntityCode ?? DEFAULT_DOCUMENT_ENTITY_CODE,
     refType: FINANCE_REF_TYPES.POS_REFUND,
     refId: input.refund.id,
     refNo: input.refund.refundNo,

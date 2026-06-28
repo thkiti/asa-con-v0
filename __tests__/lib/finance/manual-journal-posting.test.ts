@@ -1,4 +1,5 @@
 import { AccountingPeriodStatus, Prisma } from "@/generated/prisma/client"
+import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
   postJournalReversal,
@@ -111,7 +112,7 @@ describe("manual journal posting", () => {
   it("rejects inactive account", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, postingDate)
-    const cash = state.glAccounts.find((a) => a.code === "1100")!
+    const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
     cash.isActive = false
 
     await expect(
