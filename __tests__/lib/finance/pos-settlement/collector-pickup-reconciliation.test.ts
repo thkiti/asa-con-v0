@@ -126,7 +126,7 @@ function extendFinanceTxWithCollectorReport(
           createdAt?: { gte?: Date; lt?: Date }
         }
         orderBy?: { createdAt?: "asc" | "desc" }
-        select?: { id?: boolean }
+        select?: { id?: boolean; reportJson?: boolean }
       }) => {
         let rows = [...state.collectorReports!]
         if (where?.branchId) {
@@ -141,8 +141,13 @@ function extendFinanceTxWithCollectorReport(
         if (orderBy?.createdAt === "desc") {
           rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         }
-        if (select?.id) {
-          return rows.map((row) => ({ id: row.id }))
+        if (select) {
+          return rows.map((row) => {
+            const result: Record<string, unknown> = {}
+            if (select.id) result.id = row.id
+            if (select.reportJson) result.reportJson = row.reportJson
+            return result
+          })
         }
         return rows
       },
@@ -453,5 +458,27 @@ describe("collector pickup settlement reconciliation", () => {
       collectorReportId: "collector-report-1",
       status: "POSTED",
     })
+  })
+
+  it("excludes non-COLLECT reports from status-list", async () => {
+    const base = createFinanceMockTx()
+    const { tx, state } = extendFinanceTxWithCollectorReport(base)
+    const createdAt = new Date("2026-06-26T10:00:00.000Z")
+    seedCollectorReport(state, { id: "collector-report-collect", createdAt })
+    seedCollectorReport(state, {
+      id: "collector-report-z",
+      collectNo: "COL-SH001-202606-0002",
+      createdAt,
+      report: collectReport({ mode: "Z", grandTotal: 500 }),
+    })
+
+    const results = await listCollectorPickupSettlementStatuses(tx as never, {
+      from: "2026-06-01",
+      to: "2026-06-30",
+    })
+
+    expect(results).toHaveLength(1)
+    expect(results[0]?.collectorReportId).toBe("collector-report-collect")
+    expect(results[0]?.mode).toBe("COLLECT")
   })
 })

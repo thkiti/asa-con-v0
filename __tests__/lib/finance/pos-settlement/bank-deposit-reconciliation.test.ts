@@ -126,7 +126,7 @@ function extendFinanceTxWithCollectorReport(
           createdAt?: { gte?: Date; lt?: Date }
         }
         orderBy?: { createdAt?: "asc" | "desc" }
-        select?: { id?: boolean }
+        select?: { id?: boolean; reportJson?: boolean }
       }) => {
         let rows = [...state.collectorReports!]
         if (where?.branchId) {
@@ -141,8 +141,13 @@ function extendFinanceTxWithCollectorReport(
         if (orderBy?.createdAt === "desc") {
           rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         }
-        if (select?.id) {
-          return rows.map((row) => ({ id: row.id }))
+        if (select) {
+          return rows.map((row) => {
+            const result: Record<string, unknown> = {}
+            if (select.id) result.id = row.id
+            if (select.reportJson) result.reportJson = row.reportJson
+            return result
+          })
         }
         return rows
       },

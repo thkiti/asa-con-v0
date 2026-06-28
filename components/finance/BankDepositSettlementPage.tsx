@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { BankDepositSettlementTable } from "@/components/finance/BankDepositSettlementTable"
-import { FinanceFilterBar } from "@/components/finance/FinanceFilterBar"
+import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
   fetchBankDepositSettlementStatusList,
   formatBankDepositPostError,
@@ -86,7 +86,7 @@ export function BankDepositSettlementPage() {
         </p>
       ) : null}
 
-      <FinanceFilterBar
+      <PosSettlementFilterBar
         values={filter}
         onChange={setFilter}
         onApply={handleApply}

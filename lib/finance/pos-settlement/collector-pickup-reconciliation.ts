@@ -5,6 +5,10 @@ import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import type { ReadReportMode, ReadReportPayload } from "@/lib/pos/read-report-types"
 import { normalizeDateRange } from "@/lib/reporting/date-range"
 import {
+  isCollectModeCollectorReport,
+  parseCollectorReportPayload,
+} from "./collector-report-source"
+import {
   PosSettlementError,
   PosSettlementErrorCodes,
 } from "./pos-settlement-errors"
@@ -70,10 +74,7 @@ function formatAmount(amount: ReturnType<typeof toMoney>): string {
 }
 
 function parseReportPayload(reportJson: unknown): ReadReportPayload | null {
-  if (reportJson == null || typeof reportJson !== "object") {
-    return null
-  }
-  return reportJson as ReadReportPayload
+  return parseCollectorReportPayload(reportJson)
 }
 
 function deriveExpectedAmount(report: ReadReportPayload | null): {
@@ -304,11 +305,14 @@ export async function listCollectorPickupSettlementStatuses(
   const rows = await db.collectorReport.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    select: { id: true },
+    select: { id: true, reportJson: true },
   })
 
   const results: CollectorPickupSettlementReconciliation[] = []
   for (const row of rows) {
+    if (!isCollectModeCollectorReport(row.reportJson)) {
+      continue
+    }
     results.push(await getCollectorPickupSettlementStatus(db, row.id))
   }
   return results

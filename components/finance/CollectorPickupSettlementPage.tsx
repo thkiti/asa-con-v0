@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { CollectorPickupSettlementTable } from "@/components/finance/CollectorPickupSettlementTable"
-import { FinanceFilterBar } from "@/components/finance/FinanceFilterBar"
+import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
   fetchCollectorPickupSettlementStatusList,
   formatCollectorPickupPostError,
@@ -86,7 +86,7 @@ export function CollectorPickupSettlementPage() {
         </p>
       ) : null}
 
-      <FinanceFilterBar
+      <PosSettlementFilterBar
         values={filter}
         onChange={setFilter}
         onApply={handleApply}
