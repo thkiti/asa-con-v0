@@ -9,6 +9,7 @@ import {
 } from "./balance-helpers"
 import type { TrialBalanceFilter, TrialBalanceResult, TrialBalanceRow } from "./trial-balance-types"
 import { accountingPeriodUniqueWhere } from "../period-lookup"
+import { periodKeyToReportDateRange } from "./report-filter"
 
 export type TrialBalancePrisma = Pick<
   PrismaClient,
@@ -37,19 +38,22 @@ async function resolvePeriodId(
 
 function buildJournalEntryWhere(
   filter: TrialBalanceFilter,
-  periodId: string | null
+  scope:
+    | { mode: "periodKey"; endExclusive: Date }
+    | { mode: "dateRange"; start: Date; endExclusive: Date }
+    | null
 ): Prisma.JournalEntryWhereInput {
   const where: Prisma.JournalEntryWhereInput = {
     legalEntityCode: filter.legalEntityCode,
+    ...(filter.branchId ? { branchId: filter.branchId } : {}),
   }
 
-  if (periodId) {
-    where.periodId = periodId
-  } else if (filter.from && filter.to) {
-    const range = normalizeDateRange({ from: filter.from, to: filter.to })
+  if (scope?.mode === "periodKey") {
+    where.date = { lt: scope.endExclusive }
+  } else if (scope?.mode === "dateRange") {
     where.date = {
-      gte: range.start,
-      lt: range.endExclusive,
+      gte: scope.start,
+      lt: scope.endExclusive,
     }
   }
 
@@ -97,7 +101,19 @@ export async function getTrialBalance(
     orderBy: [{ accountType: "asc" }, { code: "asc" }],
   })
 
-  const journalEntryWhere = buildJournalEntryWhere(filter, periodId)
+  const journalScope = filter.periodKey
+    ? {
+        mode: "periodKey" as const,
+        endExclusive: periodKeyToReportDateRange(filter.periodKey).range.endExclusive,
+      }
+    : filter.from && filter.to
+      ? {
+          mode: "dateRange" as const,
+          ...normalizeDateRange({ from: filter.from, to: filter.to }),
+        }
+      : null
+
+  const journalEntryWhere = buildJournalEntryWhere(filter, journalScope)
 
   const lines = await prisma.journalEntryLine.findMany({
     where: { journalEntry: journalEntryWhere },

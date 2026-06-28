@@ -66,7 +66,6 @@ function SectionTable({
 
 export function CashFlowPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [branchId, setBranchId] = useState("branch-1")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -80,12 +79,11 @@ export function CashFlowPage() {
   const [error, setError] = useState<string | null>(null)
 
   const buildFilter = useCallback((): CashFlowFilter => {
-    const base: CashFlowFilter = { branchId: branchId.trim() }
     if (filterMode === "period") {
-      return { ...base, periodKey: periodKey.trim() }
+      return { periodKey: periodKey.trim() }
     }
-    return { ...base, from: from.trim(), to: to.trim() }
-  }, [branchId, filterMode, from, periodKey, to])
+    return { from: from.trim(), to: to.trim() }
+  }, [filterMode, from, periodKey, to])
 
   async function handleRefresh() {
     if (filterMode === "dateRange" && (!from.trim() || !to.trim())) {
@@ -112,7 +110,7 @@ export function CashFlowPage() {
     const scope =
       result.filter.periodKey ??
       `${result.filter.from ?? ""}_${result.filter.to ?? ""}`.replace(/__/g, "")
-    downloadCashFlowCsv(result, `cash-flow-${result.filter.branchId}-${scope}.csv`)
+    downloadCashFlowCsv(result, `cash-flow-${scope}.csv`)
   }
 
   function handlePrint() {
@@ -130,15 +128,6 @@ export function CashFlowPage() {
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch</span>
-            <input
-              className="rounded border border-zinc-300 px-2 py-1"
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            />
-          </label>
-
           <fieldset className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Scope</span>
             <div className="flex gap-3">
@@ -228,11 +217,10 @@ export function CashFlowPage() {
       {result ? (
         <div className="cash-flow-report space-y-6">
           <p className="text-sm text-zinc-600 print:text-black">
-            Branch {result.filter.branchId}
             {result.filter.periodKey
-              ? ` · Period ${result.filter.periodKey}`
+              ? `Period ${result.filter.periodKey}`
               : result.filter.from && result.filter.to
-                ? ` · ${result.filter.from} to ${result.filter.to}`
+                ? `${result.filter.from} to ${result.filter.to}`
                 : null}
             · Indirect method
           </p>

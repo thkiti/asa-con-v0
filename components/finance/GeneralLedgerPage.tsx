@@ -32,7 +32,6 @@ type FilterMode = "period" | "dateRange"
 
 export function GeneralLedgerPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [branchId, setBranchId] = useState("branch-1")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -47,7 +46,7 @@ export function GeneralLedgerPage() {
   const [error, setError] = useState<string | null>(null)
 
   const buildFilter = useCallback((): GeneralLedgerFilter => {
-    const base: GeneralLedgerFilter = { branchId: branchId.trim() }
+    const base: GeneralLedgerFilter = {}
     if (accountCode.trim()) {
       base.accountCode = accountCode.trim()
     }
@@ -55,7 +54,7 @@ export function GeneralLedgerPage() {
       return { ...base, periodKey: periodKey.trim() }
     }
     return { ...base, from: from.trim(), to: to.trim() }
-  }, [accountCode, branchId, filterMode, from, periodKey, to])
+  }, [accountCode, filterMode, from, periodKey, to])
 
   async function handleRefresh() {
     if (!accountCode.trim()) {
@@ -90,7 +89,7 @@ export function GeneralLedgerPage() {
     const accountSuffix = result.filter.accountCode ? `-${result.filter.accountCode}` : ""
     downloadGeneralLedgerCsv(
       result,
-      `general-ledger-${result.filter.branchId}-${scope}${accountSuffix}.csv`
+      `general-ledger-${formatEntityShort(result.filter.legalEntityCode)}-${scope}${accountSuffix}.csv`
     )
   }
 
@@ -107,15 +106,6 @@ export function GeneralLedgerPage() {
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch</span>
-            <input
-              className="rounded border border-zinc-300 px-2 py-1"
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            />
-          </label>
-
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Account code</span>
             <input
@@ -223,10 +213,9 @@ export function GeneralLedgerPage() {
             <p className="text-sm text-zinc-600">
               {formatFinanceReportPeriodLabel(result.filter)}
             </p>
-            <p className="text-sm text-zinc-500">
-              Branch {result.filter.branchId}
-              {result.filter.accountCode ? ` · Account ${result.filter.accountCode}` : ""}
-            </p>
+            {result.filter.accountCode ? (
+              <p className="text-sm text-zinc-500">Account {result.filter.accountCode}</p>
+            ) : null}
           </header>
 
           {result.accounts.length === 0 ? (

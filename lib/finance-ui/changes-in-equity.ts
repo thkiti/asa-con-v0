@@ -3,7 +3,7 @@ import { formatAccountDisplay } from "./format-account"
 import type { ChangesInEquityResult } from "./types"
 
 export type ChangesInEquityFilter = {
-  branchId: string
+  branchId?: string
   periodKey?: string
   from?: string
   to?: string
@@ -11,7 +11,7 @@ export type ChangesInEquityFilter = {
 
 function buildQuery(filter: ChangesInEquityFilter): string {
   const params = new URLSearchParams()
-  params.set("branchId", filter.branchId.trim())
+  if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
   if (filter.periodKey?.trim()) params.set("periodKey", filter.periodKey.trim())
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())

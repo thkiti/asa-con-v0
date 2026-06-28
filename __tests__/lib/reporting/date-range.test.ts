@@ -14,6 +14,12 @@ describe("reporting date-range", () => {
     expect(range.endExclusive.toISOString()).toBe("2026-05-04T00:00:00.000Z")
   })
 
+  it("includes same-day from/to in the range", () => {
+    const range = normalizeDateRange({ from: "2026-01-01", to: "2026-01-01" })
+    expect(range.start.toISOString()).toBe("2026-01-01T00:00:00.000Z")
+    expect(range.endExclusive.toISOString()).toBe("2026-01-02T00:00:00.000Z")
+  })
+
   it("rejects from after to", () => {
     expect(() =>
       normalizeDateRange({ from: "2026-05-10", to: "2026-05-01" })

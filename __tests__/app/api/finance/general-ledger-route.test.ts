@@ -3,7 +3,13 @@ import { GET } from "@/app/api/finance/reports/general-ledger/route"
 import { getGeneralLedger } from "@/lib/finance/reports/general-ledger"
 import { parseGeneralLedgerFilter } from "@/lib/finance/reports/report-filter"
 import { ReportError } from "@/lib/reporting/report-errors"
+
+jest.mock("@/lib/finance/reports/report-session", () => ({
   resolveReportSessionLegalEntityCode: jest.fn().mockResolvedValue("AS"),
+}))
+
+jest.mock("@/lib/finance/reports/report-branch-scope", () => ({
+  applyReportBranchScope: jest.fn(async (_prisma: unknown, filter: unknown) => filter),
 }))
 
 jest.mock("@/lib/finance/reports/general-ledger", () => ({
@@ -32,16 +38,19 @@ function params(
 describe("parseGeneralLedgerFilter", () => {
   const legalEntityCode = "AS" as const
 
-  it("requires branchId", () => {
-    expect(() =>
-      parseGeneralLedgerFilter(
-        params({ periodKey: "2026-05", accountCode: "1100" }),
-        legalEntityCode
-      )
-    ).toThrow(ReportError)
+  it("accepts period scope without branchId", () => {
+    const filter = parseGeneralLedgerFilter(
+      params({ periodKey: "2026-05", accountCode: "1100" }),
+      legalEntityCode
+    )
+    expect(filter).toEqual({
+      legalEntityCode: "AS",
+      periodKey: "2026-05",
+      accountCode: "1100",
+    })
   })
 
-  it("accepts period scope with accountCode", () => {
+  it("accepts period scope with optional branchId", () => {
     const filter = parseGeneralLedgerFilter(
       params({ branchId: "branch-1", periodKey: "2026-05", accountCode: "1100" }),
       legalEntityCode
@@ -107,7 +116,35 @@ describe("GET /api/finance/reports/general-ledger", () => {
     jest.clearAllMocks()
   })
 
-  it("parses filter, calls domain, and returns JSON", async () => {
+  it("parses filter without branchId, calls domain, and returns JSON", async () => {
+    const dto = {
+      filter: {
+        legalEntityCode: "AS",
+        periodKey: "2026-05",
+        accountCode: "1100",
+      },
+      accounts: [],
+    }
+    mockGetGeneralLedger.mockResolvedValue(dto)
+
+    const req = new NextRequest(
+      "http://localhost/api/finance/reports/general-ledger?periodKey=2026-05&accountCode=1100"
+    )
+    const res = await GET(req)
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual(dto)
+    expect(mockGetGeneralLedger).toHaveBeenCalledWith(
+      expect.objectContaining({ mocked: true }),
+      {
+        legalEntityCode: "AS",
+        periodKey: "2026-05",
+        accountCode: "1100",
+      }
+    )
+  })
+
+  it("parses filter with branchId, calls domain, and returns JSON", async () => {
     const dto = {
       filter: {
         legalEntityCode: "AS",

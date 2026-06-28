@@ -119,13 +119,18 @@ describe("retained earnings account identification", () => {
 describe("parseRetainedEarningsFilter", () => {
   const legalEntityCode = "AS" as const
 
-  it("requires branchId", () => {
-    expect(() =>
-      parseRetainedEarningsFilter(params({ periodKey: "2026-05" }), legalEntityCode)
-    ).toThrow(ReportError)
+  it("accepts period scope without branchId", () => {
+    const filter = parseRetainedEarningsFilter(
+      params({ periodKey: "2026-05" }),
+      legalEntityCode
+    )
+    expect(filter).toEqual({
+      legalEntityCode: "AS",
+      periodKey: "2026-05",
+    })
   })
 
-  it("accepts period scope", () => {
+  it("accepts period scope with optional branchId", () => {
     const filter = parseRetainedEarningsFilter(
       params({ branchId: "branch-1", periodKey: "2026-05" }),
       legalEntityCode

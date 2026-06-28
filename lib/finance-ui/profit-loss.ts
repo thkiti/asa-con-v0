@@ -3,7 +3,7 @@ import { formatAccountDisplay } from "./format-account"
 import type { ProfitLossResult } from "./types"
 
 export type ProfitLossFilter = {
-  branchId: string
+  branchId?: string
   periodKey?: string
   from?: string
   to?: string
@@ -11,7 +11,7 @@ export type ProfitLossFilter = {
 
 function buildQuery(filter: ProfitLossFilter): string {
   const params = new URLSearchParams()
-  params.set("branchId", filter.branchId.trim())
+  if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
   if (filter.periodKey?.trim()) params.set("periodKey", filter.periodKey.trim())
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())

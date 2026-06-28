@@ -171,7 +171,7 @@ export async function getGeneralLedger(
       glAccountId: { in: accountIds },
       journalEntry: {
         legalEntityCode: filter.legalEntityCode,
-        branchId: filter.branchId,
+        ...(filter.branchId ? { branchId: filter.branchId } : {}),
         date: { lt: range.start },
       },
     },
@@ -187,7 +187,7 @@ export async function getGeneralLedger(
       glAccountId: { in: accountIds },
       journalEntry: {
         legalEntityCode: filter.legalEntityCode,
-        branchId: filter.branchId,
+        ...(filter.branchId ? { branchId: filter.branchId } : {}),
         date: {
           gte: range.start,
           lt: range.endExclusive,

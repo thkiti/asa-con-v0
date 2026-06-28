@@ -8,6 +8,10 @@ jest.mock("@/lib/finance/reports/report-session", () => ({
   resolveReportSessionLegalEntityCode: jest.fn().mockResolvedValue("AS"),
 }))
 
+jest.mock("@/lib/finance/reports/report-branch-scope", () => ({
+  applyReportBranchScope: jest.fn(async (_prisma: unknown, filter: unknown) => filter),
+}))
+
 jest.mock("@/lib/finance/reports/cash-flow", () => ({
   getCashFlow: jest.fn(),
 }))
@@ -27,13 +31,15 @@ function params(input: Record<string, string>): { get: (name: string) => string 
 describe("parseCashFlowFilter", () => {
   const legalEntityCode = "AS" as const
 
-  it("requires branchId", () => {
-    expect(() =>
-      parseCashFlowFilter(params({ periodKey: "2026-05" }), legalEntityCode)
-    ).toThrow(ReportError)
+  it("accepts period scope without branchId", () => {
+    const filter = parseCashFlowFilter(params({ periodKey: "2026-05" }), legalEntityCode)
+    expect(filter).toEqual({
+      legalEntityCode: "AS",
+      periodKey: "2026-05",
+    })
   })
 
-  it("accepts period scope", () => {
+  it("accepts period scope with optional branchId", () => {
     const filter = parseCashFlowFilter(
       params({ branchId: "branch-1", periodKey: "2026-05" }),
       legalEntityCode

@@ -88,7 +88,6 @@ function BridgeLine({
 
 export function RetainedEarningsPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [branchId, setBranchId] = useState("branch-1")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -102,12 +101,11 @@ export function RetainedEarningsPage() {
   const [error, setError] = useState<string | null>(null)
 
   const buildFilter = useCallback((): RetainedEarningsFilter => {
-    const base: RetainedEarningsFilter = { branchId: branchId.trim() }
     if (filterMode === "period") {
-      return { ...base, periodKey: periodKey.trim() }
+      return { periodKey: periodKey.trim() }
     }
-    return { ...base, from: from.trim(), to: to.trim() }
-  }, [branchId, filterMode, from, periodKey, to])
+    return { from: from.trim(), to: to.trim() }
+  }, [filterMode, from, periodKey, to])
 
   async function handleRefresh() {
     setLoading(true)
@@ -128,10 +126,7 @@ export function RetainedEarningsPage() {
     const scope =
       result.filter.periodKey ??
       `${result.filter.from ?? ""}_${result.filter.to ?? ""}`.replace(/__/g, "")
-    downloadRetainedEarningsCsv(
-      result,
-      `retained-earnings-${result.filter.branchId}-${scope}.csv`
-    )
+    downloadRetainedEarningsCsv(result, `retained-earnings-${scope}.csv`)
   }
 
   function handlePrint() {
@@ -149,15 +144,6 @@ export function RetainedEarningsPage() {
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch</span>
-            <input
-              className="rounded border border-zinc-300 px-2 py-1"
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            />
-          </label>
-
           <fieldset className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Scope</span>
             <div className="flex gap-3">
@@ -248,11 +234,10 @@ export function RetainedEarningsPage() {
         <section className="retained-earnings-report space-y-8">
           <div className="space-y-1 text-sm text-zinc-600 print:text-black">
             <p>
-              Branch {result.period.branchId}
               {result.period.periodKey
-                ? ` · Period ${result.period.periodKey}`
+                ? `Period ${result.period.periodKey}`
                 : result.period.from && result.period.to
-                  ? ` · ${result.period.from} to ${result.period.to}`
+                  ? `${result.period.from} to ${result.period.to}`
                   : null}
               {result.period.periodStatus
                 ? ` · Status ${result.period.periodStatus}`

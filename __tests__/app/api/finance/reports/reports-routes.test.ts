@@ -14,6 +14,10 @@ jest.mock("@/lib/finance/reports/report-session", () => ({
   resolveReportSessionLegalEntityCode: jest.fn(),
 }))
 
+jest.mock("@/lib/finance/reports/report-branch-scope", () => ({
+  applyReportBranchScope: jest.fn(async (_prisma: unknown, filter: unknown) => filter),
+}))
+
 jest.mock("@/lib/finance/reports/general-ledger", () => ({
   getGeneralLedger: jest.fn(),
 }))
@@ -40,7 +44,7 @@ const mockGetProfitLoss = getProfitLoss as jest.Mock
 const mockGetBalanceSheet = getBalanceSheet as jest.Mock
 const mockGetTrialBalance = getTrialBalance as jest.Mock
 
-const baseQuery = "branchId=branch-1&periodKey=2026-05"
+const baseQuery = "periodKey=2026-05"
 
 describe("finance report API routes entity scope", () => {
   beforeEach(() => {

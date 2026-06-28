@@ -86,7 +86,7 @@ function SectionTable({
 
 export function ProfitLossPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [branchId, setBranchId] = useState("branch-1")
+  const [branchId, setBranchId] = useState("")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -100,7 +100,10 @@ export function ProfitLossPage() {
   const [error, setError] = useState<string | null>(null)
 
   const buildFilter = useCallback((): ProfitLossFilter => {
-    const base: ProfitLossFilter = { branchId: branchId.trim() }
+    const base: ProfitLossFilter = {}
+    if (branchId.trim()) {
+      base.branchId = branchId.trim()
+    }
     if (filterMode === "period") {
       return { ...base, periodKey: periodKey.trim() }
     }
@@ -126,7 +129,8 @@ export function ProfitLossPage() {
     const scope =
       result.filter.periodKey ??
       `${result.filter.from ?? ""}_${result.filter.to ?? ""}`.replace(/__/g, "")
-    downloadProfitLossCsv(result, `profit-loss-${result.filter.branchId}-${scope}.csv`)
+    const branchSuffix = result.filter.branchId ? `-${result.filter.branchId}` : ""
+    downloadProfitLossCsv(result, `profit-loss${branchSuffix}-${scope}.csv`)
   }
 
   function handlePrint() {
@@ -145,9 +149,10 @@ export function ProfitLossPage() {
 
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch</span>
+            <span className="text-zinc-600">Branch (optional)</span>
             <input
-              className="rounded border border-zinc-300 px-2 py-1"
+              className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
+              placeholder="All branches"
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
             />
@@ -253,7 +258,9 @@ export function ProfitLossPage() {
               Net income: {formatAmount(result.netIncome)}
               {incomeLabel ? ` (${incomeLabel})` : ""}
             </p>
-            <p className="text-sm text-zinc-500">Branch {result.filter.branchId}</p>
+            {result.filter.branchId ? (
+              <p className="text-sm text-zinc-500">Branch {result.filter.branchId}</p>
+            ) : null}
           </header>
 
           <SectionTable

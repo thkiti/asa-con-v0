@@ -43,7 +43,6 @@ function rowClassName(rowKey: ChangesInEquityRowKey, isBalanced: boolean): strin
 
 export function ChangesInEquityPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [branchId, setBranchId] = useState("branch-1")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
     const y = now.getFullYear()
@@ -57,12 +56,11 @@ export function ChangesInEquityPage() {
   const [error, setError] = useState<string | null>(null)
 
   const buildFilter = useCallback((): ChangesInEquityFilter => {
-    const base: ChangesInEquityFilter = { branchId: branchId.trim() }
     if (filterMode === "period") {
-      return { ...base, periodKey: periodKey.trim() }
+      return { periodKey: periodKey.trim() }
     }
-    return { ...base, from: from.trim(), to: to.trim() }
-  }, [branchId, filterMode, from, periodKey, to])
+    return { from: from.trim(), to: to.trim() }
+  }, [filterMode, from, periodKey, to])
 
   async function handleRefresh() {
     setLoading(true)
@@ -83,10 +81,7 @@ export function ChangesInEquityPage() {
     const scope =
       result.filter.periodKey ??
       `${result.filter.from ?? ""}_${result.filter.to ?? ""}`.replace(/__/g, "")
-    downloadChangesInEquityCsv(
-      result,
-      `changes-in-equity-${result.filter.branchId}-${scope}.csv`
-    )
+    downloadChangesInEquityCsv(result, `changes-in-equity-${scope}.csv`)
   }
 
   function handlePrint() {
@@ -103,15 +98,6 @@ export function ChangesInEquityPage() {
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch</span>
-            <input
-              className="rounded border border-zinc-300 px-2 py-1"
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-            />
-          </label>
-
           <fieldset className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Scope</span>
             <div className="flex gap-3">
@@ -202,11 +188,10 @@ export function ChangesInEquityPage() {
         <section className="changes-in-equity-report space-y-6">
           <div className="space-y-1 text-sm text-zinc-600 print:text-black">
             <p>
-              Branch {result.period.branchId}
               {result.period.periodKey
-                ? ` · Period ${result.period.periodKey}`
+                ? `Period ${result.period.periodKey}`
                 : result.period.from && result.period.to
-                  ? ` · ${result.period.from} to ${result.period.to}`
+                  ? `${result.period.from} to ${result.period.to}`
                   : null}
               {result.period.periodStatus
                 ? ` · Status ${result.period.periodStatus}`

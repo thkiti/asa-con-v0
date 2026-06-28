@@ -2,7 +2,7 @@ import { rowsToCsvTable } from "./csv"
 import type { CashFlowResult } from "./types"
 
 export type CashFlowFilter = {
-  branchId: string
+  branchId?: string
   periodKey?: string
   from?: string
   to?: string
@@ -10,7 +10,7 @@ export type CashFlowFilter = {
 
 function buildQuery(filter: CashFlowFilter): string {
   const params = new URLSearchParams()
-  params.set("branchId", filter.branchId.trim())
+  if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
   if (filter.periodKey?.trim()) params.set("periodKey", filter.periodKey.trim())
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 
 import { financeErrorResponse } from "@/app/api/finance/shared/finance-api-errors"
 import { getCashFlow } from "@/lib/finance/reports/cash-flow"
+import { applyReportBranchScope } from "@/lib/finance/reports/report-branch-scope"
 import { parseCashFlowFilter } from "@/lib/finance/reports/report-filter"
 import { resolveReportSessionLegalEntityCode } from "@/lib/finance/reports/report-session"
 import { prisma } from "@/lib/shared/prisma"
@@ -10,7 +11,8 @@ import { prisma } from "@/lib/shared/prisma"
 export async function GET(req: NextRequest) {
   try {
     const legalEntityCode = await resolveReportSessionLegalEntityCode()
-    const filter = parseCashFlowFilter(req.nextUrl.searchParams, legalEntityCode)
+    const parsed = parseCashFlowFilter(req.nextUrl.searchParams, legalEntityCode)
+    const filter = await applyReportBranchScope(prisma, parsed)
     const result = await getCashFlow(prisma, filter)
     return NextResponse.json(result)
   } catch (err: unknown) {

@@ -4,7 +4,7 @@ import { formatAccountDisplay } from "./format-account"
 import type { BalanceSheetRow, RetainedEarningsResult } from "./types"
 
 export type RetainedEarningsFilter = {
-  branchId: string
+  branchId?: string
   periodKey?: string
   from?: string
   to?: string
@@ -12,7 +12,7 @@ export type RetainedEarningsFilter = {
 
 function buildQuery(filter: RetainedEarningsFilter): string {
   const params = new URLSearchParams()
-  params.set("branchId", filter.branchId.trim())
+  if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
   if (filter.periodKey?.trim()) params.set("periodKey", filter.periodKey.trim())
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())

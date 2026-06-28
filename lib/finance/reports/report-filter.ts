@@ -164,14 +164,11 @@ export function parseGeneralLedgerFilter(
   params: ReportFilterParams,
   legalEntityCode: DocumentEntityCode
 ): GeneralLedgerFilter {
-  const scope = parseFinanceReportScope(params, legalEntityCode, {
-    requireBranchId: true,
-  })
+  const scope = parseFinanceReportScope(params, legalEntityCode)
   const accountCodes = parseAccountCodes(params)
   const accountIds = parseAccountIds(params)
   return {
     ...scope,
-    branchId: scope.branchId!,
     accountId: accountIds?.length === 1 ? accountIds[0] : undefined,
     accountIds: accountIds && accountIds.length > 1 ? accountIds : undefined,
     accountCode: accountCodes?.length === 1 ? accountCodes[0] : undefined,
@@ -183,10 +180,7 @@ export function parseProfitLossFilter(
   params: ReportFilterParams,
   legalEntityCode: DocumentEntityCode
 ): ProfitLossFilter {
-  const scope = parseFinanceReportScope(params, legalEntityCode, {
-    requireBranchId: true,
-  })
-  return { ...scope, branchId: scope.branchId! }
+  return parseFinanceReportScope(params, legalEntityCode)
 }
 
 export function parseBalanceSheetFilter(
@@ -202,28 +196,19 @@ export function parseRetainedEarningsFilter(
   params: ReportFilterParams,
   legalEntityCode: DocumentEntityCode
 ): RetainedEarningsFilter {
-  const scope = parseFinanceReportScope(params, legalEntityCode, {
-    requireBranchId: true,
-  })
-  return { ...scope, branchId: scope.branchId! }
+  return parseFinanceReportScope(params, legalEntityCode)
 }
 
 export function parseChangesInEquityFilter(
   params: ReportFilterParams,
   legalEntityCode: DocumentEntityCode
 ): ChangesInEquityFilter {
-  const scope = parseFinanceReportScope(params, legalEntityCode, {
-    requireBranchId: true,
-  })
-  return { ...scope, branchId: scope.branchId! }
+  return parseFinanceReportScope(params, legalEntityCode)
 }
 
 export function parseCashFlowFilter(
   params: ReportFilterParams,
   legalEntityCode: DocumentEntityCode
 ): CashFlowFilter {
-  const scope = parseFinanceReportScope(params, legalEntityCode, {
-    requireBranchId: true,
-  })
-  return { ...scope, branchId: scope.branchId! }
+  return parseFinanceReportScope(params, legalEntityCode)
 }

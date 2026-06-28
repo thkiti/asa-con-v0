@@ -1,7 +1,7 @@
 import type { BalanceSheetPeriodMeta, BalanceSheetRow } from "./balance-sheet-types"
-import type { BranchScopedReportFilter } from "./report-filter"
+import type { FinanceReportScope } from "./report-filter"
 
-export type RetainedEarningsFilter = BranchScopedReportFilter
+export type RetainedEarningsFilter = FinanceReportScope
 
 export type RetainedEarningsWarningCode =
   | "NO_RETAINED_EARNINGS_ACCOUNT"

@@ -1,8 +1,8 @@
 import type { BalanceSheetPeriodMeta } from "./balance-sheet-types"
 
-import type { BranchScopedReportFilter } from "./report-filter"
+import type { FinanceReportScope } from "./report-filter"
 
-export type CashFlowFilter = BranchScopedReportFilter
+export type CashFlowFilter = FinanceReportScope
 
 export type CashFlowLineSource =
   | "PROFIT_LOSS"

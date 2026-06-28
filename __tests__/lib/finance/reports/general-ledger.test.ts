@@ -1,12 +1,28 @@
-import { AccountingPeriodStatus, Prisma, VoucherStatus } from "@/generated/prisma/client"
+import { AccountingPeriodStatus, GlAccountType, Prisma, VoucherStatus } from "@/generated/prisma/client"
 import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
 import { toMoney } from "@/lib/finance/decimal"
 import { getGeneralLedger } from "@/lib/finance/reports/general-ledger"
 import { getTrialBalance } from "@/lib/finance/reports/trial-balance"
+import { getBalanceSheet } from "@/lib/finance/reports/balance-sheet"
+import { getProfitLoss } from "@/lib/finance/reports/profit-loss"
 import { signedBalanceForAccountType } from "@/lib/finance/reports/balance-helpers"
 import { createFinanceMockTx } from "../mock-finance-tx"
 
 const d = (n: string) => new Prisma.Decimal(n)
+
+function seedGlAccount(
+  state: ReturnType<typeof createFinanceMockTx>["state"],
+  input: { id: string; code: string; name: string; accountType: GlAccountType }
+) {
+  state.glAccounts.push({
+    id: input.id,
+    code: input.code,
+    name: input.name,
+    accountType: input.accountType,
+    isActive: true,
+    deleted: false,
+  })
+}
 
 function seedJournal(
   state: ReturnType<typeof createFinanceMockTx>["state"],
@@ -682,5 +698,128 @@ describe("getGeneralLedger", () => {
 
     expect(asResult.accounts[0]?.closingBalance).toBe("100")
     expect(adResult.accounts[0]?.closingBalance).toBe("500")
+  })
+
+  describe("AD opening balance MJV-260001 (2025-12-31 accounting flow)", () => {
+    const internalBranchId = "branch-ho999-internal"
+    const openingDate = new Date("2025-12-31T00:00:00.000Z")
+
+    async function seedAdOpeningBalance(
+      tx: ReturnType<typeof createFinanceMockTx>["tx"],
+      state: ReturnType<typeof createFinanceMockTx>["state"]
+    ) {
+      seedGlAccount(state, {
+        id: "gl-account-1",
+        code: "1",
+        name: "Opening equity",
+        accountType: GlAccountType.EQUITY,
+      })
+      const period202512 = await seedPeriod(tx, internalBranchId, "2025-12", "AD")
+      await seedPeriod(tx, internalBranchId, "2026-01", "AD")
+      await seedPeriod(tx, internalBranchId, "2026-01", "AS")
+
+      seedJournal(state, {
+        id: "journal-mjv-260001",
+        branchId: internalBranchId,
+        periodId: period202512.id,
+        legalEntityCode: "AD",
+        date: openingDate,
+        voucherNo: "MJV-260001",
+        description: "Opening Balance 2026",
+        lines: [
+          { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "2000000", credit: "0" },
+          { code: "1", debit: "0", credit: "2000000" },
+        ],
+      })
+    }
+
+    it("GL period 2026-01 account 1: opening credit 2M, no January activity, closing 2M", async () => {
+      const { tx, state } = createFinanceMockTx(internalBranchId)
+      await seedAdOpeningBalance(tx, state)
+
+      const result = await getGeneralLedger(tx, {
+        legalEntityCode: "AD",
+        periodKey: "2026-01",
+        accountCode: "1",
+      })
+
+      const account = result.accounts[0]!
+      expect(account.openingCredit).toBe("2000000")
+      expect(account.openingBalance).toBe("2000000")
+      expect(account.transactions).toHaveLength(0)
+      expect(account.closingBalance).toBe("2000000")
+    })
+
+    it("GL date range 2025-12-31 includes MJV-260001 as period transaction", async () => {
+      const { tx, state } = createFinanceMockTx(internalBranchId)
+      await seedAdOpeningBalance(tx, state)
+
+      const result = await getGeneralLedger(tx, {
+        legalEntityCode: "AD",
+        from: "2025-12-31",
+        to: "2025-12-31",
+        accountCode: "1",
+      })
+
+      expect(result.accounts[0]?.transactions).toHaveLength(1)
+      expect(result.accounts[0]?.transactions[0]?.entryNo).toBe("MJV-260001")
+      expect(result.accounts[0]?.transactions[0]?.credit).toBe("2000000")
+    })
+
+    it("entity-wide GL without branch filter includes opening balance in January period", async () => {
+      const { tx, state } = createFinanceMockTx(internalBranchId)
+      await seedAdOpeningBalance(tx, state)
+
+      const result = await getGeneralLedger(tx, {
+        legalEntityCode: "AD",
+        periodKey: "2026-01",
+        accountCode: "1",
+      })
+
+      expect(result.accounts[0]?.openingBalance).toBe("2000000")
+      expect(result.accounts[0]?.transactions).toHaveLength(0)
+    })
+
+    it("AS session cannot see AD opening balance", async () => {
+      const { tx, state } = createFinanceMockTx(internalBranchId)
+      await seedAdOpeningBalance(tx, state)
+
+      const result = await getGeneralLedger(tx, {
+        legalEntityCode: "AS",
+        periodKey: "2026-01",
+        accountCode: "1",
+      })
+
+      expect(result.accounts[0]?.openingBalance).toBe("0")
+      expect(result.accounts[0]?.transactions).toEqual([])
+    })
+
+    it("AD balance sheet period 2026-01 includes opening equity from 2025-12-31 journal", async () => {
+      const { tx, state } = createFinanceMockTx(internalBranchId)
+      await seedAdOpeningBalance(tx, state)
+
+      const result = await getBalanceSheet(tx, {
+        legalEntityCode: "AD",
+        periodKey: "2026-01",
+      })
+
+      const equity = result.equity.find((row) => row.accountCode === "1")
+      expect(equity?.amount).toBe("2000000")
+      expect(result.totalEquity).toBe("2000000")
+    })
+
+    it("AD P&L period 2026-01 is unaffected by equity opening balance", async () => {
+      const { tx, state } = createFinanceMockTx(internalBranchId)
+      await seedAdOpeningBalance(tx, state)
+
+      const result = await getProfitLoss(tx, {
+        legalEntityCode: "AD",
+        periodKey: "2026-01",
+      })
+
+      expect(result.revenue).toEqual([])
+      expect(result.expenses).toEqual([])
+      expect(result.netIncome).toBe("0")
+    })
   })
 })
