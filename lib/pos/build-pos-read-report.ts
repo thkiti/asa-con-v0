@@ -20,6 +20,10 @@ import {
   utcRangeForBangkokInclusiveYmdRange,
 } from "@/lib/pos/bangkokDayBounds"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+import {
+  saleReadReportSelect,
+  type SaleForReadReport,
+} from "@/lib/pos/sale-read-report-select"
 
 export { readZMonthStartYmd } from "@/lib/pos/bangkokDayBounds"
 
@@ -33,17 +37,14 @@ async function loadSalesForReadReport(
   branchId: string,
   start: Date,
   endExclusive: Date
-) {
+): Promise<SaleForReadReport[]> {
   return prisma.sale.findMany({
     where: {
       branchId,
       status: SaleStatus.COMPLETED,
       createdAt: { gte: start, lt: endExclusive },
     },
-    include: {
-      items: true,
-      payment: true,
-    },
+    select: saleReadReportSelect,
   })
 }
 
