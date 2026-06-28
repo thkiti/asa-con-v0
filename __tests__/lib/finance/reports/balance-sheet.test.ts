@@ -5,6 +5,7 @@ import {
   isBalanceSheetBalanced,
 } from "@/lib/finance/reports/balance-helpers"
 import { getBalanceSheet } from "@/lib/finance/reports/balance-sheet"
+import { getTrialBalance } from "@/lib/finance/reports/trial-balance"
 import { balanceSheetToCsv } from "@/lib/finance-ui/balance-sheet"
 import { parseBalanceSheetFilter } from "@/lib/finance/reports/report-filter"
 import { ReportError } from "@/lib/reporting/report-errors"
@@ -62,8 +63,8 @@ async function seedPeriod(
   tx: ReturnType<typeof createFinanceMockTx>["tx"],
   branchId: string,
   periodKey: string,
-  status: AccountingPeriodStatus = AccountingPeriodStatus.OPEN,
-  legalEntityCode: string = "AS"
+  legalEntityCode: string = "AS",
+  status: AccountingPeriodStatus = AccountingPeriodStatus.OPEN
 ) {
   return tx.accountingPeriod.create({
     data: {
@@ -220,6 +221,7 @@ describe("getBalanceSheet", () => {
       tx,
       branchId,
       "2026-04",
+      "AS",
       AccountingPeriodStatus.HARD_CLOSED
     )
 
@@ -287,6 +289,46 @@ describe("getBalanceSheet", () => {
 
     expect(ap?.amount).toBe("200")
     expect(result.isBalanced).toBe(true)
+  })
+
+  it("scopes by legal entity", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const asPeriod = await seedPeriod(tx, branchId, "2026-05", "AS")
+    const adPeriod = await seedPeriod(tx, branchId, "2026-05", "AD")
+
+    seedJournal(state, {
+      id: "journal-as",
+      branchId,
+      periodId: asPeriod.id,
+      legalEntityCode: "AS",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "100", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "100" },
+      ],
+    })
+    seedJournal(state, {
+      id: "journal-ad",
+      branchId,
+      periodId: adPeriod.id,
+      legalEntityCode: "AD",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "500", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "500" },
+      ],
+    })
+
+    const asTrial = await getTrialBalance(tx, { legalEntityCode: "AS", periodKey: "2026-05" })
+    const adTrial = await getTrialBalance(tx, { legalEntityCode: "AD", periodKey: "2026-05" })
+    expect(asTrial.totalDebits).toBe("100")
+    expect(adTrial.totalDebits).toBe("500")
+
+    const asResult = await getBalanceSheet(tx, { legalEntityCode: "AS", periodKey: "2026-05" })
+    const adResult = await getBalanceSheet(tx, { legalEntityCode: "AD", periodKey: "2026-05" })
+
+    expect(asResult.totalAssets).toBe("100")
+    expect(adResult.totalAssets).toBe("500")
   })
 })
 

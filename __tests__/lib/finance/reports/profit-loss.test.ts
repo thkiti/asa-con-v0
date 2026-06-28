@@ -14,6 +14,7 @@ function seedJournal(
     branchId: string
     periodId: string
     date: Date
+    legalEntityCode?: string
     lines: { code: string; debit: string; credit: string }[]
   }
 ) {
@@ -38,6 +39,7 @@ function seedJournal(
     voucherId,
     date: input.date,
     branchId: input.branchId,
+    legalEntityCode: input.legalEntityCode ?? "AS",
     periodId: input.periodId,
     postedAt: input.date,
     createdAt: input.date,
@@ -64,12 +66,14 @@ function seedJournal(
 async function seedPeriod(
   tx: ReturnType<typeof createFinanceMockTx>["tx"],
   branchId: string,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: string = "AS"
 ) {
   return tx.accountingPeriod.create({
     data: {
       branchId,
       periodKey,
+      legalEntityCode,
       status: AccountingPeriodStatus.OPEN,
     },
   })
@@ -328,6 +332,41 @@ describe("getProfitLoss", () => {
     const result = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
     expect(result.netIncome).toBe("-150")
     expect(netIncomeLabel(result.netIncome)).toBe("Loss")
+  })
+
+  it("scopes by legal entity", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const asPeriod = await seedPeriod(tx, branchId, "2026-05", "AS")
+    const adPeriod = await seedPeriod(tx, branchId, "2026-05", "AD")
+
+    seedJournal(state, {
+      id: "journal-as",
+      branchId,
+      periodId: asPeriod.id,
+      legalEntityCode: "AS",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "100", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "100" },
+      ],
+    })
+    seedJournal(state, {
+      id: "journal-ad",
+      branchId,
+      periodId: adPeriod.id,
+      legalEntityCode: "AD",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "500", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "500" },
+      ],
+    })
+
+    const asResult = await getProfitLoss(tx, { legalEntityCode: "AS", branchId, periodKey: "2026-05" })
+    const adResult = await getProfitLoss(tx, { legalEntityCode: "AD", branchId, periodKey: "2026-05" })
+
+    expect(asResult.totalRevenue).toBe("100")
+    expect(adResult.totalRevenue).toBe("500")
   })
 })
 

@@ -15,6 +15,7 @@ function seedJournal(
     branchId: string
     periodId: string
     date: Date
+    legalEntityCode?: string
     voucherNo?: string
     refNo?: string | null
     description?: string | null
@@ -42,7 +43,7 @@ function seedJournal(
     voucherId,
     date: input.date,
     branchId: input.branchId,
-    legalEntityCode: "AS",
+    legalEntityCode: input.legalEntityCode ?? "AS",
     periodId: input.periodId,
     postedAt: input.date,
     createdAt: input.date,
@@ -69,13 +70,14 @@ function seedJournal(
 async function seedPeriod(
   tx: ReturnType<typeof createFinanceMockTx>["tx"],
   branchId: string,
-  periodKey: string
+  periodKey: string,
+  legalEntityCode: string = "AS"
 ) {
   return tx.accountingPeriod.create({
     data: {
       branchId,
       periodKey,
-      legalEntityCode: "AS",
+      legalEntityCode,
       status: AccountingPeriodStatus.OPEN,
     },
   })
@@ -301,6 +303,7 @@ describe("getGeneralLedger", () => {
     })
 
     const filter = {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05" as const,
     }
@@ -634,5 +637,50 @@ describe("getGeneralLedger", () => {
     })
 
     expect(result.accounts[0]?.transactions.map((tx) => tx.entryNo)).toEqual(["V-A", "V-Z"])
+  })
+
+  it("scopes by legal entity", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const asPeriod = await seedPeriod(tx, branchId, "2026-05", "AS")
+    const adPeriod = await seedPeriod(tx, branchId, "2026-05", "AD")
+
+    seedJournal(state, {
+      id: "journal-as",
+      branchId,
+      periodId: asPeriod.id,
+      legalEntityCode: "AS",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "100", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "100" },
+      ],
+    })
+    seedJournal(state, {
+      id: "journal-ad",
+      branchId,
+      periodId: adPeriod.id,
+      legalEntityCode: "AD",
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "500", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "500" },
+      ],
+    })
+
+    const asResult = await getGeneralLedger(tx, {
+      legalEntityCode: "AS",
+      branchId,
+      periodKey: "2026-05",
+      accountCode: DEFAULT_ACCOUNT_CODES.CASH,
+    })
+    const adResult = await getGeneralLedger(tx, {
+      legalEntityCode: "AD",
+      branchId,
+      periodKey: "2026-05",
+      accountCode: DEFAULT_ACCOUNT_CODES.CASH,
+    })
+
+    expect(asResult.accounts[0]?.closingBalance).toBe("100")
+    expect(adResult.accounts[0]?.closingBalance).toBe("500")
   })
 })

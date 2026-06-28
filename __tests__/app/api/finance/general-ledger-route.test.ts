@@ -3,8 +3,6 @@ import { GET } from "@/app/api/finance/reports/general-ledger/route"
 import { getGeneralLedger } from "@/lib/finance/reports/general-ledger"
 import { parseGeneralLedgerFilter } from "@/lib/finance/reports/report-filter"
 import { ReportError } from "@/lib/reporting/report-errors"
-
-jest.mock("@/lib/finance/reports/report-session", () => ({
   resolveReportSessionLegalEntityCode: jest.fn().mockResolvedValue("AS"),
 }))
 
@@ -150,6 +148,23 @@ describe("GET /api/finance/reports/general-ledger", () => {
       error: "periodKey must be YYYY-MM",
       code: "INVALID_FILTER",
     })
+    expect(mockGetGeneralLedger).not.toHaveBeenCalled()
+  })
+
+  it("returns 401 when session documentEntityCode is missing", async () => {
+    const { resolveReportSessionLegalEntityCode } = await import(
+      "@/lib/finance/reports/report-session"
+    )
+    ;(resolveReportSessionLegalEntityCode as jest.Mock).mockRejectedValueOnce(
+      new ReportError("Session legal entity is required", "UNAUTHORIZED")
+    )
+
+    const req = new NextRequest(
+      "http://localhost/api/finance/reports/general-ledger?branchId=branch-1&periodKey=2026-05&accountCode=1100"
+    )
+    const res = await GET(req)
+
+    expect(res.status).toBe(401)
     expect(mockGetGeneralLedger).not.toHaveBeenCalled()
   })
 })

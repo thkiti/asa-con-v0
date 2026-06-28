@@ -9,7 +9,7 @@ import { createReopenEvidence } from "./reopen-evidence"
 import type { ReopenEvidenceApprovalSnapshot } from "./reopen-evidence-types"
 import { getActiveClosingEntry } from "./closing-entry-status"
 import { FinancePostingError } from "./posting-errors"
-import { accountingPeriodUniqueWhere } from "./period-lookup"
+import { accountingPeriodUniqueWhere, resolvePeriodLegalEntityCode } from "./period-lookup"
 
 type PeriodCloseInput = {
   periodKey: string
@@ -31,10 +31,11 @@ async function findAccountingPeriod(
   tx: Prisma.TransactionClient,
   input: { periodKey: string; legalEntityCode?: DocumentEntityCode | null }
 ): Promise<NonNullable<Awaited<ReturnType<typeof tx.accountingPeriod.findUnique>>>> {
+  const legalEntityCode = resolvePeriodLegalEntityCode(input.legalEntityCode)
   const period = await tx.accountingPeriod.findUnique({
     where: accountingPeriodUniqueWhere({
       periodKey: input.periodKey,
-      legalEntityCode: input.legalEntityCode,
+      legalEntityCode,
     }),
   })
 

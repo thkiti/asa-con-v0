@@ -334,6 +334,7 @@ describe("getTrialBalance", () => {
     })
 
     const all = await getTrialBalance(tx, {
+      legalEntityCode,
       branchId,
       periodKey: "2026-05",
     })

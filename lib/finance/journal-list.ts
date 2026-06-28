@@ -2,7 +2,7 @@ import type { Prisma } from "@/generated/prisma/client"
 import type { PrismaClient } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { FINANCE_REF_TYPES } from "./posting-types"
-import { accountingPeriodUniqueWhere } from "./period-lookup"
+import { accountingPeriodUniqueWhere, resolvePeriodLegalEntityCode } from "./period-lookup"
 import { addMoney, toMoney, ZERO } from "./decimal"
 
 export type JournalListFilter = {
@@ -52,7 +52,10 @@ async function resolvePeriodId(
   legalEntityCode?: DocumentEntityCode | null
 ): Promise<string | null> {
   const period = await prisma.accountingPeriod.findUnique({
-    where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
+    where: accountingPeriodUniqueWhere({
+      periodKey,
+      legalEntityCode: resolvePeriodLegalEntityCode(legalEntityCode),
+    }),
     select: { id: true },
   })
   return period?.id ?? null

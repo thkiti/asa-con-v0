@@ -9,12 +9,11 @@ export function resolvePeriodLegalEntityCode(
 
 export function accountingPeriodUniqueWhere(input: {
   periodKey: string
-  legalEntityCode?: DocumentEntityCode | null
+  legalEntityCode: DocumentEntityCode
 }) {
-  const legalEntityCode = resolvePeriodLegalEntityCode(input.legalEntityCode)
   return {
     legalEntityCode_periodKey: {
-      legalEntityCode,
+      legalEntityCode: input.legalEntityCode,
       periodKey: input.periodKey,
     },
   }
