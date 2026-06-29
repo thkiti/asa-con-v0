@@ -43,6 +43,7 @@ Related:
 | **PAY** | `Voucher` → `PosPayInEvidence` / bank deposit ref | — | Yes | `/finance/vouchers/{voucherId}` | — | — | Yes | Yes (voucher layer only) |
 | **INV** | `Voucher` → `InvoiceVoucher` (if posted) | `InvoiceVoucher` (not in unposted inquiry) | **No** (label only) | `/finance/vouchers/{voucherId}` or `/finance/invoice-vouchers/{id}` via editor | — | — | Yes | Partial — not in type filter |
 | **STK** | `Voucher` (`STOCK_DOC_POST`) | — | **No** | `/finance/vouchers/{voucherId}` | — | — | Yes | Partial |
+| **Stock ops** | `StockDocument` + lines | All workflow statuses | Yes — filter **CNT/ADJ/ORD/DEY/ORS/ORI** | `/finance/stock-documents/{id}` | — (reserved) | — (no archive field) | Yes when posted | Yes (read-only inquiry) |
 | **CLS** | `Voucher` (`PERIOD_CLOSING_ENTRY`) | — | **No** | `/finance/vouchers/{voucherId}` | — | — | Yes | Partial |
 
 **Legend:** “Audit-safe” = inquiry path is read-only navigation / print preview. Operational editor routes (PAV/REV/PCV/MJV) are read-only **from inquiry** but the destination pages may expose workflow actions if the user navigates outside inquiry intent.
@@ -262,7 +263,7 @@ Related:
 | REF shop slip inquiry + print | **Done** (no PDF status) |
 | PAV / REV / PCV unposted in list | **Done** |
 | COL / PAY settlement deep links from inquiry | **Missing** |
-| INV / STK / CLS filter + unposted visibility | **Partial** |
+| INV / STK / CLS filter + unposted visibility | **Partial** (STK ops inquiry live at `/finance/stock-documents`) |
 | REF (and PAV/REV/PCV) archive PDF | **Not started** |
 | Document Trace / Attachments audit hub items | **Coming Soon** |
 | Digital Document Vault cross-registry | **Vision** — see vault architecture doc |
@@ -279,4 +280,7 @@ Related:
 | REC receipt enrichment | `lib/finance/inquiry/pos-origin-inquiry-context.ts`, `voucher-list.ts` |
 | HO branch resolution | `lib/shop/resolve-pos-origin-print-branch.ts` |
 | UI | `components/finance/VoucherInquiryListPage.tsx` |
+| Stock inquiry list API | `app/api/finance/stock-documents/route.ts` → `lib/stock/inquiry/stock-document-inquiry.ts` |
+| Stock inquiry detail API | `app/api/finance/stock-documents/[id]/route.ts` → `lib/stock/inquiry/stock-document-inquiry-detail.ts` |
+| Stock inquiry UI | `components/stock/StockDocumentInquiryListPage.tsx`, `StockDocumentInquiryDetailView.tsx` |
 | Menu entry | `lib/main-ui/finance-menu.ts` → Audit hub |

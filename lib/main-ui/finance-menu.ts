@@ -174,6 +174,12 @@ function buildPrimaryFinanceMenuHubs(): Record<
           "/finance/vouchers",
           "Search, inspect, print and audit finance documents across vouchers and operational workflows."
         ),
+        done(
+          "stock-document-inquiry",
+          "Stock Document Inquiry",
+          "/finance/stock-documents",
+          "Search and audit stock documents — CNT, ADJ, ORD, DEY, ORS, ORI — with posting and finance linkage."
+        ),
         comingSoon(
           "document-trace",
           "Document Trace",
