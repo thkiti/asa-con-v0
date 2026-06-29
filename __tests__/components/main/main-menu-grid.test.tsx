@@ -53,4 +53,27 @@ describe("MainMenuGrid", () => {
     expect(html).not.toContain("min-h-[5.25rem]")
     expect(html).not.toContain("min-h-[5.5rem]")
   })
+
+  it("line-clamps long descriptions without changing fixed card dimensions", () => {
+    const html = renderToStaticMarkup(
+      <MainMenuGrid
+        ariaLabel="Long hint menu"
+        items={[
+          {
+            key: "long-hint",
+            label: "Product & Reference Stock",
+            hint: "Search product and hook reference links; view product with reference stock together in one screen.",
+            href: "/master/product-reference",
+            status: "available",
+          },
+        ]}
+      />
+    )
+
+    expect(html).toContain("line-clamp-2")
+    expect(html).toContain("hub-menu-card")
+    expect(html).toContain("w-[482px]")
+    expect(html).toContain("max-h-[108px]")
+    expect(html).toContain("overflow-hidden")
+  })
 })

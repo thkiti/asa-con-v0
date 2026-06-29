@@ -62,6 +62,7 @@ describe("MainMenuSectionView", () => {
     expect(html).toContain('href="/shop/stock-documents"')
     expect(html).toContain("w-[482px]")
     expect(html).toContain("h-[108px]")
+    expect(html).toContain("hub-menu-grid")
     expect(html).toContain("max-h-[108px]")
     expect(html).toContain("line-clamp-2")
     expect(html).not.toContain("Export Image To Cloud")

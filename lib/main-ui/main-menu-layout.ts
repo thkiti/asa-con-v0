@@ -3,19 +3,33 @@ import {
   themeLinkMuted,
   themeMenuSummary,
   themeMuted,
-  themePage,
   themePageTitle,
 } from "@/lib/theme/theme-classes"
+import {
+  APP_PAGE_CONTENT_WIDTH_PX,
+  APP_PAGE_MAX_WIDTH_PX,
+  APP_PAGE_PADDING_PX,
+  appPageContainerClass,
+  appPageShellClass,
+} from "./page-container"
+
+export {
+  APP_PAGE_CONTENT_WIDTH_PX,
+  APP_PAGE_MAX_WIDTH_PX,
+  APP_PAGE_PADDING_PX,
+  appPageContainerClass,
+  appPageShellClass,
+}
 
 /**
  * /main reference box model at 16px root, max-w-5xl page:
  * inner width = 1024 - 48 padding = 976px
  * two columns + 12px gap => card width = (976 - 12) / 2 = 482px
  */
-export const MAIN_MENU_PAGE_MAX_WIDTH_PX = 1024
-export const MAIN_MENU_PAGE_PADDING_PX = 24
-export const MAIN_MENU_INNER_WIDTH_PX = 976
-export const MAIN_MENU_GRID_WIDTH_PX = 976
+export const MAIN_MENU_PAGE_MAX_WIDTH_PX = APP_PAGE_MAX_WIDTH_PX
+export const MAIN_MENU_PAGE_PADDING_PX = APP_PAGE_PADDING_PX
+export const MAIN_MENU_INNER_WIDTH_PX = APP_PAGE_CONTENT_WIDTH_PX
+export const MAIN_MENU_GRID_WIDTH_PX = APP_PAGE_CONTENT_WIDTH_PX
 export const MAIN_MENU_GRID_GAP_PX = 12
 export const MAIN_MENU_CARD_WIDTH_PX = 482
 export const MAIN_MENU_CARD_HEIGHT_PX = 108
@@ -23,25 +37,26 @@ export const MAIN_MENU_CARD_PADDING_PX = 12
 export const MAIN_MENU_CARD_INNER_WIDTH_PX =
   MAIN_MENU_CARD_WIDTH_PX - MAIN_MENU_CARD_PADDING_PX * 2
 
-/** `/main` page shell — container width and horizontal margins. */
-export const mainMenuPageClass = `mx-auto max-w-5xl p-6 ${themePage}`
+/** `/main` page shell — same as {@link appPageShellClass}. */
+export const mainMenuPageClass = appPageShellClass
 
-/**
- * Header row — nowrap keeps logout on the same row as /main at all hub widths.
- */
+/** Hub header — full container width; logout is absolutely positioned. */
 export const mainMenuHeaderClass =
-  "flex flex-nowrap items-start justify-between gap-4 border-b border-border pb-4"
+  "relative w-full border-b border-border pb-4"
 
-/** Shell feature pages — full-width header stack (logout does not narrow content). */
-export const mainMenuShellHeaderClass =
-  "w-full border-b border-border pb-4"
+/** Logout control — top-right of header; does not shrink content column width. */
+export const mainMenuLogoutAnchorClass = "absolute right-0 top-0 z-10 shrink-0"
+
+/** Shell feature pages — full-width header stack (logout does not block above content). */
+export const mainMenuShellHeaderClass = "w-full border-b border-border pb-4"
+
+/** @deprecated Hub header no longer uses a flex main column; kept for compatibility. */
+export const mainMenuHeaderMainClass = "min-w-0 w-full"
 
 /** Single column shared by header profile, filters, dashboard, and calendar on shell pages. */
-export const mainMenuShellContentClass = "w-full max-w-none"
+export const mainMenuShellContentClass = appPageContainerClass
 
 export const mainMenuShellBodyClass = "mt-4 w-full space-y-4"
-
-export const mainMenuHeaderMainClass = "min-w-0 w-full flex-1"
 
 export const mainMenuBackLinkClass = `text-sm ${themeLinkMuted}`
 
@@ -69,16 +84,19 @@ export const mainMenuDescriptionLinkClass = `underline hover:text-foreground ${t
 
 export const mainMenuLogoutButtonClass = `${themeBtnSecondary} shrink-0`
 
-/**
- * Fixed grid — 976px total, two 482px columns, 12px gap. No 1fr / w-full tracks.
- * Literal Tailwind strings (not template literals) so the compiler emits these rules.
- */
+/** Fixed two-column hub card grid — 976px total, 482px tracks (Main Menu reference). */
 export const mainMenuGridClass =
-  "mt-4 grid w-[976px] grid-cols-[482px_482px] gap-[12px]"
+  "hub-menu-grid mt-4 grid w-[976px] max-w-full grid-cols-[482px_482px] gap-[12px]"
 
-/** Fixed menu card outer box — identical on every hub page. */
+/** @alias mainMenuGridClass — shared hub menu grid on all section pages. */
+export const hubMenuGridClass = mainMenuGridClass
+
+/** Fixed hub card outer width — never driven by content length. */
 export const mainMenuCardWidthClass =
-  "w-[482px] min-w-[482px] max-w-[482px]"
+  "hub-menu-card w-[482px] min-w-[482px] max-w-[482px]"
+
+/** @alias mainMenuCardWidthClass */
+export const hubMenuCardWidthClass = mainMenuCardWidthClass
 
 export const mainMenuCardHeightClass =
   "h-[108px] min-h-[108px] max-h-[108px]"
@@ -87,13 +105,16 @@ export const mainMenuCardShellClass = `box-border flex ${mainMenuCardWidthClass}
 
 export const mainMenuCardClass = `${mainMenuCardShellClass} border-[var(--btn-secondary-border)] bg-card transition-colors hover:bg-[var(--btn-secondary-hover)]`
 
+/** @alias mainMenuCardClass */
+export const hubMenuCardClass = mainMenuCardClass
+
 export const mainMenuCardPlannedClass = `${mainMenuCardShellClass} border-border bg-[var(--btn-disabled-bg)]`
 
 export const mainMenuCardTitleSlotClass =
-  "flex w-[458px] min-w-[458px] max-w-[458px] min-h-[2.5rem] max-h-[2.5rem] shrink-0 items-start justify-between gap-2 overflow-hidden"
+  "hub-menu-card-title-slot flex w-[458px] min-w-[458px] max-w-[458px] min-h-[2.5rem] max-h-[2.5rem] shrink-0 items-start justify-between gap-2 overflow-hidden"
 
 export const mainMenuCardHintSlotClass =
-  "mt-1 w-[458px] min-w-[458px] max-w-[458px] min-h-[2.5rem] max-h-[2.5rem] shrink-0 overflow-hidden"
+  "hub-menu-card-hint-slot mt-1 w-[458px] min-w-[458px] max-w-[458px] min-h-[2.5rem] max-h-[2.5rem] shrink-0 overflow-hidden"
 
 export const mainMenuCardTitleClass =
   "block overflow-hidden text-ellipsis line-clamp-2 text-sm font-semibold leading-5 text-card-foreground"

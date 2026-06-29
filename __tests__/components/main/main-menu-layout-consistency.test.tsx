@@ -21,9 +21,11 @@ import {
   mainMenuGridClass,
   mainMenuHeaderClass,
   mainMenuIntroClass,
+  mainMenuLogoutAnchorClass,
   mainMenuPageClass,
   mainMenuProfileClass,
   mainMenuTitleClass,
+  appPageContainerClass,
 } from "@/lib/main-ui/main-menu-layout"
 
 jest.mock("next/navigation", () => ({
@@ -46,7 +48,9 @@ const hoAdmin: SessionUserApi = {
 function layoutMarkers(html: string): string[] {
   return [
     mainMenuPageClass,
+    appPageContainerClass,
     mainMenuHeaderClass,
+    mainMenuLogoutAnchorClass,
     mainMenuTitleClass,
     mainMenuProfileClass,
     mainMenuIntroClass,
@@ -130,6 +134,8 @@ describe("main menu layout consistency", () => {
       expect(page.html).toContain(mainMenuCardHeightClass)
       expect(page.html).toContain("w-[976px]")
       expect(page.html).toContain("w-[482px]")
+      expect(page.html).toContain("hub-menu-grid")
+      expect(page.html).toContain("hub-menu-card")
       expect(page.html).toContain("max-h-[108px]")
       expect(page.html).toContain("line-clamp-2")
       expect(page.html).not.toContain("min-h-[5.25rem]")
@@ -153,6 +159,7 @@ describe("main menu layout consistency", () => {
   it("renders every scoped hub page through MainMenuHubPage", () => {
     for (const page of pages) {
       expect(page.html).toContain(mainMenuPageClass)
+      expect(page.html).toContain(appPageContainerClass)
       expect(page.html).toContain(">Logout<")
     }
   })

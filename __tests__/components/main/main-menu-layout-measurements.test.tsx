@@ -18,10 +18,12 @@ import {
   mainMenuGridClass,
   mainMenuHeaderClass,
   mainMenuIntroClass,
+  mainMenuLogoutAnchorClass,
   mainMenuLogoutButtonClass,
   mainMenuPageClass,
   mainMenuProfileClass,
   mainMenuTitleClass,
+  appPageContainerClass,
 } from "@/lib/main-ui/main-menu-layout"
 
 jest.mock("next/navigation", () => ({
@@ -44,6 +46,7 @@ const hoAdmin: SessionUserApi = {
 type MeasuredLayout = {
   page: string
   pageContainer: string
+  contentContainer: string
   header: string
   title: string
   userCard: string
@@ -81,6 +84,7 @@ function measure(html: string, page: string): MeasuredLayout {
   return {
     page,
     pageContainer: pick("main-menu-page"),
+    contentContainer: pick("app-page-container"),
     header: pick("main-menu-header"),
     title: pick("main-menu-title"),
     userCard: pick("main-menu-user-card"),
@@ -158,6 +162,7 @@ describe("main menu layout measurements", () => {
   it("matches /main class output on every hub page", () => {
     for (const row of measured) {
       expect(row.pageContainer).toBe(reference.pageContainer)
+      expect(row.contentContainer).toBe(reference.contentContainer)
       expect(row.header).toBe(reference.header)
       expect(row.title).toBe(reference.title)
       expect(row.userCard).toBe(reference.userCard)
@@ -167,12 +172,13 @@ describe("main menu layout measurements", () => {
       expect(row.forbiddenTokens).toEqual([])
       expect(row.card).toContain("w-[482px]")
       expect(row.card).toContain(mainMenuCardHeightClass)
-      expect(row.card).not.toContain("w-full")
+      expect(row.card).not.toContain("w-full min-w-0")
     }
   })
 
   it("binds /main measurements to main-menu-layout.ts constants", () => {
     expect(reference.pageContainer).toBe(mainMenuPageClass)
+    expect(reference.contentContainer).toBe(appPageContainerClass)
     expect(reference.header).toBe(mainMenuHeaderClass)
     expect(reference.title).toBe(mainMenuTitleClass)
     expect(reference.userCard).toBe(mainMenuProfileClass)
@@ -180,8 +186,15 @@ describe("main menu layout measurements", () => {
     expect(reference.description).toBe(mainMenuIntroClass)
     expect(reference.grid).toBe(mainMenuGridClass)
     expect(reference.grid).toContain("w-[976px]")
+    expect(reference.grid).toContain("482px")
     expect(reference.card).toContain(mainMenuCardClass)
     expect(reference.card).toContain("w-[482px]")
+  })
+
+  it("positions logout absolutely so it does not narrow the content column", () => {
+    const html = renderToStaticMarkup(<MainMenuView user={hoAdmin} />)
+    expect(html).toContain(mainMenuLogoutAnchorClass)
+    expect(html).toContain(appPageContainerClass)
   })
 
   it("matches /main/operations and /operations layout output", () => {
