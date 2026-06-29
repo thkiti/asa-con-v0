@@ -3,7 +3,7 @@ import { PosRefundReceiptPage } from "@/components/pos/PosRefundReceiptPage"
 import { getSession } from "@/lib/auth/session"
 import { loadRefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-context"
 import { PosLookupError } from "@/lib/pos/pos-errors"
-import { resolveHoPrintBranchId } from "@/lib/shop/resolve-ho-print-branch"
+import { resolveRefundReceiptPrintBranchId } from "@/lib/shop/resolve-pos-origin-print-branch"
 import { requireStockDocumentSession } from "@/lib/stock/document-read"
 import { prisma } from "@/lib/shared/prisma"
 
@@ -27,7 +27,12 @@ export default async function ShopRefundReceiptPage({ params, searchParams }: Pa
     redirect("/unauthorized")
   }
 
-  const branchId = resolveHoPrintBranchId(session, query.branchId)
+  const branchId = await resolveRefundReceiptPrintBranchId(
+    prisma,
+    session,
+    refundId,
+    query.branchId
+  )
   if (!branchId) {
     redirect("/unauthorized")
   }

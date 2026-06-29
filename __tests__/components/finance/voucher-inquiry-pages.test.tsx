@@ -63,8 +63,8 @@ const recListRow = {
   journalEntryId: "journal-rec-1",
   operationalDocumentId: "sale-1",
   pdfAvailable: true,
-  inquiryPath: "/shop/receipt/sale-1",
-  printPath: "/shop/receipt/sale-1?autoprint=1",
+  inquiryPath: "/shop/receipt/sale-1?branchId=branch-1",
+  printPath: "/shop/receipt/sale-1?branchId=branch-1&autoprint=1",
 }
 
 const refListRow = {
@@ -77,8 +77,8 @@ const refListRow = {
   operationalDocumentId: "refund-1",
   pdfAvailable: null,
   amount: "500",
-  inquiryPath: "/shop/refund-receipt/refund-1",
-  printPath: "/shop/refund-receipt/refund-1?autoprint=1",
+  inquiryPath: "/shop/refund-receipt/refund-1?branchId=branch-1",
+  printPath: "/shop/refund-receipt/refund-1?branchId=branch-1&autoprint=1",
 }
 
 const listRow = {

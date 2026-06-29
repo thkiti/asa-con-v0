@@ -1,6 +1,15 @@
 import type { PrismaClient } from "@/generated/prisma/client"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 
+/**
+ * POS-origin enrichment for Finance Document Inquiry (read-only).
+ *
+ * REC: Receipt.pdfPath / DocumentArchive on Receipt — inquiry PDF column only.
+ *      /shop/receipt reprint does not write or regenerate archive PDFs.
+ * REF: Refund has no pdfPath/archive field yet — inquiry PDF column stays "—".
+ *      /shop/refund-receipt is thermal reprint only until REF archive is designed.
+ */
+
 export type PosOriginReceiptContext = {
   receiptNo: string
   pdfPath: string | null

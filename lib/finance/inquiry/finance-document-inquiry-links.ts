@@ -1,5 +1,6 @@
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import { VOUCHER_INQUIRY_DOC_TYPE } from "./voucher-document-types"
+import { buildPosOriginShopPath } from "./pos-origin-shop-path"
 
 const OPENING_BALANCE_PATH = "/finance/opening-balance"
 const MANUAL_JOURNAL_PATH = "/finance/manual-journal-entries"
@@ -7,8 +8,6 @@ const PAYMENT_VOUCHER_PATH = "/finance/payment-vouchers"
 const REVENUE_VOUCHER_PATH = "/finance/revenue-vouchers"
 const PETTY_CASH_VOUCHER_PATH = "/finance/petty-cash-vouchers"
 const VOUCHER_INQUIRY_PATH = "/finance/vouchers"
-const SHOP_RECEIPT_PATH = "/shop/receipt"
-const SHOP_REFUND_RECEIPT_PATH = "/shop/refund-receipt"
 
 export function buildPostedVoucherInquiryPath(voucherId: string): string {
   return `${VOUCHER_INQUIRY_PATH}/${encodeURIComponent(voucherId)}`
@@ -17,34 +16,33 @@ export function buildPostedVoucherInquiryPath(voucherId: string): string {
 export function buildPostedPosOriginInquiryPath(input: {
   refType: string
   refId: string
+  branchId?: string
 }): string | null {
-  const id = input.refId.trim()
-  if (!id) return null
-
-  if (input.refType === FINANCE_REF_TYPES.POS_SALE) {
-    return `${SHOP_RECEIPT_PATH}/${encodeURIComponent(id)}`
-  }
-
-  if (input.refType === FINANCE_REF_TYPES.POS_REFUND) {
-    return `${SHOP_REFUND_RECEIPT_PATH}/${encodeURIComponent(id)}`
-  }
-
-  return null
+  return buildPosOriginShopPath({
+    refType: input.refType,
+    refId: input.refId,
+    branchId: input.branchId,
+  })
 }
 
 export function buildPostedPosOriginPrintPath(input: {
   refType: string
   refId: string
+  branchId?: string
 }): string | null {
-  const inquiryPath = buildPostedPosOriginInquiryPath(input)
-  if (!inquiryPath) return null
-  return `${inquiryPath}?autoprint=1`
+  return buildPosOriginShopPath({
+    refType: input.refType,
+    refId: input.refId,
+    branchId: input.branchId,
+    autoprint: true,
+  })
 }
 
 export function resolvePostedVoucherInquiryPath(input: {
   voucherId: string
   refType: string
   refId: string
+  branchId?: string
 }): string {
   return (
     buildPostedPosOriginInquiryPath(input) ??
@@ -55,6 +53,7 @@ export function resolvePostedVoucherInquiryPath(input: {
 export function resolvePostedVoucherPrintPath(input: {
   refType: string
   refId: string
+  branchId?: string
 }): string | null {
   return (
     buildPostedPosOriginPrintPath(input) ?? buildPostedVoucherPrintPath(input)

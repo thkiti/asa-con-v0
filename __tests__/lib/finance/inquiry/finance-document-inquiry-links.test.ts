@@ -16,12 +16,20 @@ describe("finance document inquiry links", () => {
       })
     ).toBe("/shop/receipt/sale-1")
     expect(
+      buildPostedPosOriginInquiryPath({
+        refType: FINANCE_REF_TYPES.POS_SALE,
+        refId: "sale-1",
+        branchId: "branch-1",
+      })
+    ).toBe("/shop/receipt/sale-1?branchId=branch-1")
+    expect(
       resolvePostedVoucherInquiryPath({
         voucherId: "voucher-rec-1",
         refType: FINANCE_REF_TYPES.POS_SALE,
         refId: "sale-1",
+        branchId: "branch-1",
       })
-    ).toBe("/shop/receipt/sale-1")
+    ).toBe("/shop/receipt/sale-1?branchId=branch-1")
   })
 
   it("routes REF posted vouchers to shop refund receipt inquiry", () => {
@@ -50,19 +58,21 @@ describe("finance document inquiry links", () => {
     ).toBe(buildPostedVoucherInquiryPath("voucher-mjv-1"))
   })
 
-  it("exposes POS-origin print paths without finance PDF routes", () => {
+  it("exposes POS-origin print paths with branchId and autoprint", () => {
     expect(
       buildPostedPosOriginPrintPath({
         refType: FINANCE_REF_TYPES.POS_SALE,
         refId: "sale-1",
+        branchId: "branch-1",
       })
-    ).toBe("/shop/receipt/sale-1?autoprint=1")
+    ).toBe("/shop/receipt/sale-1?branchId=branch-1&autoprint=1")
     expect(
       resolvePostedVoucherPrintPath({
         refType: FINANCE_REF_TYPES.POS_REFUND,
         refId: "refund-1",
+        branchId: "branch-1",
       })
-    ).toBe("/shop/refund-receipt/refund-1?autoprint=1")
+    ).toBe("/shop/refund-receipt/refund-1?branchId=branch-1&autoprint=1")
     expect(
       resolvePostedVoucherPrintPath({
         refType: FINANCE_REF_TYPES.MANUAL_JOURNAL,

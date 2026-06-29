@@ -50,10 +50,12 @@ function mapPostedVoucherRow(row: FinanceVoucherListRow): FinanceDocumentInquiry
       voucherId: row.id,
       refType: row.refType,
       refId: row.refId,
+      branchId: row.branchId,
     }),
     printPath: resolvePostedVoucherPrintPath({
       refType: row.refType,
       refId: row.refId,
+      branchId: row.branchId,
     }),
   }
 }

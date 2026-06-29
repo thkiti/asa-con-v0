@@ -88,4 +88,20 @@ describe("PosSaleReceiptPage", () => {
     act(() => root.unmount())
     document.body.removeChild(container)
   })
+
+  it("renders receipt audit fields without receipt-lookup COPY watermark", () => {
+    jest.spyOn(autoprint, "setupReceiptAutoprint").mockReturnValue(() => {})
+    const container = document.createElement("div")
+    document.body.appendChild(container)
+    const root: Root = createRoot(container)
+    act(() => {
+      root.render(<PosSaleReceiptPage receipt={sampleReceipt} />)
+    })
+    expect(container.textContent).toContain("REC-SH001-202606-0001")
+    expect(container.textContent).toContain("103-Somsak")
+    expect(container.textContent).toContain("Widget")
+    expect(container.querySelector('[data-testid="receipt-lookup-copy-watermark"]')).toBeNull()
+    act(() => root.unmount())
+    document.body.removeChild(container)
+  })
 })
