@@ -11,6 +11,14 @@ import type { RefundLookupRow } from "@/lib/pos/refund-lookup-types"
 import type { CollectorLookupRow } from "@/lib/pos/collector-lookup-types"
 import { DEFAULT_THERMAL_LAYOUTS } from "@/lib/thermal/layout-defaults"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
+import {
+  posDocumentLookupButton,
+  posDocumentLookupInput,
+  posDocumentLookupLabel,
+  posDocumentLookupMuted,
+  posDocumentLookupPanel,
+  posDocumentLookupSelect,
+} from "@/lib/pos-ui/pos-document-lookup-classes"
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -249,6 +257,13 @@ describe("PosReceiptPanel receipt lookup mode", () => {
 
     expect(html).toContain('data-testid="pos-receipt-lookup-panel"')
     expect(html).toContain("Document Lookup")
+    expect(html).toContain(posDocumentLookupPanel)
+    expect(html).toContain(posDocumentLookupLabel)
+    expect(html).toContain(posDocumentLookupSelect)
+    expect(html).toContain(posDocumentLookupInput)
+    expect(html).toContain(posDocumentLookupButton)
+    expect(html).not.toContain("text-zinc-900")
+    expect(html).not.toContain("text-white/80")
     expect(html).toContain('data-testid="document-lookup-doc-type"')
     expect(html).toContain('data-testid="pos-cart-row"')
   })

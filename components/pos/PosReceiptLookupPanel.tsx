@@ -64,6 +64,19 @@ import {
 import { bangkokCalendarParts, bangkokDateKey } from "@/lib/reporting/bangkok-calendar"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
+import {
+  posDocumentLookupButton,
+  posDocumentLookupClose,
+  posDocumentLookupInput,
+  posDocumentLookupLabel,
+  posDocumentLookupMessage,
+  posDocumentLookupMuted,
+  posDocumentLookupPanel,
+  posDocumentLookupPdfPrimary,
+  posDocumentLookupPdfSecondary,
+  posDocumentLookupSelect,
+  posDocumentLookupTitle,
+} from "@/lib/pos-ui/pos-document-lookup-classes"
 
 export type PosReceiptLookupPanelHandle = {
   search: () => void
@@ -83,15 +96,6 @@ type PosReceiptLookupPanelProps = {
   onKeypadRunningInputEnabledChange?: (enabled: boolean) => void
   onClose: () => void
 }
-
-const FILTER_LABEL_CLASS =
-  "text-[10px] font-semibold uppercase tracking-wide text-white/90"
-
-const FILTER_CONTROL_CLASS =
-  "rounded border border-white/40 bg-white/95 px-1 py-1 font-mono text-xs normal-case text-zinc-900 cursor-pointer w-full min-w-0"
-
-const SEARCH_BUTTON_CLASS =
-  "rounded border border-white/40 bg-white px-1 py-1 font-mono text-xs font-bold normal-case text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer w-full min-w-0"
 
 function ReceiptLookupSlipPreview({
   receipt,
@@ -159,7 +163,9 @@ function CollectorLookupSlipPreview({
 
 function PreviewPlaceholder({ children }: { children: ReactNode }) {
   return (
-    <p className="flex flex-1 items-center justify-center px-2 text-center text-sm text-white/80">
+    <p
+      className={`flex flex-1 items-center justify-center px-2 text-center ${posDocumentLookupMuted}`}
+    >
       {children}
     </p>
   )
@@ -594,7 +600,7 @@ export const PosReceiptLookupPanel = forwardRef<
 
   return (
     <div
-      className="absolute inset-0 z-50 flex flex-col bg-orange-600/98 text-white"
+      className={`${posDocumentLookupPanel} absolute inset-0 z-50 flex flex-col`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="pos-document-lookup-title"
@@ -606,7 +612,7 @@ export const PosReceiptLookupPanel = forwardRef<
         onClick={onClose}
         disabled={loading}
         data-testid="pos-receipt-lookup-close"
-        className="absolute right-2 top-2 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 border-white/80 bg-white/20 text-lg font-bold leading-none shadow hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-50"
+        className={`${posDocumentLookupClose} absolute right-2 top-2 z-10`}
       >
         ×
       </button>
@@ -614,7 +620,7 @@ export const PosReceiptLookupPanel = forwardRef<
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 px-2 pb-2 pt-11">
         <h2
           id="pos-document-lookup-title"
-          className="shrink-0 text-center text-lg font-bold tracking-wide"
+          className={`${posDocumentLookupTitle} shrink-0 text-center text-lg font-bold tracking-wide`}
         >
           Document Lookup
         </h2>
@@ -625,9 +631,9 @@ export const PosReceiptLookupPanel = forwardRef<
               data-testid="receipt-lookup-filters"
             >
               <label className="flex min-w-0 flex-col gap-0.5 text-left">
-                <span className={FILTER_LABEL_CLASS}>Doc Type</span>
+                <span className={posDocumentLookupLabel}>Doc Type</span>
                 <select
-                  className={FILTER_CONTROL_CLASS}
+                  className={posDocumentLookupSelect}
                   value={docType}
                   onChange={(e) =>
                     handleDocTypeChange(e.target.value as PosDocumentLookupDocType)
@@ -651,9 +657,9 @@ export const PosReceiptLookupPanel = forwardRef<
                 </select>
               </label>
               <label className="flex min-w-0 flex-col gap-0.5 text-left">
-                <span className={FILTER_LABEL_CLASS}>Year</span>
+                <span className={posDocumentLookupLabel}>Year</span>
                 <select
-                  className={FILTER_CONTROL_CLASS}
+                  className={posDocumentLookupSelect}
                   value={year}
                   onChange={(e) => handleYearChange(Number(e.target.value))}
                   disabled={loading}
@@ -667,9 +673,9 @@ export const PosReceiptLookupPanel = forwardRef<
                 </select>
               </label>
               <label className="flex min-w-0 flex-col gap-0.5 text-left">
-                <span className={FILTER_LABEL_CLASS}>Month</span>
+                <span className={posDocumentLookupLabel}>Month</span>
                 <select
-                  className={FILTER_CONTROL_CLASS}
+                  className={posDocumentLookupSelect}
                   value={month}
                   onChange={(e) => handleMonthChange(Number(e.target.value))}
                   disabled={loading}
@@ -683,9 +689,9 @@ export const PosReceiptLookupPanel = forwardRef<
                 </select>
               </label>
               <label className="flex min-w-0 flex-col gap-0.5 text-left">
-                <span className={FILTER_LABEL_CLASS}>Running</span>
+                <span className={posDocumentLookupLabel}>Running</span>
                 <select
-                  className={FILTER_CONTROL_CLASS}
+                  className={posDocumentLookupSelect}
                   value={runningNo}
                   onChange={(e) =>
                     onRunningNoChange(
@@ -724,7 +730,7 @@ export const PosReceiptLookupPanel = forwardRef<
               {usesReceiptDate ? (
                 <input
                   type="date"
-                  className={FILTER_CONTROL_CLASS}
+                  className={posDocumentLookupInput}
                   value={receiptDate}
                   onChange={(e) => handleReceiptDateChange(e.target.value)}
                   disabled={loading || (isReceiptLookup && dateLookupLoading)}
@@ -745,7 +751,7 @@ export const PosReceiptLookupPanel = forwardRef<
                 }}
                 disabled={!canSearch}
                 data-testid="receipt-lookup-search"
-                className={SEARCH_BUTTON_CLASS}
+                className={posDocumentLookupButton}
               >
                 {searchButtonLabel}
               </button>
@@ -753,7 +759,7 @@ export const PosReceiptLookupPanel = forwardRef<
 
             {dateLookupMessage ? (
               <p
-                className="text-[10px] leading-snug text-white/85"
+                className={posDocumentLookupMessage}
                 data-testid="receipt-lookup-date-empty-message"
               >
                 {dateLookupMessage}
@@ -840,7 +846,7 @@ export const PosReceiptLookupPanel = forwardRef<
             <div className="shrink-0 space-y-1.5">
               {showLegacyMessage ? (
                 <p
-                  className="text-center text-[11px] font-medium leading-snug text-white/85"
+                  className={`text-center ${posDocumentLookupMessage} font-medium leading-snug`}
                   data-testid={
                     isCollectorLookup
                       ? "collector-lookup-legacy-message"
@@ -863,7 +869,7 @@ export const PosReceiptLookupPanel = forwardRef<
                     type="button"
                     data-testid="receipt-lookup-view-pdf"
                     onClick={() => openReceiptArchivePdf(receipt.receiptId, branchId)}
-                    className="flex-1 rounded-lg border-2 border-white bg-white px-3 py-1.5 text-sm font-bold text-orange-700 shadow hover:bg-orange-50 cursor-pointer"
+                    className={posDocumentLookupPdfPrimary}
                   >
                     View PDF
                   </button>
@@ -871,7 +877,7 @@ export const PosReceiptLookupPanel = forwardRef<
                     type="button"
                     data-testid="receipt-lookup-print-pdf"
                     onClick={() => printReceiptArchivePdf(receipt.receiptId, branchId)}
-                    className="flex-1 rounded-lg border-2 border-white/80 bg-transparent px-3 py-1.5 text-sm font-bold text-white shadow hover:bg-white/10 cursor-pointer"
+                    className={posDocumentLookupPdfSecondary}
                   >
                     Print PDF
                   </button>
@@ -886,7 +892,7 @@ export const PosReceiptLookupPanel = forwardRef<
                     onClick={() =>
                       openCollectorArchivePdf(collector.collectorReportId, branchId)
                     }
-                    className="flex-1 rounded-lg border-2 border-white bg-white px-3 py-1.5 text-sm font-bold text-orange-700 shadow hover:bg-orange-50 cursor-pointer"
+                    className={posDocumentLookupPdfPrimary}
                   >
                     View PDF
                   </button>
@@ -896,7 +902,7 @@ export const PosReceiptLookupPanel = forwardRef<
                     onClick={() =>
                       printCollectorArchivePdf(collector.collectorReportId, branchId)
                     }
-                    className="flex-1 rounded-lg border-2 border-white/80 bg-transparent px-3 py-1.5 text-sm font-bold text-white shadow hover:bg-white/10 cursor-pointer"
+                    className={posDocumentLookupPdfSecondary}
                   >
                     Print PDF
                   </button>
