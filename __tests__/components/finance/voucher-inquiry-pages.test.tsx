@@ -46,6 +46,41 @@ import { fetchFinanceDocuments } from "@/lib/finance-ui/voucher-inquiry"
 
 const mockFetchFinanceDocuments = fetchFinanceDocuments as jest.Mock
 
+const recListRow = {
+  id: "voucher-rec-1",
+  rowKind: "posted" as const,
+  legalEntityCode: "AS",
+  documentTypeCode: "REC",
+  documentNo: "REC-SH001-202606-0001",
+  voucherNo: "V-2026-06-00010",
+  date: "2026-06-15T00:00:00.000Z",
+  periodKey: "2026-06",
+  branchId: "branch-1",
+  branchCode: "SH001",
+  branchName: "Shop 1",
+  status: "POSTED",
+  amount: "1500",
+  journalEntryId: "journal-rec-1",
+  operationalDocumentId: "sale-1",
+  pdfAvailable: true,
+  inquiryPath: "/shop/receipt/sale-1",
+  printPath: "/shop/receipt/sale-1?autoprint=1",
+}
+
+const refListRow = {
+  ...recListRow,
+  id: "voucher-ref-1",
+  documentTypeCode: "REF",
+  documentNo: "REF-SH001-202606-0002",
+  voucherNo: "V-2026-06-00011",
+  journalEntryId: "journal-ref-1",
+  operationalDocumentId: "refund-1",
+  pdfAvailable: null,
+  amount: "500",
+  inquiryPath: "/shop/refund-receipt/refund-1",
+  printPath: "/shop/refund-receipt/refund-1?autoprint=1",
+}
+
 const listRow = {
   id: "voucher-pickup-1",
   rowKind: "posted" as const,
@@ -231,6 +266,28 @@ describe("VoucherInquiryListPage", () => {
     expect(html).toContain("Missing")
     expect(html).toContain("DRAFT")
     expect(html).toContain("MJV-260001")
+  })
+
+  it("renders REC and REF POS-origin rows with shop inquiry and print actions", () => {
+    const html = renderToStaticMarkup(
+      <VoucherInquiryResultsTable
+        documents={[recListRow, refListRow]}
+        total={2}
+        rowOffset={0}
+        listReturnPath="/finance/vouchers"
+      />
+    )
+    expect(html).toContain("REC-SH001-202606-0001")
+    expect(html).toContain("REF-SH001-202606-0002")
+    expect(html).toContain("/shop/receipt/sale-1")
+    expect(html).toContain("/shop/refund-receipt/refund-1")
+    expect(html).toContain('data-testid="voucher-inquiry-print-voucher-rec-1"')
+    expect(html).toContain('data-testid="voucher-inquiry-print-voucher-ref-1"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-voucher-rec-1"')
+    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-rec-1"')
+    expect(html).toContain("Yes")
+    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-ref-1"')
+    expect(html).toContain("—")
   })
 
   it("uses document type dropdown with OPB option", () => {

@@ -4,10 +4,7 @@ import type {
   FinanceDocumentInquiryResult,
   FinanceDocumentInquiryRow,
 } from "./finance-document-inquiry-types"
-import {
-  buildPostedVoucherInquiryPath,
-  buildPostedVoucherPrintPath,
-} from "./finance-document-inquiry-links"
+import { resolvePostedVoucherInquiryPath, resolvePostedVoucherPrintPath } from "./finance-document-inquiry-links"
 import { listUnpostedOperationalDocuments } from "./unposted-operational-inquiry"
 import { listFinanceVouchers } from "./voucher-list"
 import type { FinanceVoucherListFilter, FinanceVoucherListRow } from "./voucher-list-types"
@@ -24,6 +21,7 @@ export type FinanceDocumentInquiryPrisma = Pick<
   PrismaClient,
   | "voucher"
   | "accountingPeriod"
+  | "receipt"
   | "manualJournalEntry"
   | "paymentVoucher"
   | "revenueVoucher"
@@ -48,8 +46,12 @@ function mapPostedVoucherRow(row: FinanceVoucherListRow): FinanceDocumentInquiry
     journalEntryId: row.journalEntryId,
     operationalDocumentId: row.refId,
     pdfAvailable: row.pdfAvailable,
-    inquiryPath: buildPostedVoucherInquiryPath(row.id),
-    printPath: buildPostedVoucherPrintPath({
+    inquiryPath: resolvePostedVoucherInquiryPath({
+      voucherId: row.id,
+      refType: row.refType,
+      refId: row.refId,
+    }),
+    printPath: resolvePostedVoucherPrintPath({
       refType: row.refType,
       refId: row.refId,
     }),

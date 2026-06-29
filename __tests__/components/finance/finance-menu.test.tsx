@@ -6,6 +6,7 @@ import { FinanceMenuHubView } from "@/components/finance/FinanceMenuHubView"
 import { FinanceMenuView } from "@/components/finance/FinanceMenuView"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
 import {
+  canAccessFinanceMenu,
   getAllFinanceMenuItems,
   getFinanceMenuHomeSections,
   getFinanceMenuHub,
@@ -98,18 +99,32 @@ describe("FinanceMenuHubView", () => {
     expect(html).not.toContain('href="/finance/reports/cash-flow"')
   })
 
-  it("renders audit hub with voucher inquiry card", () => {
+  it("renders audit hub with finance document inquiry card", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "audit")
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
-    expect(html).toContain("Voucher / Journal Inquiry")
+    expect(html).toContain("Finance Document Inquiry")
+    expect(html).toContain(
+      "Search, inspect, print and audit finance documents across vouchers and operational workflows."
+    )
     expect(html).toContain('href="/finance/vouchers"')
     expect(html).toContain("Done")
     expect(html).toContain("Document Trace")
     expect(html).toContain("Attachments")
     expect(html).toContain('aria-disabled="true"')
     expect(html).not.toContain('href="/finance/reconciliation"')
+    expect(html).not.toContain("Voucher / Journal Inquiry")
+  })
+
+  it("exposes finance document inquiry to HO_ADMIN only through finance menu gate", () => {
+    const hub = getFinanceMenuHub("HO_ADMIN", "audit")
+    expect(hub).not.toBeNull()
+    const item = hub?.items.find((entry) => entry.key === "voucher-lookup")
+    expect(item?.label).toBe("Finance Document Inquiry")
+    expect(item?.href).toBe("/finance/vouchers")
+    expect(getFinanceMenuHub("HO_OPERATIONS", "audit")).toBeNull()
+    expect(getFinanceMenuHomeSections("HO_OPERATIONS")).toHaveLength(0)
   })
 
   it("maps legacy transactions hub to daily work", () => {
@@ -156,6 +171,7 @@ describe("finance-menu config", () => {
     expect(keys).toContain("voucher-lookup")
     const voucherLookup = items.find((item) => item.key === "voucher-lookup")
     expect(voucherLookup?.status).toBe("available")
+    expect(voucherLookup?.label).toBe("Finance Document Inquiry")
     expect(voucherLookup?.href).toBe("/finance/vouchers")
     expect(keys).not.toContain("pav-register")
     expect(keys).not.toContain("manual-journal")
@@ -164,5 +180,12 @@ describe("finance-menu config", () => {
   it("returns home sections for HO_FINANCE", () => {
     expect(getFinanceMenuHomeSections("HO_FINANCE")).toHaveLength(3)
     expect(getFinanceMenuHomeSections("HO_OPERATIONS")).toHaveLength(0)
+  })
+
+  it("gates finance menu to HO_FINANCE and HO_ADMIN", () => {
+    expect(canAccessFinanceMenu("HO_FINANCE")).toBe(true)
+    expect(canAccessFinanceMenu("HO_ADMIN")).toBe(true)
+    expect(canAccessFinanceMenu("HO_OPERATIONS")).toBe(false)
+    expect(canAccessFinanceMenu("SH_STAFF")).toBe(false)
   })
 })

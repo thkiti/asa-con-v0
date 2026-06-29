@@ -13,7 +13,11 @@ import {
   applyVoucherInquiryRefTypeFilter,
   resolveVoucherInquiryDocumentTypeCode,
 } from "./voucher-document-types"
-import { resolveVoucherInquiryVoucherNoSearch } from "./voucher-no-search"
+import {
+  loadPosOriginReceiptContextBySaleId,
+  resolvePosReceiptArchivePdfAvailable,
+} from "./pos-origin-inquiry-context"
+import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
   matchesAmountRange,
   matchesPdfStateFilter,
@@ -21,6 +25,7 @@ import {
   resolvePostedVoucherDocumentNo,
   resolvePostedVoucherPdfAvailable,
 } from "./finance-document-inquiry-helpers"
+import { resolveVoucherInquiryVoucherNoSearch } from "./voucher-no-search"
 
 export type { FinanceVoucherListFilter, FinanceVoucherListResult, FinanceVoucherListRow } from "./voucher-list-types"
 
@@ -28,7 +33,7 @@ export { getVoucherDetailById as getFinanceVoucherDetail } from "@/lib/finance/v
 
 export type FinanceVoucherListPrisma = Pick<
   PrismaClient,
-  "voucher" | "accountingPeriod"
+  "voucher" | "accountingPeriod" | "receipt"
 >
 
 const DEFAULT_LIMIT = 50
@@ -217,7 +222,10 @@ type VoucherListDbRow = {
   pettyCashVoucherPosted: { entryNo: string } | null
 }
 
-function mapVoucherRow(row: VoucherListDbRow): FinanceVoucherListRow {
+function mapVoucherRow(
+  row: VoucherListDbRow,
+  posReceipt?: { receiptNo: string; pdfPath: string | null }
+): FinanceVoucherListRow {
   const amountLines = row.journalEntry?.lines.length ? row.journalEntry.lines : row.lines
   const { totalDebit, totalCredit } = sumLineTotals(amountLines)
   const amount = resolvePostedVoucherAmount(totalDebit, totalCredit)
@@ -229,11 +237,18 @@ function mapVoucherRow(row: VoucherListDbRow): FinanceVoucherListRow {
     revenueVoucher: row.revenueVoucherPosted,
     pettyCashVoucher: row.pettyCashVoucherPosted,
   })
-  const pdfAvailable = resolvePostedVoucherPdfAvailable({
+  const resolvedDocumentNo =
+    row.refType === FINANCE_REF_TYPES.POS_SALE && !documentNo && posReceipt?.receiptNo
+      ? posReceipt.receiptNo
+      : documentNo
+  let pdfAvailable = resolvePostedVoucherPdfAvailable({
     refType: row.refType,
     status: row.status,
     manualJournalEntry: row.manualJournalEntryPosted,
   })
+  if (row.refType === FINANCE_REF_TYPES.POS_SALE && pdfAvailable === null && posReceipt) {
+    pdfAvailable = resolvePosReceiptArchivePdfAvailable(posReceipt.pdfPath)
+  }
 
   return {
     id: row.id,
@@ -254,7 +269,7 @@ function mapVoucherRow(row: VoucherListDbRow): FinanceVoucherListRow {
     journalEntryId: row.journalEntry?.id ?? null,
     amount,
     documentTypeCode: resolveVoucherInquiryDocumentTypeCode(row.refType),
-    documentNo,
+    documentNo: resolvedDocumentNo,
     pdfAvailable,
   }
 }
@@ -346,8 +361,17 @@ export async function listFinanceVouchers(
     prisma.voucher.count({ where }),
   ])
 
+  const posSaleIds = (rows as VoucherListDbRow[])
+    .filter((row) => row.refType === FINANCE_REF_TYPES.POS_SALE)
+    .map((row) => row.refId)
+  const receiptBySaleId = prisma.receipt
+    ? await loadPosOriginReceiptContextBySaleId(prisma, posSaleIds)
+    : new Map()
+
   let vouchers = applyPostQueryFilters(
-    (rows as VoucherListDbRow[]).map(mapVoucherRow),
+    (rows as VoucherListDbRow[]).map((row) =>
+      mapVoucherRow(row, receiptBySaleId.get(row.refId))
+    ),
     scopedFilter
   )
 

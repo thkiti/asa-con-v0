@@ -170,9 +170,9 @@ function buildPrimaryFinanceMenuHubs(): Record<
       items: [
         done(
           "voucher-lookup",
-          "Voucher / Journal Inquiry",
+          "Finance Document Inquiry",
           "/finance/vouchers",
-          "Search posted vouchers and journal lines from any source"
+          "Search, inspect, print and audit finance documents across vouchers and operational workflows."
         ),
         comingSoon(
           "document-trace",

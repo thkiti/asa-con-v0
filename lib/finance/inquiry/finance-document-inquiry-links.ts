@@ -7,9 +7,58 @@ const PAYMENT_VOUCHER_PATH = "/finance/payment-vouchers"
 const REVENUE_VOUCHER_PATH = "/finance/revenue-vouchers"
 const PETTY_CASH_VOUCHER_PATH = "/finance/petty-cash-vouchers"
 const VOUCHER_INQUIRY_PATH = "/finance/vouchers"
+const SHOP_RECEIPT_PATH = "/shop/receipt"
+const SHOP_REFUND_RECEIPT_PATH = "/shop/refund-receipt"
 
 export function buildPostedVoucherInquiryPath(voucherId: string): string {
   return `${VOUCHER_INQUIRY_PATH}/${encodeURIComponent(voucherId)}`
+}
+
+export function buildPostedPosOriginInquiryPath(input: {
+  refType: string
+  refId: string
+}): string | null {
+  const id = input.refId.trim()
+  if (!id) return null
+
+  if (input.refType === FINANCE_REF_TYPES.POS_SALE) {
+    return `${SHOP_RECEIPT_PATH}/${encodeURIComponent(id)}`
+  }
+
+  if (input.refType === FINANCE_REF_TYPES.POS_REFUND) {
+    return `${SHOP_REFUND_RECEIPT_PATH}/${encodeURIComponent(id)}`
+  }
+
+  return null
+}
+
+export function buildPostedPosOriginPrintPath(input: {
+  refType: string
+  refId: string
+}): string | null {
+  const inquiryPath = buildPostedPosOriginInquiryPath(input)
+  if (!inquiryPath) return null
+  return `${inquiryPath}?autoprint=1`
+}
+
+export function resolvePostedVoucherInquiryPath(input: {
+  voucherId: string
+  refType: string
+  refId: string
+}): string {
+  return (
+    buildPostedPosOriginInquiryPath(input) ??
+    buildPostedVoucherInquiryPath(input.voucherId)
+  )
+}
+
+export function resolvePostedVoucherPrintPath(input: {
+  refType: string
+  refId: string
+}): string | null {
+  return (
+    buildPostedPosOriginPrintPath(input) ?? buildPostedVoucherPrintPath(input)
+  )
 }
 
 export function buildPostedVoucherPrintPath(input: {
