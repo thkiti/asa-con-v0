@@ -1,10 +1,11 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { RevenueVoucherListPage } from "@/components/finance/RevenueVoucherListPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function RevenueVouchersPage() {
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <Link href="/finance/daily-work" className="text-sm text-zinc-600 underline">
         ← Daily Work
       </Link>

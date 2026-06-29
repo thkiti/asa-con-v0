@@ -1,3 +1,8 @@
+import {
+  themeBadgeOrange,
+  themeBadgeSuccess,
+  themeBadgeWarning,
+} from "@/lib/finance-ui/finance-visual-classes"
 import type { CollectorPickupSettlementStatus } from "./collector-pickup-settlement"
 import type { BankDepositSettlementStatus } from "./bank-deposit-settlement"
 import { isPayInEvidenceUploadedStatus, type PayInEvidenceUiStatus } from "./pay-in-display"
@@ -78,10 +83,10 @@ export function collectorPickupBusinessStatusTone(
 ): string {
   switch (status) {
     case "COLLECTED":
-      return "bg-green-100 text-green-800"
+      return themeBadgeSuccess
     case "NEEDS REPAIR":
-      return "bg-amber-100 text-amber-900"
+      return themeBadgeWarning
     case "NOT COLLECTED":
-      return "bg-orange-100 text-orange-900"
+      return themeBadgeOrange
   }
 }

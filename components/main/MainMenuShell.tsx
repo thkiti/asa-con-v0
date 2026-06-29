@@ -24,8 +24,8 @@ export function MainMenuShell({
   children,
 }: MainMenuShellProps) {
   return (
-    <main className={mainMenuPageClass}>
-      <div className={mainMenuShellContentClass} data-testid="main-menu-shell-content">
+    <main className={mainMenuPageClass} data-testid="main-menu-page">
+      <div className={mainMenuShellContentClass} data-testid="app-page-container">
         <MainMenuHeader
           user={user}
           title={title}

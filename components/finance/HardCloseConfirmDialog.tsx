@@ -7,6 +7,16 @@ import {
   buildCloseReadinessPath,
   type CloseReadinessResult,
 } from "@/lib/finance-ui/close-readiness"
+import {
+  themeBannerError,
+  themeBtnDanger,
+  themeBtnSecondary,
+  themeDialogOverlay,
+  themeDialogWide,
+  themeLinkPrimary,
+  themeTextPrimary,
+  themeTextSecondary,
+} from "@/lib/finance-ui/finance-visual-classes"
 import { fetchCloseReadiness } from "@/lib/finance-ui/period-fetchers"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { buildSnapshotDetailPath } from "@/lib/finance-ui/trace-links"
@@ -84,12 +94,12 @@ export function HardCloseConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center"
+      className={themeDialogOverlay}
       role="presentation"
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-zinc-200 bg-white p-6 shadow-lg"
+        className={themeDialogWide}
         role="dialog"
         aria-modal="true"
         aria-labelledby="hard-close-title"
@@ -97,10 +107,10 @@ export function HardCloseConfirmDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 id="hard-close-title" className="text-lg font-semibold text-zinc-900">
+            <h2 id="hard-close-title" className={`text-lg font-semibold ${themeTextPrimary}`}>
               Confirm hard close
             </h2>
-            <p className="mt-1 text-sm text-zinc-600">
+            <p className={`mt-1 text-sm ${themeTextSecondary}`}>
               Period {period.periodKey} · Branch {period.branchId}
             </p>
           </div>
@@ -108,33 +118,31 @@ export function HardCloseConfirmDialog({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+            className={`rounded px-2 py-1 text-sm ${themeTextSecondary} hover:bg-[var(--btn-secondary-hover)] disabled:cursor-not-allowed`}
           >
             Cancel
           </button>
         </div>
 
-        <p className="mt-4 text-sm text-zinc-700">
+        <p className={`mt-4 text-sm ${themeTextSecondary}`}>
           Hard close locks the period for routine posting. This action cannot be
           undone from this screen. Close readiness must pass before the server
           accepts hard close.
         </p>
 
         {loadingReadiness ? (
-          <p className="mt-4 text-sm text-zinc-600">Loading close readiness…</p>
+          <p className={`mt-4 text-sm ${themeTextSecondary}`}>Loading close readiness…</p>
         ) : null}
 
         {readinessError ? (
-          <p className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {readinessError}
-          </p>
+          <p className={`mt-4 ${themeBannerError}`}>{readinessError}</p>
         ) : null}
 
         {readiness ? (
           <div className="mt-4 space-y-4">
-            <section className="rounded border border-zinc-200 bg-zinc-50 p-4">
+            <section className="theme-panel rounded p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-zinc-600">Close readiness</span>
+                <span className={`text-sm ${themeTextSecondary}`}>Close readiness</span>
                 <CloseReadinessStatusBadge status={readiness.status} />
               </div>
               <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
@@ -176,7 +184,7 @@ export function HardCloseConfirmDialog({
               )}
               <Link
                 href={buildCloseReadinessPath(period.id)}
-                className="mt-3 inline-block text-sm font-medium text-zinc-900 underline"
+                className={`mt-3 inline-block text-sm font-medium ${themeLinkPrimary}`}
               >
                 Open full close readiness review
               </Link>
@@ -251,7 +259,7 @@ export function HardCloseConfirmDialog({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50"
+            className={themeBtnSecondary}
           >
             Cancel
           </button>
@@ -259,7 +267,7 @@ export function HardCloseConfirmDialog({
             type="button"
             disabled={!canConfirm}
             onClick={() => void onConfirm()}
-            className="rounded border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-900 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`${themeBtnDanger} px-4 py-2 font-medium`}
           >
             {submitting ? "Closing…" : "Hard close period"}
           </button>

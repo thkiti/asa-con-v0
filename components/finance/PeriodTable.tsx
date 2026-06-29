@@ -10,6 +10,16 @@ import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
 import { buildCloseReadinessPath } from "@/lib/finance-ui/close-readiness"
 import { buildPeriodAuditTimelinePath } from "@/lib/finance-ui/period-audit-timeline"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
+import {
+  themeAdminTable,
+  themeAdminTableCell,
+  themeAdminTableCellMuted,
+  themeAdminTableEmpty,
+  themeAdminTableHead,
+  themeAdminTableHeadCell,
+  themeAdminTableRow,
+  themeLinkPrimary,
+} from "@/lib/finance-ui/finance-visual-classes"
 import { PeriodAdminActions } from "./PeriodAdminActions"
 import { PeriodStatusBadge } from "./PeriodStatusBadge"
 
@@ -47,49 +57,46 @@ export function PeriodTable({
 }: PeriodTableProps) {
   return (
     <div className="mt-4 overflow-x-auto">
-      <table className="min-w-full border-collapse text-sm">
+      <table className={themeAdminTable}>
         <thead>
-          <tr className="border-b border-zinc-200 text-left text-zinc-600">
-            <th className="px-3 py-2 font-medium">Period</th>
-            <th className="px-3 py-2 font-medium">Entity</th>
-            <th className="px-3 py-2 font-medium">Status</th>
-            <th className="px-3 py-2 font-medium">Opened</th>
-            <th className="px-3 py-2 font-medium">Closed</th>
-            <th className="px-3 py-2 font-medium">Close review</th>
+          <tr className={themeAdminTableHead}>
+            <th className={themeAdminTableHeadCell}>Period</th>
+            <th className={themeAdminTableHeadCell}>Entity</th>
+            <th className={themeAdminTableHeadCell}>Status</th>
+            <th className={themeAdminTableHeadCell}>Opened</th>
+            <th className={themeAdminTableHeadCell}>Closed</th>
+            <th className={themeAdminTableHeadCell}>Close review</th>
             {showControls ? (
-              <th className="px-3 py-2 font-medium">Actions</th>
+              <th className={themeAdminTableHeadCell}>Actions</th>
             ) : null}
           </tr>
         </thead>
         <tbody>
           {periods.length === 0 ? (
             <tr>
-              <td
-                colSpan={showControls ? 7 : 6}
-                className="px-3 py-4 text-center text-zinc-500"
-              >
+              <td colSpan={showControls ? 7 : 6} className={themeAdminTableEmpty}>
                 No accounting periods
               </td>
             </tr>
           ) : (
             periods.map((period) => (
-              <tr key={period.id} className="border-b border-zinc-100">
-                <td className="px-3 py-2 font-medium">{period.periodKey}</td>
-                <td className="px-3 py-2">{period.legalEntityCode}</td>
-                <td className="px-3 py-2">
+              <tr key={period.id} className={themeAdminTableRow}>
+                <td className={`${themeAdminTableCell} font-medium`}>{period.periodKey}</td>
+                <td className={themeAdminTableCell}>{period.legalEntityCode}</td>
+                <td className={themeAdminTableCell}>
                   <PeriodStatusBadge status={period.status} />
                 </td>
-                <td className="px-3 py-2 text-zinc-600">
+                <td className={themeAdminTableCellMuted}>
                   {formatDate(period.openedAt)}
                 </td>
-                <td className="px-3 py-2 text-zinc-600">
+                <td className={themeAdminTableCellMuted}>
                   {formatDate(period.closedAt)}
                 </td>
-                <td className="px-3 py-2">
+                <td className={themeAdminTableCell}>
                   <span className="flex flex-wrap items-center gap-3">
                     <Link
                       href={buildCloseReadinessPath(period.id)}
-                      className="text-sm font-medium text-zinc-900 underline"
+                      className={`text-sm font-medium ${themeLinkPrimary}`}
                     >
                       Review
                     </Link>
@@ -97,13 +104,13 @@ export function PeriodTable({
                       <>
                         <Link
                           href={buildCloseEvidencePath(period.id)}
-                          className="text-sm font-medium text-zinc-900 underline"
+                          className={`text-sm font-medium ${themeLinkPrimary}`}
                         >
                           Close evidence
                         </Link>
                         <Link
                           href={buildCloseEvidenceHistoryPath(period.id)}
-                          className="text-sm font-medium text-zinc-900 underline"
+                          className={`text-sm font-medium ${themeLinkPrimary}`}
                         >
                           Close history
                         </Link>
@@ -111,20 +118,20 @@ export function PeriodTable({
                     ) : null}
                     <Link
                       href={buildPeriodAuditTimelinePath(period.id)}
-                      className="text-sm font-medium text-zinc-900 underline"
+                      className={`text-sm font-medium ${themeLinkPrimary}`}
                     >
                       Audit timeline
                     </Link>
                     <Link
                       href={buildReopenEvidencePath(period.id)}
-                      className="text-sm font-medium text-zinc-900 underline"
+                      className={`text-sm font-medium ${themeLinkPrimary}`}
                     >
                       Reopen history
                     </Link>
                     {period.status === "HARD_CLOSED" ? (
                       <Link
                         href={buildReopenRequestsPath(period.id)}
-                        className="text-sm font-medium text-zinc-900 underline"
+                        className={`text-sm font-medium ${themeLinkPrimary}`}
                       >
                         Reopen requests
                       </Link>
@@ -132,7 +139,7 @@ export function PeriodTable({
                   </span>
                 </td>
                 {showControls ? (
-                  <td className="px-3 py-2">
+                  <td className={themeAdminTableCell}>
                     <PeriodAdminActions
                       period={period}
                       sessionRole={sessionRole}

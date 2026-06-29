@@ -1,10 +1,11 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { InventoryReconciliationView } from "@/components/finance/InventoryReconciliationView"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function InventoryReconciliationPage() {
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <Link href="/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Finance
       </Link>

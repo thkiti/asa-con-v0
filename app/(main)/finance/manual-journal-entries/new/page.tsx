@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import type { ManualJournalEntryTypeCode } from "@/lib/finance-ui/manual-journal-entry-display"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { ManualJournalEntryEditorPage } from "@/components/finance/ManualJournalEntryEditorPage"
@@ -26,7 +27,7 @@ export default async function NewManualJournalEntryPage({ searchParams }: PagePr
     : "MANUAL"
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <FinanceDocumentContainer>
         <Link
           href="/finance/manual-journal-entries"

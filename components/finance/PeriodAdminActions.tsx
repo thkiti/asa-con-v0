@@ -6,6 +6,12 @@ import type { PeriodAction } from "@/lib/finance-ui/period-fetchers"
 import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
 import { buildReopenRequestsPath } from "@/lib/finance-ui/reopen-requests"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
+import {
+  themeBannerWarning,
+  themeBtnSecondary,
+  themeLinkMuted,
+  themeMuted,
+} from "@/lib/finance-ui/finance-visual-classes"
 import { HardCloseConfirmDialog } from "./HardCloseConfirmDialog"
 import { HardReopenRequestDialog } from "./HardReopenRequestDialog"
 import { SoftReopenConfirmDialog } from "./SoftReopenConfirmDialog"
@@ -24,8 +30,7 @@ type PeriodAdminActionsProps = {
   onReopenRequest?: (reason: string) => Promise<void>
 }
 
-const buttonClassName =
-  "rounded border border-zinc-300 px-2 py-1 text-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+const buttonClassName = themeBtnSecondary
 
 export function PeriodAdminActions({
   period,
@@ -95,12 +100,12 @@ export function PeriodAdminActions({
         <div className="flex flex-wrap items-center gap-2">
           {pendingReopenRequest ? (
             <>
-              <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-900">
+              <span className={`${themeBannerWarning} px-2 py-1 text-xs`}>
                 Pending: {pendingReopenRequest.requestNo}
               </span>
               <Link
                 href={buildReopenRequestsPath(period.id)}
-                className="text-sm underline"
+                className={`text-sm ${themeLinkMuted}`}
               >
                 Review requests
               </Link>
@@ -115,7 +120,7 @@ export function PeriodAdminActions({
               REQUEST REOPEN
             </button>
           ) : (
-            <span className="text-sm text-zinc-500">
+            <span className={`text-sm ${themeMuted}`}>
               Locked (HO_FINANCE or HO_ADMIN to request reopen)
             </span>
           )}

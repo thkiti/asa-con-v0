@@ -2,6 +2,16 @@
 
 import { useState } from "react"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
+import {
+  themeBtnPrimary,
+  themeBtnSecondary,
+  themeDialog,
+  themeDialogOverlay,
+  themeInput,
+  themeLabel,
+  themeTextPrimary,
+  themeTextSecondary,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 type SoftReopenConfirmDialogProps = {
   period: AccountingPeriodRow
@@ -29,35 +39,35 @@ export function SoftReopenConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center"
+      className={themeDialogOverlay}
       role="presentation"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-lg border border-zinc-200 bg-white p-6 shadow-lg"
+        className={themeDialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="soft-reopen-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 id="soft-reopen-title" className="text-lg font-semibold text-zinc-900">
+        <h2 id="soft-reopen-title" className={`text-lg font-semibold ${themeTextPrimary}`}>
           Confirm reopen to open
         </h2>
-        <p className="mt-2 text-sm text-zinc-600">
+        <p className={`mt-2 text-sm ${themeTextSecondary}`}>
           Period {period.periodKey} · Branch {period.branchId}
         </p>
-        <p className="mt-4 text-sm text-zinc-700">
+        <p className={`mt-4 text-sm ${themeTextSecondary}`}>
           Reopening to OPEN allows posting again through the normal posting kernel. A reason is
           required for audit.
         </p>
         <label className="mt-4 block">
-          <span className="text-sm text-zinc-600">Reason (required)</span>
+          <span className={themeLabel}>Reason (required)</span>
           <textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
             disabled={submitting}
             rows={3}
-            className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+            className={`${themeInput} text-sm`}
             placeholder="Document why this period is being reopened for posting"
           />
         </label>
@@ -66,7 +76,7 @@ export function SoftReopenConfirmDialog({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50"
+            className={themeBtnSecondary}
           >
             Cancel
           </button>
@@ -74,7 +84,7 @@ export function SoftReopenConfirmDialog({
             type="button"
             disabled={!canConfirm}
             onClick={() => void onConfirm(trimmedReason)}
-            className="rounded border border-green-300 bg-green-50 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className={themeBtnPrimary}
           >
             {submitting ? "Reopening…" : "Reopen to OPEN"}
           </button>

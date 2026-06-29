@@ -19,6 +19,18 @@ import type {
 } from "@/lib/finance-ui/types"
 import { CloseGateBlockerList } from "./CloseGateBlockerList"
 import { PeriodTable } from "./PeriodTable"
+import {
+  themeBannerError,
+  themeBannerSuccess,
+  themeBtnSecondary,
+  themeInput,
+  themeLabel,
+  themeLoadingText,
+  themeSectionTitle,
+  themeSelect,
+  themeTextPrimary,
+  themeTextSecondary,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
 
@@ -204,22 +216,22 @@ export function PeriodAdminPage() {
   return (
     <div>
       {sessionDisplay ? (
-        <p className="mb-4 text-sm text-zinc-600">
+        <p className={`mb-4 text-sm ${themeTextSecondary}`}>
           Signed in as {sessionDisplay.name || "Unknown"} ({sessionDisplay.role})
         </p>
       ) : null}
 
       <section className="space-y-4">
-        <h2 className="text-sm font-medium text-zinc-900">Filters</h2>
+        <h2 className={themeSectionTitle}>Filters</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="block">
-            <span className="text-sm text-zinc-600">Status</span>
+            <span className={themeLabel}>Status</span>
             <select
               value={statusFilter}
               onChange={(e) =>
                 setStatusFilter(e.target.value as "ALL" | AccountingPeriodStatus)
               }
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+              className={`${themeSelect} mt-1 w-full`}
               disabled={controlsDisabled}
             >
               {STATUS_FILTER_OPTIONS.map((status) => (
@@ -230,13 +242,13 @@ export function PeriodAdminPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-sm text-zinc-600">Period key</span>
+            <span className={themeLabel}>Period key</span>
             <input
               type="text"
               value={periodKeyFilter}
               onChange={(e) => setPeriodKeyFilter(e.target.value)}
               placeholder="YYYY-MM"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+              className={`${themeInput} text-sm`}
               disabled={controlsDisabled}
             />
           </label>
@@ -245,7 +257,7 @@ export function PeriodAdminPage() {
               type="button"
               onClick={() => void loadPeriods()}
               disabled={controlsDisabled}
-              className="rounded border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50"
+              className={themeBtnSecondary}
             >
               {loading ? "Refreshing…" : "Refresh"}
             </button>
@@ -254,16 +266,16 @@ export function PeriodAdminPage() {
       </section>
 
       <section className="mt-8 space-y-4">
-        <h2 className="text-sm font-medium text-zinc-900">Create / open period</h2>
+        <h2 className={themeSectionTitle}>Create / open period</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="block sm:col-span-2">
-            <span className="text-sm text-zinc-600">Period key</span>
+            <span className={themeLabel}>Period key</span>
             <input
               type="text"
               value={createPeriodKey}
               onChange={(e) => setCreatePeriodKey(e.target.value)}
               placeholder="YYYY-MM"
-              className="mt-1 w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+              className={`${themeInput} text-sm`}
               disabled={controlsDisabled}
             />
           </label>
@@ -272,7 +284,7 @@ export function PeriodAdminPage() {
               type="button"
               onClick={() => void handleCreatePeriod()}
               disabled={controlsDisabled}
-              className="rounded border border-zinc-300 px-4 py-2 text-sm hover:bg-zinc-50 disabled:opacity-50"
+              className={themeBtnSecondary}
             >
               CREATE / OPEN PERIOD
             </button>
@@ -280,17 +292,13 @@ export function PeriodAdminPage() {
         </div>
       </section>
 
-      {message ? (
-        <p className="mt-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          {message}
-        </p>
-      ) : null}
+      {message ? <p className={`mt-4 ${themeBannerSuccess}`}>{message}</p> : null}
 
       {error ? (
-        <div className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className={`mt-4 ${themeBannerError}`}>
           <p>{error}</p>
           {actionError?.blockers?.length ? (
-            <div className="mt-3 text-zinc-900">
+            <div className={`mt-3 ${themeTextPrimary}`}>
               <CloseGateBlockerList
                 blockers={actionError.blockers}
                 title="Hard close rejected"
@@ -311,7 +319,7 @@ export function PeriodAdminPage() {
       ) : null}
 
       {loading && periods.length === 0 ? (
-        <p className="mt-4 text-zinc-600">Loading periods…</p>
+        <p className={`mt-4 ${themeLoadingText}`}>Loading periods…</p>
       ) : (
         <PeriodTable
           periods={periods}

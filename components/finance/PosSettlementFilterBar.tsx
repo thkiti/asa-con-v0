@@ -7,12 +7,14 @@ import {
   formatPosSettlementBranchLabel,
   type PosSettlementBranchOption,
 } from "@/lib/finance-ui/pos-settlement-branches"
-import type { FinanceFilterValues } from "@/lib/finance-ui/types"
 import {
-  themeBtnPrimary,
-  themeLabel,
-  themeSelect,
-} from "@/lib/theme/theme-classes"
+  posSettlementFilterBar,
+  posSettlementFilterFieldApply,
+  posSettlementFilterFieldBranch,
+  posSettlementFilterFieldDate,
+} from "@/lib/finance-ui/finance-visual-classes"
+import type { FinanceFilterValues } from "@/lib/finance-ui/types"
+import { themeBtnPrimary, themeLabel, themeSelect } from "@/lib/theme/theme-classes"
 
 type PosSettlementFilterBarProps = {
   values: FinanceFilterValues
@@ -44,13 +46,13 @@ export function PosSettlementFilterBar({
 
   return (
     <form
-      className="flex flex-wrap items-end gap-4"
+      className={posSettlementFilterBar}
       onSubmit={(event) => {
         event.preventDefault()
         onApply()
       }}
     >
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={posSettlementFilterFieldBranch}>
         <span className={themeLabel}>Branch</span>
         <select
           data-testid="pos-settlement-branch-select"
@@ -61,7 +63,7 @@ export function PosSettlementFilterBar({
               branchId: event.target.value || undefined,
             })
           }
-          className={`${themeSelect} min-w-[14rem] px-3 py-2`}
+          className={`${themeSelect} px-3 py-2`}
         >
           <option value="">All SH branches</option>
           {branches.map((branch) => (
@@ -79,6 +81,7 @@ export function PosSettlementFilterBar({
         value={values.from ?? ""}
         onChange={(from) => onChange({ ...values, from })}
         data-testid="pos-settlement-date-from"
+        fieldClassName={posSettlementFilterFieldDate}
         required
       />
       <FinanceSettlementDateInput
@@ -86,16 +89,22 @@ export function PosSettlementFilterBar({
         value={values.to ?? ""}
         onChange={(to) => onChange({ ...values, to })}
         data-testid="pos-settlement-date-to"
+        fieldClassName={posSettlementFilterFieldDate}
         required
       />
-      <button
-        type="submit"
-        disabled={loading}
-        className={themeBtnPrimary}
-        data-testid="pos-settlement-apply"
-      >
-        {loading ? "Loading…" : "Apply"}
-      </button>
+      <div className={posSettlementFilterFieldApply}>
+        <span className="invisible text-sm leading-none" aria-hidden>
+          Apply
+        </span>
+        <button
+          type="submit"
+          disabled={loading}
+          className={themeBtnPrimary}
+          data-testid="pos-settlement-apply"
+        >
+          {loading ? "…" : "Apply"}
+        </button>
+      </div>
     </form>
   )
 }

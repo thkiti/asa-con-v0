@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { redirect } from "next/navigation"
 import { BankDepositSettlementPage } from "@/components/finance/BankDepositSettlementPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
@@ -16,7 +17,7 @@ export default async function FinanceBankDepositSettlementPage() {
   }
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <Link href="/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Finance
       </Link>

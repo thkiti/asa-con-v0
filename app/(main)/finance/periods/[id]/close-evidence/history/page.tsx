@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { CloseEvidenceHistoryPage } from "@/components/finance/CloseEvidenceHistoryPage"
 import { buildCloseEvidencePath } from "@/lib/finance-ui/close-evidence"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
@@ -11,7 +12,7 @@ export default async function FinancePeriodCloseEvidenceHistoryPage({ params }: 
   const { id } = await params
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <Link
         href="/finance/periods"
         className="text-sm text-zinc-600 hover:text-zinc-900"

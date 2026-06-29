@@ -1,4 +1,5 @@
-﻿import Link from "next/link"
+import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { PeriodAuditTimelinePage } from "@/components/finance/PeriodAuditTimelinePage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
@@ -10,7 +11,7 @@ export default async function FinancePeriodAuditTimelinePage({ params }: PagePro
   const { id } = await params
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <EntityContextPageHeading
         title="Period audit timeline"
         className="no-print mt-4 text-xl font-semibold"

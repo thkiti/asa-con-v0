@@ -3,7 +3,7 @@
 import { themeInput, themeLabel } from "@/lib/theme/theme-classes"
 
 export const financeSettlementDateInputClass =
-  "finance-settlement-date-input mt-0 min-w-[11rem] cursor-pointer"
+  "finance-settlement-date-input mt-0 cursor-pointer"
 
 type FinanceSettlementDateInputProps = {
   label: string
@@ -11,6 +11,7 @@ type FinanceSettlementDateInputProps = {
   onChange: (value: string) => void
   "data-testid"?: string
   required?: boolean
+  fieldClassName?: string
 }
 
 export function FinanceSettlementDateInput({
@@ -19,9 +20,10 @@ export function FinanceSettlementDateInput({
   onChange,
   "data-testid": dataTestId,
   required = false,
+  fieldClassName = "flex flex-col gap-1 text-sm",
 }: FinanceSettlementDateInputProps) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <label className={fieldClassName}>
       <span className={themeLabel}>{label}</span>
       <input
         type="date"

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { CloseReadinessPage } from "@/components/finance/CloseReadinessPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
@@ -12,7 +13,7 @@ export default async function FinancePeriodCloseReadinessPage({
   const { id } = await params
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <Link href="/finance/periods" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Accounting periods
       </Link>

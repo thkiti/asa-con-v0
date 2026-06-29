@@ -114,7 +114,7 @@ describe("PayInSlipIndicator", () => {
 })
 
 describe("PayInStaffCredentialGate", () => {
-  it("renders staff credential prompt", () => {
+  it("renders staff credential prompt with readable copy and verify action", () => {
     const html = renderToStaticMarkup(
       <PayInStaffCredentialGate
         open
@@ -125,6 +125,12 @@ describe("PayInStaffCredentialGate", () => {
     )
     expect(html).toContain('data-testid="pay-in-staff-credential-gate"')
     expect(html).toContain('data-testid="pay-in-staff-credential-input"')
+    expect(html).toContain('data-testid="pay-in-staff-verify-button"')
+    expect(html).toContain("Enter staff code/password to upload PAY-IN slip.")
+    expect(html).toContain("Staff code / password")
+    expect(html).toContain("Verify")
+    expect(html).toContain("theme-dialog-light")
+    expect(html).toContain("COL-SH001-202606-0001")
   })
 })
 
@@ -148,6 +154,7 @@ describe("PayInSlipUploadModal", () => {
     expect(html).toContain("COL-SH001-202606-0001-001.jpg")
     expect(html).toContain('data-testid="pay-in-slip-save-button"')
     expect(html).toContain("disabled")
+    expect(html).toContain("theme-dialog-light")
   })
 })
 
@@ -161,8 +168,14 @@ describe("CollectorPickupSettlementTable", () => {
     expect(html).toContain("Branch")
     expect(html).toContain("Expected")
     expect(html).toContain("Status")
-    expect(html).toContain("PAY-IN Slip")
-    expect(html).toContain("Deposit")
+    expect(html).toContain("PAY-IN SLIP / DEPOSIT")
+    expect(html).toContain("collector-pickup-settlement-table")
+    expect(html).toContain("collector-pickup-col-collect")
+    expect(html).toContain("collector-pickup-workflow-actions")
+    expect(html).toContain("collector-pickup-th-status")
+    expect(html).toContain("collector-pickup-td-workflow")
+    expect(html).not.toContain(">PAY-IN Slip<")
+    expect(html).not.toContain(">Deposit<")
     expect(html).not.toContain("Pickup Voucher")
     expect(html).not.toContain("Bank Voucher")
     expect(html).not.toContain("Pickup Status")

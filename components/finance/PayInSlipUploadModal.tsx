@@ -6,6 +6,16 @@ import {
   uploadPayInSlipEvidence,
 } from "@/lib/finance-ui/pay-in-settlement"
 import type { PayInVerifiedStaff } from "@/components/finance/PayInStaffCredentialGate"
+import {
+  themeDialogLightWide,
+  themeDialogLightBody,
+  themeDialogLightBtnPrimary,
+  themeDialogLightBtnSecondary,
+  themeDialogLightLabel,
+  themeDialogLightTitleLg,
+  themeDialogOverlayCentered,
+  themeBannerError,
+} from "@/lib/theme/theme-classes"
 
 export type PayInSlipUploadModalRow = {
   collectorReportId: string
@@ -74,20 +84,20 @@ export function PayInSlipUploadModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className={themeDialogOverlayCentered}
       data-testid="pay-in-slip-upload-modal"
       role="dialog"
       aria-modal="true"
       aria-label="Upload PAY-IN slip"
     >
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold text-zinc-900">Upload PAY-IN Slip</h2>
-        <p className="mt-1 text-sm text-zinc-600">
+      <div className={themeDialogLightWide}>
+        <h2 className={themeDialogLightTitleLg}>Upload PAY-IN Slip</h2>
+        <p className={themeDialogLightBody}>
           {row.collectNo} · {row.branchLabel} · Staff {verifiedStaff.staffId}
         </p>
 
-        <label className="mt-4 block text-sm">
-          <span className="mb-1 block text-zinc-600">Select or take photo</span>
+        <label className="mt-4 block">
+          <span className={themeDialogLightLabel}>Select or take photo</span>
           <input
             type="file"
             accept="image/*"
@@ -95,7 +105,7 @@ export function PayInSlipUploadModal({
             onChange={handleFileChange}
             disabled={uploading}
             data-testid="pay-in-slip-file-input"
-            className="block w-full text-sm"
+            className="theme-dialog-light-input block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-[#f4f4f5] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-[#18181b]"
           />
         </label>
 
@@ -104,20 +114,20 @@ export function PayInSlipUploadModal({
           <img
             src={previewUrl}
             alt="PAY-IN slip preview"
-            className="mt-3 max-h-48 w-auto rounded border border-zinc-200"
+            className="mt-3 max-h-48 w-auto rounded border border-[#d4d4d8]"
             data-testid="pay-in-slip-modal-preview"
           />
         ) : null}
 
-        <p className="mt-2 text-xs text-zinc-500" data-testid="pay-in-slip-storage-name">
+        <p
+          className="theme-dialog-light-body mt-2 text-xs"
+          data-testid="pay-in-slip-storage-name"
+        >
           Save as: {storageName}
         </p>
 
         {error ? (
-          <p
-            className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
-            data-testid="pay-in-upload-error"
-          >
+          <p className={`mt-3 ${themeBannerError}`} data-testid="pay-in-upload-error">
             {error}
           </p>
         ) : null}
@@ -125,7 +135,7 @@ export function PayInSlipUploadModal({
         <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
-            className="rounded border border-zinc-300 px-4 py-2 text-sm"
+            className={themeDialogLightBtnSecondary}
             onClick={onClose}
             disabled={uploading}
           >
@@ -134,7 +144,7 @@ export function PayInSlipUploadModal({
           <button
             type="button"
             data-testid="pay-in-slip-save-button"
-            className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className={themeDialogLightBtnPrimary}
             disabled={!selectedFile || uploading}
             onClick={() => void handleSave()}
           >

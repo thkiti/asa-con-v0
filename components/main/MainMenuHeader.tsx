@@ -9,7 +9,7 @@ import {
   mainMenuBackLinkClass,
   mainMenuBackLinkSlotClass,
   mainMenuHeaderClass,
-  mainMenuHeaderMainClass,
+  mainMenuLogoutAnchorClass,
   mainMenuLogoutButtonClass,
   mainMenuShellHeaderClass,
   mainMenuTitleClass,
@@ -95,17 +95,15 @@ export function MainMenuHeader({
 
   return (
     <header className={mainMenuHeaderClass} data-testid="main-menu-header">
-      <div className={mainMenuHeaderMainClass}>
-        <div className={mainMenuBackLinkSlotClass}>{backLink}</div>
-        <h1
-          className={titleClassName ?? mainMenuTitleClass}
-          data-testid="main-menu-title"
-        >
-          {formatEntityContextTitle(user.documentEntityCode, title)}
-        </h1>
-        <MainMenuUserCard user={user} />
-      </div>
-      {logoutButton}
+      <div className={mainMenuLogoutAnchorClass}>{logoutButton}</div>
+      <div className={mainMenuBackLinkSlotClass}>{backLink}</div>
+      <h1
+        className={titleClassName ?? mainMenuTitleClass}
+        data-testid="main-menu-title"
+      >
+        {formatEntityContextTitle(user.documentEntityCode, title)}
+      </h1>
+      <MainMenuUserCard user={user} />
     </header>
   )
 }

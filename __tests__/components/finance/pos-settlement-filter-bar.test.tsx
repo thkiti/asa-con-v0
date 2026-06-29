@@ -46,6 +46,9 @@ describe("PosSettlementFilterBar", () => {
     )
 
     expect(html).toContain('data-testid="pos-settlement-branch-select"')
+    expect(html).toContain("pos-settlement-filter-bar")
+    expect(html).toContain("pos-settlement-filter-branch")
+    expect(html).toContain("pos-settlement-filter-date")
     expect(html).toContain("<select")
     expect(html).not.toContain('placeholder="Optional"')
     expect(html).not.toContain("Branch ID")

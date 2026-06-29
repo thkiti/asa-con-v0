@@ -1,10 +1,11 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { ManualJournalEntryPage } from "@/components/finance/ManualJournalEntryPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function Page() {
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <Link href="/finance/journal-entries" className="text-sm text-zinc-600 underline">
         ← Manual journals
       </Link>

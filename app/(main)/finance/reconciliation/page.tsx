@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { ReconciliationPage } from "@/components/finance/ReconciliationPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
@@ -12,7 +13,7 @@ export default async function FinanceReconciliationPage({
   const { branchId, periodKey } = await searchParams
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <Link href="/finance" className="text-sm text-zinc-600 hover:text-zinc-900">
         ← Finance
       </Link>

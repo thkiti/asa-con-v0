@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { ManualJournalEntryEditorPage } from "@/components/finance/ManualJournalEntryEditorPage"
 import { themeLinkMuted } from "@/lib/theme/theme-classes"
@@ -11,7 +12,7 @@ export default async function OpeningBalanceDetailPage({ params }: PageProps) {
   const { id } = await params
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <FinanceDocumentContainer>
         <Link
           href="/finance/opening-balance"

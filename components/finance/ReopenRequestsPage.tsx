@@ -7,6 +7,21 @@ import {
   fetchSessionDisplay,
   patchReopenRequest,
 } from "@/lib/finance-ui/period-fetchers"
+import {
+  themeBannerError,
+  themeBannerSuccess,
+  themeBtnDanger,
+  themeBtnSecondary,
+  themeBtnSuccess,
+  themeEmptyState,
+  themeLinkPrimary,
+  themeLoadingText,
+  themeMeta,
+  themePanelList,
+  themePanelListItem,
+  themeTextPrimary,
+  themeTextSecondary,
+} from "@/lib/finance-ui/finance-visual-classes"
 import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
 import { buildReopenEvidencePath } from "@/lib/finance-ui/reopen-evidence"
 
@@ -93,61 +108,53 @@ export function ReopenRequestsPage({ periodId }: ReopenRequestsPageProps) {
   }
 
   if (loading) {
-    return <p className="text-zinc-600">Loading reopen requests…</p>
+    return <p className={themeLoadingText}>Loading reopen requests…</p>
   }
 
   return (
     <div>
-      <p className="text-sm text-zinc-600">
-        <Link href={buildReopenEvidencePath(periodId)} className="underline">
+      <p className={`text-sm ${themeTextSecondary}`}>
+        <Link href={buildReopenEvidencePath(periodId)} className={themeLinkPrimary}>
           View executed reopen evidence
         </Link>
       </p>
 
-      {message ? (
-        <p className="mt-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          {message}
-        </p>
-      ) : null}
+      {message ? <p className={`mt-4 ${themeBannerSuccess}`}>{message}</p> : null}
 
-      {error ? (
-        <p className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className={`mt-4 ${themeBannerError}`}>{error}</p> : null}
 
       {rows.length === 0 ? (
-        <p className="mt-4 text-sm text-zinc-600">No reopen requests for this period.</p>
+        <p className={`mt-4 ${themeEmptyState}`}>No reopen requests for this period.</p>
       ) : (
-        <ul className="mt-4 divide-y divide-zinc-100 rounded border border-zinc-200">
+        <ul className={`mt-4 ${themePanelList}`}>
           {rows.map((row) => (
-            <li key={row.id} className="px-4 py-3">
+            <li key={row.id} className={themePanelListItem}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">
+                  <p className={`text-sm font-medium ${themeTextPrimary}`}>
                     {row.requestNo} · {row.fromStatus} → {row.toStatus} · {row.status}
                   </p>
-                  <p className="mt-1 text-sm text-zinc-700">{row.reason}</p>
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className={`mt-1 text-sm ${themeTextSecondary}`}>{row.reason}</p>
+                  <p className={`mt-1 ${themeMeta}`}>
                     Requested {formatDateTime(row.requestedAt)} by {row.requestedByName} (
                     {row.requestedByRole})
                   </p>
                   {row.status === "EXECUTED" && row.approvedAt ? (
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className={`mt-1 ${themeMeta}`}>
                       Approved {formatDateTime(row.approvedAt)} by {row.approvedByName} (
                       {row.approvedByRole})
                       {row.approvalNote ? ` — ${row.approvalNote}` : ""}
                     </p>
                   ) : null}
                   {row.status === "REJECTED" && row.rejectedAt ? (
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className={`mt-1 ${themeMeta}`}>
                       Rejected {formatDateTime(row.rejectedAt)} by {row.rejectedByName} (
                       {row.rejectedByRole})
                       {row.rejectionNote ? ` — ${row.rejectionNote}` : ""}
                     </p>
                   ) : null}
                   {row.status === "CANCELLED" && row.cancelledAt ? (
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className={`mt-1 ${themeMeta}`}>
                       Cancelled {formatDateTime(row.cancelledAt)} by {row.cancelledByName}
                     </p>
                   ) : null}
@@ -160,7 +167,7 @@ export function ReopenRequestsPage({ periodId }: ReopenRequestsPageProps) {
                           type="button"
                           disabled={submittingId === row.id}
                           onClick={() => void handleAction(row, "APPROVE")}
-                          className="rounded border border-green-300 bg-green-50 px-2 py-1 text-sm hover:bg-green-100 disabled:opacity-50"
+                          className={themeBtnSuccess}
                         >
                           Approve
                         </button>
@@ -168,7 +175,7 @@ export function ReopenRequestsPage({ periodId }: ReopenRequestsPageProps) {
                           type="button"
                           disabled={submittingId === row.id}
                           onClick={() => void handleAction(row, "REJECT")}
-                          className="rounded border border-red-300 bg-red-50 px-2 py-1 text-sm hover:bg-red-100 disabled:opacity-50"
+                          className={themeBtnDanger}
                         >
                           Reject
                         </button>
@@ -178,7 +185,7 @@ export function ReopenRequestsPage({ periodId }: ReopenRequestsPageProps) {
                       type="button"
                       disabled={submittingId === row.id}
                       onClick={() => void handleAction(row, "CANCEL")}
-                      className="rounded border border-zinc-300 px-2 py-1 text-sm hover:bg-zinc-50 disabled:opacity-50"
+                      className={themeBtnSecondary}
                     >
                       Cancel
                     </button>

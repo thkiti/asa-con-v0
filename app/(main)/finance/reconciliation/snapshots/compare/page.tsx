@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { ReconciliationSnapshotCompareClient } from "@/components/finance/ReconciliationSnapshotCompareView"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
@@ -12,7 +13,7 @@ export default async function FinanceReconciliationSnapshotComparePage({
   const { left = "", right = "" } = await searchParams
 
   return (
-    <main className="p-8 reconciliation-audit-print">
+    <main className={`${financeAdminPageClass} reconciliation-audit-print`}>
       <Link
         href="/finance/reconciliation/snapshots"
         className="no-print text-sm text-zinc-600 hover:text-zinc-900"

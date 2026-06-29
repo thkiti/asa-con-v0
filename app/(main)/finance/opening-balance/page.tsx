@@ -1,11 +1,12 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { OpeningBalanceHubPage } from "@/components/finance/OpeningBalanceHubPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 
 export default function OpeningBalancePage() {
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <FinanceDocumentContainer>
         <Link
           href="/finance"

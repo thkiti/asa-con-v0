@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { PettyCashVoucherEditorPage } from "@/components/finance/PettyCashVoucherEditorPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
@@ -12,7 +13,7 @@ export default async function PettyCashVoucherDetailPage({ params }: PageProps) 
   const { id } = await params
 
   return (
-    <main className="p-8">
+    <main className={financeAdminPageClass}>
       <FinanceDocumentContainer>
         <Link
           href="/finance/petty-cash-vouchers"

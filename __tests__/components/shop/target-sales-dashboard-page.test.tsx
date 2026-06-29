@@ -82,11 +82,11 @@ describe("TargetSalesDashboardPage", () => {
       <TargetSalesDashboardPage user={hoAdmin} />
     )
 
-    expect(html).toContain(`data-testid="main-menu-shell-content"`)
+    expect(html).toContain(`data-testid="app-page-container"`)
     expect(html).toContain(mainMenuShellContentClass)
     expect(html).toContain(mainMenuProfileClass)
 
-    const shellStart = html.indexOf('data-testid="main-menu-shell-content"')
+    const shellStart = html.indexOf('data-testid="app-page-container"')
     const userCardIndex = html.indexOf('data-testid="main-menu-user-card"')
     const filterIndex = html.indexOf('data-testid="dashboard-scope"')
     const summaryIndex = html.indexOf('data-testid="dashboard-month-summary"')
