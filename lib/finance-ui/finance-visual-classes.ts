@@ -92,6 +92,29 @@ export const voucherInquiryFilterStatus =
 export const voucherInquiryFilterPostingState =
   "voucher-inquiry-filter-field voucher-inquiry-filter-posting-state"
 
+/** Inquiry PDF column when archive path is missing */
+export const financePdfMissing = "finance-pdf-missing"
+
+/** Voucher inquiry — archive PDF status dot */
+export const financePdfIndicator = "finance-pdf-indicator"
+export const financePdfIndicatorExists = "finance-pdf-indicator--exists"
+export const financePdfIndicatorMissing = "finance-pdf-indicator--missing"
+export const financePdfIndicatorUnsupported = "finance-pdf-indicator--unsupported"
+export const financePdfIndicatorLink = "finance-pdf-indicator-link"
+export const financePdfIndicatorStatic = "finance-pdf-indicator-static"
+
+export const voucherInquiryTable = "voucher-inquiry-table"
+export const voucherInquiryTdDocNo = "voucher-inquiry-td-doc-no"
+export const voucherInquiryTdDate = "voucher-inquiry-td-date"
+export const voucherInquiryTdVoucherNo = "voucher-inquiry-td-voucher-no"
+export const voucherInquiryTdJournal = "voucher-inquiry-td-journal"
+export const voucherInquiryTdActions = "voucher-inquiry-td-actions"
+export const voucherInquiryActions = "voucher-inquiry-actions"
+
+export const voucherInquiryFilterNo =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-no"
+
+/** @deprecated Use voucherInquiryFilterNo */
 export const voucherInquiryFilterDocumentNo =
   "voucher-inquiry-filter-field voucher-inquiry-filter-document-no"
 
@@ -122,14 +145,24 @@ export const voucherInquiryFilterVoucherNo =
 export const voucherInquiryFilterActions =
   "voucher-inquiry-filter-actions flex shrink-0 items-end gap-2"
 
-export const voucherInquiryFilterButtonPrimary =
-  "voucher-inquiry-filter-button rounded bg-zinc-900 px-3 py-1.5 text-sm text-white"
+/** Shared fixed height for inquiry filter inputs, selects, and buttons */
+export const voucherInquiryFilterControl = "voucher-inquiry-filter-control"
 
-export const voucherInquiryFilterButtonSecondary =
-  "voucher-inquiry-filter-button rounded border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700"
+/** Framed input box — same border/background as finance-filter-select */
+export const voucherInquiryFilterFramed = "voucher-inquiry-filter-framed"
 
 /** Native filter dropdown — dark closed field, light readable option list in all themes. */
 export const financeFilterSelect = "finance-filter-select"
+
+export const voucherInquiryFilterInput = `theme-input ${voucherInquiryFilterControl} voucher-inquiry-filter-framed w-full min-w-0`
+
+export const voucherInquiryFilterSelect = `${financeFilterSelect} ${voucherInquiryFilterControl}`
+
+export const voucherInquiryFilterButtonPrimary =
+  "voucher-inquiry-filter-button voucher-inquiry-filter-control rounded bg-[var(--btn-primary-bg)] text-[var(--btn-primary-fg)] hover:bg-[var(--btn-primary-hover)]"
+
+export const voucherInquiryFilterButtonSecondary =
+  "voucher-inquiry-filter-button voucher-inquiry-filter-control rounded border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-fg)] hover:bg-[var(--btn-secondary-hover)]"
 
 export const collectorPickupTh = "px-2 py-2 text-left whitespace-nowrap"
 export const collectorPickupThAmount = `${numericTh} px-2 py-2 whitespace-nowrap`

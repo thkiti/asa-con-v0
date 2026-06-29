@@ -52,6 +52,7 @@ describe("ThemeSelector", () => {
 
     expect(html).toContain("Theme:")
     expect(html).toContain('id="theme-mode-select"')
+    expect(html).toContain("theme-select")
     expect(html).toContain(">Dark<")
     expect(html).toContain(">Light<")
     expect(html).toContain(">System<")

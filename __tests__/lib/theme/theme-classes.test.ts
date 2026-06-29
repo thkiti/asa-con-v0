@@ -6,10 +6,13 @@ import {
   themeDialogLight,
   themeDialogLightBtnPrimary,
   themeEmptyState,
+  themeInlineError,
+  themeInput,
   themeLinkPrimary,
   themeMeta,
   themeMuted,
   themePanelList,
+  themeSelect,
   themeTextPrimary,
 } from "@/lib/theme/theme-classes"
 
@@ -27,6 +30,9 @@ describe("theme semantic classes", () => {
     expect(themeEmptyState).toContain("text-muted")
     expect(themeDialogLight).toContain("theme-dialog-light")
     expect(themeDialogLightBtnPrimary).toContain("theme-dialog-light-btn-primary")
+    expect(themeSelect).toBe("theme-select")
+    expect(themeInput).toContain("theme-input")
+    expect(themeInlineError).toBe("theme-inline-error")
   })
 })
 

@@ -7,6 +7,7 @@ import { THERMAL_CLONE_PRINT_STYLES } from "@/lib/thermal/print-css"
 import { printThermalSlipClone, thermalPrintSourceSelector } from "@/lib/thermal/print-dom"
 import { POS_RECEIPT_CLOSE_HINT } from "@/lib/pos-ui/pos-receipt-autoprint"
 import { setupThermalTicketAutoprint } from "@/lib/pos-ui/pos-thermal-ticket-autoprint"
+import { themeBtnSecondary, themeLinkMuted, themeMuted } from "@/lib/theme/theme-classes"
 
 type PosThermalTicketPrintPageProps = {
   printSourceKind: string
@@ -42,27 +43,20 @@ export function PosThermalTicketPrintPage({
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: THERMAL_CLONE_PRINT_STYLES }} />
-      <main className="pos-receipt-print min-h-screen bg-zinc-100 p-4 print:p-0">
+      <main className="pos-receipt-print pos-receipt-print-screen min-h-screen p-4 print:p-0">
         {!autoPrint ? (
           <div className="no-print mx-auto mb-4 flex max-w-md flex-wrap items-center gap-3">
-            <Link
-              href="/shop"
-              className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline"
-            >
+            <Link href="/shop" className={`text-sm font-medium ${themeLinkMuted}`}>
               ← Back to POS
             </Link>
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="rounded border border-zinc-400 bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-sm hover:bg-zinc-50"
-            >
+            <button type="button" onClick={handlePrint} className={themeBtnSecondary}>
               {printButtonLabel}
             </button>
           </div>
         ) : null}
 
         {showCloseHint ? (
-          <p className="no-print mx-auto mb-3 max-w-md text-center text-sm text-zinc-600">
+          <p className={`no-print mx-auto mb-3 max-w-md text-center text-sm ${themeMuted}`}>
             {POS_RECEIPT_CLOSE_HINT}
           </p>
         ) : null}

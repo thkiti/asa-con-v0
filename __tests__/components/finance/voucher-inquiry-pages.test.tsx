@@ -2,8 +2,17 @@ import { renderToStaticMarkup } from "react-dom/server"
 import FinanceVoucherInquiryPage from "@/app/(main)/finance/vouchers/page"
 import { FinanceVoucherInquiryDetailView } from "@/components/finance/FinanceVoucherInquiryDetailView"
 import { VoucherInquiryListPage, VoucherInquiryResultsTable } from "@/components/finance/VoucherInquiryListPage"
+import { VoucherInquiryPdfIndicator } from "@/components/finance/VoucherInquiryPdfIndicator"
 import { VOUCHER_INQUIRY_REF_TYPE_OPTIONS } from "@/lib/finance/inquiry/voucher-document-types"
-import { financeFilterSelect } from "@/lib/finance-ui/finance-visual-classes"
+import {
+  financeFilterSelect,
+  financePdfIndicatorExists,
+  financePdfIndicatorMissing,
+  financePdfIndicatorUnsupported,
+  voucherInquiryFilterControl,
+  voucherInquiryFilterFramed,
+  voucherInquiryFilterSelect,
+} from "@/lib/finance-ui/finance-visual-classes"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 
 jest.mock("@/components/main/EntityContextPageHeading", () => ({
@@ -123,6 +132,19 @@ const unpostedMjvRow = {
   printPath: null,
 }
 
+const postedMjvWithPdfRow = {
+  ...unpostedMjvRow,
+  id: "mje-posted-1",
+  rowKind: "posted" as const,
+  voucherNo: "V-2026-06-00099",
+  status: "POSTED",
+  journalEntryId: "journal-mjv-1",
+  pdfAvailable: true,
+  operationalDocumentId: "mje-posted-1",
+  inquiryPath: "/finance/manual-journal-entries/mje-posted-1",
+  printPath: "/finance/manual-journal-entries/mje-posted-1/print",
+}
+
 const collectorPickupVoucher = {
   id: "voucher-pickup-1",
   voucherNo: "V-2026-06-00001",
@@ -203,24 +225,34 @@ describe("FinanceVoucherInquiryPage", () => {
     mockFetchFinanceDocuments.mockResolvedValue({ documents: [listRow], total: 1 })
   })
 
-  it("renders finance document inquiry shell and expanded filters", () => {
+  it("renders simplified finance document inquiry filters", () => {
     const html = renderToStaticMarkup(<FinanceVoucherInquiryPage />)
     expect(html).toContain('data-testid="finance-admin-page"')
     expect(html).toContain("Finance Document Inquiry")
     expect(html).toContain('data-testid="voucher-inquiry-filters"')
     expect(html).toContain("voucher-inquiry-filter-bar")
+    expect(html).toContain('data-testid="voucher-inquiry-filter-branch"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-period"')
+    expect(html).toContain('data-testid="voucher-inquiry-filter-from"')
+    expect(html).toContain('data-testid="voucher-inquiry-filter-to"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-document-type"')
+    expect(html).toContain('data-testid="voucher-inquiry-filter-no"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-status"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-posting-state"')
-    expect(html).toContain('data-testid="voucher-inquiry-filter-branch"')
-    expect(html).toContain('data-testid="voucher-inquiry-filter-document-no"')
-    expect(html).toContain('data-testid="voucher-inquiry-filter-voucher-no"')
-    expect(html).toContain('data-testid="voucher-inquiry-filter-amount-min"')
-    expect(html).toContain('data-testid="voucher-inquiry-filter-pdf-state"')
     expect(html).toContain(financeFilterSelect)
+    expect(html).toContain(voucherInquiryFilterControl)
+    expect(html).toContain(voucherInquiryFilterFramed)
+    expect(html).toContain(voucherInquiryFilterSelect)
     expect(html).toContain('data-testid="voucher-inquiry-search"')
     expect(html).toContain('data-testid="voucher-inquiry-clear"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-filter-document-no"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-filter-voucher-no"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-filter-amount-min"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-filter-pdf-state"')
+    expect(html).toContain("Doc Type")
+    expect(html).not.toContain("Document Type")
+    expect(html).not.toContain("Archive PDF")
+    expect(html).not.toContain("Amount min")
   })
 })
 
@@ -230,42 +262,80 @@ describe("VoucherInquiryListPage", () => {
     mockFetchFinanceDocuments.mockResolvedValue({ documents: [listRow], total: 1 })
   })
 
-  it("renders audit table columns with entity, branch, amount, and journal link", () => {
+  it("renders simplified audit table columns", () => {
     const html = renderToStaticMarkup(
       <VoucherInquiryResultsTable
         documents={[listRow]}
         total={1}
-        rowOffset={0}
         listReturnPath="/finance/vouchers"
       />
     )
     expect(html).toContain('data-testid="voucher-inquiry-table"')
-    expect(html).toContain("Entity")
-    expect(html).toContain("Document No")
-    expect(html).toContain("Branch")
-    expect(html).toContain("Amount")
+    expect(html).toContain("Doc No.")
+    expect(html).toContain("Voucher No.")
     expect(html).toContain("Journal Entry")
     expect(html).toContain("COL-260001")
-    expect(html).toContain("SH001")
+    expect(html).toContain("V-2026-06-00001")
     expect(html).toContain('data-testid="voucher-inquiry-journal-voucher-pickup-1"')
     expect(html).toContain('data-testid="voucher-inquiry-view-voucher-pickup-1"')
     expect(html).toContain("Inquiry")
     expect(html).toContain("14/06/2026")
+    expect(html).toContain("voucher-inquiry-table")
+    expect(html).not.toContain(">Entity<")
+    expect(html).not.toContain(">Amount<")
+    expect(html).not.toContain(">Branch<")
+    expect(html).not.toContain(">Type<")
+    expect(html).not.toContain("text-zinc-")
+    expect(html).toContain("text-secondary")
   })
 
-  it("shows missing PDF indicator for unposted manual journal rows", () => {
+  it("renders PDF status dots with accessible labels", () => {
+    const html = renderToStaticMarkup(
+      <>
+        <VoucherInquiryPdfIndicator row={postedMjvWithPdfRow} />
+        <VoucherInquiryPdfIndicator row={unpostedMjvRow} />
+        <VoucherInquiryPdfIndicator row={refListRow} />
+      </>
+    )
+    expect(html).toContain(financePdfIndicatorExists)
+    expect(html).toContain('aria-label="PDF exists"')
+    expect(html).toContain("/api/finance/manual-journal-entries/mje-posted-1/pdf")
+    expect(html).toContain(financePdfIndicatorMissing)
+    expect(html).toContain('aria-label="PDF missing"')
+    expect(html).toContain(financePdfIndicatorUnsupported)
+    expect(html).toContain('aria-label="PDF not supported"')
+    expect(html).not.toContain(">Yes<")
+    expect(html).not.toContain(">Missing<")
+  })
+
+  it("shows missing PDF dot for unposted manual journal rows", () => {
     const html = renderToStaticMarkup(
       <VoucherInquiryResultsTable
         documents={[unpostedMjvRow]}
         total={1}
-        rowOffset={0}
         listReturnPath="/finance/vouchers"
       />
     )
     expect(html).toContain('data-testid="voucher-inquiry-pdf-mje-draft-1"')
-    expect(html).toContain("Missing")
-    expect(html).toContain("DRAFT")
+    expect(html).toContain(financePdfIndicatorMissing)
+    expect(html).toContain('aria-label="PDF missing"')
     expect(html).toContain("MJV-260001")
+    expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-')
+  })
+
+  it("renders clickable PDF dot for posted MJV rows without duplicate PDF action", () => {
+    const html = renderToStaticMarkup(
+      <VoucherInquiryResultsTable
+        documents={[postedMjvWithPdfRow]}
+        total={1}
+        listReturnPath="/finance/vouchers"
+      />
+    )
+    expect(html).toContain('data-testid="voucher-inquiry-pdf-mje-posted-1"')
+    expect(html).toContain("/api/finance/manual-journal-entries/mje-posted-1/pdf")
+    expect(html).toContain('data-testid="voucher-inquiry-print-mje-posted-1"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-')
+    expect(html).not.toContain('>PDF</a>')
   })
 
   it("renders REC and REF POS-origin rows with shop inquiry and print actions", () => {
@@ -273,7 +343,6 @@ describe("VoucherInquiryListPage", () => {
       <VoucherInquiryResultsTable
         documents={[recListRow, refListRow]}
         total={2}
-        rowOffset={0}
         listReturnPath="/finance/vouchers"
       />
     )
@@ -283,17 +352,17 @@ describe("VoucherInquiryListPage", () => {
     expect(html).toContain("/shop/refund-receipt/refund-1")
     expect(html).toContain('data-testid="voucher-inquiry-print-voucher-rec-1"')
     expect(html).toContain('data-testid="voucher-inquiry-print-voucher-ref-1"')
-    expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-voucher-rec-1"')
     expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-rec-1"')
-    expect(html).toContain("Yes")
+    expect(html).toContain('aria-label="PDF exists"')
     expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-ref-1"')
-    expect(html).toContain("—")
+    expect(html).toContain('aria-label="PDF not supported"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-')
   })
 
-  it("uses document type dropdown with OPB option", () => {
+  it("uses doc type dropdown with OPB option", () => {
     mockFetchFinanceDocuments.mockResolvedValue({ documents: [], total: 0 })
     const html = renderToStaticMarkup(<VoucherInquiryListPage />)
-    expect(html).toContain("Document Type")
+    expect(html).toContain("Doc Type")
     for (const option of VOUCHER_INQUIRY_REF_TYPE_OPTIONS) {
       expect(html).toContain(option.label)
     }

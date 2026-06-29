@@ -15,7 +15,7 @@ import {
   posSettlementFilterFieldDate,
 } from "@/lib/finance-ui/finance-visual-classes"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
-import { themeBtnPrimary, themeLabel } from "@/lib/theme/theme-classes"
+import { themeBtnPrimary, themeInlineError, themeLabel } from "@/lib/theme/theme-classes"
 
 type PosSettlementFilterBarProps = {
   values: FinanceFilterValues
@@ -74,7 +74,7 @@ export function PosSettlementFilterBar({
           ))}
         </select>
         {branchesError ? (
-          <span className="text-xs text-red-600">{branchesError}</span>
+          <span className={`text-xs ${themeInlineError}`}>{branchesError}</span>
         ) : null}
       </label>
       <FinanceSettlementDateInput

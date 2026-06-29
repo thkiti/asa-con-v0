@@ -69,6 +69,8 @@ describe("PosRefundReceiptPage finance audit reprint", () => {
     expect(container.textContent).toContain("REC-SH001-202606-0001")
     expect(container.textContent).toContain("Customer return")
     expect(container.querySelector('[data-testid="receipt-lookup-copy-watermark"]')).toBeNull()
+    expect(container.querySelector(".pos-receipt-print-screen")).not.toBeNull()
+    expect(container.querySelector(".theme-btn-secondary")).not.toBeNull()
     act(() => root.unmount())
     document.body.removeChild(container)
   })

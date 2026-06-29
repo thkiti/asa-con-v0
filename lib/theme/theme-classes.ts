@@ -11,13 +11,13 @@ export const themeMuted = "text-muted"
 export const themeLabel = "font-medium text-[var(--label-text)]"
 
 export const themeInput =
-  "mt-1 w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-[var(--input-text)]"
+  "theme-input mt-1 w-full rounded border border-[var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-[var(--input-text)]"
 
 export const themeBtnPrimary =
   "rounded bg-[var(--btn-primary-bg)] px-4 py-2 text-sm font-semibold text-[var(--btn-primary-fg)] hover:bg-[var(--btn-primary-hover)] disabled:cursor-not-allowed disabled:border disabled:border-[var(--btn-disabled-border)] disabled:bg-[var(--btn-disabled-bg)] disabled:text-[var(--btn-disabled-fg)] disabled:font-normal"
 
 export const themeBtnSecondary =
-  "rounded border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] px-3 py-1.5 text-sm font-medium text-[var(--btn-secondary-fg)] hover:bg-[var(--btn-secondary-hover)] disabled:cursor-not-allowed disabled:border-[var(--btn-disabled-border)] disabled:bg-[var(--btn-disabled-bg)] disabled:text-[var(--btn-disabled-fg)]"
+  "theme-btn-secondary rounded border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] px-3 py-1.5 text-sm font-medium text-[var(--btn-secondary-fg)] hover:bg-[var(--btn-secondary-hover)] disabled:cursor-not-allowed disabled:border-[var(--btn-disabled-border)] disabled:bg-[var(--btn-disabled-bg)] disabled:text-[var(--btn-disabled-fg)]"
 
 export const themeLinkPrimary =
   "link-primary disabled:cursor-not-allowed disabled:text-[var(--btn-disabled-fg)] disabled:no-underline"
@@ -60,8 +60,10 @@ export const themeMenuAppCardBadge =
 
 export const themePageTitle = "text-2xl font-bold tracking-tight text-foreground"
 
-export const themeSelect =
-  "rounded border border-border bg-card px-2 py-1 text-sm text-foreground"
+/** Native select — theme-aware closed field; option list styled in globals.css */
+export const themeSelect = "theme-select"
+
+export const themeInlineError = "theme-inline-error"
 
 export const themeSectionTitle = "text-sm font-medium text-foreground"
 
