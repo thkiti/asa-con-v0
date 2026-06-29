@@ -1,6 +1,6 @@
 import type {
+  FinanceDocumentInquiryResult,
   FinanceVoucherInquiryFilter,
-  FinanceVoucherListResult,
 } from "@/lib/finance-ui/types"
 
 export const FINANCE_VOUCHER_INQUIRY_PATH = "/finance/vouchers"
@@ -13,8 +13,12 @@ export function parseVoucherInquiryFilterFromSearchParams(
   const voucherNo = searchParams.get("voucherNo")?.trim()
   if (voucherNo) filter.voucherNo = voucherNo
 
-  const refNo = searchParams.get("refNo")?.trim()
-  if (refNo) filter.refNo = refNo
+  const refNo =
+    searchParams.get("refNo")?.trim() ?? searchParams.get("documentNo")?.trim()
+  if (refNo) {
+    filter.refNo = refNo
+    filter.documentNo = refNo
+  }
 
   const refType = searchParams.get("refType")?.trim()
   if (refType) filter.refType = refType
@@ -27,6 +31,32 @@ export function parseVoucherInquiryFilterFromSearchParams(
 
   const to = searchParams.get("to")?.trim()
   if (to) filter.to = to
+
+  const branchId = searchParams.get("branchId")?.trim()
+  if (branchId) filter.branchId = branchId
+
+  const status = searchParams.get("status")?.trim()
+  if (status) filter.status = status
+
+  const postingState = searchParams.get("postingState")?.trim()
+  if (
+    postingState === "all" ||
+    postingState === "posted" ||
+    postingState === "unposted"
+  ) {
+    filter.postingState = postingState
+  }
+
+  const amountMin = searchParams.get("amountMin")?.trim()
+  if (amountMin) filter.amountMin = amountMin
+
+  const amountMax = searchParams.get("amountMax")?.trim()
+  if (amountMax) filter.amountMax = amountMax
+
+  const pdfState = searchParams.get("pdfState")?.trim()
+  if (pdfState === "has" || pdfState === "missing") {
+    filter.pdfState = pdfState
+  }
 
   const limit = searchParams.get("limit")
   if (limit) filter.limit = Number(limit)
@@ -42,11 +72,18 @@ export function buildVoucherInquirySearchParams(
 ): URLSearchParams {
   const params = new URLSearchParams()
   if (filter.voucherNo?.trim()) params.set("voucherNo", filter.voucherNo.trim())
-  if (filter.refNo?.trim()) params.set("refNo", filter.refNo.trim())
+  const documentNo = filter.documentNo?.trim() ?? filter.refNo?.trim()
+  if (documentNo) params.set("documentNo", documentNo)
   if (filter.refType?.trim()) params.set("refType", filter.refType.trim())
   if (filter.periodKey?.trim()) params.set("periodKey", filter.periodKey.trim())
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())
+  if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
+  if (filter.status?.trim()) params.set("status", filter.status.trim())
+  if (filter.postingState) params.set("postingState", filter.postingState)
+  if (filter.amountMin?.trim()) params.set("amountMin", filter.amountMin.trim())
+  if (filter.amountMax?.trim()) params.set("amountMax", filter.amountMax.trim())
+  if (filter.pdfState) params.set("pdfState", filter.pdfState)
   if (filter.limit != null) params.set("limit", String(filter.limit))
   if (filter.offset != null) params.set("offset", String(filter.offset))
   return params
@@ -65,9 +102,9 @@ function buildVoucherInquiryQuery(filter: FinanceVoucherInquiryFilter): string {
   return query ? `?${query}` : ""
 }
 
-export async function fetchFinanceVouchers(
+export async function fetchFinanceDocuments(
   filter: FinanceVoucherInquiryFilter
-): Promise<FinanceVoucherListResult> {
+): Promise<FinanceDocumentInquiryResult> {
   const query = buildVoucherInquiryQuery(filter)
   const res = await fetch(`/api/finance/vouchers${query}`)
   if (!res.ok) {
@@ -80,5 +117,8 @@ export async function fetchFinanceVouchers(
     }
     throw new Error(message)
   }
-  return res.json() as Promise<FinanceVoucherListResult>
+  return res.json() as Promise<FinanceDocumentInquiryResult>
 }
+
+/** @deprecated Use fetchFinanceDocuments */
+export const fetchFinanceVouchers = fetchFinanceDocuments

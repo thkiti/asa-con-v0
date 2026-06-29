@@ -1,10 +1,10 @@
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
-import type {
-  FinanceDocumentInquiryPdfState,
-  FinanceDocumentInquiryPostingState,
-} from "./finance-document-inquiry-types"
 
-export type FinanceVoucherListFilter = {
+export type FinanceDocumentInquiryPostingState = "all" | "posted" | "unposted"
+
+export type FinanceDocumentInquiryPdfState = "has" | "missing"
+
+export type FinanceDocumentInquiryFilter = {
   legalEntityCode: DocumentEntityCode
   voucherNo?: string
   refNo?: string
@@ -23,30 +23,28 @@ export type FinanceVoucherListFilter = {
   offset?: number
 }
 
-export type FinanceVoucherListRow = {
+export type FinanceDocumentInquiryRow = {
   id: string
-  voucherNo: string
-  date: string
+  rowKind: "posted" | "unposted"
   legalEntityCode: string
-  periodKey: string
-  refType: string
-  refId: string
-  refNo: string | null
-  description: string | null
-  status: string
-  totalDebit: string
-  totalCredit: string
+  documentTypeCode: string
+  documentNo: string | null
+  voucherNo: string | null
+  date: string
+  periodKey: string | null
   branchId: string
   branchCode: string
   branchName: string
-  journalEntryId: string | null
+  status: string
   amount: string
-  documentTypeCode: string
-  documentNo: string | null
+  journalEntryId: string | null
+  operationalDocumentId: string | null
   pdfAvailable: boolean | null
+  inquiryPath: string
+  printPath: string | null
 }
 
-export type FinanceVoucherListResult = {
-  vouchers: FinanceVoucherListRow[]
+export type FinanceDocumentInquiryResult = {
+  documents: FinanceDocumentInquiryRow[]
   total: number
 }

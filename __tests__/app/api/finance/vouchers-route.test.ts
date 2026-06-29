@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server"
 import { GET } from "@/app/api/finance/vouchers/route"
-import { listFinanceVouchers } from "@/lib/finance/inquiry/voucher-list"
+import { listFinanceDocuments } from "@/lib/finance/inquiry/finance-document-inquiry"
 import { getSession, requirePeriodAdminActor } from "@/lib/auth"
 import { prisma } from "@/lib/shared/prisma"
 import { PeriodAdminAuthError } from "@/lib/auth"
 
-jest.mock("@/lib/finance/inquiry/voucher-list", () => ({
-  listFinanceVouchers: jest.fn(),
+jest.mock("@/lib/finance/inquiry/finance-document-inquiry", () => ({
+  listFinanceDocuments: jest.fn(),
 }))
 
 jest.mock("@/lib/auth", () => {
@@ -22,8 +22,8 @@ jest.mock("@/lib/shared/prisma", () => ({
   prisma: { mocked: true },
 }))
 
-const mockListFinanceVouchers = listFinanceVouchers as jest.MockedFunction<
-  typeof listFinanceVouchers
+const mockListFinanceDocuments = listFinanceDocuments as jest.MockedFunction<
+  typeof listFinanceDocuments
 >
 
 const sessionAs = { documentEntityCode: "AS" as const }
@@ -33,49 +33,59 @@ describe("GET finance/vouchers", () => {
     jest.clearAllMocks()
     ;(getSession as jest.Mock).mockResolvedValue(sessionAs)
     ;(requirePeriodAdminActor as jest.Mock).mockReturnValue({ staffId: "staff-1" })
-    mockListFinanceVouchers.mockResolvedValue({ vouchers: [], total: 0 })
+    mockListFinanceDocuments.mockResolvedValue({ documents: [], total: 0 })
   })
 
-  it("returns voucher list scoped to session entity", async () => {
-    mockListFinanceVouchers.mockResolvedValue({
-      vouchers: [
+  it("returns document inquiry list scoped to session entity", async () => {
+    mockListFinanceDocuments.mockResolvedValue({
+      documents: [
         {
           id: "voucher-1",
+          rowKind: "posted",
+          legalEntityCode: "AS",
+          documentTypeCode: "COL",
+          documentNo: "COL-260001",
           voucherNo: "V-2026-06-00001",
           date: "2026-06-14T00:00:00.000Z",
-          legalEntityCode: "AS",
           periodKey: "2026-06",
-          refType: "POS_SETTLEMENT_COLLECTOR_PICKUP",
-          refNo: "COL-260001",
-          description: null,
+          branchId: "branch-1",
+          branchCode: "SH001",
+          branchName: "Shop 1",
           status: "POSTED",
-          totalDebit: "1000",
-          totalCredit: "1000",
+          amount: "1000",
+          journalEntryId: "journal-1",
+          operationalDocumentId: null,
+          pdfAvailable: null,
+          inquiryPath: "/finance/vouchers/voucher-1",
+          printPath: null,
         },
       ],
       total: 1,
     })
 
     const req = new NextRequest(
-      "http://localhost/api/finance/vouchers?refNo=COL-260001&from=2026-06-01&to=2026-06-30"
+      "http://localhost/api/finance/vouchers?documentNo=COL-260001&from=2026-06-01&to=2026-06-30&postingState=posted&branchId=branch-1"
     )
     const res = await GET(req)
 
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toEqual({
-      vouchers: [
+      documents: [
         expect.objectContaining({
           voucherNo: "V-2026-06-00001",
-          refNo: "COL-260001",
+          documentNo: "COL-260001",
+          legalEntityCode: "AS",
         }),
       ],
       total: 1,
     })
-    expect(mockListFinanceVouchers).toHaveBeenCalledWith(
+    expect(mockListFinanceDocuments).toHaveBeenCalledWith(
       prisma,
       expect.objectContaining({
         legalEntityCode: "AS",
         refNo: "COL-260001",
+        postingState: "posted",
+        branchId: "branch-1",
       })
     )
   })
@@ -89,6 +99,6 @@ describe("GET finance/vouchers", () => {
     const res = await GET(req)
 
     expect(res.status).toBe(403)
-    expect(mockListFinanceVouchers).not.toHaveBeenCalled()
+    expect(mockListFinanceDocuments).not.toHaveBeenCalled()
   })
 })

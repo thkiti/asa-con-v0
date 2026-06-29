@@ -7,17 +7,25 @@ const baseRow = {
   date: new Date("2026-06-14"),
   legalEntityCode: "AS",
   refType: "POS_SETTLEMENT_COLLECTOR_PICKUP",
+  refId: "collector-1",
   refNo: "COL-260001",
   description: "Collector pickup",
   status: "POSTED",
+  branchId: "branch-1",
+  branch: { code: "SH001", name: "Shop 1" },
   period: { periodKey: "2026-06" },
   journalEntry: {
+    id: "journal-1",
     lines: [
       { debit: new Prisma.Decimal("1000"), credit: new Prisma.Decimal("0") },
       { debit: new Prisma.Decimal("0"), credit: new Prisma.Decimal("1000") },
     ],
   },
   lines: [],
+  manualJournalEntryPosted: null,
+  paymentVoucherPosted: null,
+  revenueVoucherPosted: null,
+  pettyCashVoucherPosted: null,
 }
 
 describe("listFinanceVouchers", () => {
@@ -141,7 +149,16 @@ describe("listFinanceVouchers", () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          refType: { in: expect.arrayContaining(["MANUAL_JOURNAL", "OPENING_BALANCE_JOURNAL"]) },
+          refType: { in: expect.arrayContaining(["MANUAL_JOURNAL"]) },
+        }),
+      })
+    )
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          refType: {
+            in: expect.not.arrayContaining(["OPENING_BALANCE_JOURNAL"]),
+          },
         }),
       })
     )
@@ -163,7 +180,9 @@ describe("listFinanceVouchers", () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          refNo: { contains: "COL-", mode: "insensitive" },
+          OR: expect.arrayContaining([
+            { refNo: { contains: "COL-", mode: "insensitive" } },
+          ]),
         }),
       })
     )
@@ -209,7 +228,7 @@ describe("listFinanceVouchers", () => {
     expect(findMany).not.toHaveBeenCalled()
   })
 
-  it("maps list rows with journal debit/credit totals", async () => {
+  it("maps list rows with branch, journal entry id, and amount", async () => {
     const findMany = jest.fn().mockResolvedValue([baseRow])
     const count = jest.fn().mockResolvedValue(1)
     const prisma = {
@@ -219,16 +238,58 @@ describe("listFinanceVouchers", () => {
 
     const result = await listFinanceVouchers(prisma, { legalEntityCode: "AS" })
 
-    expect(result.total).toBe(1)
     expect(result.vouchers[0]).toMatchObject({
-      id: "voucher-1",
-      voucherNo: "V-2026-06-00001",
-      legalEntityCode: "AS",
-      periodKey: "2026-06",
-      refType: "POS_SETTLEMENT_COLLECTOR_PICKUP",
-      refNo: "COL-260001",
-      totalDebit: "1000",
-      totalCredit: "1000",
+      branchCode: "SH001",
+      journalEntryId: "journal-1",
+      amount: "1000",
+      documentTypeCode: "COL",
     })
+  })
+
+  it("scopes list to legal entity and applies branchId with posted filter", async () => {
+    const findMany = jest.fn().mockResolvedValue([])
+    const count = jest.fn().mockResolvedValue(0)
+    const prisma = {
+      voucher: { findMany, count },
+      accountingPeriod: { findUnique: jest.fn() },
+    }
+
+    await listFinanceVouchers(prisma, {
+      legalEntityCode: "AS",
+      branchId: "branch-1",
+      postingState: "posted",
+    })
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          legalEntityCode: "AS",
+          branchId: "branch-1",
+          status: "POSTED",
+        }),
+      })
+    )
+  })
+
+  it("expands OPB document type to opening balance ref types only", async () => {
+    const findMany = jest.fn().mockResolvedValue([])
+    const count = jest.fn().mockResolvedValue(0)
+    const prisma = {
+      voucher: { findMany, count },
+      accountingPeriod: { findUnique: jest.fn() },
+    }
+
+    await listFinanceVouchers(prisma, {
+      legalEntityCode: "AS",
+      refType: "OPB",
+    })
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          refType: { in: ["OPENING_BALANCE_JOURNAL"] },
+        }),
+      })
+    )
   })
 })

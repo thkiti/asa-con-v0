@@ -9,8 +9,18 @@ import type {
   FinanceVoucherListResult,
   FinanceVoucherListRow,
 } from "./voucher-list-types"
-import { applyVoucherInquiryRefTypeFilter } from "./voucher-document-types"
+import {
+  applyVoucherInquiryRefTypeFilter,
+  resolveVoucherInquiryDocumentTypeCode,
+} from "./voucher-document-types"
 import { resolveVoucherInquiryVoucherNoSearch } from "./voucher-no-search"
+import {
+  matchesAmountRange,
+  matchesPdfStateFilter,
+  resolvePostedVoucherAmount,
+  resolvePostedVoucherDocumentNo,
+  resolvePostedVoucherPdfAvailable,
+} from "./finance-document-inquiry-helpers"
 
 export type { FinanceVoucherListFilter, FinanceVoucherListResult, FinanceVoucherListRow } from "./voucher-list-types"
 
@@ -31,6 +41,19 @@ function parseFilterDate(value: Date | string | undefined): Date | undefined {
   return date
 }
 
+function parsePeriodDateRange(periodKey: string): { from: Date; to: Date } | null {
+  const match = /^(\d{4})-(\d{2})$/.exec(periodKey.trim())
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    return null
+  }
+  const from = new Date(year, month - 1, 1)
+  const to = new Date(year, month, 0, 23, 59, 59, 999)
+  return { from, to }
+}
+
 async function resolvePeriodId(
   prisma: FinanceVoucherListPrisma,
   periodKey: string,
@@ -44,6 +67,27 @@ async function resolvePeriodId(
     select: { id: true },
   })
   return period?.id ?? null
+}
+
+function resolvePostedStatusFilter(
+  filter: FinanceVoucherListFilter
+): Prisma.VoucherWhereInput["status"] | undefined {
+  const postingState = filter.postingState ?? "all"
+  if (postingState === "unposted") {
+    return { not: "POSTED" }
+  }
+
+  const status = filter.status?.trim()
+  if (status) {
+    if (status === "CANCELLED") return "VOIDED"
+    return status as Prisma.VoucherWhereInput["status"]
+  }
+
+  if (postingState === "posted") {
+    return "POSTED"
+  }
+
+  return undefined
 }
 
 function buildWhere(
@@ -66,7 +110,29 @@ function buildWhere(
 
   const refNo = filter.refNo?.trim()
   if (refNo) {
-    where.refNo = { contains: refNo, mode: "insensitive" }
+    where.OR = [
+      { refNo: { contains: refNo, mode: "insensitive" } },
+      {
+        manualJournalEntryPosted: {
+          entryNo: { contains: refNo, mode: "insensitive" },
+        },
+      },
+      {
+        paymentVoucherPosted: {
+          entryNo: { contains: refNo, mode: "insensitive" },
+        },
+      },
+      {
+        revenueVoucherPosted: {
+          entryNo: { contains: refNo, mode: "insensitive" },
+        },
+      },
+      {
+        pettyCashVoucherPosted: {
+          entryNo: { contains: refNo, mode: "insensitive" },
+        },
+      },
+    ]
   }
 
   const refTypeIn = filter.refTypeIn
@@ -95,6 +161,15 @@ function buildWhere(
     }
   }
 
+  if (filter.branchId?.trim()) {
+    where.branchId = filter.branchId.trim()
+  }
+
+  const statusFilter = resolvePostedStatusFilter(filter)
+  if (statusFilter) {
+    where.status = statusFilter
+  }
+
   return where
 }
 
@@ -113,11 +188,102 @@ function sumLineTotals(
   }
 }
 
+type VoucherListDbRow = {
+  id: string
+  voucherNo: string
+  date: Date
+  legalEntityCode: string
+  refType: string
+  refId: string
+  refNo: string | null
+  description: string | null
+  status: string
+  branchId: string
+  branch: { code: string; name: string }
+  period: { periodKey: string }
+  journalEntry: {
+    id: string
+    lines: Array<{ debit: Prisma.Decimal; credit: Prisma.Decimal }>
+  } | null
+  lines: Array<{ debit: Prisma.Decimal; credit: Prisma.Decimal }>
+  manualJournalEntryPosted: {
+    entryNo: string
+    status: string
+    pdfPath: string | null
+    pdfBlobUrl: string | null
+  } | null
+  paymentVoucherPosted: { entryNo: string } | null
+  revenueVoucherPosted: { entryNo: string } | null
+  pettyCashVoucherPosted: { entryNo: string } | null
+}
+
+function mapVoucherRow(row: VoucherListDbRow): FinanceVoucherListRow {
+  const amountLines = row.journalEntry?.lines.length ? row.journalEntry.lines : row.lines
+  const { totalDebit, totalCredit } = sumLineTotals(amountLines)
+  const amount = resolvePostedVoucherAmount(totalDebit, totalCredit)
+  const documentNo = resolvePostedVoucherDocumentNo({
+    refType: row.refType,
+    refNo: row.refNo,
+    manualJournalEntry: row.manualJournalEntryPosted,
+    paymentVoucher: row.paymentVoucherPosted,
+    revenueVoucher: row.revenueVoucherPosted,
+    pettyCashVoucher: row.pettyCashVoucherPosted,
+  })
+  const pdfAvailable = resolvePostedVoucherPdfAvailable({
+    refType: row.refType,
+    status: row.status,
+    manualJournalEntry: row.manualJournalEntryPosted,
+  })
+
+  return {
+    id: row.id,
+    voucherNo: row.voucherNo,
+    date: row.date.toISOString(),
+    legalEntityCode: row.legalEntityCode,
+    periodKey: row.period.periodKey,
+    refType: row.refType,
+    refId: row.refId,
+    refNo: row.refNo,
+    description: row.description,
+    status: row.status,
+    totalDebit,
+    totalCredit,
+    branchId: row.branchId,
+    branchCode: row.branch.code,
+    branchName: row.branch.name,
+    journalEntryId: row.journalEntry?.id ?? null,
+    amount,
+    documentTypeCode: resolveVoucherInquiryDocumentTypeCode(row.refType),
+    documentNo,
+    pdfAvailable,
+  }
+}
+
+function applyPostQueryFilters(
+  rows: FinanceVoucherListRow[],
+  filter: FinanceVoucherListFilter
+): FinanceVoucherListRow[] {
+  return rows.filter((row) => {
+    if (!matchesAmountRange(row.amount, filter.amountMin, filter.amountMax)) {
+      return false
+    }
+    if (!matchesPdfStateFilter(row.pdfAvailable, filter.pdfState)) {
+      return false
+    }
+    return true
+  })
+}
+
 export async function listFinanceVouchers(
   prisma: FinanceVoucherListPrisma,
   filter: FinanceVoucherListFilter
 ): Promise<FinanceVoucherListResult> {
   const scopedFilter = applyVoucherInquiryRefTypeFilter(filter)
+  const postingState = scopedFilter.postingState ?? "all"
+  if (postingState === "unposted") {
+    return { vouchers: [], total: 0 }
+  }
+
   let periodId: string | null = null
   const periodKey = scopedFilter.periodKey?.trim()
   if (periodKey) {
@@ -133,53 +299,65 @@ export async function listFinanceVouchers(
     MAX_LIMIT
   )
   const offset = Math.max(Number(filter.offset ?? 0) || 0, 0)
+  const hasPostFilters =
+    filter.amountMin != null ||
+    filter.amountMax != null ||
+    Boolean(filter.pdfState)
 
-  const [rows, total] = await Promise.all([
+  const [rows, totalBeforePostFilter] = await Promise.all([
     prisma.voucher.findMany({
       where,
       orderBy: [{ date: "desc" }, { voucherNo: "desc" }],
-      take: limit,
-      skip: offset,
+      take: hasPostFilters ? MAX_LIMIT : limit,
+      skip: hasPostFilters ? 0 : offset,
       select: {
         id: true,
         voucherNo: true,
         date: true,
         legalEntityCode: true,
         refType: true,
+        refId: true,
         refNo: true,
         description: true,
         status: true,
+        branchId: true,
+        branch: { select: { code: true, name: true } },
         period: { select: { periodKey: true } },
         journalEntry: {
           select: {
+            id: true,
             lines: { select: { debit: true, credit: true } },
           },
         },
         lines: { select: { debit: true, credit: true } },
+        manualJournalEntryPosted: {
+          select: {
+            entryNo: true,
+            status: true,
+            pdfPath: true,
+            pdfBlobUrl: true,
+          },
+        },
+        paymentVoucherPosted: { select: { entryNo: true } },
+        revenueVoucherPosted: { select: { entryNo: true } },
+        pettyCashVoucherPosted: { select: { entryNo: true } },
       },
     }),
     prisma.voucher.count({ where }),
   ])
 
-  const vouchers: FinanceVoucherListRow[] = rows.map((row) => {
-    const amountLines =
-      row.journalEntry?.lines.length ? row.journalEntry.lines : row.lines
-    const { totalDebit, totalCredit } = sumLineTotals(amountLines)
+  let vouchers = applyPostQueryFilters(
+    (rows as VoucherListDbRow[]).map(mapVoucherRow),
+    scopedFilter
+  )
 
-    return {
-      id: row.id,
-      voucherNo: row.voucherNo,
-      date: row.date.toISOString(),
-      legalEntityCode: row.legalEntityCode,
-      periodKey: row.period.periodKey,
-      refType: row.refType,
-      refNo: row.refNo,
-      description: row.description,
-      status: row.status,
-      totalDebit,
-      totalCredit,
-    }
-  })
+  if (hasPostFilters) {
+    const total = vouchers.length
+    vouchers = vouchers.slice(offset, offset + limit)
+    return { vouchers, total }
+  }
 
-  return { vouchers, total }
+  return { vouchers, total: totalBeforePostFilter }
 }
+
+export { parsePeriodDateRange }

@@ -2,6 +2,7 @@ import {
   applyVoucherInquiryRefTypeFilter,
   resolveVoucherInquiryRefTypeFilter,
   VOUCHER_INQUIRY_DOC_TYPE,
+  VOUCHER_INQUIRY_DOC_TYPE,
   VOUCHER_INQUIRY_DOC_TYPE_MJV,
   VOUCHER_INQUIRY_REF_TYPE_OPTIONS,
 } from "@/lib/finance/inquiry/voucher-ref-type-filter"
@@ -27,12 +28,20 @@ describe("voucher ref type filter", () => {
     )
   })
 
-  it("expands MJV shorthand to manual journal ref types", () => {
+  it("expands MJV shorthand to manual journal ref types without OPB", () => {
     expect(resolveVoucherInquiryRefTypeFilter(VOUCHER_INQUIRY_DOC_TYPE_MJV)).toEqual({
       refTypeIn: expect.arrayContaining([
         FINANCE_REF_TYPES.MANUAL_JOURNAL,
-        FINANCE_REF_TYPES.OPENING_BALANCE_JOURNAL,
       ]),
+    })
+    expect(resolveVoucherInquiryRefTypeFilter(VOUCHER_INQUIRY_DOC_TYPE_MJV)).toEqual({
+      refTypeIn: expect.not.arrayContaining([FINANCE_REF_TYPES.OPENING_BALANCE_JOURNAL]),
+    })
+  })
+
+  it("maps OPB document code to opening balance refTypeIn", () => {
+    expect(resolveVoucherInquiryRefTypeFilter(VOUCHER_INQUIRY_DOC_TYPE.OPB)).toEqual({
+      refTypeIn: [FINANCE_REF_TYPES.OPENING_BALANCE_JOURNAL],
     })
   })
 

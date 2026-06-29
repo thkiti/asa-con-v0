@@ -130,6 +130,36 @@ export type VoucherDetailResult = {
   voucher: VoucherDetail
 }
 
+export type FinanceDocumentInquiryPostingState = "all" | "posted" | "unposted"
+
+export type FinanceDocumentInquiryPdfState = "has" | "missing"
+
+export type FinanceDocumentInquiryRow = {
+  id: string
+  rowKind: "posted" | "unposted"
+  legalEntityCode: string
+  documentTypeCode: string
+  documentNo: string | null
+  voucherNo: string | null
+  date: string
+  periodKey: string | null
+  branchId: string
+  branchCode: string
+  branchName: string
+  status: string
+  amount: string
+  journalEntryId: string | null
+  operationalDocumentId: string | null
+  pdfAvailable: boolean | null
+  inquiryPath: string
+  printPath: string | null
+}
+
+export type FinanceDocumentInquiryResult = {
+  documents: FinanceDocumentInquiryRow[]
+  total: number
+}
+
 export type FinanceVoucherListRow = {
   id: string
   voucherNo: string
@@ -137,25 +167,39 @@ export type FinanceVoucherListRow = {
   legalEntityCode: string
   periodKey: string
   refType: string
+  refId: string
   refNo: string | null
   description: string | null
   status: string
   totalDebit: string
   totalCredit: string
+  branchId: string
+  branchCode: string
+  branchName: string
+  journalEntryId: string | null
+  amount: string
+  documentTypeCode: string
+  documentNo: string | null
+  pdfAvailable: boolean | null
 }
 
-export type FinanceVoucherListResult = {
-  vouchers: FinanceVoucherListRow[]
-  total: number
-}
+/** @deprecated Use FinanceDocumentInquiryResult */
+export type FinanceVoucherListResult = FinanceDocumentInquiryResult
 
 export type FinanceVoucherInquiryFilter = {
   voucherNo?: string
   refNo?: string
+  documentNo?: string
   refType?: string
   periodKey?: string
   from?: string
   to?: string
+  branchId?: string
+  status?: string
+  postingState?: FinanceDocumentInquiryPostingState
+  amountMin?: string
+  amountMax?: string
+  pdfState?: FinanceDocumentInquiryPdfState
   limit?: number
   offset?: number
 }

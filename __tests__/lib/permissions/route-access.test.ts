@@ -51,6 +51,12 @@ describe("canAccessRoute", () => {
     expect(canAccessRoute("/finance/periods", "SH_STAFF")).toBe(false)
   })
 
+  it("allows HO_FINANCE and HO_ADMIN on finance document inquiry", () => {
+    expect(canAccessRoute("/finance/vouchers", "HO_FINANCE")).toBe(true)
+    expect(canAccessRoute("/finance/vouchers", "HO_ADMIN")).toBe(true)
+    expect(canAccessRoute("/finance/vouchers", "SH_STAFF")).toBe(false)
+  })
+
   it("still requires shop area for /shop pages", () => {
     expect(canAccessRoute("/shop/pos", "SH_STAFF")).toBe(true)
     expect(canAccessRoute("/shop/pos", null)).toBe(false)

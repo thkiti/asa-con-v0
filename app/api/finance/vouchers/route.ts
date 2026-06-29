@@ -8,7 +8,7 @@ import {
   requireFinanceVoucherScope,
 } from "@/app/api/finance/shared/voucher-api-scope"
 import { parseFinanceVoucherListQuery } from "@/app/api/finance/vouchers/shared/parse-voucher-list-query"
-import { listFinanceVouchers } from "@/lib/finance/inquiry/voucher-list"
+import { listFinanceDocuments } from "@/lib/finance/inquiry/finance-document-inquiry"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       parseFinanceVoucherListQuery(req.nextUrl.searchParams),
       legalEntityCode
     )
-    const result = await listFinanceVouchers(prisma, filter)
+    const result = await listFinanceDocuments(prisma, filter)
     return NextResponse.json(result)
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {

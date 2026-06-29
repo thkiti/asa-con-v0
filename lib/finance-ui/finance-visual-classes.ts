@@ -81,7 +81,25 @@ export const collectorPickupSettlementTable =
 
 /** Voucher / journal inquiry — compact single-row filter bar. */
 export const voucherInquiryFilterBar =
-  "voucher-inquiry-filter-bar flex flex-nowrap items-end gap-2"
+  "voucher-inquiry-filter-bar flex flex-wrap items-end gap-2"
+
+export const voucherInquiryFilterBranch =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-branch"
+
+export const voucherInquiryFilterStatus =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-status"
+
+export const voucherInquiryFilterPostingState =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-posting-state"
+
+export const voucherInquiryFilterDocumentNo =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-document-no"
+
+export const voucherInquiryFilterAmount =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-amount"
+
+export const voucherInquiryFilterPdfState =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-pdf-state"
 
 export const voucherInquiryFilterField =
   "voucher-inquiry-filter-field flex flex-col gap-1 text-sm shrink-0"

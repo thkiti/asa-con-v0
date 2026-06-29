@@ -10,11 +10,11 @@ export default function FinanceVoucherInquiryPage() {
       backLabel="← Audit"
       heading={
         <EntityContextPageHeading
-          title="Voucher / Journal Inquiry"
+          title="Finance Document Inquiry"
           className={financeAdminPageTitleClass}
         />
       }
-      intro="Search posted vouchers and inspect linked journal entries from MJV, collector pickup, PAY-IN, and other finance sources."
+      intro="Read-only audit center for posted vouchers and in-progress finance documents. Search by period, branch, document type, status, and posting state — no create, edit, post, or repair actions."
     >
       <VoucherInquiryListPage />
     </FinanceAdminPageShell>

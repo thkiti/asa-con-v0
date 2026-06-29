@@ -8,15 +8,22 @@ import { buildFinanceVoucherDetailPath } from "@/lib/finance-ui/finance-navigati
 describe("voucher inquiry URL helpers", () => {
   it("parses list filters from search params", () => {
     const params = new URLSearchParams(
-      "voucherNo=V-2026&refNo=COL-1&refType=POS_SETTLEMENT_COLLECTOR_PICKUP&periodKey=2026-06&from=2026-06-01&to=2026-06-30"
+      "voucherNo=V-2026&documentNo=COL-1&refType=COL&periodKey=2026-06&from=2026-06-01&to=2026-06-30&branchId=branch-1&status=POSTED&postingState=posted&amountMin=100&amountMax=5000&pdfState=missing"
     )
     expect(parseVoucherInquiryFilterFromSearchParams(params)).toEqual({
       voucherNo: "V-2026",
       refNo: "COL-1",
-      refType: "POS_SETTLEMENT_COLLECTOR_PICKUP",
+      documentNo: "COL-1",
+      refType: "COL",
       periodKey: "2026-06",
       from: "2026-06-01",
       to: "2026-06-30",
+      branchId: "branch-1",
+      status: "POSTED",
+      postingState: "posted",
+      amountMin: "100",
+      amountMax: "5000",
+      pdfState: "missing",
     })
   })
 
@@ -27,13 +34,13 @@ describe("voucher inquiry URL helpers", () => {
         from: "2026-06-01",
         to: "2026-06-30",
       })
-    ).toBe("/finance/vouchers?refNo=COL-260001&from=2026-06-01&to=2026-06-30")
+    ).toBe("/finance/vouchers?documentNo=COL-260001&from=2026-06-01&to=2026-06-30")
   })
 
   it("builds detail view href with returnTo for list back navigation", () => {
     const returnTo = buildVoucherInquiryReturnPath({ refNo: "COL-260001" })
     expect(buildFinanceVoucherDetailPath("voucher-pickup-1", returnTo)).toBe(
-      "/finance/vouchers/voucher-pickup-1?returnTo=%2Ffinance%2Fvouchers%3FrefNo%3DCOL-260001"
+      "/finance/vouchers/voucher-pickup-1?returnTo=%2Ffinance%2Fvouchers%3FdocumentNo%3DCOL-260001"
     )
   })
 
@@ -41,6 +48,7 @@ describe("voucher inquiry URL helpers", () => {
     const filter = {
       voucherNo: "V-1",
       refNo: "COL-2",
+      documentNo: "COL-2",
       periodKey: "2026-06",
     }
     const params = buildVoucherInquirySearchParams(filter)
