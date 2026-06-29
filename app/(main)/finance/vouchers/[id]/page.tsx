@@ -1,5 +1,4 @@
-import { VoucherDetailView } from "@/components/finance/VoucherDetailView"
-import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
+import { FinanceVoucherInquiryDetailView } from "@/components/finance/FinanceVoucherInquiryDetailView"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -13,9 +12,5 @@ export default async function FinanceVoucherDetailPage({
   const { id } = await params
   const { returnTo } = await searchParams
 
-  return (
-    <main className={financeAdminPageClass}>
-      <VoucherDetailView voucherId={id} returnTo={returnTo} />
-    </main>
-  )
+  return <FinanceVoucherInquiryDetailView voucherId={id} returnTo={returnTo} />
 }

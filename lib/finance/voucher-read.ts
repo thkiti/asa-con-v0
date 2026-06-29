@@ -61,6 +61,7 @@ export async function getVoucherDetailById(
       refNo: true,
       description: true,
       postedAt: true,
+      period: { select: { periodKey: true } },
       lines: {
         orderBy: { lineNo: "asc" },
         select: {
@@ -120,6 +121,7 @@ export async function getVoucherDetailById(
     id: voucher.id,
     voucherNo: voucher.voucherNo,
     legalEntityCode: voucher.legalEntityCode,
+    periodKey: voucher.period.periodKey,
     date: voucher.date.toISOString(),
     status: voucher.status,
     branchId: voucher.branchId,

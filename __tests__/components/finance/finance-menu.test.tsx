@@ -98,12 +98,14 @@ describe("FinanceMenuHubView", () => {
     expect(html).not.toContain('href="/finance/reports/cash-flow"')
   })
 
-  it("renders audit hub with coming soon items", () => {
+  it("renders audit hub with voucher inquiry card", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "audit")
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
-    expect(html).toContain("Voucher Lookup")
+    expect(html).toContain("Voucher / Journal Inquiry")
+    expect(html).toContain('href="/finance/vouchers"')
+    expect(html).toContain("Done")
     expect(html).toContain("Document Trace")
     expect(html).toContain("Attachments")
     expect(html).toContain('aria-disabled="true"')
@@ -152,6 +154,9 @@ describe("finance-menu config", () => {
     expect(keys).toContain("petty-cash")
     expect(keys).toContain("trial-balance")
     expect(keys).toContain("voucher-lookup")
+    const voucherLookup = items.find((item) => item.key === "voucher-lookup")
+    expect(voucherLookup?.status).toBe("available")
+    expect(voucherLookup?.href).toBe("/finance/vouchers")
     expect(keys).not.toContain("pav-register")
     expect(keys).not.toContain("manual-journal")
   })

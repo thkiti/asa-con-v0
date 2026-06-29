@@ -1165,6 +1165,65 @@ span.finance-account .finance-account-name-part {
   }
 }
 
+/* Voucher / journal inquiry — compact filter row */
+.voucher-inquiry-filter-bar {
+  width: 100%;
+  max-width: 100%;
+}
+
+.voucher-inquiry-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.voucher-inquiry-filter-field input,
+.voucher-inquiry-filter-field select {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.voucher-inquiry-filter-period {
+  width: 110px;
+  flex: 0 0 110px;
+}
+
+.voucher-inquiry-filter-date {
+  width: 140px;
+  flex: 0 0 140px;
+}
+
+.voucher-inquiry-filter-ref-type {
+  width: 140px;
+  flex: 0 0 140px;
+}
+
+.voucher-inquiry-filter-ref-type select {
+  text-overflow: ellipsis;
+}
+
+.voucher-inquiry-filter-voucher-no {
+  width: 160px;
+  flex: 0 0 160px;
+}
+
+.voucher-inquiry-filter-actions {
+  flex: 0 0 auto;
+}
+
+.voucher-inquiry-filter-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .voucher-inquiry-filter-bar {
+    flex-wrap: wrap;
+  }
+}
+
 .finance-work-panel {
   box-sizing: border-box;
 }

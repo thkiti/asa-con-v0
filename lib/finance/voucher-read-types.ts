@@ -20,6 +20,7 @@ export type VoucherDetail = {
   id: string
   voucherNo: string
   legalEntityCode: string
+  periodKey: string
   date: string
   status: string
   branchId: string

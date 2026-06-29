@@ -32,6 +32,7 @@ const voucherDetail = {
   id: "voucher-1",
   voucherNo: "V-2026-0001",
   legalEntityCode: "AS",
+  periodKey: "2026-05",
   date: "2026-05-01T00:00:00.000Z",
   status: "POSTED",
   branchId: "branch-1",

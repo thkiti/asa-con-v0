@@ -123,6 +123,9 @@ function inferBackLabelFromHref(href: string): string | null {
   if (href.startsWith("/finance/reports/general-ledger")) {
     return "← General Ledger"
   }
+  if (href === "/finance/vouchers" || href.startsWith("/finance/vouchers?")) {
+    return "← Voucher / Journal Inquiry"
+  }
   if (href.startsWith("/finance/vouchers/")) {
     return "← Voucher"
   }

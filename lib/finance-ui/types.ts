@@ -112,6 +112,7 @@ export type VoucherDetail = {
   id: string
   voucherNo: string
   legalEntityCode: string
+  periodKey: string
   date: string
   status: string
   branchId: string
@@ -127,6 +128,36 @@ export type VoucherDetail = {
 
 export type VoucherDetailResult = {
   voucher: VoucherDetail
+}
+
+export type FinanceVoucherListRow = {
+  id: string
+  voucherNo: string
+  date: string
+  legalEntityCode: string
+  periodKey: string
+  refType: string
+  refNo: string | null
+  description: string | null
+  status: string
+  totalDebit: string
+  totalCredit: string
+}
+
+export type FinanceVoucherListResult = {
+  vouchers: FinanceVoucherListRow[]
+  total: number
+}
+
+export type FinanceVoucherInquiryFilter = {
+  voucherNo?: string
+  refNo?: string
+  refType?: string
+  periodKey?: string
+  from?: string
+  to?: string
+  limit?: number
+  offset?: number
 }
 
 export type ManualJournalLineInput = {

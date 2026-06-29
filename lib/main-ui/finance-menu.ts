@@ -165,13 +165,14 @@ function buildPrimaryFinanceMenuHubs(): Record<
     audit: {
       label: "Audit",
       description:
-        "Trace and verify documents — voucher lookup, lineage, and attachments (coming soon).",
+        "Trace and verify documents — voucher inquiry, lineage, and attachments.",
       href: hubHref("audit"),
       items: [
-        comingSoon(
+        done(
           "voucher-lookup",
-          "Voucher Lookup",
-          "Search posted vouchers and journal references"
+          "Voucher / Journal Inquiry",
+          "/finance/vouchers",
+          "Search posted vouchers and journal lines from any source"
         ),
         comingSoon(
           "document-trace",

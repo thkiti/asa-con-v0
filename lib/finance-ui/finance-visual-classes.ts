@@ -79,6 +79,34 @@ export const collectorPickupSettlementTableWrap =
 export const collectorPickupSettlementTable =
   "collector-pickup-settlement-table finance-table finance-table--compact w-full max-w-full"
 
+/** Voucher / journal inquiry — compact single-row filter bar. */
+export const voucherInquiryFilterBar =
+  "voucher-inquiry-filter-bar flex flex-nowrap items-end gap-2"
+
+export const voucherInquiryFilterField =
+  "voucher-inquiry-filter-field flex flex-col gap-1 text-sm shrink-0"
+
+export const voucherInquiryFilterPeriod =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-period"
+
+export const voucherInquiryFilterDate =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-date"
+
+export const voucherInquiryFilterRefType =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-ref-type"
+
+export const voucherInquiryFilterVoucherNo =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-voucher-no"
+
+export const voucherInquiryFilterActions =
+  "voucher-inquiry-filter-actions flex shrink-0 items-end gap-2"
+
+export const voucherInquiryFilterButtonPrimary =
+  "voucher-inquiry-filter-button rounded bg-zinc-900 px-3 py-1.5 text-sm text-white"
+
+export const voucherInquiryFilterButtonSecondary =
+  "voucher-inquiry-filter-button rounded border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700"
+
 export const collectorPickupTh = "px-2 py-2 text-left whitespace-nowrap"
 export const collectorPickupThAmount = `${numericTh} px-2 py-2 whitespace-nowrap`
 export const collectorPickupThStatus =

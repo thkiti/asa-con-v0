@@ -361,6 +361,7 @@ describe("VoucherDetailView collector settlement return", () => {
           id: "voucher-pickup-1",
           voucherNo: "V-2026-06-00001",
           legalEntityCode: "AS",
+          periodKey: "2026-06",
           date: "2026-06-14T00:00:00.000Z",
           status: "POSTED",
           branchId: "branch-1",
