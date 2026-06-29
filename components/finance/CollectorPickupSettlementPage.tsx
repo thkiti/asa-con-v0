@@ -1,6 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { CollectorPickupSettlementDetailModal } from "@/components/finance/CollectorPickupSettlementDetailModal"
 import { CollectorPickupSettlementTable } from "@/components/finance/CollectorPickupSettlementTable"
 import {
   PayInSlipUploadModal,
@@ -13,8 +15,10 @@ import {
 } from "@/components/finance/PayInStaffCredentialGate"
 import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
+  buildCollectorPickupSettlementReturnPath,
   fetchCollectorPickupSettlementStatusList,
   formatCollectorPickupPostError,
+  parseCollectorPickupSettlementFilterFromSearchParams,
   postCollectorPickupSettlement,
   type CollectorPickupSettlementReconciliation,
 } from "@/lib/finance-ui/collector-pickup-settlement"
@@ -51,7 +55,17 @@ function toUploadModalRow(
 }
 
 export function CollectorPickupSettlementPage() {
-  const [filter, setFilter] = useState<FinanceFilterValues>(defaultDateRange)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const initialFilter = useMemo(
+    () =>
+      parseCollectorPickupSettlementFilterFromSearchParams(searchParams) ??
+      defaultDateRange(),
+    [searchParams]
+  )
+
+  const [filter, setFilter] = useState<FinanceFilterValues>(initialFilter)
   const [items, setItems] = useState<CollectorPickupSettlementReconciliation[]>([])
   const [loading, setLoading] = useState(false)
   const [depositPostingReportId, setDepositPostingReportId] = useState<string | null>(
@@ -69,6 +83,13 @@ export function CollectorPickupSettlementPage() {
   const [verifiedStaff, setVerifiedStaff] = useState<PayInVerifiedStaff | null>(null)
   const [previewRow, setPreviewRow] =
     useState<CollectorPickupSettlementReconciliation | null>(null)
+  const [detailRow, setDetailRow] =
+    useState<CollectorPickupSettlementReconciliation | null>(null)
+
+  const settlementReturnPath = useMemo(
+    () => buildCollectorPickupSettlementReturnPath(filter),
+    [filter]
+  )
 
   const load = useCallback(async (values: FinanceFilterValues) => {
     if (!values.from?.trim() || !values.to?.trim()) {
@@ -97,7 +118,22 @@ export function CollectorPickupSettlementPage() {
     })
   }, [])
 
+  useEffect(() => {
+    const fromUrl = parseCollectorPickupSettlementFilterFromSearchParams(searchParams)
+    if (!fromUrl) return
+    setFilter(fromUrl)
+    void load(fromUrl)
+  }, [searchParams, load])
+
+  function syncFilterToUrl(values: FinanceFilterValues) {
+    const returnPath = buildCollectorPickupSettlementReturnPath(values)
+    const queryIndex = returnPath.indexOf("?")
+    const query = queryIndex === -1 ? "" : returnPath.slice(queryIndex)
+    router.replace(`${pathname}${query}`)
+  }
+
   async function handleApply() {
+    syncFilterToUrl(filter)
     await load(filter)
   }
 
@@ -189,6 +225,18 @@ export function CollectorPickupSettlementPage() {
         onPreviewPayInSlip={setPreviewRow}
         onDepositPost={entityBlocked ? undefined : handleDepositPost}
         onRepairPickup={entityBlocked ? undefined : handleRepairPickup}
+        onViewDetail={setDetailRow}
+      />
+
+      <CollectorPickupSettlementDetailModal
+        open={detailRow != null}
+        row={detailRow}
+        returnTo={settlementReturnPath}
+        onClose={() => setDetailRow(null)}
+        onPreviewPayInSlip={(row) => {
+          setDetailRow(null)
+          setPreviewRow(row)
+        }}
       />
 
       <PayInStaffCredentialGate

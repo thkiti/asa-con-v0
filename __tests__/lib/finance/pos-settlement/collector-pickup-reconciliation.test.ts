@@ -143,6 +143,8 @@ describe("collector pickup settlement reconciliation", () => {
       voucherNo: null,
       glDebitCashInTransit1031: "0.00",
       glCreditCashDrawer1001: "0.00",
+      glDebitBank1021: "0.00",
+      glCreditCashInTransit1031: "0.00",
       postedAmountEquivalent: "0.00",
       variance: "1000.00",
       status: "NOT_POSTED",

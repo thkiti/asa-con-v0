@@ -45,6 +45,8 @@ export type CollectorPickupSettlementReconciliation = {
   inTransitAmount: string
   bankDepositVoucherId: string | null
   bankDepositVoucherNo: string | null
+  glDebitBank1021: string
+  glCreditCashInTransit1031: string
 } & PayInEvidenceSummary
 
 export type ListCollectorPickupSettlementStatusesInput = {
@@ -355,6 +357,8 @@ function buildCollectorPickupSettlementReconciliation(
     inTransitAmount: formatAmount(inTransitAmount),
     bankDepositVoucherId: depositVoucher?.id ?? null,
     bankDepositVoucherNo: depositVoucher?.voucherNo ?? null,
+    glDebitBank1021: formatAmount(debitBank),
+    glCreditCashInTransit1031: formatAmount(creditCashInTransit),
     ...evidenceSummary,
   }
 }

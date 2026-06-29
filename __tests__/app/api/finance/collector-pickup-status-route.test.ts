@@ -55,6 +55,18 @@ const notPostedStatus: CollectorPickupSettlementReconciliation = {
   postedAmountEquivalent: "0.00",
   variance: "1000.00",
   status: "NOT_POSTED",
+  depositStatus: "NOT_ELIGIBLE",
+  inTransitAmount: "1000.00",
+  bankDepositVoucherId: null,
+  bankDepositVoucherNo: null,
+  glDebitBank1021: "0.00",
+  glCreditCashInTransit1031: "0.00",
+  payInEvidenceId: null,
+  payInEvidenceStatus: null,
+  payInEvidenceUrl: null,
+  payInSlipMissingWarning: false,
+  bankDepositDate: null,
+  bankAccountCode: null,
 }
 
 const postedStatus: CollectorPickupSettlementReconciliation = {

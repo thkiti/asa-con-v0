@@ -132,6 +132,12 @@ function inferBackLabelFromHref(href: string): string | null {
   if (href === "/finance/journal-entries" || href.startsWith("/finance/journal-entries?")) {
     return "← Manual journals"
   }
+  if (
+    href === "/finance/pos-settlement/collector-pickup" ||
+    href.startsWith("/finance/pos-settlement/collector-pickup?")
+  ) {
+    return "← Collector Pickup Settlement"
+  }
   return null
 }
 

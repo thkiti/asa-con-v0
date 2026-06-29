@@ -38,6 +38,7 @@ type CollectorPickupSettlementTableProps = {
   onPreviewPayInSlip?: (row: CollectorPickupSettlementReconciliation) => void
   onDepositPost?: (collectorReportId: string) => void
   onRepairPickup?: (collectorReportId: string) => void
+  onViewDetail?: (row: CollectorPickupSettlementReconciliation) => void
   depositPostError?: string | null
 }
 
@@ -50,16 +51,32 @@ function formatBranch(row: CollectorPickupSettlementReconciliation): string {
 
 function BusinessStatusBadge({
   row,
+  onViewDetail,
 }: {
   row: CollectorPickupSettlementReconciliation
+  onViewDetail?: (row: CollectorPickupSettlementReconciliation) => void
 }) {
   const label = mapCollectorPickupBusinessStatus(row.status)
-  return (
+  const badge = (
     <span
       className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${collectorPickupBusinessStatusTone(label)}`}
     >
       {label}
     </span>
+  )
+
+  if (!onViewDetail) return badge
+
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 border-0 bg-transparent p-0"
+      data-testid={`status-detail-${row.collectorReportId}`}
+      title="View settlement detail"
+      onClick={() => onViewDetail(row)}
+    >
+      {badge}
+    </button>
   )
 }
 
@@ -133,6 +150,7 @@ export function CollectorPickupSettlementTable({
   onPreviewPayInSlip,
   onDepositPost,
   onRepairPickup,
+  onViewDetail,
   depositPostError = null,
 }: CollectorPickupSettlementTableProps) {
   if (items.length === 0) {
@@ -173,7 +191,20 @@ export function CollectorPickupSettlementTable({
 
             return (
               <tr key={row.collectorReportId}>
-                <td className={collectorPickupTdCollectNo}>{row.collectNo}</td>
+                <td className={collectorPickupTdCollectNo}>
+                  {onViewDetail ? (
+                    <button
+                      type="button"
+                      className="cursor-pointer border-0 bg-transparent p-0 font-mono text-sm text-[#2563eb] underline underline-offset-2 hover:text-[#1d4ed8]"
+                      data-testid={`collect-no-detail-${row.collectorReportId}`}
+                      onClick={() => onViewDetail(row)}
+                    >
+                      {row.collectNo}
+                    </button>
+                  ) : (
+                    row.collectNo
+                  )}
+                </td>
                 <td className={collectorPickupTdBranch} title={formatBranch(row)}>
                   {formatBranch(row)}
                 </td>
@@ -181,7 +212,7 @@ export function CollectorPickupSettlementTable({
                   {formatAmount(row.expectedAmount)}
                 </td>
                 <td className={collectorPickupTdStatus}>
-                  <BusinessStatusBadge row={row} />
+                  <BusinessStatusBadge row={row} onViewDetail={onViewDetail} />
                   {showRepair && onRepairPickup ? (
                     <button
                       type="button"

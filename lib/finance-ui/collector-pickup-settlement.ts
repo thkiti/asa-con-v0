@@ -3,6 +3,45 @@ import type { Role } from "@/lib/shared"
 import { buildReconciliationQuery } from "./fetchers"
 import type { FinanceFilterValues } from "./types"
 
+export const COLLECTOR_PICKUP_SETTLEMENT_PATH =
+  "/finance/pos-settlement/collector-pickup"
+
+/** Parse settlement filter values from page search params. */
+export function parseCollectorPickupSettlementFilterFromSearchParams(
+  searchParams: Pick<URLSearchParams, "get">
+): FinanceFilterValues | null {
+  const from = searchParams.get("from")?.trim()
+  const to = searchParams.get("to")?.trim()
+  if (!from || !to) return null
+
+  const branchId = searchParams.get("branchId")?.trim()
+  return {
+    branchId: branchId || undefined,
+    from,
+    to,
+  }
+}
+
+/** returnTo target for voucher drill-down — preserves branch/from/to filters. */
+export function buildCollectorPickupSettlementReturnPath(
+  filter: FinanceFilterValues
+): string {
+  const params = new URLSearchParams()
+  if (filter.branchId?.trim()) {
+    params.set("branchId", filter.branchId.trim())
+  }
+  if (filter.from?.trim()) {
+    params.set("from", filter.from.trim())
+  }
+  if (filter.to?.trim()) {
+    params.set("to", filter.to.trim())
+  }
+  const query = params.toString()
+  return query
+    ? `${COLLECTOR_PICKUP_SETTLEMENT_PATH}?${query}`
+    : COLLECTOR_PICKUP_SETTLEMENT_PATH
+}
+
 export type {
   CollectorPickupSettlementReconciliation,
   CollectorPickupSettlementStatus,

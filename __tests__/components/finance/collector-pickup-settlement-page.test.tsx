@@ -1,5 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server"
+import { CollectorPickupSettlementDetailModal } from "@/components/finance/CollectorPickupSettlementDetailModal"
 import { CollectorPickupSettlementTable } from "@/components/finance/CollectorPickupSettlementTable"
+import { VoucherDetailView } from "@/components/finance/VoucherDetailView"
 import { PayInSlipIndicator } from "@/components/finance/PayInSlipIndicator"
 import { PayInSlipUploadModal } from "@/components/finance/PayInSlipUploadModal"
 import { PayInStaffCredentialGate } from "@/components/finance/PayInStaffCredentialGate"
@@ -14,6 +16,15 @@ import {
   shouldShowDepositPostDisabled,
 } from "@/lib/finance-ui/collector-pickup-settlement-display"
 import type { CollectorPickupSettlementReconciliation } from "@/lib/finance-ui/collector-pickup-settlement"
+
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/finance/pos-settlement/collector-pickup",
+  useRouter: () => ({
+    replace: jest.fn(),
+    push: jest.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+}))
 
 const baseRow: CollectorPickupSettlementReconciliation = {
   collectorReportId: "collector-report-1",
@@ -34,6 +45,8 @@ const baseRow: CollectorPickupSettlementReconciliation = {
   inTransitAmount: "1000.00",
   bankDepositVoucherId: null,
   bankDepositVoucherNo: null,
+  glDebitBank1021: "0.00",
+  glCreditCashInTransit1031: "0.00",
   payInEvidenceId: null,
   payInEvidenceStatus: null,
   payInEvidenceUrl: null,
@@ -255,5 +268,115 @@ describe("CollectorPickupSettlementTable", () => {
     expect(html).toContain('data-testid="deposit-posted-collector-report-1"')
     expect(html).toContain("POSTED")
     expect(html).not.toContain("V-")
+  })
+})
+
+describe("CollectorPickupSettlementTable detail drill-down", () => {
+  it("renders clickable collect no when onViewDetail is provided", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementTable
+        items={[baseRow]}
+        onViewDetail={() => undefined}
+      />
+    )
+
+    expect(html).toContain('data-testid="collect-no-detail-collector-report-1"')
+    expect(html).toContain("COL-SH001-202606-0001")
+    expect(html).toContain('data-testid="status-detail-collector-report-1"')
+  })
+})
+
+describe("CollectorPickupSettlementDetailModal", () => {
+  const settlementReturnTo =
+    "/finance/pos-settlement/collector-pickup?branchId=branch-1&from=2026-06-01&to=2026-06-30"
+
+  it("shows pickup and deposit journal lines with voucher links", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementDetailModal
+        open
+        returnTo={settlementReturnTo}
+        row={{
+          ...baseRow,
+          status: "POSTED",
+          voucherId: "voucher-pickup-1",
+          voucherNo: "V-2026-06-00001",
+          glDebitCashInTransit1031: "1000.00",
+          glCreditCashDrawer1001: "1000.00",
+          depositStatus: "POSTED",
+          bankDepositVoucherId: "voucher-deposit-1",
+          bankDepositVoucherNo: "V-2026-06-00002",
+          glDebitBank1021: "1000.00",
+          glCreditCashInTransit1031: "1000.00",
+          payInEvidenceStatus: "UPLOADED",
+          payInEvidenceUrl: "https://example.test/pay-in.jpg",
+        }}
+        onClose={() => undefined}
+        onPreviewPayInSlip={() => undefined}
+      />
+    )
+
+    expect(html).toContain('data-testid="collector-pickup-settlement-detail-modal"')
+    expect(html).toContain("Dr 1031")
+    expect(html).toContain("Cr 1001")
+    expect(html).toContain("Dr 1021")
+    expect(html).toContain("Cr 1031")
+    expect(html).toContain("/finance/vouchers/voucher-pickup-1")
+    expect(html).toContain("/finance/vouchers/voucher-deposit-1")
+    expect(html).toContain(
+      encodeURIComponent(
+        "/finance/pos-settlement/collector-pickup?branchId=branch-1&from=2026-06-01&to=2026-06-30"
+      )
+    )
+    expect(html).toContain("V-2026-06-00001")
+    expect(html).toContain("V-2026-06-00002")
+  })
+
+  it("shows missing journal states without crashing", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementDetailModal
+        open
+        returnTo={settlementReturnTo}
+        row={baseRow}
+        onClose={() => undefined}
+      />
+    )
+
+    expect(html).toContain("No journal posted.")
+    expect(html).toContain("Not uploaded")
+    expect(html).not.toContain('data-testid="settlement-voucher-link"')
+  })
+})
+
+describe("VoucherDetailView collector settlement return", () => {
+  it("uses returnTo for back navigation to collector pickup settlement", () => {
+    const returnTo =
+      "/finance/pos-settlement/collector-pickup?branchId=branch-1&from=2026-06-01&to=2026-06-30"
+
+    const html = renderToStaticMarkup(
+      <VoucherDetailView
+        voucherId="voucher-pickup-1"
+        returnTo={returnTo}
+        initialVoucher={{
+          id: "voucher-pickup-1",
+          voucherNo: "V-2026-06-00001",
+          legalEntityCode: "AS",
+          date: "2026-06-14T00:00:00.000Z",
+          status: "POSTED",
+          branchId: "branch-1",
+          refType: "POS_SETTLEMENT_COLLECTOR_PICKUP",
+          refId: "collector-report-1",
+          refNo: null,
+          description: null,
+          postedAt: "2026-06-14T15:00:00.000Z",
+          documentHeader: null,
+          lines: [],
+          journal: null,
+        }}
+      />
+    )
+
+    expect(html).toContain(
+      'href="/finance/pos-settlement/collector-pickup?branchId=branch-1&amp;from=2026-06-01&amp;to=2026-06-30"'
+    )
   })
 })
