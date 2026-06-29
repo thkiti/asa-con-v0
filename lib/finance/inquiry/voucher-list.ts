@@ -10,6 +10,7 @@ import type {
   FinanceVoucherListRow,
 } from "./voucher-list-types"
 import { applyVoucherInquiryRefTypeFilter } from "./voucher-document-types"
+import { resolveVoucherInquiryVoucherNoSearch } from "./voucher-no-search"
 
 export type { FinanceVoucherListFilter, FinanceVoucherListResult, FinanceVoucherListRow } from "./voucher-list-types"
 
@@ -53,9 +54,14 @@ function buildWhere(
     legalEntityCode: filter.legalEntityCode,
   }
 
-  const voucherNo = filter.voucherNo?.trim()
-  if (voucherNo) {
-    where.voucherNo = { contains: voucherNo, mode: "insensitive" }
+  const voucherNoSearch = resolveVoucherInquiryVoucherNoSearch(
+    filter.voucherNo,
+    filter.periodKey
+  )
+  if (voucherNoSearch?.mode === "equals") {
+    where.voucherNo = voucherNoSearch.value
+  } else if (voucherNoSearch?.mode === "contains") {
+    where.voucherNo = { contains: voucherNoSearch.value, mode: "insensitive" }
   }
 
   const refNo = filter.refNo?.trim()

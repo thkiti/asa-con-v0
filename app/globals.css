@@ -1258,12 +1258,50 @@ span.finance-account .finance-account-name-part {
 }
 
 .compact-theme-select option {
-  background-color: var(--card);
-  color: var(--card-foreground);
+  background-color: #ffffff;
+  color: #09090b;
 }
 
 [data-theme="dark"] .compact-theme-select {
-  color-scheme: dark;
+  color-scheme: light;
+}
+
+/* Finance filter selects — theme-aware closed field, readable light dropdown options */
+.finance-filter-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border-radius: 0.25rem;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color-scheme: light;
+}
+
+.finance-filter-select:focus-visible {
+  outline: 2px solid var(--link-primary);
+  outline-offset: 1px;
+  border-color: var(--link-primary);
+}
+
+.finance-filter-select option {
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+[data-theme="dark"] .finance-filter-select {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--input-border);
+  color-scheme: light;
+}
+
+[data-theme="dark"] .finance-filter-select option {
+  background-color: #ffffff;
+  color: #09090b;
 }
 
 /* Finance settlement — native date picker readable in light and dark themes */

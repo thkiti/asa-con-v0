@@ -5,6 +5,7 @@ import {
 } from "@/components/finance/FinanceSettlementDateInput"
 import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import { formatPosSettlementBranchLabel } from "@/lib/finance-ui/pos-settlement-branches"
+import { financeFilterSelect } from "@/lib/finance-ui/finance-visual-classes"
 import { themeInput } from "@/lib/theme/theme-classes"
 
 describe("formatPosSettlementBranchLabel", () => {
@@ -50,6 +51,7 @@ describe("PosSettlementFilterBar", () => {
     expect(html).toContain("pos-settlement-filter-branch")
     expect(html).toContain("pos-settlement-filter-date")
     expect(html).toContain("<select")
+    expect(html).toContain(financeFilterSelect)
     expect(html).not.toContain('placeholder="Optional"')
     expect(html).not.toContain("Branch ID")
     expect(html).toContain("All SH branches")

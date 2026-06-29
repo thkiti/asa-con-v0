@@ -92,8 +92,11 @@ export const voucherInquiryFilterPeriod =
 export const voucherInquiryFilterDate =
   "voucher-inquiry-filter-field voucher-inquiry-filter-date"
 
-export const voucherInquiryFilterRefType =
+export const voucherInquiryFilterDocType =
   "voucher-inquiry-filter-field voucher-inquiry-filter-ref-type"
+
+/** @deprecated Use voucherInquiryFilterDocType */
+export const voucherInquiryFilterRefType = voucherInquiryFilterDocType
 
 export const voucherInquiryFilterVoucherNo =
   "voucher-inquiry-filter-field voucher-inquiry-filter-voucher-no"
@@ -106,6 +109,9 @@ export const voucherInquiryFilterButtonPrimary =
 
 export const voucherInquiryFilterButtonSecondary =
   "voucher-inquiry-filter-button rounded border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700"
+
+/** Native filter dropdown — dark closed field, light readable option list in all themes. */
+export const financeFilterSelect = "finance-filter-select"
 
 export const collectorPickupTh = "px-2 py-2 text-left whitespace-nowrap"
 export const collectorPickupThAmount = `${numericTh} px-2 py-2 whitespace-nowrap`

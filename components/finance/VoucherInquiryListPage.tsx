@@ -9,12 +9,13 @@ import {
   financeTable,
   financeTh,
   voucherInquiryFilterActions,
+  financeFilterSelect,
   voucherInquiryFilterBar,
   voucherInquiryFilterButtonPrimary,
   voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterDate,
   voucherInquiryFilterPeriod,
-  voucherInquiryFilterRefType,
+  voucherInquiryFilterDocType,
   voucherInquiryFilterVoucherNo,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { buildFinanceVoucherDetailPath } from "@/lib/finance-ui/finance-navigation"
@@ -194,15 +195,15 @@ export function VoucherInquiryListPage() {
             data-testid="voucher-inquiry-filter-to"
           />
         </label>
-        <label className={voucherInquiryFilterRefType}>
-          <span className="text-zinc-600">Ref Type</span>
+        <label className={voucherInquiryFilterDocType}>
+          <span className="text-zinc-600">Document Type</span>
           <select
-            className="rounded border border-zinc-300 px-2 py-1"
+            className={financeFilterSelect}
             value={draft.refType ?? ""}
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, refType: e.target.value || undefined }))
             }
-            data-testid="voucher-inquiry-filter-ref-type"
+            data-testid="voucher-inquiry-filter-document-type"
           >
             {VOUCHER_INQUIRY_REF_TYPE_OPTIONS.map((option) => (
               <option key={option.value || "all"} value={option.value}>
@@ -219,7 +220,7 @@ export function VoucherInquiryListPage() {
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, voucherNo: e.target.value || undefined }))
             }
-            placeholder="V-2026-"
+            placeholder="0001"
             data-testid="voucher-inquiry-filter-voucher-no"
           />
         </label>

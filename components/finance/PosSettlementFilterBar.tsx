@@ -8,13 +8,14 @@ import {
   type PosSettlementBranchOption,
 } from "@/lib/finance-ui/pos-settlement-branches"
 import {
+  financeFilterSelect,
   posSettlementFilterBar,
   posSettlementFilterFieldApply,
   posSettlementFilterFieldBranch,
   posSettlementFilterFieldDate,
 } from "@/lib/finance-ui/finance-visual-classes"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
-import { themeBtnPrimary, themeLabel, themeSelect } from "@/lib/theme/theme-classes"
+import { themeBtnPrimary, themeLabel } from "@/lib/theme/theme-classes"
 
 type PosSettlementFilterBarProps = {
   values: FinanceFilterValues
@@ -63,7 +64,7 @@ export function PosSettlementFilterBar({
               branchId: event.target.value || undefined,
             })
           }
-          className={`${themeSelect} px-3 py-2`}
+          className={`${financeFilterSelect} px-3 py-2`}
         >
           <option value="">All SH branches</option>
           {branches.map((branch) => (

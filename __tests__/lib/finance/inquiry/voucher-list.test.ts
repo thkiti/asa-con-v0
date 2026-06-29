@@ -25,7 +25,7 @@ describe("listFinanceVouchers", () => {
     jest.clearAllMocks()
   })
 
-  it("scopes list to legal entity and applies voucherNo filter", async () => {
+  it("scopes list to legal entity and applies full voucherNo filter", async () => {
     const findMany = jest.fn().mockResolvedValue([baseRow])
     const count = jest.fn().mockResolvedValue(1)
     const prisma = {
@@ -35,14 +35,63 @@ describe("listFinanceVouchers", () => {
 
     await listFinanceVouchers(prisma, {
       legalEntityCode: "AS",
-      voucherNo: "V-2026",
+      voucherNo: "V-2026-06-00001",
     })
 
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           legalEntityCode: "AS",
-          voucherNo: { contains: "V-2026", mode: "insensitive" },
+          voucherNo: { contains: "V-2026-06-00001", mode: "insensitive" },
+        }),
+      })
+    )
+  })
+
+  it("matches padded running number when period is selected", async () => {
+    const findUnique = jest.fn().mockResolvedValue({ id: "period-1" })
+    const findMany = jest.fn().mockResolvedValue([baseRow])
+    const count = jest.fn().mockResolvedValue(1)
+    const prisma = {
+      voucher: { findMany, count },
+      accountingPeriod: { findUnique },
+    }
+
+    await listFinanceVouchers(prisma, {
+      legalEntityCode: "AS",
+      periodKey: "2026-06",
+      voucherNo: "8",
+    })
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          periodId: "period-1",
+          voucherNo: "V-2026-06-00008",
+        }),
+      })
+    )
+  })
+
+  it("matches running number 1 as V-2026-06-00001 with period", async () => {
+    const findUnique = jest.fn().mockResolvedValue({ id: "period-1" })
+    const findMany = jest.fn().mockResolvedValue([])
+    const count = jest.fn().mockResolvedValue(0)
+    const prisma = {
+      voucher: { findMany, count },
+      accountingPeriod: { findUnique },
+    }
+
+    await listFinanceVouchers(prisma, {
+      legalEntityCode: "AS",
+      periodKey: "2026-06",
+      voucherNo: "1",
+    })
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          voucherNo: "V-2026-06-00001",
         }),
       })
     )

@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from "react-dom/server"
 import FinanceVoucherInquiryPage from "@/app/(main)/finance/vouchers/page"
 import { FinanceVoucherInquiryDetailView } from "@/components/finance/FinanceVoucherInquiryDetailView"
 import { VoucherInquiryListPage, VoucherInquiryResultsTable } from "@/components/finance/VoucherInquiryListPage"
+import { VOUCHER_INQUIRY_REF_TYPE_OPTIONS } from "@/lib/finance/inquiry/voucher-document-types"
+import { financeFilterSelect } from "@/lib/finance-ui/finance-visual-classes"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 
 jest.mock("@/components/main/EntityContextPageHeading", () => ({
@@ -135,10 +137,15 @@ describe("FinanceVoucherInquiryPage", () => {
     expect(html).toContain("voucher-inquiry-filter-bar")
     expect(html).toContain("voucher-inquiry-filter-period")
     expect(html).toContain("voucher-inquiry-filter-ref-type")
+    expect(html).toContain('data-testid="voucher-inquiry-filter-document-type"')
+    expect(html).toContain(financeFilterSelect)
+    expect(html).toContain("Document Type")
+    expect(html).not.toContain(">Ref Type<")
+    expect(html).toContain('placeholder="0001"')
+    expect(html).not.toContain('placeholder="V-2026-"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-period"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-from"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-to"')
-    expect(html).toContain('data-testid="voucher-inquiry-filter-ref-type"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-voucher-no"')
     expect(html).toContain('data-testid="voucher-inquiry-search"')
     expect(html).toContain('data-testid="voucher-inquiry-clear"')
@@ -185,12 +192,19 @@ describe("VoucherInquiryListPage", () => {
     expect(html).not.toContain("Jun 14")
   })
 
-  it("uses ref type dropdown options in compact filter row", () => {
+  it("uses document type dropdown with full fixed option list", () => {
+    mockFetchFinanceVouchers.mockResolvedValue({ vouchers: [], total: 0 })
     const html = renderToStaticMarkup(<VoucherInquiryListPage />)
     expect(html).toContain("flex-nowrap")
     expect(html).toContain("voucher-inquiry-filter-actions")
-    expect(html).toContain("Collector Pickup")
-    expect(html).toContain("PAY • Bank Deposit")
+    expect(html).toContain("Document Type")
+    expect(html).toContain(financeFilterSelect)
+    expect(html).not.toContain(">Ref Type<")
+    expect(html).toContain('placeholder="0001"')
+    for (const option of VOUCHER_INQUIRY_REF_TYPE_OPTIONS) {
+      expect(html).toContain(option.label)
+    }
+    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS).toHaveLength(9)
     expect(html).not.toContain("PAY-IN / Bank Deposit")
     expect(html).not.toContain('placeholder="POS_SETTLEMENT_')
   })

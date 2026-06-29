@@ -2,6 +2,7 @@ import {
   collectorPickupSettlementTable,
   collectorPickupSettlementTableWrap,
   financeAccountCode,
+  financeFilterSelect,
   financeNumber,
   financeReportTable,
   financeTable,
@@ -17,6 +18,7 @@ describe("finance visual standard classes", () => {
     expect(financeReportTable).toBe("finance-table finance-report-table")
     expect(financeTableScroll).toContain("finance-table-scroll")
     expect(financeTextPrimary).toBe("finance-text-primary")
+    expect(financeFilterSelect).toBe("finance-filter-select")
     expect(financeAccountCode).toContain("finance-account-code")
     expect(financeNumber).toContain("finance-number")
     expect(themePanelList).toContain("theme-panel-list")
