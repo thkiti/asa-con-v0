@@ -186,6 +186,7 @@ describe("CollectorPickupSettlementTable", () => {
     expect(html).toContain("collector-pickup-col-collect")
     expect(html).toContain("collector-pickup-workflow-actions")
     expect(html).toContain("collector-pickup-th-status")
+    expect(html).toContain("text-right")
     expect(html).toContain("collector-pickup-td-workflow")
     expect(html).not.toContain(">PAY-IN Slip<")
     expect(html).not.toContain(">Deposit<")

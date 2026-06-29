@@ -1031,7 +1031,13 @@ span.finance-account .finance-account-name-part {
   overflow: hidden;
 }
 
-/* Collector pickup settlement — full admin frame width, compact readable columns */
+/* Collector pickup settlement — standard app page container, compact readable table */
+.collector-pickup-settlement-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
 .pos-settlement-filter-bar {
   width: 100%;
   max-width: 100%;
@@ -1047,6 +1053,7 @@ span.finance-account .finance-account-name-part {
 
 .pos-settlement-filter-branch {
   width: 220px;
+  flex: 0 0 220px;
 }
 
 .pos-settlement-filter-branch select {
@@ -1056,6 +1063,7 @@ span.finance-account .finance-account-name-part {
 
 .pos-settlement-filter-date {
   width: 160px;
+  flex: 0 0 160px;
 }
 
 .pos-settlement-filter-date input {
@@ -1065,6 +1073,7 @@ span.finance-account .finance-account-name-part {
 
 .pos-settlement-filter-apply {
   width: 80px;
+  flex: 0 0 80px;
 }
 
 .pos-settlement-filter-apply button {
@@ -1083,27 +1092,27 @@ span.finance-account .finance-account-name-part {
 .collector-pickup-settlement-table {
   width: 100%;
   max-width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .collector-pickup-settlement-table col.collector-pickup-col-collect {
-  width: 28%;
+  width: 1%;
 }
 
 .collector-pickup-settlement-table col.collector-pickup-col-branch {
-  width: 24%;
+  width: auto;
 }
 
 .collector-pickup-settlement-table col.collector-pickup-col-expected {
-  width: 12%;
+  width: 1%;
 }
 
 .collector-pickup-settlement-table col.collector-pickup-col-status {
-  width: 16%;
+  width: 1%;
 }
 
 .collector-pickup-settlement-table col.collector-pickup-col-workflow {
-  width: 20%;
+  width: 1%;
 }
 
 .collector-pickup-settlement-table thead th {
@@ -1113,6 +1122,7 @@ span.finance-account .finance-account-name-part {
   line-height: 1.25;
   overflow: visible;
   text-overflow: clip;
+  white-space: nowrap;
 }
 
 .collector-pickup-settlement-table tbody tr {
@@ -1120,6 +1130,7 @@ span.finance-account .finance-account-name-part {
 }
 
 .collector-pickup-td-branch {
+  max-width: 16rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1127,18 +1138,21 @@ span.finance-account .finance-account-name-part {
 
 .collector-pickup-th-status,
 .collector-pickup-td-status {
-  padding-right: 0.25rem;
+  padding-right: 0.5rem;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .collector-pickup-th-workflow,
 .collector-pickup-td-workflow {
-  padding-left: 0.5rem;
+  padding-left: 0.25rem;
+  white-space: nowrap;
 }
 
 .collector-pickup-workflow-actions {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.75rem;
 }
 
 @media (max-width: 640px) {

@@ -27,6 +27,7 @@ import {
   postDepositSettlement,
 } from "@/lib/finance-ui/pay-in-settlement"
 import { isPayInSlipUploaded } from "@/lib/finance-ui/collector-pickup-settlement-display"
+import { collectorPickupSettlementPageClass } from "@/lib/finance-ui/finance-visual-classes"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
@@ -189,7 +190,7 @@ export function CollectorPickupSettlementPage() {
   }
 
   return (
-    <div>
+    <div className={collectorPickupSettlementPageClass}>
       {entityBlocked ? (
         <p
           className="mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"

@@ -71,31 +71,33 @@ export const posSettlementFilterFieldDate =
 export const posSettlementFilterFieldApply =
   "pos-settlement-filter-field pos-settlement-filter-apply shrink-0"
 
+export const collectorPickupSettlementPageClass = "collector-pickup-settlement-page w-full"
+
 export const collectorPickupSettlementTableWrap =
-  "collector-pickup-settlement-table-wrap mt-4 w-full"
+  "collector-pickup-settlement-table-wrap mt-4 w-full max-w-full"
 
 export const collectorPickupSettlementTable =
-  "collector-pickup-settlement-table finance-table finance-table--compact w-full"
+  "collector-pickup-settlement-table finance-table finance-table--compact w-full max-w-full"
 
-export const collectorPickupTh = "px-2 py-2 text-left"
-export const collectorPickupThAmount = `${numericTh} px-2 py-2`
+export const collectorPickupTh = "px-2 py-2 text-left whitespace-nowrap"
+export const collectorPickupThAmount = `${numericTh} px-2 py-2 whitespace-nowrap`
 export const collectorPickupThStatus =
-  "collector-pickup-th-status px-2 py-2 text-left whitespace-nowrap"
+  "collector-pickup-th-status px-2 py-2 text-right whitespace-nowrap"
 export const collectorPickupThWorkflow =
   "collector-pickup-th-workflow px-2 py-2 text-left whitespace-nowrap"
 
 export const collectorPickupTdCollectNo =
-  "px-2 py-1 align-middle font-mono text-sm whitespace-nowrap"
+  "px-2 py-1.5 align-middle font-mono text-sm whitespace-nowrap"
 export const collectorPickupTdBranch =
-  "collector-pickup-td-branch max-w-[14rem] px-2 py-1 align-middle text-sm"
-export const collectorPickupTdAmount = `${numericCell} px-2 py-1 tabular-nums text-sm align-middle whitespace-nowrap`
+  "collector-pickup-td-branch px-2 py-1.5 align-middle text-sm"
+export const collectorPickupTdAmount = `${numericCell} px-2 py-1.5 tabular-nums text-sm align-middle whitespace-nowrap`
 export const collectorPickupTdStatus =
-  "collector-pickup-td-status px-2 py-1 align-middle whitespace-nowrap"
+  "collector-pickup-td-status px-2 py-1.5 align-middle whitespace-nowrap text-right"
 export const collectorPickupTdWorkflow =
-  "collector-pickup-td-workflow px-2 py-1 align-middle whitespace-nowrap"
+  "collector-pickup-td-workflow px-2 py-1.5 align-middle whitespace-nowrap"
 
 export const collectorPickupWorkflowActions =
-  "collector-pickup-workflow-actions inline-flex items-center gap-2.5"
+  "collector-pickup-workflow-actions inline-flex items-center"
 
 export const collectorPickupPostBtn =
   "rounded bg-[var(--btn-primary-bg)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--btn-primary-fg)] hover:bg-[var(--btn-primary-hover)] disabled:cursor-not-allowed disabled:border disabled:border-[var(--btn-disabled-border)] disabled:bg-[var(--btn-disabled-bg)] disabled:text-[var(--btn-disabled-fg)]"

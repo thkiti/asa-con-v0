@@ -17,6 +17,8 @@ type FinanceAdminPageShellProps = {
   children: ReactNode
   /** Use a narrower centered panel for compact settlement-style workflows. */
   workPanel?: boolean
+  introClassName?: string
+  contentClassName?: string
 }
 
 export function FinanceAdminPageShell({
@@ -26,8 +28,11 @@ export function FinanceAdminPageShell({
   intro,
   children,
   workPanel = false,
+  introClassName = financeAdminIntroClass,
+  contentClassName,
 }: FinanceAdminPageShellProps) {
-  const contentClass = workPanel ? financeWorkPanelClass : financeAdminContentClass
+  const contentClass =
+    contentClassName ?? (workPanel ? financeWorkPanelClass : financeAdminContentClass)
 
   return (
     <main className={financeAdminPageClass} data-testid="finance-admin-page">
@@ -36,7 +41,7 @@ export function FinanceAdminPageShell({
           {backLabel}
         </Link>
         {heading}
-        {intro ? <p className={financeAdminIntroClass}>{intro}</p> : null}
+        {intro ? <p className={introClassName}>{intro}</p> : null}
         <div className={contentClass}>{children}</div>
       </div>
     </main>

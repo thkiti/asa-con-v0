@@ -4,7 +4,7 @@ import { FinanceAdminPageShell } from "@/components/finance/FinanceAdminPageShel
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
 import { getSession } from "@/lib/auth"
 import { canAccessCollectorPickupSettlementUi } from "@/lib/finance-ui/collector-pickup-settlement"
-import { financeAdminPageTitleClass } from "@/lib/main-ui/finance-page-layout"
+import { financeAdminPageTitleClass, financeAdminIntroSettlementClass, financeAdminContentSettlementClass } from "@/lib/main-ui/finance-page-layout"
 
 export default async function FinanceCollectorPickupSettlementPage() {
   const session = await getSession()
@@ -20,6 +20,8 @@ export default async function FinanceCollectorPickupSettlementPage() {
     <FinanceAdminPageShell
       backHref="/finance"
       backLabel="← Finance"
+      introClassName={financeAdminIntroSettlementClass}
+      contentClassName={financeAdminContentSettlementClass}
       heading={
         <EntityContextPageHeading
           title="Collector pickup settlement"

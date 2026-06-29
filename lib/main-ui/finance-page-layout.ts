@@ -28,8 +28,14 @@ export const financeAdminPageTitleClass = `mt-4 text-xl font-semibold ${themePag
 
 export const financeAdminIntroClass = `mt-2 w-full text-sm ${themeMuted}`
 
+/** Tighter intro spacing for settlement workflow pages. */
+export const financeAdminIntroSettlementClass = `mt-2 w-full max-w-full text-sm leading-snug ${themeMuted}`
+
 /** Default content block below heading — full inner width of admin page. */
 export const financeAdminContentClass = "mt-6 w-full"
+
+/** Settlement pages — less gap between intro and filter/table. */
+export const financeAdminContentSettlementClass = "mt-4 w-full"
 
 /**
  * Narrow centered work panel for compact settlement workflows.
