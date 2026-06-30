@@ -68,6 +68,7 @@ Presentation and voucher layout rules (read before print/PDF work):
 - [FINANCE_MJV_PRINT_ARCHITECTURE.md](./FINANCE_MJV_PRINT_ARCHITECTURE.md) — MJV print implementation detail (F1A)
 - [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) — canonical header identity
 - [FINANCE_DOCUMENT_AUDIT_MATRIX.md](./FINANCE_DOCUMENT_AUDIT_MATRIX.md) — **Finance Document Audit Matrix** — read-only inquiry, print, PDF/archive, journal drill-down, POS-origin REC/REF routing, and known audit gaps by document type
+- [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) — **Document Vault design** — central PDF archive registry (approval gate; no schema wiring yet)
 
 ## Phase status
 

@@ -9,7 +9,8 @@ Related:
 - [20_FINANCE_TRACEABILITY.md](./20_FINANCE_TRACEABILITY.md) — voucher read / lineage foundation
 - [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) — document family taxonomy
 - [FINANCE_PRESENTATION_CONTRACT.md](./FINANCE_PRESENTATION_CONTRACT.md) — screen / print / PDF presentation rules
-- [architecture/DIGITAL_DOCUMENT_VAULVT_VISION.md](./architecture/DIGITAL_DOCUMENT_VAULVT_VISION.md) — future cross-domain archive registry
+- [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) — **central PDF archive / Document Vault design (approval gate — not wired)**
+- [architecture/DIGITAL_DOCUMENT_VAULVT_VISION.md](./architecture/DIGITAL_DOCUMENT_VAULVT_VISION.md) — long-term digital package vision
 - Code note: `lib/finance/inquiry/POS_ORIGIN_AUDIT.md` — REC/REF reprint rules (implementation comments)
 
 ---
@@ -23,7 +24,7 @@ Related:
 | **API access** | Voucher list/detail APIs require `HO_FINANCE` or `HO_ADMIN` (`requirePeriodAdminActor`). Finance **pages** use finance area RBAC; shop receipt/refund pages use shop area (HO roles included). |
 | **Posted vs unposted** | **Posted** rows come from `Voucher` (+ `JournalEntry`). **Unposted** rows come from operational tables (MJV/OPB/PAV/REV/PCV) when `postingState` filter includes unposted. REC/REF/COL/PAY appear only as posted vouchers (no pre-post operational workflow in inquiry). |
 | **Journal drill-down** | Posted rows with a linked journal show `/finance/journal-entries/{journalEntryId}` from the inquiry table. Voucher detail also shows journal lines read-only. |
-| **PDF column semantics** | `Yes` / `Missing` / `—`. Filter `pdfState=has|missing` applies only where archive fields exist (see per-type). Inquiry does not generate PDFs. |
+| **PDF column semantics** | `Yes` / `Missing` / `—` (`pdfAvailable`: `true` / `false` / `null`). Filter `pdfState=has|missing` applies only where archive is supported. Inquiry does not generate PDFs. **Central Document Vault is designed but not wired** — see [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md). Types without vault support show neutral `—`. |
 | **HO branch (POS slips)** | Opening REC/REF shop slips from HO audit requires the **sale/refund source branch**, not the HO session branch. Links carry `?branchId=` from the voucher row; pages also resolve branch from `Sale` / `Refund` when the query is omitted. |
 
 ---
@@ -34,16 +35,16 @@ Related:
 |------|-----------------|-------------------|---------------------|----------------------|-------------|-------------------------|--------------------|------------|
 | **OPB** | `Voucher` → `ManualJournalEntry` (OPENING_BALANCE) | `ManualJournalEntry` | Yes | Posted: `/finance/opening-balance/{id}` or voucher detail; Unposted: `/finance/opening-balance/{id}` | `/finance/opening-balance/{id}/print` (posted MJE) | `ManualJournalEntry.pdfPath` — Yes/Missing; PDF API | Yes | Yes |
 | **MJV** | `Voucher` → `ManualJournalEntry` (non-OPB types) | `ManualJournalEntry` | Yes | Posted: `/finance/manual-journal-entries/{id}` or voucher detail; Unposted: `/finance/manual-journal-entries/{id}` | `/finance/manual-journal-entries/{id}/print` (posted MJE) | `ManualJournalEntry.pdfPath` — Yes/Missing; PDF API | Yes | Yes |
-| **PAV** | `Voucher` → `PaymentVoucher` | `PaymentVoucher` | Yes | Posted: `/finance/payment-vouchers/{id}` or voucher detail; Unposted: `/finance/payment-vouchers/{id}` | — (no inquiry print link) | — (no archive field) | Yes | Yes (read); editor has workflow actions elsewhere |
-| **REV** | `Voucher` → `RevenueVoucher` | `RevenueVoucher` | Yes | `/finance/revenue-vouchers/{id}` | — | — | Yes | Yes |
-| **PCV** | `Voucher` → `PettyCashVoucher` | `PettyCashVoucher` | Yes | `/finance/petty-cash-vouchers/{id}` | — | — | Yes | Yes |
+| **PAV** | `Voucher` → `PaymentVoucher` | `PaymentVoucher` | Yes | Posted: `/finance/payment-vouchers/{id}` or voucher detail; Unposted: `/finance/payment-vouchers/{id}` | `/finance/payment-vouchers/{id}?autoprint=1` (posted editor print) | — (vault not wired; `pdfAvailable: null`) | Yes | Yes (read); editor has workflow actions elsewhere |
+| **REV** | `Voucher` → `RevenueVoucher` | `RevenueVoucher` | Yes | `/finance/revenue-vouchers/{id}` | `/finance/revenue-vouchers/{id}?autoprint=1` | — (vault not wired) | Yes | Yes |
+| **PCV** | `Voucher` → `PettyCashVoucher` | `PettyCashVoucher` | Yes | `/finance/petty-cash-vouchers/{id}` | `/finance/petty-cash-vouchers/{id}?autoprint=1` | — (vault not wired) | Yes | Yes |
 | **REC** | `Voucher` → `Sale` / `Receipt` | — (POS posts directly) | Yes | `/shop/receipt/{saleId}?branchId={branchId}` | Same + `&autoprint=1` | `Receipt.pdfPath` — **status only**; reprint does **not** regenerate PDF | Yes | Yes |
 | **REF** | `Voucher` → `Refund` | — | Yes | `/shop/refund-receipt/{refundId}?branchId={branchId}` | Same + `&autoprint=1` | **—** (no `pdfPath` on `Refund`) | Yes | Yes |
 | **COL** | `Voucher` → `CollectorReport` | — | Yes | `/finance/vouchers/{voucherId}` (voucher/journal detail) | — | — | Yes | Yes (voucher layer only) |
 | **PAY** | `Voucher` → `PosPayInEvidence` / bank deposit ref | — | Yes | `/finance/vouchers/{voucherId}` | — | — | Yes | Yes (voucher layer only) |
 | **INV** | `Voucher` → `InvoiceVoucher` (if posted) | `InvoiceVoucher` (not in unposted inquiry) | **No** (label only) | `/finance/vouchers/{voucherId}` or `/finance/invoice-vouchers/{id}` via editor | — | — | Yes | Partial — not in type filter |
 | **STK** | `Voucher` (`STOCK_DOC_POST`) | — | **No** | `/finance/vouchers/{voucherId}` | — | — | Yes | Partial |
-| **Stock ops** | `StockDocument` + lines | All workflow statuses | Yes — filter **CNT/ADJ/ORD/DEY/ORS/ORI** | `/finance/stock-documents/{id}` | — (reserved) | — (no archive field) | Yes when posted | Yes (read-only inquiry) |
+| **Stock ops** | `StockDocument` + lines | All workflow statuses | Yes — filter **CNT/ADJ/ORD/DEY/ORS/ORI** | `/finance/stock-documents/{id}` | `/finance/stock-documents/{id}?autoprint=1` | — (vault not wired; `pdfAvailable: null`) | Yes when posted | Yes (read-only inquiry) |
 | **CLS** | `Voucher` (`PERIOD_CLOSING_ENTRY`) | — | **No** | `/finance/vouchers/{voucherId}` | — | — | Yes | Partial |
 
 **Legend:** “Audit-safe” = inquiry path is read-only navigation / print preview. Operational editor routes (PAV/REV/PCV/MJV) are read-only **from inquiry** but the destination pages may expose workflow actions if the user navigates outside inquiry intent.
@@ -93,11 +94,11 @@ Related:
 | **Source table / workflow** | `PaymentVoucher` + lines; posted → `Voucher` |
 | **Appears in Finance Document Inquiry** | Yes |
 | **Inquiry route** | `/finance/payment-vouchers/{id}` (unposted + posted via `refId`) |
-| **Print route** | None from inquiry table |
-| **PDF / archive** | No `pdfPath` on `PaymentVoucher` — inquiry PDF column `—` |
+| **Print route** | `/finance/payment-vouchers/{id}?autoprint=1` (posted editor browser print) |
+| **PDF / archive** | No vault row — inquiry PDF column `—` (`pdfAvailable: null`). Future: central `DocumentArchive` per [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) |
 | **Journal drill-down** | Yes when posted |
 | **Branch / legal entity** | Yes |
-| **Known gaps** | No archived PDF; print presentation not wired to inquiry. Future: Document Vault / presentation contract. |
+| **Known gaps** | Archived PDF not stored; browser print only. Vault upload / server attach pending design approval. |
 | **Read-only audit safe** | Yes from inquiry |
 
 ---
@@ -250,6 +251,7 @@ Related:
 3. **REF archive** — There is **no** `Refund.pdfPath` or refund `DocumentArchive` row today. The inquiry PDF column shows **`—`** by design until archive support is added.
 4. **HO POS slip branch** — Finance inquiry links include `branchId` from the posted voucher row. Shop pages call `resolveSaleReceiptPrintBranchId` / `resolveRefundReceiptPrintBranchId` so HO users are not pinned to the HO session branch.
 5. **Finance Inquiry boundary** — The hub at `/finance/vouchers` and `GET /api/finance/vouchers` are **audit/navigation only**. They must not post, repair, renumber, or regenerate documents.
+6. **Central vault** — PDF archive for PAV/REV/PCV, Stock ops, and REF is **intentionally not wired**. `pdfAvailable` remains `null` (neutral) until [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) is approved and schema/API migration completes. MJV/OPB and REC continue to use legacy per-table `pdfPath` until backfill.
 
 ---
 
@@ -261,12 +263,13 @@ Related:
 | OPB / MJV PDF status + print + PDF API | **Done** (MJV family) |
 | REC shop slip inquiry + print + PDF status | **Done** (status only; no inquiry PDF URL) |
 | REF shop slip inquiry + print | **Done** (no PDF status) |
-| PAV / REV / PCV unposted in list | **Done** |
+| PAV / REV / PCV browser print from inquiry/editor | **Done** (`?autoprint=1`) |
+| Stock ops inquiry browser print | **Done** (`?autoprint=1`) |
 | COL / PAY settlement deep links from inquiry | **Missing** |
 | INV / STK / CLS filter + unposted visibility | **Partial** (STK ops inquiry live at `/finance/stock-documents`) |
-| REF (and PAV/REV/PCV) archive PDF | **Not started** |
+| PAV / REV / PCV / Stock / REF archived PDF (central vault) | **Design only** — [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md); not started |
 | Document Trace / Attachments audit hub items | **Coming Soon** |
-| Digital Document Vault cross-registry | **Vision** — see vault architecture doc |
+| Digital Document Vault cross-registry | **Design** — vault schema expansion pending approval |
 
 ---
 
@@ -282,5 +285,7 @@ Related:
 | UI | `components/finance/VoucherInquiryListPage.tsx` |
 | Stock inquiry list API | `app/api/finance/stock-documents/route.ts` → `lib/stock/inquiry/stock-document-inquiry.ts` |
 | Stock inquiry detail API | `app/api/finance/stock-documents/[id]/route.ts` → `lib/stock/inquiry/stock-document-inquiry-detail.ts` |
-| Stock inquiry UI | `components/stock/StockDocumentInquiryListPage.tsx`, `StockDocumentInquiryDetailView.tsx` |
+| Stock inquiry UI | `components/stock/StockDocumentInquiryListPage.tsx`, `StockDocumentInquiryDetailView.tsx`, `StockDocumentInquiryPrintSheet.tsx` |
+| Stock print path | `lib/stock/inquiry/stock-document-inquiry-links.ts` → `?autoprint=1` |
+| Vault design | [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) |
 | Menu entry | `lib/main-ui/finance-menu.ts` → Audit hub |
