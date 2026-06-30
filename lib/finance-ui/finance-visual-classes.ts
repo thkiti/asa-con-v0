@@ -81,7 +81,7 @@ export const collectorPickupSettlementTable =
 
 /** Voucher / journal inquiry — compact single-row filter bar. */
 export const voucherInquiryFilterBar =
-  "voucher-inquiry-filter-bar flex flex-wrap items-end gap-2"
+  "voucher-inquiry-filter-bar flex flex-wrap md:flex-nowrap items-end gap-2"
 
 export const voucherInquiryFilterBranch =
   "voucher-inquiry-filter-field voucher-inquiry-filter-branch"
@@ -130,8 +130,29 @@ export const voucherInquiryFilterField =
 export const voucherInquiryFilterPeriod =
   "voucher-inquiry-filter-field voucher-inquiry-filter-period"
 
+export const voucherInquiryFilterPeriodGroup =
+  "voucher-inquiry-filter-period-group shrink-0"
+
 export const voucherInquiryFilterDate =
   "voucher-inquiry-filter-field voucher-inquiry-filter-date"
+
+export const voucherInquiryFilterMore =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-more shrink-0"
+
+export const voucherInquiryMoreFilterButton =
+  "voucher-inquiry-more-filter-button voucher-inquiry-filter-control voucher-inquiry-filter-framed"
+
+export const voucherInquiryMoreFilterButtonActive =
+  "voucher-inquiry-more-filter-button--active"
+
+export const voucherInquiryMoreFilterButtonDot =
+  "voucher-inquiry-more-filter-button-dot"
+
+export const voucherInquiryMoreFilterPopover =
+  "voucher-inquiry-more-filter-popover"
+
+export const voucherInquiryMoreFilterPopoverHidden =
+  "voucher-inquiry-more-filter-popover--hidden"
 
 export const voucherInquiryFilterDocType =
   "voucher-inquiry-filter-field voucher-inquiry-filter-ref-type"
@@ -155,6 +176,8 @@ export const voucherInquiryFilterFramed = "voucher-inquiry-filter-framed"
 export const financeFilterSelect = "finance-filter-select"
 
 export const voucherInquiryFilterInput = `theme-input ${voucherInquiryFilterControl} voucher-inquiry-filter-framed w-full min-w-0`
+
+export const voucherInquiryMoreFilterDateInput = `${voucherInquiryFilterInput} voucher-inquiry-more-filter-date shrink-0`
 
 export const voucherInquiryFilterSelect = `${financeFilterSelect} ${voucherInquiryFilterControl}`
 

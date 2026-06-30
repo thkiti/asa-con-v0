@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { StockDocumentInquiryPdfIndicator } from "@/components/stock/StockDocumentInquiryPdfIndicator"
+import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import {
   financeMemo,
@@ -15,11 +16,9 @@ import {
   voucherInquiryFilterBranch,
   voucherInquiryFilterButtonPrimary,
   voucherInquiryFilterButtonSecondary,
-  voucherInquiryFilterDate,
   voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
-  voucherInquiryFilterPeriod,
   voucherInquiryFilterPostingState,
   voucherInquiryFilterSelect,
   voucherInquiryFilterStatus,
@@ -45,6 +44,10 @@ import {
   type StockDocumentInquiryFilter,
   type StockDocumentInquiryRow,
 } from "@/lib/stock-ui/stock-document-inquiry"
+import {
+  INQUIRY_FILTER_DISMISS_ATTR,
+  useInquiryMoreFilterOpen,
+} from "@/lib/finance-ui/inquiry-more-filter-state"
 import {
   themeEmptyState,
   themeInlineError,
@@ -155,6 +158,13 @@ export function StockDocumentInquiryListPage() {
     [appliedFilter]
   )
 
+  const appliedFilterQuery = useMemo(
+    () => buildStockDocumentInquirySearchParams(appliedFilter).toString(),
+    [appliedFilter]
+  )
+
+  const { isMoreFilterOpen, setIsMoreFilterOpen } = useInquiryMoreFilterOpen(appliedFilterQuery)
+
   useEffect(() => {
     setDraft(appliedFilter)
     setInquiryNo(resolveStockDocumentInquiryNoDisplay(appliedFilter))
@@ -187,6 +197,7 @@ export function StockDocumentInquiryListPage() {
   }, [appliedFilter, load])
 
   const applyFilters = () => {
+    setIsMoreFilterOpen(false)
     const next = applyStockDocumentInquiryNoToFilter(draft, inquiryNo)
     const params = buildStockDocumentInquirySearchParams(next)
     const query = params.toString()
@@ -194,6 +205,7 @@ export function StockDocumentInquiryListPage() {
   }
 
   const clearFilters = () => {
+    setIsMoreFilterOpen(false)
     setDraft(emptyFilter())
     setInquiryNo("")
     router.replace(pathname)
@@ -220,42 +232,24 @@ export function StockDocumentInquiryListPage() {
             ))}
           </select>
         </label>
-        <label className={voucherInquiryFilterPeriod}>
-          <span className={themeLabel}>Period</span>
-          <input
-            className={voucherInquiryFilterInput}
-            value={draft.periodKey ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, periodKey: e.target.value || undefined }))
-            }
-            placeholder="2026-06"
-            data-testid="stock-document-inquiry-filter-period"
-          />
-        </label>
-        <label className={voucherInquiryFilterDate}>
-          <span className={themeLabel}>From</span>
-          <input
-            type="date"
-            className={voucherInquiryFilterInput}
-            value={draft.from ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, from: e.target.value || undefined }))
-            }
-            data-testid="stock-document-inquiry-filter-from"
-          />
-        </label>
-        <label className={voucherInquiryFilterDate}>
-          <span className={themeLabel}>To</span>
-          <input
-            type="date"
-            className={voucherInquiryFilterInput}
-            value={draft.to ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, to: e.target.value || undefined }))
-            }
-            data-testid="stock-document-inquiry-filter-to"
-          />
-        </label>
+        <DocumentInquiryMoreFilter
+          periodKey={draft.periodKey ?? ""}
+          onPeriodKeyChange={(value) =>
+            setDraft((prev) => ({ ...prev, periodKey: value || undefined }))
+          }
+          periodTestId="stock-document-inquiry-filter-period"
+          from={draft.from ?? ""}
+          to={draft.to ?? ""}
+          onFromChange={(value) =>
+            setDraft((prev) => ({ ...prev, from: value || undefined }))
+          }
+          onToChange={(value) =>
+            setDraft((prev) => ({ ...prev, to: value || undefined }))
+          }
+          testIdPrefix="stock-document-inquiry"
+          isMoreFilterOpen={isMoreFilterOpen}
+          setIsMoreFilterOpen={setIsMoreFilterOpen}
+        />
         <label className={voucherInquiryFilterDocType}>
           <span className={themeLabel}>Doc Type</span>
           <select
@@ -334,6 +328,7 @@ export function StockDocumentInquiryListPage() {
             type="button"
             className={voucherInquiryFilterButtonPrimary}
             onClick={applyFilters}
+            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
             data-testid="stock-document-inquiry-search"
           >
             Search
@@ -342,6 +337,7 @@ export function StockDocumentInquiryListPage() {
             type="button"
             className={voucherInquiryFilterButtonSecondary}
             onClick={clearFilters}
+            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
             data-testid="stock-document-inquiry-clear"
           >
             Clear

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { VoucherInquiryPdfIndicator } from "@/components/finance/VoucherInquiryPdfIndicator"
+import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import {
   financeMemo,
@@ -16,11 +17,9 @@ import {
   voucherInquiryFilterBranch,
   voucherInquiryFilterButtonPrimary,
   voucherInquiryFilterButtonSecondary,
-  voucherInquiryFilterDate,
   voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
-  voucherInquiryFilterPeriod,
   voucherInquiryFilterPostingState,
   voucherInquiryFilterSelect,
   voucherInquiryFilterStatus,
@@ -41,6 +40,10 @@ import {
   applyVoucherInquiryNoToFilter,
   resolveVoucherInquiryNoDisplay,
 } from "@/lib/finance-ui/voucher-inquiry-no-filter"
+import {
+  INQUIRY_FILTER_DISMISS_ATTR,
+  useInquiryMoreFilterOpen,
+} from "@/lib/finance-ui/inquiry-more-filter-state"
 import {
   buildVoucherInquiryReturnPath,
   buildVoucherInquirySearchParams,
@@ -182,6 +185,13 @@ export function VoucherInquiryListPage() {
     [appliedFilter]
   )
 
+  const appliedFilterQuery = useMemo(
+    () => buildVoucherInquirySearchParams(appliedFilter).toString(),
+    [appliedFilter]
+  )
+
+  const { isMoreFilterOpen, setIsMoreFilterOpen } = useInquiryMoreFilterOpen(appliedFilterQuery)
+
   useEffect(() => {
     setDraft(appliedFilter)
     setInquiryNo(resolveVoucherInquiryNoDisplay(appliedFilter))
@@ -214,6 +224,7 @@ export function VoucherInquiryListPage() {
   }, [appliedFilter, load])
 
   const applyFilters = () => {
+    setIsMoreFilterOpen(false)
     const next = applyVoucherInquiryNoToFilter(draft, inquiryNo)
     const params = buildVoucherInquirySearchParams(next)
     const query = params.toString()
@@ -221,6 +232,7 @@ export function VoucherInquiryListPage() {
   }
 
   const clearFilters = () => {
+    setIsMoreFilterOpen(false)
     setDraft(emptyFilter())
     setInquiryNo("")
     router.replace(pathname)
@@ -247,42 +259,24 @@ export function VoucherInquiryListPage() {
             ))}
           </select>
         </label>
-        <label className={voucherInquiryFilterPeriod}>
-          <span className={themeLabel}>Period</span>
-          <input
-            className={voucherInquiryFilterInput}
-            value={draft.periodKey ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, periodKey: e.target.value || undefined }))
-            }
-            placeholder="2026-06"
-            data-testid="voucher-inquiry-filter-period"
-          />
-        </label>
-        <label className={voucherInquiryFilterDate}>
-          <span className={themeLabel}>From</span>
-          <input
-            type="date"
-            className={voucherInquiryFilterInput}
-            value={draft.from ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, from: e.target.value || undefined }))
-            }
-            data-testid="voucher-inquiry-filter-from"
-          />
-        </label>
-        <label className={voucherInquiryFilterDate}>
-          <span className={themeLabel}>To</span>
-          <input
-            type="date"
-            className={voucherInquiryFilterInput}
-            value={draft.to ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, to: e.target.value || undefined }))
-            }
-            data-testid="voucher-inquiry-filter-to"
-          />
-        </label>
+        <DocumentInquiryMoreFilter
+          periodKey={draft.periodKey ?? ""}
+          onPeriodKeyChange={(value) =>
+            setDraft((prev) => ({ ...prev, periodKey: value || undefined }))
+          }
+          periodTestId="voucher-inquiry-filter-period"
+          from={draft.from ?? ""}
+          to={draft.to ?? ""}
+          onFromChange={(value) =>
+            setDraft((prev) => ({ ...prev, from: value || undefined }))
+          }
+          onToChange={(value) =>
+            setDraft((prev) => ({ ...prev, to: value || undefined }))
+          }
+          testIdPrefix="voucher-inquiry"
+          isMoreFilterOpen={isMoreFilterOpen}
+          setIsMoreFilterOpen={setIsMoreFilterOpen}
+        />
         <label className={voucherInquiryFilterDocType}>
           <span className={themeLabel}>Doc Type</span>
           <select
@@ -355,6 +349,7 @@ export function VoucherInquiryListPage() {
             type="button"
             className={voucherInquiryFilterButtonPrimary}
             onClick={applyFilters}
+            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
             data-testid="voucher-inquiry-search"
           >
             Search
@@ -363,6 +358,7 @@ export function VoucherInquiryListPage() {
             type="button"
             className={voucherInquiryFilterButtonSecondary}
             onClick={clearFilters}
+            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
             data-testid="voucher-inquiry-clear"
           >
             Clear

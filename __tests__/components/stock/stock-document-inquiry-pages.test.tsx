@@ -11,8 +11,13 @@ import {
   voucherInquiryFilterControl,
   voucherInquiryFilterFramed,
   voucherInquiryFilterSelect,
+  voucherInquiryMoreFilterButtonActive,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { STOCK_DOCUMENT_INQUIRY_KIND_OPTIONS } from "@/lib/stock/inquiry/stock-document-inquiry-filter-options"
+
+let stockInquirySearchParams = new URLSearchParams(
+  "periodKey=2026-06&kind=ORD&postingState=all"
+)
 
 jest.mock("@/components/main/EntityContextPageHeading", () => ({
   EntityContextPageHeading: ({ title }: { title: string }) => (
@@ -23,8 +28,7 @@ jest.mock("@/components/main/EntityContextPageHeading", () => ({
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn() }),
   usePathname: () => "/finance/stock-documents",
-  useSearchParams: () =>
-    new URLSearchParams("periodKey=2026-06&kind=ORD&postingState=all"),
+  useSearchParams: () => stockInquirySearchParams,
 }))
 
 jest.mock("@/lib/stock-ui/stock-document-inquiry", () => {
@@ -69,6 +73,9 @@ const sampleRow = {
 
 describe("Stock Document Inquiry UI", () => {
   beforeEach(() => {
+    stockInquirySearchParams = new URLSearchParams(
+      "periodKey=2026-06&kind=ORD&postingState=all"
+    )
     mockFetchStockDocuments.mockResolvedValue({
       documents: [sampleRow],
       total: 1,
@@ -80,8 +87,6 @@ describe("Stock Document Inquiry UI", () => {
     for (const label of [
       "Branch",
       "Period",
-      "From",
-      "To",
       "Doc Type",
       "No",
       "Status",
@@ -91,6 +96,34 @@ describe("Stock Document Inquiry UI", () => {
     ]) {
       expect(html).toContain(label)
     }
+    expect(html).toContain('data-testid="stock-document-inquiry-filter-branch"')
+    expect(html).toContain('data-testid="stock-document-inquiry-filter-period"')
+    expect(html).toContain('data-testid="stock-document-inquiry-more-filter"')
+    expect(html).toContain('data-testid="stock-document-inquiry-filter-doc-type"')
+    expect(html).toContain('data-testid="stock-document-inquiry-filter-no"')
+    expect(html).toContain('data-testid="stock-document-inquiry-filter-status"')
+    expect(html).toContain('data-testid="stock-document-inquiry-filter-posting-state"')
+    expect(html).toContain('data-testid="stock-document-inquiry-search"')
+    expect(html).toContain('data-testid="stock-document-inquiry-clear"')
+    expect(html).toContain('title="More filter"')
+    expect(html).not.toContain('data-testid="stock-document-inquiry-more-filter-panel"')
+    expect(html).not.toContain('data-testid="stock-document-inquiry-filter-from"')
+    expect(html).not.toMatch(/<span[^>]*>From<\/span>/)
+    expect(html).not.toMatch(/<span[^>]*>To<\/span>/)
+  })
+
+  it("hides the date box on load when from/to query values exist but keeps the dot active", () => {
+    stockInquirySearchParams = new URLSearchParams(
+      "periodKey=2026-06&from=2026-06-01&to=2026-06-30&postingState=all"
+    )
+
+    const html = renderToStaticMarkup(<StockDocumentInquiryListPage />)
+
+    expect(html).not.toContain('data-testid="stock-document-inquiry-more-filter-panel"')
+    expect(html).not.toContain('data-testid="stock-document-inquiry-filter-from"')
+    expect(html).toContain('data-active="true"')
+    expect(html).toContain(voucherInquiryMoreFilterButtonActive)
+    expect(html).toContain('aria-expanded="false"')
   })
 
   it("exposes all stock doc type options", () => {

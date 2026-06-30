@@ -15,6 +15,11 @@ import {
   voucherInquiryFilterControl,
   voucherInquiryFilterFramed,
   voucherInquiryFilterSelect,
+  voucherInquiryMoreFilterButton,
+  voucherInquiryMoreFilterPopover,
+  voucherInquiryMoreFilterPopoverHidden,
+  voucherInquiryMoreFilterDateInput,
+  voucherInquiryFilterPeriodGroup,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { financeWorkPanelClass } from "@/lib/main-ui/finance-page-layout"
 
@@ -32,6 +37,13 @@ describe("finance visual standard classes", () => {
     expect(voucherInquiryFilterFramed).toBe("voucher-inquiry-filter-framed")
     expect(voucherInquiryFilterSelect).toContain(financeFilterSelect)
     expect(voucherInquiryFilterSelect).toContain(voucherInquiryFilterControl)
+    expect(voucherInquiryMoreFilterButton).toContain("voucher-inquiry-more-filter-button")
+    expect(voucherInquiryMoreFilterPopover).toBe("voucher-inquiry-more-filter-popover")
+    expect(voucherInquiryMoreFilterPopoverHidden).toBe(
+      "voucher-inquiry-more-filter-popover--hidden"
+    )
+    expect(voucherInquiryMoreFilterDateInput).toContain("voucher-inquiry-more-filter-date")
+    expect(voucherInquiryFilterPeriodGroup).toBe("voucher-inquiry-filter-period-group shrink-0")
     expect(financeAccountCode).toContain("finance-account-code")
     expect(financeNumber).toContain("finance-number")
     expect(themePanelList).toContain("theme-panel-list")
