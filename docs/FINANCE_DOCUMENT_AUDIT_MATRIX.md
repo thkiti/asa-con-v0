@@ -40,7 +40,7 @@ Related:
 | **PCV** | `Voucher` → `PettyCashVoucher` | `PettyCashVoucher` | Yes | `/finance/petty-cash-vouchers/{id}` | `/finance/petty-cash-vouchers/{id}?autoprint=1` | — (vault not wired) | Yes | Yes |
 | **REC** | `Voucher` → `Sale` / `Receipt` | — (POS posts directly) | Yes | `/shop/receipt/{saleId}?branchId={branchId}` | Same + `&autoprint=1` | `Receipt.pdfPath` — **status only**; reprint does **not** regenerate PDF | Yes | Yes |
 | **REF** | `Voucher` → `Refund` | — | Yes | `/shop/refund-receipt/{refundId}?branchId={branchId}` | Same + `&autoprint=1` | **—** (no `pdfPath` on `Refund`) | Yes | Yes |
-| **COL** | `Voucher` → `CollectorReport` | — | Yes | `/finance/vouchers/{voucherId}` (voucher/journal detail) | — | — (vault: `BANK_PAY_IN_SLIP` via COL links — not wired) | Yes | Yes (voucher layer only) |
+| **COL** | `Voucher` → `CollectorReport` | — | Yes | `/finance/vouchers/{voucherId}` (voucher/journal detail) | — | — (vault: `BANK_PAY_IN_SLIP` on COL; required before POST PAY-IN — not wired) | Yes | Yes (voucher layer only) |
 | **PAY** | `Voucher` → `PosPayInEvidence` / bank deposit ref | — | Yes | `/finance/vouchers/{voucherId}` | — | — (inquiry label **PAY** = bank deposit voucher; pay-in slip archive is **COL**, not PAY — see vault design) | Yes | Yes (voucher layer only) |
 | **INV** | `Voucher` → `InvoiceVoucher` (if posted) | `InvoiceVoucher` (not in unposted inquiry) | **No** (label only) | `/finance/vouchers/{voucherId}` or `/finance/invoice-vouchers/{id}` via editor | — | — | Yes | Partial — not in type filter |
 | **STK** | `Voucher` (`STOCK_DOC_POST`) | — | **No** | `/finance/vouchers/{voucherId}` | — | — | Yes | Partial |
@@ -171,30 +171,31 @@ Related:
 
 | Field | Value |
 |-------|--------|
-| **Source table / workflow** | `CollectorReport` (COL-{branch}-{YYYYMM}-{seq}); `postCollectorPickupSettlement` → `Voucher` (`POS_SETTLEMENT_COLLECTOR_PICKUP`) |
+| **Source table / workflow** | `CollectorReport` (COL-{branch}-{YYYYMM}-{seq}); collector pickup creates/prepares ticket; **`postCollectorPickupSettlement`** posts pickup voucher; **COL closes only when POST PAY-IN succeeds** (not at pickup) |
 | **Appears in Finance Document Inquiry** | Yes — filter **COL** |
 | **Inquiry route** | `/finance/vouchers/{voucherId}` (no dedicated COL slip route from inquiry) |
 | **Print route** | None from inquiry |
-| **PDF / archive** | None in inquiry — column `—` today. **Vault design:** bank pay-in slip = `archiveKind=BANK_PAY_IN_SLIP` linked to **one or many COL tickets** (many-to-one). See [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md). |
+| **PDF / archive** | None in inquiry — column `—` today. **Vault design:** `archiveKind=BANK_PAY_IN_SLIP` linked to one or many COL tickets; required **before POST PAY-IN**; `archiveAvailable` true/false/null per [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) §5.5 / §6.2 |
+| **Operational flow** | COL created at pickup → pay-in slip uploaded/linked → finance review/confirm if applicable → **POST PAY-IN** (disabled until evidence exists) → COL closed/posted |
 | **Journal drill-down** | Yes |
 | **Branch / legal entity** | Yes |
-| **Known gaps** | Operational settlement UI: `/finance/pos-settlement/collector-pickup` — not linked from inquiry row. Pay-in evidence exists (`PosPayInEvidence`) but is not vault-wired. |
+| **Known gaps** | Settlement UI `/finance/pos-settlement/collector-pickup` / bank-deposit not linked from inquiry. Vault + POST PAY-IN evidence gating not wired. |
 | **Read-only audit safe** | Yes at voucher detail |
 
 ---
 
-### PAY — Bank Deposit (inquiry filter code)
+### PAY — Bank Deposit / POST PAY-IN (inquiry filter code)
 
 | Field | Value |
 |-------|--------|
-| **Source table / workflow** | `PosPayInEvidence` / bank deposit posting; `Voucher` (`POS_SETTLEMENT_BANK_DEPOSIT`). Inquiry filter code **PAY** labels this bank deposit voucher — **not** the same as vault `documentKind=PAY` (outbound payment document). |
-| **Appears in Finance Document Inquiry** | Yes — filter **PAY** |
+| **Source table / workflow** | `PosPayInEvidence` / **POST PAY-IN** bank deposit posting; `Voucher` (`POS_SETTLEMENT_BANK_DEPOSIT`). Inquiry filter **PAY** labels the posted bank deposit voucher. **POST PAY-IN** closes linked COL tickets on success. |
+| **Appears in Finance Document Inquiry** | Yes — filter **PAY** (posted rows after POST PAY-IN) |
 | **Inquiry route** | `/finance/vouchers/{voucherId}` |
 | **Print route** | None from inquiry |
-| **PDF / archive** | Pay-in **image evidence** (`PosPayInEvidence.blobPathname`) exists operationally but is **not** surfaced in inquiry. **Vault design:** bank pay-in slip archive belongs to **COL**, not PAY. PAY vault scope (if any) is outbound payment voucher `DOCUMENT_PDF` only — see vault design §5. |
+| **PDF / archive** | Pay-in evidence (`PosPayInEvidence`) exists operationally; vault indexes it as **`COL` + `BANK_PAY_IN_SLIP`**, not PAY. **POST PAY-IN** requires evidence **before** click (button disabled if missing; server safety net). See vault design §5.5. |
 | **Journal drill-down** | Yes |
 | **Branch / legal entity** | Yes |
-| **Known gaps** | No inquiry link to settlement UI (`/finance/pos-settlement/bank-deposit`) or pay-in evidence viewer. Inquiry **PAY** vs vault **PAY** terminology alignment open. |
+| **Known gaps** | No inquiry link to `/finance/pos-settlement/bank-deposit`. Inquiry **PAY** vs vault **PAY** (outbound payment) terminology alignment open. |
 | **Read-only audit safe** | Yes at voucher detail |
 
 ---
@@ -253,6 +254,7 @@ Related:
 5. **Finance Inquiry boundary** — The hub at `/finance/vouchers` and `GET /api/finance/vouchers` are **audit/navigation only**. They must not post, repair, renumber, or regenerate documents.
 6. **Central vault** — PDF archive for PAV/REV/PCV, Stock ops, and REF is **intentionally not wired**. `pdfAvailable` remains `null` (neutral) until [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) is approved and schema/API migration completes. MJV/OPB and REC continue to use legacy per-table `pdfPath` until backfill.
 7. **PAY vs COL archive** — Bank pay-in slip archive is **`documentKind=COL` + `archiveKind=BANK_PAY_IN_SLIP`** (one slip → many COL tickets). **Not** vault `documentKind=PAY`. Inquiry filter **PAY** (bank deposit voucher) must not be interpreted as pay-in slip container in vault design.
+8. **COL close and POST PAY-IN** — COL is **not closed** at collector pickup. **`BANK_PAY_IN_SLIP` evidence is required before POST PAY-IN**; POST PAY-IN button **disabled** when evidence missing (server validates as safety net). **COL closes only when POST PAY-IN succeeds.** See vault design §5.5.
 
 ---
 
@@ -269,7 +271,7 @@ Related:
 | COL / PAY settlement deep links from inquiry | **Missing** |
 | INV / STK / CLS filter + unposted visibility | **Partial** (STK ops inquiry live at `/finance/stock-documents`) |
 | PAV / REV / PCV / Stock / REF archived PDF (central vault) | **Design only** — [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md); `DocumentArchive` + `DocumentArchiveLink`; not started |
-| COL bank pay-in slip archive (many COL → one slip) | **Design only** — vault §4.4 / §6.2; not started |
+| COL bank pay-in slip archive + POST PAY-IN evidence gating | **Design only** — vault §5.5 / §6.2; COL closes on POST PAY-IN; not started |
 | Document Trace / Attachments audit hub items | **Coming Soon** |
 | Digital Document Vault cross-registry | **Design** — vault schema expansion pending approval |
 

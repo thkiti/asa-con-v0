@@ -42,7 +42,7 @@ Today archive behaviour is **fragmented**:
 |------|---------|-------------|
 | **PAV** | Payment Approval Voucher — outbound payment operational document | `documentKind=PAV`, `archiveKind=DOCUMENT_PDF` (1:1) |
 | **PAY** | Payment / outbound payment document (voucher PDF only if printable) | `documentKind=PAY`, `archiveKind=DOCUMENT_PDF` — **not** bank pay-in slip |
-| **COL** | Collector pickup / collection ticket; bank pay-in / deposit evidence flow | `documentKind=COL`; pay-in slip = `archiveKind=BANK_PAY_IN_SLIP` with **many COL → one archive** |
+| **COL** | Collector pickup / collection ticket; bank pay-in / deposit evidence flow | `documentKind=COL`; pay-in slip = `archiveKind=BANK_PAY_IN_SLIP` with **many COL → one archive**. **COL closes only when POST PAY-IN succeeds** — not at collector pickup. |
 
 Bank pay-in slip images/PDFs belong to **COL**, not PAY. One slip may cover multiple COL tickets → vault must support **one archive file linked to many source documents**.
 
@@ -237,7 +237,7 @@ Two enums serve different purposes:
 |-------|----------|
 | **PAV** | Outbound payment approval voucher — standard 1:1 voucher PDF archive |
 | **PAY** | Outbound payment document — archive **only** its own voucher PDF (`DOCUMENT_PDF`). **Bank pay-in slip is out of scope for PAY.** |
-| **COL** | Collector / collection flow — COL tickets link to shared **`BANK_PAY_IN_SLIP`** archives. Existing `PosPayInEvidence` blob is evidence input, not the vault model terminus. |
+| **COL** | Collector / collection flow — COL tickets link to shared **`BANK_PAY_IN_SLIP`** archives. **`BANK_PAY_IN_SLIP` is required before POST PAY-IN** (enables button; server validates as safety net). COL is **not closed** at collector pickup; **closed/posted only after POST PAY-IN succeeds**. |
 
 **Inquiry filter mismatch:** Finance Document Inquiry uses code **PAY** for posted **bank deposit** vouchers (`POS_SETTLEMENT_BANK_DEPOSIT`). Per business decision, that flow’s **pay-in slip** archives under **COL**, not vault `documentKind=PAY`. Whether bank-deposit **voucher** PDF gets its own `documentKind` or stays inquiry-only is an open question (§13).
 
@@ -261,6 +261,63 @@ Phase 1 vault rollout may still **prefer PDF** for voucher types; **COL pay-in s
 ### 5.4 READ reports *(future)*
 
 Until approved: `pdfAvailable: null` / `archiveAvailable: null` in any future lookup.
+
+### 5.5 COL / `BANK_PAY_IN_SLIP` — workflow and control *(approved)*
+
+#### COL lifecycle
+
+| Stage | COL state | `archiveAvailable` (typical) |
+|-------|-----------|------------------------------|
+| Collector pickup — ticket created/prepared | **Open** — not closed | `null` (archive not yet required for this phase) |
+| Ready for pay-in posting — evidence still missing | **Open** — awaiting slip | `false` |
+| Pay-in slip uploaded/linked (`BANK_PAY_IN_SLIP`) | **Open** — POST PAY-IN enabled | `true` |
+| POST PAY-IN succeeds | **Closed / posted** per workflow | `true` (historical link retained) |
+
+**Approved rules:**
+
+- COL ticket may be **created/prepared** during collector pickup.
+- COL is **not** considered closed at collector close/pickup.
+- **COL closes only when POST PAY-IN succeeds.**
+- `BANK_PAY_IN_SLIP` archive/evidence is **required before or at POST PAY-IN** — it is a **prerequisite for enabling** POST PAY-IN, not an after-the-fact audit nicety.
+- If required pay-in slip archive/evidence is **missing**, **POST PAY-IN must be blocked**.
+- After POST PAY-IN, linked COL tickets become **CLOSED/POSTED** according to the approved operational workflow wording.
+
+#### End-to-end flow
+
+```text
+Collector pickup — COL ticket created
+        ↓
+Pay-in slip / evidence uploaded or linked (vault `BANK_PAY_IN_SLIP` + `DocumentArchiveLink`)
+        ↓
+Finance review / confirm (if applicable — does not close COL by itself)
+        ↓
+POST PAY-IN  (enabled only when required evidence exists)
+        ↓
+COL closed / posted
+```
+
+```mermaid
+flowchart TD
+  A[COL ticket created at pickup] --> B[Upload / link BANK_PAY_IN_SLIP]
+  B --> C{Required evidence present?}
+  C -->|no| D[POST PAY-IN disabled]
+  C -->|yes| E[POST PAY-IN enabled]
+  E --> F[User clicks POST PAY-IN]
+  F --> G[Posting succeeds]
+  G --> H[COL closed / posted]
+  B --> I[Finance review / confirm if applicable]
+  I --> C
+```
+
+#### POST PAY-IN UX and validation
+
+| Layer | Behaviour |
+|-------|-----------|
+| **UI** | **POST PAY-IN** button is **disabled / not available** until required `BANK_PAY_IN_SLIP` evidence is uploaded/linked. Users must **not** be able to click POST and then receive an error for missing evidence under normal UX. |
+| **Server** | Same rule enforced as a **safety net** (reject POST if evidence missing). Primary control is disabled button, not post-then-error. |
+| **Vault** | Active `DocumentArchiveLink` with `archiveKind=BANK_PAY_IN_SLIP` satisfies the evidence prerequisite (may share one archive across many COL links). |
+
+Existing `PosPayInEvidence` blob upload is the operational input path today; vault `BANK_PAY_IN_SLIP` is the long-term audit index for the same evidence.
 
 ---
 
@@ -301,31 +358,38 @@ resolveDocumentVaultPdfAvailable(documentKind, documentId, archiveKind?):
 | `false` | Red missing dot | Included in missing |
 | `null` | Neutral `—` | Excluded |
 
-### 6.2 COL — bank pay-in slip (many-to-one)
+### 6.2 COL — `BANK_PAY_IN_SLIP` (many-to-one)
 
-COL rows use a **separate check** for deposit evidence (column may be labeled `archiveAvailable` or reuse `pdfAvailable` with tooltip):
+COL rows use **`archiveAvailable`** (inquiry column; may share UI with PDF dot):
 
 ```text
 resolveColBankPayInArchiveAvailable(documentKind=COL, documentId):
 
-  if COL archive policy not approved:
-    return null
+  if COL not yet in pay-in posting workflow phase:
+    return null   // before archive requirement applies (e.g. early pickup prep)
 
   link = findActiveLink(COL, documentId, BANK_PAY_IN_SLIP)
     where DocumentArchive.status == ACTIVE and isReadable(archive)
 
   if link exists:
-    return true   // COL ticket covered by at least one pay-in slip
+    return true
 
-  if pay-in slip required for this COL state:
-    return false
+  if COL is ready for POST PAY-IN (open, pay-in posting supported) but link missing:
+    return false   // required evidence missing — POST PAY-IN should be disabled
 
   return null
 ```
 
+| `archiveAvailable` | Meaning | POST PAY-IN | Inquiry column |
+|--------------------|---------|-------------|----------------|
+| `true` | Active `BANK_PAY_IN_SLIP` link exists | May be **enabled** (subject to other workflow gates) | Exists dot |
+| `false` | COL ready for POST PAY-IN but required evidence **missing** | **Disabled** | Missing dot |
+| `null` | Before pay-in posting requirement applies, or vault not wired | Per workflow phase | Neutral `—` |
+
 - **Multiple COL tickets** may share the same `archiveId` via separate `DocumentArchiveLink` rows.
 - Download from a COL row resolves through its link → shared `DocumentArchive`.
 - Uploading one pay-in slip creates **one** `DocumentArchive` + **many** links in a single transaction.
+- **`archiveAvailable: false` aligns with POST PAY-IN disabled** — same prerequisite, inquiry and settlement UI.
 
 ### 6.3 Archive requirement matrix
 
@@ -334,7 +398,7 @@ resolveColBankPayInArchiveAvailable(documentKind=COL, documentId):
 | OPB / MJV | `status = POSTED` | `DOCUMENT_PDF` | `false` if posted but no active link |
 | PAV / REV / PCV | `status = POSTED` | `DOCUMENT_PDF` | `false` if posted but no link |
 | PAY | Posted outbound payment doc (policy TBD) | `DOCUMENT_PDF` only | `null` until policy approved — **not pay-in slip** |
-| COL | Policy TBD (collector close / bank deposit / finance confirm) | `BANK_PAY_IN_SLIP` | `null` until policy approved |
+| COL | COL **open** and ready for POST PAY-IN | `BANK_PAY_IN_SLIP` | `false` if ready to post but no link; `null` before requirement applies; `true` when linked |
 | Stock CNT–ORI | `POSTED` and/or `CONFIRMED` (TBD) | `DOCUMENT_PDF` | `null` until policy approved |
 | REC | Checkout complete | `RECEIPT_SLIP` | `false` if required but missing |
 | REF | Refund posted | `REFUND_SLIP` | `null` until approved |
@@ -379,7 +443,7 @@ flowchart LR
 
 - Posted document → inquiry shows `pdfAvailable: false` until upload.
 - `POST /api/document-archive` creates `DocumentArchive` + one or more `DocumentArchiveLink` rows.
-- **COL pay-in upload:** single file + array of `{ documentKind: COL, documentId, documentNo }` link targets.
+- **COL pay-in upload:** single file + array of `{ documentKind: COL, documentId, documentNo }` link targets. Must complete **before POST PAY-IN** is enabled.
 - Validates: sources exist, actor permitted, checksum recorded.
 - Sets archive `ACTIVE`.
 
@@ -440,6 +504,7 @@ Inquiry APIs embed `pdfAvailable` from the link resolver — not table-specific 
 | `HO_FINANCE` / `HO_ADMIN` | Full vault status, download, upload, retry for finance + stock + POS audit types |
 | Shop staff (`SH_*`) | **Not** exposed in Phase 1 vault UI; POS reprint stays on shop routes. If branch upload is ever added: **own branch only** |
 | Inquiry hubs | Read-only — download link only when archive exists; no upload from inquiry list without explicit action |
+| POST PAY-IN (settlement UI) | **Disabled** until required `BANK_PAY_IN_SLIP` link exists for all COL tickets in the batch; server rejects missing evidence as safety net |
 | Posted immutability | Upload / supersede must reject non-POSTED sources (except policy-approved exceptions) |
 | Storage | Same backend resolution as today (`filesystem` vs Vercel Blob); path traversal guards in `lib/document-archive/storage/` |
 
@@ -502,9 +567,9 @@ Print links (`?autoprint=1`) **remain browser print** — they do not write vaul
 |---|----------|-----------------|
 | 1 | **Canonical `documentId` for REC** | `Receipt.id` vs `Sale.id` |
 | 2 | **COL canonical `documentId` and `documentNo`** | `CollectorReport.id` vs voucher `refId` vs COL ticket number format |
-| 3 | **COL pay-in slip required when** | Collector close vs bank deposit confirmation vs finance confirmation |
-| 4 | **One COL → multiple pay-in slips** | Partial deposit batches — allow multiple active `BANK_PAY_IN_SLIP` links per COL? |
-| 5 | **Pay-in slip file types** | PDF only vs PDF + JPEG + PNG (`mimeType` on archive) |
+| 3 | **One COL → multiple pay-in slips** | Partial deposit batches — allow multiple active `BANK_PAY_IN_SLIP` links per COL? |
+| 4 | **Pay-in slip file types** | PDF only vs PDF + JPEG + PNG (`mimeType` on archive) |
+| 5 | **“Ready for POST PAY-IN” detector** | Exact COL statuses / flags that flip `archiveAvailable` from `null` → `false`/`true` |
 | 6 | **Inquiry filter PAY vs vault PAY** | Rename inquiry **PAY** (bank deposit voucher) vs keep label; vault **PAY** = outbound payment only |
 | 7 | **Bank deposit voucher PDF** | Separate `documentKind` for posted `POS_SETTLEMENT_BANK_DEPOSIT` voucher vs inquiry-only |
 | 8 | **PAY vs PAV overlap** | Whether `documentKind=PAY` is distinct from `PAV` in practice or reserved for a future doc family |
@@ -519,13 +584,16 @@ Print links (`?autoprint=1`) **remain browser print** — they do not write vaul
 | 17 | **Denormalized `pdfPath` retirement** | Timeline for `ManualJournalEntry` / `Receipt` |
 | 18 | **Blob vs filesystem** | Single `DOCUMENT_ARCHIVE_STORAGE` env |
 
+**Resolved (no longer open):** COL pay-in slip timing — required **before POST PAY-IN**; COL closes **only on successful POST PAY-IN**; not at collector pickup or finance confirm alone.
+
 ---
 
 ## 14. Approval checklist
 
 - [ ] `DocumentArchive` + `DocumentArchiveLink` split approved
 - [ ] `documentKind` and `archiveKind` taxonomies approved (incl. PAY ≠ pay-in slip; COL many-to-one)
-- [ ] `pdfAvailable` / COL `BANK_PAY_IN_SLIP` rules approved
+- [ ] COL close-on-POST-PAY-IN rule and POST PAY-IN evidence gating approved
+- [ ] `pdfAvailable` / COL `archiveAvailable` rules approved
 - [ ] Phase A / B / C workflow order approved
 - [ ] API shape (multi-link upload) approved
 - [ ] Migration order approved
