@@ -8,7 +8,6 @@ import {
   financeFilterSelect,
   financePdfIndicatorExists,
   financePdfIndicatorMissing,
-  financePdfIndicatorUnsupported,
   voucherInquiryFilterControl,
   voucherInquiryFilterFramed,
   voucherInquiryFilterSelect,
@@ -191,6 +190,16 @@ const postedPcvRow = {
   printPath: "/finance/petty-cash-vouchers/pcv-1?autoprint=1",
 }
 
+const postedPavMissingPdfRow = {
+  ...postedPavRow,
+  pdfAvailable: false,
+}
+
+const postedPavWithPdfRow = {
+  ...postedPavRow,
+  pdfAvailable: true,
+}
+
 const collectorPickupVoucher = {
   id: "voucher-pickup-1",
   voucherNo: "V-2026-06-00001",
@@ -351,8 +360,7 @@ describe("VoucherInquiryListPage", () => {
     expect(html).toContain("/api/finance/manual-journal-entries/mje-posted-1/pdf")
     expect(html).toContain(financePdfIndicatorMissing)
     expect(html).toContain('aria-label="PDF missing"')
-    expect(html).toContain(financePdfIndicatorUnsupported)
-    expect(html).toContain('aria-label="PDF not supported"')
+    expect(html).not.toContain('aria-label="PDF not supported"')
     expect(html).not.toContain(">Yes<")
     expect(html).not.toContain(">Missing<")
   })
@@ -403,8 +411,7 @@ describe("VoucherInquiryListPage", () => {
     expect(html).toContain('data-testid="voucher-inquiry-print-voucher-ref-1"')
     expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-rec-1"')
     expect(html).toContain('aria-label="PDF exists"')
-    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-ref-1"')
-    expect(html).toContain('aria-label="PDF not supported"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-pdf-voucher-ref-1"')
     expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-')
   })
 
@@ -425,11 +432,27 @@ describe("VoucherInquiryListPage", () => {
     expect(html).toContain('data-testid="voucher-inquiry-print-voucher-pav-1"')
     expect(html).toContain('data-testid="voucher-inquiry-print-voucher-rev-1"')
     expect(html).toContain('data-testid="voucher-inquiry-print-voucher-pcv-1"')
-    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-pav-1"')
-    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-rev-1"')
-    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-pcv-1"')
-    expect(html).toContain('aria-label="PDF not supported"')
+    expect(html).not.toContain('data-testid="voucher-inquiry-pdf-voucher-pav-1"')
     expect(html).not.toContain('aria-label="PDF missing"')
+  })
+
+  it("shows missing PDF dot for posted PAV without archive", () => {
+    const html = renderToStaticMarkup(
+      <VoucherInquiryPdfIndicator row={postedPavMissingPdfRow} />
+    )
+    expect(html).toContain(financePdfIndicatorMissing)
+    expect(html).toContain('aria-label="PDF missing"')
+    expect(html).not.toContain("/api/document-archive/by-document/PAV/pav-1/file")
+  })
+
+  it("links posted PAV archive PDF through central vault download", () => {
+    const html = renderToStaticMarkup(
+      <VoucherInquiryPdfIndicator row={postedPavWithPdfRow} />
+    )
+    expect(html).toContain(financePdfIndicatorExists)
+    expect(html).toContain(
+      "/api/document-archive/by-document/PAV/pav-1/file?archiveKind=DOCUMENT_PDF"
+    )
   })
 
   it("uses doc type dropdown with OPB option", () => {

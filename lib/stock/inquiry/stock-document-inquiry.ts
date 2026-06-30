@@ -1,5 +1,10 @@
 import type { DocStatus, Prisma } from "@/generated/prisma/client"
 import type { PrismaClient } from "@/generated/prisma/client"
+import { buildDocumentArchiveRefKey } from "@/lib/document-archive/kinds"
+import { resolvePdfAvailable } from "@/lib/document-archive/resolve-pdf-available"
+import type { VaultArchiveRecord } from "@/lib/document-archive/resolve-status-types"
+import { stockPhaseCodeToDocumentKind } from "@/lib/document-archive/stock-archive-kind"
+import { loadVaultArchivesForRefs } from "@/lib/document-archive/vault-lookup"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import {
@@ -29,7 +34,7 @@ export type {
 
 export type StockDocumentInquiryPrisma = Pick<
   PrismaClient,
-  "stockDocument" | "voucher"
+  "stockDocument" | "voucher" | "documentArchiveLink"
 >
 
 const POSTED_STATUSES: readonly DocStatus[] = ["POSTED", "TRANSFERRED"]
@@ -160,7 +165,8 @@ async function loadVoucherLinks(
 
 function mapInquiryRow(
   row: ListRow,
-  voucherLink: { voucherId: string; journalEntryId: string | null } | undefined
+  voucherLink: { voucherId: string; journalEntryId: string | null } | undefined,
+  vaultByKey?: Map<string, VaultArchiveRecord>
 ): StockDocumentInquiryRow {
   const legalEntityCode = row.legalEntityCode as DocumentEntityCode
   const phaseCode = deriveStockDocumentInquiryPhaseCode({
@@ -168,6 +174,21 @@ function mapInquiryRow(
     status: row.status,
     legalEntityCode,
   })
+  const documentKind = stockPhaseCodeToDocumentKind(phaseCode)
+  const vaultKey = buildDocumentArchiveRefKey(
+    documentKind,
+    row.id,
+    "DOCUMENT_PDF"
+  )
+  const pdfAvailable = resolvePdfAvailable(
+    {
+      documentKind,
+      documentId: row.id,
+      archiveKind: "DOCUMENT_PDF",
+      workflowStatus: row.status,
+    },
+    vaultByKey?.get(vaultKey)
+  )
 
   return {
     id: row.id,
@@ -181,7 +202,7 @@ function mapInquiryRow(
     phaseCode,
     status: row.status,
     posted: isPostedStatus(row.status),
-    pdfAvailable: null,
+    pdfAvailable,
     inquiryPath: buildStockDocumentInquiryPath(row.id),
     printPath: buildStockDocumentInquiryPrintPath(row.id),
     voucherId: voucherLink?.voucherId ?? null,
@@ -228,8 +249,25 @@ export async function listStockDocumentsForInquiry(
     filter.legalEntityCode
   )
 
+  const vaultRefs = page.map((row) => {
+    const phaseCode = deriveStockDocumentInquiryPhaseCode({
+      docType: row.docType,
+      status: row.status,
+      legalEntityCode: row.legalEntityCode as DocumentEntityCode,
+    })
+    return {
+      documentKind: stockPhaseCodeToDocumentKind(phaseCode),
+      documentId: row.id,
+      archiveKind: "DOCUMENT_PDF" as const,
+    }
+  })
+  const vaultByKey =
+    vaultRefs.length > 0
+      ? await loadVaultArchivesForRefs(prisma, vaultRefs)
+      : new Map<string, VaultArchiveRecord>()
+
   const documents = page.map((row) =>
-    mapInquiryRow(row, voucherLinks.get(row.id))
+    mapInquiryRow(row, voucherLinks.get(row.id), vaultByKey)
   )
 
   return { documents, total }

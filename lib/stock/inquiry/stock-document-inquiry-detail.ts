@@ -1,4 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import { buildDocumentArchiveRefKey } from "@/lib/document-archive/kinds"
+import { resolvePdfAvailable } from "@/lib/document-archive/resolve-pdf-available"
+import { stockPhaseCodeToDocumentKind } from "@/lib/document-archive/stock-archive-kind"
+import { loadVaultArchivesForRefs } from "@/lib/document-archive/vault-lookup"
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { toMoney, ZERO } from "@/lib/finance/decimal"
@@ -15,7 +19,7 @@ import { STOCK_DOCUMENT_PHASE_THAI_LABELS } from "./stock-document-phase-labels"
 
 export type StockDocumentInquiryDetailPrisma = Pick<
   PrismaClient,
-  "stockDocument" | "staff" | "voucher" | "stockTransaction"
+  "stockDocument" | "staff" | "voucher" | "stockTransaction" | "documentArchiveLink"
 >
 
 function formatMoney(value: number | string | null | undefined): string | null {
@@ -143,6 +147,28 @@ export async function getStockDocumentInquiryDetail(
   })
 
   const posted = doc.status === "POSTED" || doc.status === "TRANSFERRED"
+  const documentKind = stockPhaseCodeToDocumentKind(phaseCode)
+  const vaultByKey = await loadVaultArchivesForRefs(prisma, [
+    {
+      documentKind,
+      documentId: doc.id,
+      archiveKind: "DOCUMENT_PDF",
+    },
+  ])
+  const vaultKey = buildDocumentArchiveRefKey(
+    documentKind,
+    doc.id,
+    "DOCUMENT_PDF"
+  )
+  const pdfAvailable = resolvePdfAvailable(
+    {
+      documentKind,
+      documentId: doc.id,
+      archiveKind: "DOCUMENT_PDF",
+      workflowStatus: doc.status,
+    },
+    vaultByKey.get(vaultKey)
+  )
 
   return {
     id: doc.id,
@@ -158,7 +184,7 @@ export async function getStockDocumentInquiryDetail(
     staffName: primaryStaffId ? staffById.get(primaryStaffId) ?? null : null,
     status: doc.status,
     posted,
-    pdfAvailable: null,
+    pdfAvailable,
     printPath: buildStockDocumentInquiryPrintPath(doc.id),
     voucherId: voucher?.id ?? null,
     journalEntryId: voucher?.journalEntry?.id ?? null,

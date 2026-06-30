@@ -58,6 +58,19 @@ jest.mock("@/lib/finance-ui/manual-journal-entry-session", () => ({
   }),
 }))
 
+jest.mock("@/components/document-archive/DocumentArchiveVaultActions", () => ({
+  DocumentArchiveVaultActions: () => (
+    <button type="button" data-testid="action-upload-pdf">
+      Upload PDF
+    </button>
+  ),
+}))
+
+jest.mock("@/lib/document-archive-ui/client", () => ({
+  fetchDocumentArchivePdfStatus: jest.fn().mockResolvedValue(false),
+  uploadDocumentArchivePdf: jest.fn(),
+}))
+
 const mockPayFromAccounts = [
   {
     id: "acc-bank-1021001",
@@ -356,6 +369,7 @@ describe("PaymentVoucherEditorPage edit by status", () => {
     expect(html).toContain('data-testid="finance-voucher-print-root"')
     expect(html).toContain('data-testid="finance-voucher-print-sheet"')
     expect(html).toContain('data-testid="action-print-out"')
+    expect(html).toContain('data-testid="action-upload-pdf"')
     expect(html).toContain("Payee")
     expect(html).toContain("Pay from")
     expect(html).toContain("posted-journal-link")

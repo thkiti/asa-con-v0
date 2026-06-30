@@ -1,3 +1,5 @@
+import { buildDocumentArchiveByDocumentDownloadPath } from "@/lib/document-archive-ui/paths"
+import { resolveOperationalVoucherDocumentKindByDocType } from "@/lib/document-archive/operational-voucher-kind"
 import { buildManualJournalPdfApiPath } from "@/lib/finance/inquiry/finance-document-inquiry-links"
 import type { FinanceDocumentInquiryRow } from "@/lib/finance-ui/types"
 import {
@@ -6,40 +8,55 @@ import {
   financePdfIndicatorLink,
   financePdfIndicatorMissing,
   financePdfIndicatorStatic,
-  financePdfIndicatorUnsupported,
 } from "@/lib/finance-ui/finance-visual-classes"
 
 function resolvePdfApiHref(row: FinanceDocumentInquiryRow): string | null {
-  if (
-    row.pdfAvailable &&
-    row.operationalDocumentId &&
-    (row.documentTypeCode === "MJV" || row.documentTypeCode === "OPB")
-  ) {
+  if (!row.pdfAvailable || !row.operationalDocumentId) {
+    return null
+  }
+
+  if (row.documentTypeCode === "MJV" || row.documentTypeCode === "OPB") {
     return buildManualJournalPdfApiPath(row.operationalDocumentId)
   }
+
+  const operationalKind = resolveOperationalVoucherDocumentKindByDocType(
+    row.documentTypeCode
+  )
+  if (operationalKind) {
+    return buildDocumentArchiveByDocumentDownloadPath(
+      operationalKind,
+      row.operationalDocumentId
+    )
+  }
+
   return null
 }
 
-function resolvePdfStatusLabel(pdfAvailable: boolean | null): string {
-  if (pdfAvailable === true) return "PDF exists"
-  if (pdfAvailable === false) return "PDF missing"
-  return "PDF not supported"
+function resolvePdfStatusLabel(pdfAvailable: boolean): string {
+  return pdfAvailable ? "PDF exists" : "PDF missing"
 }
 
-function resolvePdfIndicatorClass(pdfAvailable: boolean | null): string {
-  if (pdfAvailable === true) return `${financePdfIndicator} ${financePdfIndicatorExists}`
-  if (pdfAvailable === false) return `${financePdfIndicator} ${financePdfIndicatorMissing}`
-  return `${financePdfIndicator} ${financePdfIndicatorUnsupported}`
+function resolvePdfIndicatorClass(pdfAvailable: boolean): string {
+  return pdfAvailable
+    ? `${financePdfIndicator} ${financePdfIndicatorExists}`
+    : `${financePdfIndicator} ${financePdfIndicatorMissing}`
 }
 
 type VoucherInquiryPdfIndicatorProps = {
   row: FinanceDocumentInquiryRow
 }
 
+/** Red dot when archive PDF is missing; green when present; hidden when unsupported. */
 export function VoucherInquiryPdfIndicator({ row }: VoucherInquiryPdfIndicatorProps) {
+  if (row.pdfAvailable === null) {
+    return null
+  }
+
   const href = resolvePdfApiHref(row)
   const label = resolvePdfStatusLabel(row.pdfAvailable)
-  const dot = <span className={resolvePdfIndicatorClass(row.pdfAvailable)} aria-hidden="true" />
+  const dot = (
+    <span className={resolvePdfIndicatorClass(row.pdfAvailable)} aria-hidden="true" />
+  )
 
   if (href) {
     return (

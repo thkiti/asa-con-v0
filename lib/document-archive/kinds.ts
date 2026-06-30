@@ -4,19 +4,13 @@ export type { DocumentArchiveKind, DocumentKind }
 
 export type ArchiveRequirementPolicy = "required" | "optional" | "unsupported"
 
-/** Document kinds with posted PDF archive expectation in Phase 2. */
+/** Document kinds with posted PDF archive expectation. */
 export const POSTED_PDF_REQUIRED_DOCUMENT_KINDS = new Set<DocumentKind>([
   "MJV",
   "OPB",
-])
-
-/** Document kinds where archive column stays neutral until a later phase. */
-export const ARCHIVE_UNSUPPORTED_DOCUMENT_KINDS = new Set<DocumentKind>([
   "PAV",
   "REV",
   "PCV",
-  "PAY",
-  "REF",
   "CNT",
   "ADJ",
   "ORD",
@@ -24,6 +18,34 @@ export const ARCHIVE_UNSUPPORTED_DOCUMENT_KINDS = new Set<DocumentKind>([
   "ORS",
   "ORI",
 ])
+
+/** Stock inquiry phase codes map 1:1 to vault document kinds. */
+export const STOCK_DOCUMENT_ARCHIVE_KINDS = new Set<DocumentKind>([
+  "CNT",
+  "ADJ",
+  "ORD",
+  "DEY",
+  "ORS",
+  "ORI",
+])
+
+/** Document kinds where archive column stays neutral until a later phase. */
+export const ARCHIVE_UNSUPPORTED_DOCUMENT_KINDS = new Set<DocumentKind>([
+  "PAY",
+  "REF",
+])
+
+function isPostedPdfRequiredWorkflowStatus(
+  documentKind: DocumentKind,
+  workflowStatus: string
+): boolean {
+  const status = workflowStatus.trim().toUpperCase()
+  if (status === "POSTED") return true
+  if (STOCK_DOCUMENT_ARCHIVE_KINDS.has(documentKind) && status === "TRANSFERRED") {
+    return true
+  }
+  return false
+}
 
 export function buildDocumentArchiveRefKey(
   documentKind: string,
@@ -88,7 +110,9 @@ export function resolveArchiveRequirementPolicy(input: {
     POSTED_PDF_REQUIRED_DOCUMENT_KINDS.has(documentKind) &&
     archiveKind === "DOCUMENT_PDF"
   ) {
-    return workflowStatus === "POSTED" ? "required" : "optional"
+    return isPostedPdfRequiredWorkflowStatus(documentKind, workflowStatus)
+      ? "required"
+      : "optional"
   }
 
   if (

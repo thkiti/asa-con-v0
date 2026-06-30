@@ -101,7 +101,7 @@ describe("resolveDocumentArchiveStatus", () => {
     }
   })
 
-  it("returns null for unsupported kinds such as PAV", () => {
+  it("returns false for posted PAV when required but vault archive is missing", () => {
     expect(
       resolvePdfAvailable({
         documentKind: "PAV",
@@ -109,7 +109,66 @@ describe("resolveDocumentArchiveStatus", () => {
         archiveKind: "DOCUMENT_PDF",
         workflowStatus: "POSTED",
       })
+    ).toBe(false)
+  })
+
+  it("returns null for unposted PAV without archive", () => {
+    expect(
+      resolvePdfAvailable({
+        documentKind: "PAV",
+        documentId: "pav-draft",
+        archiveKind: "DOCUMENT_PDF",
+        workflowStatus: "DRAFT",
+      })
     ).toBe(null)
+  })
+
+  it("returns true for posted REV when vault archive is active", () => {
+    process.env.DOCUMENT_ARCHIVE_PDF_STORAGE = "filesystem"
+    expect(
+      resolvePdfAvailable(
+        {
+          documentKind: "REV",
+          documentId: "rev-1",
+          archiveKind: "DOCUMENT_PDF",
+          workflowStatus: "POSTED",
+        },
+        activeVaultHit()
+      )
+    ).toBe(true)
+  })
+
+  it("returns false for posted stock ORD when archive is missing", () => {
+    expect(
+      resolvePdfAvailable({
+        documentKind: "ORD",
+        documentId: "ord-1",
+        archiveKind: "DOCUMENT_PDF",
+        workflowStatus: "POSTED",
+      })
+    ).toBe(false)
+  })
+
+  it("returns null for draft stock CNT rows", () => {
+    expect(
+      resolvePdfAvailable({
+        documentKind: "CNT",
+        documentId: "cnt-1",
+        archiveKind: "DOCUMENT_PDF",
+        workflowStatus: "DRAFT",
+      })
+    ).toBe(null)
+  })
+
+  it("returns false for transferred stock ORI when archive is missing", () => {
+    expect(
+      resolvePdfAvailable({
+        documentKind: "ORI",
+        documentId: "ori-1",
+        archiveKind: "DOCUMENT_PDF",
+        workflowStatus: "TRANSFERRED",
+      })
+    ).toBe(false)
   })
 
   it("returns false for posted MJV when required but legacy pdf is missing", () => {

@@ -1,6 +1,10 @@
 "use client"
 
 import { useCallback } from "react"
+import {
+  DocumentArchiveVaultActions,
+  type DocumentArchiveVaultConfig,
+} from "@/components/document-archive/DocumentArchiveVaultActions"
 import { buildStockDocumentInquiryPrintPageCss } from "@/lib/stock-ui/stock-document-inquiry-print-page-css"
 
 const STOCK_DOCUMENT_INQUIRY_PRINT_PAGE_STYLE_ID =
@@ -31,11 +35,13 @@ async function runStockDocumentInquiryPrint(): Promise<void> {
 
 type StockDocumentPrintActionsProps = {
   disabled?: boolean
+  archiveVault?: DocumentArchiveVaultConfig | null
 }
 
 /** Browser print / save-as-PDF controls for finance stock document inquiry. */
 export function StockDocumentPrintActions({
   disabled = false,
+  archiveVault = null,
 }: StockDocumentPrintActionsProps) {
   const handlePrint = useCallback(() => {
     if (disabled) return
@@ -65,6 +71,9 @@ export function StockDocumentPrintActions({
       >
         Save as PDF
       </button>
+      {archiveVault ? (
+        <DocumentArchiveVaultActions {...archiveVault} disabled={disabled} />
+      ) : null}
     </div>
   )
 }

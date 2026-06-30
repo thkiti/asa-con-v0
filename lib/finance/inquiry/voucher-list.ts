@@ -26,6 +26,10 @@ import {
   resolvePostedVoucherDocumentNo,
 } from "./finance-document-inquiry-helpers"
 import { buildDocumentArchiveRefKey } from "@/lib/document-archive/kinds"
+import {
+  OPERATIONAL_VOUCHER_REF_TYPES,
+  resolveOperationalVoucherDocumentKind,
+} from "@/lib/document-archive/operational-voucher-kind"
 import { resolvePdfAvailable } from "@/lib/document-archive/resolve-pdf-available"
 import { loadVaultArchivesForRefs } from "@/lib/document-archive/vault-lookup"
 import type { VaultArchiveRecord } from "@/lib/document-archive/resolve-status-types"
@@ -266,6 +270,24 @@ function mapVoucherRow(
       },
       vaultByKey?.get(vaultKey)
     )
+  } else if (OPERATIONAL_VOUCHER_REF_TYPES.has(row.refType)) {
+    const documentKind = resolveOperationalVoucherDocumentKind(row.refType)
+    if (documentKind) {
+      const vaultKey = buildDocumentArchiveRefKey(
+        documentKind,
+        row.refId,
+        "DOCUMENT_PDF"
+      )
+      pdfAvailable = resolvePdfAvailable(
+        {
+          documentKind,
+          documentId: row.refId,
+          archiveKind: "DOCUMENT_PDF",
+          workflowStatus: row.status,
+        },
+        vaultByKey?.get(vaultKey)
+      )
+    }
   }
   if (row.refType === FINANCE_REF_TYPES.POS_SALE && pdfAvailable === null && posReceipt) {
     pdfAvailable = resolvePosReceiptArchivePdfAvailable(posReceipt.pdfPath)
@@ -400,9 +422,23 @@ export async function listFinanceVouchers(
         archiveKind: "DOCUMENT_PDF" as const,
       }
     })
+  const operationalVoucherRefs = (rows as VoucherListDbRow[])
+    .filter((row) => OPERATIONAL_VOUCHER_REF_TYPES.has(row.refType))
+    .map((row) => {
+      const documentKind = resolveOperationalVoucherDocumentKind(row.refType)
+      return documentKind
+        ? {
+            documentKind,
+            documentId: row.refId,
+            archiveKind: "DOCUMENT_PDF" as const,
+          }
+        : null
+    })
+    .filter((ref): ref is NonNullable<typeof ref> => ref != null)
+  const vaultRefs = [...manualJournalRefs, ...operationalVoucherRefs]
   const vaultByKey =
-    manualJournalRefs.length > 0
-      ? await loadVaultArchivesForRefs(prisma, manualJournalRefs)
+    vaultRefs.length > 0
+      ? await loadVaultArchivesForRefs(prisma, vaultRefs)
       : new Map<string, VaultArchiveRecord>()
 
   let vouchers = applyPostQueryFilters(

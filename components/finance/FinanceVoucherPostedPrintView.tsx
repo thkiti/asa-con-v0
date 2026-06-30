@@ -1,6 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import {
+  DocumentArchiveVaultActions,
+  type DocumentArchiveVaultConfig,
+} from "@/components/document-archive/DocumentArchiveVaultActions"
 import { FinanceLegacyPdfSnapshotPanel } from "@/components/finance/FinanceLegacyPdfSnapshotPanel"
 import { FinancePrintActions } from "@/components/finance/FinancePrintActions"
 import { FinanceVoucherPrintFontProbe } from "@/components/finance/FinanceVoucherPrintFontProbe"
@@ -30,6 +34,7 @@ type FinanceVoucherPostedPrintViewProps = {
   disabled?: boolean
   showArchivePanel?: boolean
   archive?: FinanceVoucherPostedArchiveProps
+  archiveVault?: DocumentArchiveVaultConfig
 }
 
 /** Canonical POSTED view: browser print/save PDF sheet + optional archived snapshot panel. */
@@ -45,6 +50,7 @@ export function FinanceVoucherPostedPrintView({
   disabled = false,
   showArchivePanel = true,
   archive,
+  archiveVault,
 }: FinanceVoucherPostedPrintViewProps) {
   return (
     <div
@@ -53,7 +59,12 @@ export function FinanceVoucherPostedPrintView({
     >
       <div className="no-print flex w-full flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <FinancePrintActions disabled={disabled} />
+          <div className="flex flex-wrap items-center gap-2">
+            <FinancePrintActions disabled={disabled} />
+            {archiveVault ? (
+              <DocumentArchiveVaultActions {...archiveVault} disabled={disabled} />
+            ) : null}
+          </div>
           {postedJournalHref ? (
             <Link
               href={postedJournalHref}

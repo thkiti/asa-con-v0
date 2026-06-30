@@ -594,6 +594,14 @@ export function PaymentVoucherEditorPage({
           postedJournalHref={postedJournalHref}
           disabled={busyAction !== null}
           showArchivePanel={false}
+          archiveVault={{
+            documentKind: "PAV",
+            documentId: entry.id,
+            documentNo: documentNo,
+            legalEntityCode,
+            branchId: entry.branchId,
+            workflowStatus: entry.status,
+          }}
         />
       ) : isCancelled && entry ? (
         <div className="space-y-4">

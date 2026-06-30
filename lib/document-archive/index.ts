@@ -22,6 +22,7 @@ export {
   type ArchiveRequirementPolicy,
   ARCHIVE_UNSUPPORTED_DOCUMENT_KINDS,
   POSTED_PDF_REQUIRED_DOCUMENT_KINDS,
+  STOCK_DOCUMENT_ARCHIVE_KINDS,
 } from "./kinds"
 
 export type {

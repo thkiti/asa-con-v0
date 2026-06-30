@@ -11,6 +11,7 @@ import {
   buildStockDocumentVoucherInquiryPath,
 } from "@/lib/stock/inquiry/stock-document-inquiry-links"
 import { formatStockDocumentInquiryHeader } from "@/lib/stock/inquiry/stock-document-phase-labels"
+import { stockPhaseCodeToDocumentKind } from "@/lib/document-archive/stock-archive-kind"
 import {
   buildStockDocumentInquiryReturnPath,
   fetchStockDocumentInquiryDetail,
@@ -117,7 +118,21 @@ export function StockDocumentInquiryDetailView({
 
       {!loading && !error && detail ? (
         <div className="space-y-4" data-testid="stock-document-inquiry-detail">
-          <StockDocumentPrintActions />
+          <StockDocumentPrintActions
+            archiveVault={
+              detail.posted
+                ? {
+                    documentKind: stockPhaseCodeToDocumentKind(detail.phaseCode),
+                    documentId: detail.id,
+                    documentNo: detail.documentNo,
+                    legalEntityCode: detail.legalEntityCode,
+                    branchId: detail.branchId,
+                    workflowStatus: detail.status,
+                    initialPdfAvailable: detail.pdfAvailable,
+                  }
+                : null
+            }
+          />
           <div className={financeTableScroll}>
             <table className={financeTable} data-testid="stock-document-inquiry-lines">
               <thead>
