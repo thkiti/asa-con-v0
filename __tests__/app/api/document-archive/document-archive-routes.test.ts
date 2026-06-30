@@ -90,7 +90,8 @@ describe("document archive API routes", () => {
         documentKind: "MJV",
         documentId: "mjv-1",
         archiveKind: "DOCUMENT_PDF",
-      })
+      }),
+      expect.objectContaining({ legalEntityCode: "AS" })
     )
   })
 

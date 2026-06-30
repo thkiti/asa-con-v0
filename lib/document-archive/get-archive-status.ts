@@ -3,8 +3,17 @@ import type {
   DocumentKind,
   PrismaClient,
 } from "@/generated/prisma/client"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { buildDocumentArchiveRefKey } from "./kinds"
 import type { ArchiveRequirementPolicy } from "./kinds"
+import {
+  ensureLegacyMjvArchiveLink,
+  ensureLegacyReceiptArchiveLink,
+  loadLegacyMjvArchiveContext,
+  loadLegacyReceiptArchiveContext,
+  loadLegacyPilotReceiptArchiveRow,
+  type LegacyBridgeDb,
+} from "./legacy-bridge"
 import {
   resolveDocumentArchiveStatus,
 } from "./resolve-status"
@@ -33,6 +42,9 @@ export type DocumentArchiveStatusQuery = {
   requiredPolicy?: ArchiveRequirementPolicy
   legacyPdfPath?: string | null
   legacyPdfBlobUrl?: string | null
+  legacyReceiptPdfPath?: string | null
+  legacyDocumentArchive?: import("./types").DocumentArchiveStorageFields | null
+  branchId?: string | null
 }
 
 export type DocumentArchiveStatusPayload = {
@@ -49,7 +61,14 @@ export type DocumentArchiveStatusPayload = {
 export type DocumentArchiveStatusDb = Pick<
   PrismaClient,
   "documentArchive" | "documentArchiveLink"
->
+> &
+  Partial<Pick<PrismaClient, "manualJournalEntry" | "receipt">>
+
+export type DocumentArchiveStatusOptions = {
+  legalEntityCode?: DocumentEntityCode | null
+  /** Lazy-create vault links from legacy rows on status/download paths. */
+  enableLegacyBridge?: boolean
+}
 
 function metadataFromArchiveRow(
   row: ActiveArchiveDownloadRow | null | undefined
@@ -57,7 +76,7 @@ function metadataFromArchiveRow(
   DocumentArchiveStatusPayload,
   "archiveId" | "fileName" | "mimeType" | "sizeBytes" | "archivedAt"
 > {
-  if (!row || !isActiveArchiveDownloadRow(row)) {
+  if (!row || !isDocumentArchiveStorageReadable(row)) {
     return {
       archiveId: null,
       fileName: null,
@@ -67,7 +86,7 @@ function metadataFromArchiveRow(
     }
   }
   return {
-    archiveId: row.id,
+    archiveId: row.id.startsWith("legacy-receipt:") ? null : row.id,
     fileName: row.fileName,
     mimeType: row.mimeType,
     sizeBytes: row.sizeBytes,
@@ -75,34 +94,120 @@ function metadataFromArchiveRow(
   }
 }
 
-export async function getDocumentArchiveStatus(
+async function enrichStatusQueryFromLegacy(
   db: DocumentArchiveStatusDb,
-  query: DocumentArchiveStatusQuery
+  query: DocumentArchiveStatusQuery,
+  legalEntityCode?: DocumentEntityCode | null
+): Promise<DocumentArchiveStatusQuery> {
+  if (query.documentKind === "REC" && db.receipt) {
+    const legacy = await loadLegacyReceiptArchiveContext(
+      { receipt: db.receipt },
+      query.documentId
+    )
+    if (!legacy) return query
+    return {
+      ...query,
+      documentNo: query.documentNo ?? legacy.documentNo,
+      branchId: query.branchId ?? legacy.branchId,
+      legacyReceiptPdfPath: legacy.legacyReceiptPdfPath,
+      legacyPdfPath: legacy.legacyPdfPath,
+      legacyPdfBlobUrl: legacy.legacyPdfBlobUrl,
+      legacyDocumentArchive: legacy.legacyDocumentArchive,
+    }
+  }
+
+  if (
+    (query.documentKind === "MJV" || query.documentKind === "OPB") &&
+    db.manualJournalEntry
+  ) {
+    const legacy = await loadLegacyMjvArchiveContext(
+      { manualJournalEntry: db.manualJournalEntry },
+      {
+        manualJournalEntryId: query.documentId,
+        legalEntityCode,
+      }
+    )
+    if (!legacy) return query
+    return {
+      ...query,
+      documentNo: query.documentNo ?? legacy.documentNo,
+      workflowStatus: query.workflowStatus ?? legacy.workflowStatus,
+      legacyPdfPath: legacy.legacyPdfPath,
+      legacyPdfBlobUrl: legacy.legacyPdfBlobUrl,
+    }
+  }
+
+  return query
+}
+
+async function maybeEnsureLegacyBridgeLink(
+  db: DocumentArchiveStatusDb & Partial<LegacyBridgeDb>,
+  query: DocumentArchiveStatusQuery,
+  legalEntityCode?: DocumentEntityCode | null
+): Promise<void> {
+  if (!db.$transaction) return
+
+  if (query.documentKind === "REC") {
+    await ensureLegacyReceiptArchiveLink(db as LegacyBridgeDb, {
+      receiptId: query.documentId,
+      documentNo: query.documentNo,
+      legalEntityCode,
+    })
+    return
+  }
+
+  if (query.documentKind === "MJV" || query.documentKind === "OPB") {
+    await ensureLegacyMjvArchiveLink(db as LegacyBridgeDb, {
+      documentKind: query.documentKind,
+      manualJournalEntryId: query.documentId,
+      documentNo: query.documentNo,
+      legalEntityCode,
+    })
+  }
+}
+
+export async function getDocumentArchiveStatus(
+  db: DocumentArchiveStatusDb & Partial<LegacyBridgeDb>,
+  query: DocumentArchiveStatusQuery,
+  options?: DocumentArchiveStatusOptions
 ): Promise<DocumentArchiveStatusPayload> {
+  const enableLegacyBridge = options?.enableLegacyBridge !== false
+  let enrichedQuery = await enrichStatusQueryFromLegacy(
+    db,
+    query,
+    options?.legalEntityCode
+  )
+
+  if (enableLegacyBridge) {
+    await maybeEnsureLegacyBridgeLink(db, enrichedQuery, options?.legalEntityCode)
+  }
+
   const vaultByKey = await loadVaultArchivesForRefs(db, [
     {
-      documentKind: query.documentKind,
-      documentId: query.documentId,
-      archiveKind: query.archiveKind,
+      documentKind: enrichedQuery.documentKind,
+      documentId: enrichedQuery.documentId,
+      archiveKind: enrichedQuery.archiveKind,
     },
   ])
   const key = buildDocumentArchiveRefKey(
-    query.documentKind,
-    query.documentId,
-    query.archiveKind
+    enrichedQuery.documentKind,
+    enrichedQuery.documentId,
+    enrichedQuery.archiveKind
   )
   const vaultHit = vaultByKey.get(key) ?? null
 
   const resolved = resolveDocumentArchiveStatus(
     {
-      documentKind: query.documentKind,
-      documentId: query.documentId,
-      documentNo: query.documentNo,
-      archiveKind: query.archiveKind,
-      workflowStatus: query.workflowStatus,
-      requiredPolicy: query.requiredPolicy,
-      legacyPdfPath: query.legacyPdfPath,
-      legacyPdfBlobUrl: query.legacyPdfBlobUrl,
+      documentKind: enrichedQuery.documentKind,
+      documentId: enrichedQuery.documentId,
+      documentNo: enrichedQuery.documentNo,
+      archiveKind: enrichedQuery.archiveKind,
+      workflowStatus: enrichedQuery.workflowStatus,
+      requiredPolicy: enrichedQuery.requiredPolicy,
+      legacyPdfPath: enrichedQuery.legacyPdfPath,
+      legacyPdfBlobUrl: enrichedQuery.legacyPdfBlobUrl,
+      legacyReceiptPdfPath: enrichedQuery.legacyReceiptPdfPath,
+      legacyDocumentArchive: enrichedQuery.legacyDocumentArchive,
     },
     vaultHit
   )
@@ -113,11 +218,22 @@ export async function getDocumentArchiveStatus(
       where: {
         id: vaultHit.archiveId,
         status: "ACTIVE",
-        archiveKind: query.archiveKind,
+        archiveKind: enrichedQuery.archiveKind,
       },
       select: activeArchiveDownloadSelect,
     })
     metadata = metadataFromArchiveRow(row)
+  } else if (
+    resolved.pdfAvailable &&
+    enrichedQuery.documentKind === "REC" &&
+    db.receipt
+  ) {
+    metadata = metadataFromArchiveRow(
+      await loadLegacyPilotReceiptArchiveRow(
+        db as Pick<PrismaClient, "receipt" | "documentArchive">,
+        enrichedQuery.documentId
+      )
+    )
   }
 
   return {
@@ -130,8 +246,9 @@ export async function getDocumentArchiveStatus(
 
 export type DocumentArchiveDownloadDb = Pick<
   PrismaClient,
-  "documentArchive" | "documentArchiveLink"
->
+  "documentArchive" | "documentArchiveLink" | "receipt" | "manualJournalEntry"
+> &
+  Partial<LegacyBridgeDb>
 
 export async function loadActiveArchiveById(
   db: DocumentArchiveDownloadDb,
@@ -203,6 +320,46 @@ export async function loadActiveArchiveByDocumentRef(
   }
 
   return readable[0] ?? null
+}
+
+export async function loadActiveArchiveByDocumentRefWithBridge(
+  db: DocumentArchiveDownloadDb,
+  input: {
+    documentKind: DocumentKind
+    documentId: string
+    archiveKind: DocumentArchiveKind
+    legalEntityCode?: DocumentEntityCode | null
+    documentNo?: string | null
+  }
+): Promise<ActiveArchiveDownloadRow | null> {
+  let row = await loadActiveArchiveByDocumentRef(db, input)
+  if (row) return row
+
+  if (db.$transaction) {
+    if (input.documentKind === "REC") {
+      await ensureLegacyReceiptArchiveLink(db as LegacyBridgeDb, {
+        receiptId: input.documentId,
+        documentNo: input.documentNo,
+        legalEntityCode: input.legalEntityCode,
+      })
+    } else if (input.documentKind === "MJV" || input.documentKind === "OPB") {
+      await ensureLegacyMjvArchiveLink(db as LegacyBridgeDb, {
+        documentKind: input.documentKind,
+        manualJournalEntryId: input.documentId,
+        documentNo: input.documentNo,
+        legalEntityCode: input.legalEntityCode,
+      })
+    }
+
+    row = await loadActiveArchiveByDocumentRef(db, input)
+    if (row) return row
+  }
+
+  if (input.documentKind === "REC") {
+    return loadLegacyPilotReceiptArchiveRow(db, input.documentId)
+  }
+
+  return null
 }
 
 export function safeArchiveDownloadFileName(

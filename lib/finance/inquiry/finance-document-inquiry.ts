@@ -26,6 +26,7 @@ export type FinanceDocumentInquiryPrisma = Pick<
   | "paymentVoucher"
   | "revenueVoucher"
   | "pettyCashVoucher"
+  | "documentArchiveLink"
 >
 
 function mapPostedVoucherRow(row: FinanceVoucherListRow): FinanceDocumentInquiryRow {

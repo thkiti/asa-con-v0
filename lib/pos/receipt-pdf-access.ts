@@ -24,32 +24,46 @@ export async function loadReceiptPdfAccessRow(
     select: {
       receiptNo: true,
       branchId: true,
+      pdfPath: true,
+      pdfBlobUrl: true,
       documentArchive: {
         select: {
           status: true,
           pdfPath: true,
           pdfBlobUrl: true,
+          storagePath: true,
+          storageUrl: true,
         },
       },
     },
   })
 
-  if (!receipt?.documentArchive) return null
+  if (!receipt) return null
 
   const archive = receipt.documentArchive
-  if (!isDocumentArchivePdfReadable(archive)) {
-    return null
+  if (archive && isDocumentArchivePdfReadable(archive)) {
+    const pdfPath = String(archive.storagePath ?? archive.pdfPath ?? "").trim()
+    if (pdfPath) {
+      return {
+        receiptNo: receipt.receiptNo,
+        branchId: receipt.branchId,
+        pdfPath,
+        pdfBlobUrl: archive.storageUrl ?? archive.pdfBlobUrl ?? null,
+      }
+    }
   }
 
-  const pdfPath = String(archive.pdfPath ?? "").trim()
-  if (!pdfPath) return null
-
-  return {
-    receiptNo: receipt.receiptNo,
-    branchId: receipt.branchId,
-    pdfPath,
-    pdfBlobUrl: archive.pdfBlobUrl ?? null,
+  const receiptPdfPath = String(receipt.pdfPath ?? "").trim()
+  if (receiptPdfPath) {
+    return {
+      receiptNo: receipt.receiptNo,
+      branchId: receipt.branchId,
+      pdfPath: receiptPdfPath,
+      pdfBlobUrl: receipt.pdfBlobUrl ?? null,
+    }
   }
+
+  return null
 }
 
 export function assertReceiptPdfBranchAccess(

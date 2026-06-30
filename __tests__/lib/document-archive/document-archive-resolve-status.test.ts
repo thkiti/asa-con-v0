@@ -64,12 +64,24 @@ describe("resolveDocumentArchiveStatus", () => {
         documentId: "mjv-1",
         archiveKind: "DOCUMENT_PDF",
         workflowStatus: "POSTED",
+        legacyPdfPath: null,
       })
     ).toEqual({
       pdfAvailable: false,
       archiveAvailable: null,
       source: "legacy",
     })
+  })
+
+  it("returns null for unposted MJV without archive", () => {
+    expect(
+      resolvePdfAvailable({
+        documentKind: "MJV",
+        documentId: "mjv-draft",
+        archiveKind: "DOCUMENT_PDF",
+        workflowStatus: "DRAFT",
+      })
+    ).toBe(null)
   })
 
   it("does not count SUPERSEDED/VOID/FAILED vault rows as available", () => {

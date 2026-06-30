@@ -54,6 +54,8 @@ describe("getDocumentArchiveStatus service", () => {
           status: "ACTIVE",
         }),
       },
+      manualJournalEntry: { findFirst: jest.fn() },
+      receipt: { findUnique: jest.fn() },
     }
 
     const status = await getDocumentArchiveStatus(db as never, {
@@ -61,7 +63,7 @@ describe("getDocumentArchiveStatus service", () => {
       documentId: "mjv-1",
       archiveKind: "DOCUMENT_PDF",
       workflowStatus: "POSTED",
-    })
+    }, { enableLegacyBridge: false })
 
     expect(status.pdfAvailable).toBe(true)
     expect(status.source).toBe("vault")

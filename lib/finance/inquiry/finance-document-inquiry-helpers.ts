@@ -3,16 +3,16 @@ import { isManualJournalPdfReadable } from "@/lib/finance/manual-journal-entry/m
 import type { FinanceVoucherListRow } from "./voucher-list-types"
 
 const MANUAL_JOURNAL_FAMILY = new Set<string>([
-  ...[
-    FINANCE_REF_TYPES.MANUAL_JOURNAL,
-    FINANCE_REF_TYPES.MANUAL_JOURNAL_REVERSAL,
-    FINANCE_REF_TYPES.OPENING_BALANCE_JOURNAL,
-    FINANCE_REF_TYPES.ADJUSTMENT_JOURNAL,
-    FINANCE_REF_TYPES.RECLASS_JOURNAL,
-    FINANCE_REF_TYPES.ACCRUAL_JOURNAL,
-    FINANCE_REF_TYPES.AUDITOR_ADJUSTMENT_JOURNAL,
-  ],
+  FINANCE_REF_TYPES.MANUAL_JOURNAL,
+  FINANCE_REF_TYPES.MANUAL_JOURNAL_REVERSAL,
+  FINANCE_REF_TYPES.OPENING_BALANCE_JOURNAL,
+  FINANCE_REF_TYPES.ADJUSTMENT_JOURNAL,
+  FINANCE_REF_TYPES.RECLASS_JOURNAL,
+  FINANCE_REF_TYPES.ACCRUAL_JOURNAL,
+  FINANCE_REF_TYPES.AUDITOR_ADJUSTMENT_JOURNAL,
 ])
+
+export { MANUAL_JOURNAL_FAMILY }
 
 export function resolvePostedVoucherPdfAvailable(input: {
   refType: string
@@ -28,7 +28,7 @@ export function resolvePostedVoucherPdfAvailable(input: {
   }
 
   if (input.status !== "POSTED") {
-    return false
+    return null
   }
 
   const entry = input.manualJournalEntry

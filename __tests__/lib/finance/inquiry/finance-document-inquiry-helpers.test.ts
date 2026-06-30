@@ -20,6 +20,7 @@ describe("finance document inquiry helpers", () => {
   })
 
   it("resolves posted manual journal PDF availability", () => {
+    process.env.DOCUMENT_ARCHIVE_PDF_STORAGE = "filesystem"
     expect(
       resolvePostedVoucherPdfAvailable({
         refType: FINANCE_REF_TYPES.MANUAL_JOURNAL,
@@ -31,6 +32,18 @@ describe("finance document inquiry helpers", () => {
         },
       })
     ).toBe(true)
+
+    expect(
+      resolvePostedVoucherPdfAvailable({
+        refType: FINANCE_REF_TYPES.MANUAL_JOURNAL,
+        status: "CONFIRMED",
+        manualJournalEntry: {
+          status: "CONFIRMED",
+          pdfPath: null,
+          pdfBlobUrl: null,
+        },
+      })
+    ).toBeNull()
 
     expect(
       resolvePostedVoucherPdfAvailable({

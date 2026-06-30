@@ -21,10 +21,14 @@ import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 import {
   matchesAmountRange,
   matchesPdfStateFilter,
+  MANUAL_JOURNAL_FAMILY,
   resolvePostedVoucherAmount,
   resolvePostedVoucherDocumentNo,
-  resolvePostedVoucherPdfAvailable,
 } from "./finance-document-inquiry-helpers"
+import { buildDocumentArchiveRefKey } from "@/lib/document-archive/kinds"
+import { resolvePdfAvailable } from "@/lib/document-archive/resolve-pdf-available"
+import { loadVaultArchivesForRefs } from "@/lib/document-archive/vault-lookup"
+import type { VaultArchiveRecord } from "@/lib/document-archive/resolve-status-types"
 import { resolveVoucherInquiryVoucherNoSearch } from "./voucher-no-search"
 
 export type { FinanceVoucherListFilter, FinanceVoucherListResult, FinanceVoucherListRow } from "./voucher-list-types"
@@ -33,7 +37,7 @@ export { getVoucherDetailById as getFinanceVoucherDetail } from "@/lib/finance/v
 
 export type FinanceVoucherListPrisma = Pick<
   PrismaClient,
-  "voucher" | "accountingPeriod" | "receipt"
+  "voucher" | "accountingPeriod" | "receipt" | "documentArchiveLink"
 >
 
 const DEFAULT_LIMIT = 50
@@ -224,7 +228,8 @@ type VoucherListDbRow = {
 
 function mapVoucherRow(
   row: VoucherListDbRow,
-  posReceipt?: { receiptNo: string; pdfPath: string | null }
+  posReceipt?: { receiptNo: string; pdfPath: string | null },
+  vaultByKey?: Map<string, VaultArchiveRecord>
 ): FinanceVoucherListRow {
   const amountLines = row.journalEntry?.lines.length ? row.journalEntry.lines : row.lines
   const { totalDebit, totalCredit } = sumLineTotals(amountLines)
@@ -241,11 +246,27 @@ function mapVoucherRow(
     row.refType === FINANCE_REF_TYPES.POS_SALE && !documentNo && posReceipt?.receiptNo
       ? posReceipt.receiptNo
       : documentNo
-  let pdfAvailable = resolvePostedVoucherPdfAvailable({
-    refType: row.refType,
-    status: row.status,
-    manualJournalEntry: row.manualJournalEntryPosted,
-  })
+  let pdfAvailable: boolean | null = null
+  if (MANUAL_JOURNAL_FAMILY.has(row.refType)) {
+    const documentTypeCode = resolveVoucherInquiryDocumentTypeCode(row.refType)
+    const documentKind = documentTypeCode === "OPB" ? "OPB" : "MJV"
+    const vaultKey = buildDocumentArchiveRefKey(
+      documentKind,
+      row.refId,
+      "DOCUMENT_PDF"
+    )
+    pdfAvailable = resolvePdfAvailable(
+      {
+        documentKind,
+        documentId: row.refId,
+        archiveKind: "DOCUMENT_PDF",
+        workflowStatus: row.status,
+        legacyPdfPath: row.manualJournalEntryPosted?.pdfPath ?? null,
+        legacyPdfBlobUrl: row.manualJournalEntryPosted?.pdfBlobUrl ?? null,
+      },
+      vaultByKey?.get(vaultKey)
+    )
+  }
   if (row.refType === FINANCE_REF_TYPES.POS_SALE && pdfAvailable === null && posReceipt) {
     pdfAvailable = resolvePosReceiptArchivePdfAvailable(posReceipt.pdfPath)
   }
@@ -368,9 +389,25 @@ export async function listFinanceVouchers(
     ? await loadPosOriginReceiptContextBySaleId(prisma, posSaleIds)
     : new Map()
 
+  const manualJournalRefs = (rows as VoucherListDbRow[])
+    .filter((row) => MANUAL_JOURNAL_FAMILY.has(row.refType))
+    .map((row) => {
+      const documentTypeCode = resolveVoucherInquiryDocumentTypeCode(row.refType)
+      const documentKind = documentTypeCode === "OPB" ? "OPB" : "MJV"
+      return {
+        documentKind: documentKind as "MJV" | "OPB",
+        documentId: row.refId,
+        archiveKind: "DOCUMENT_PDF" as const,
+      }
+    })
+  const vaultByKey =
+    manualJournalRefs.length > 0
+      ? await loadVaultArchivesForRefs(prisma, manualJournalRefs)
+      : new Map<string, VaultArchiveRecord>()
+
   let vouchers = applyPostQueryFilters(
     (rows as VoucherListDbRow[]).map((row) =>
-      mapVoucherRow(row, receiptBySaleId.get(row.refId))
+      mapVoucherRow(row, receiptBySaleId.get(row.refId), vaultByKey)
     ),
     scopedFilter
   )

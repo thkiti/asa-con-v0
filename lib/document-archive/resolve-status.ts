@@ -78,9 +78,9 @@ function resolveLegacyManualJournalPdfAvailable(
     return null
   }
 
-  const workflowStatus = String(input.workflowStatus ?? "").trim()
+  const workflowStatus = String(input.workflowStatus ?? "").trim().toUpperCase()
   if (workflowStatus && workflowStatus !== "POSTED") {
-    return false
+    return null
   }
 
   if (!input.legacyPdfPath && input.legacyPdfBlobUrl == null && !workflowStatus) {

@@ -53,12 +53,24 @@ export {
 } from "./vault-lookup"
 
 export {
+  ensureLegacyMjvArchiveLink,
+  ensureLegacyReceiptArchiveLink,
+  loadLegacyMjvArchiveContext,
+  loadLegacyReceiptArchiveContext,
+  loadLegacyPilotReceiptArchiveRow,
+  type LegacyBridgeDb,
+  type LegacyBridgeResult,
+} from "./legacy-bridge"
+
+export {
   getDocumentArchiveStatus,
   loadActiveArchiveByDocumentRef,
+  loadActiveArchiveByDocumentRefWithBridge,
   loadActiveArchiveById,
   safeArchiveDownloadFileName,
   type DocumentArchiveDownloadDb,
   type DocumentArchiveStatusDb,
+  type DocumentArchiveStatusOptions,
   type DocumentArchiveStatusPayload,
   type DocumentArchiveStatusQuery,
 } from "./get-archive-status"

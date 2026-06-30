@@ -9,7 +9,7 @@ import {
   DocumentArchiveErrorCodes,
 } from "@/lib/document-archive/errors"
 import {
-  loadActiveArchiveByDocumentRef,
+  loadActiveArchiveByDocumentRefWithBridge,
   safeArchiveDownloadFileName,
 } from "@/lib/document-archive/get-archive-status"
 import { readStoredDocumentArchive } from "@/lib/document-archive/storage/store-archive-file"
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, context: Context) {
       )
     }
 
-    const row = await loadActiveArchiveByDocumentRef(prisma, {
+    const row = await loadActiveArchiveByDocumentRefWithBridge(prisma, {
       documentKind,
       documentId: trimmedDocumentId,
       archiveKind,
