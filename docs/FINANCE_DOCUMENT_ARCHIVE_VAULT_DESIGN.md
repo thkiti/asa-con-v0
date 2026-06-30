@@ -6,6 +6,7 @@ Type: Architecture design — **no production code changes in this document task
 
 Related:
 
+- [DOCUMENT_ARCHIVE_IMPLEMENTATION_PLAN.md](./DOCUMENT_ARCHIVE_IMPLEMENTATION_PLAN.md) — phased rollout plan (this design’s implementation sequence)
 - [FINANCE_DOCUMENT_AUDIT_MATRIX.md](./FINANCE_DOCUMENT_AUDIT_MATRIX.md) — current inquiry print/PDF behaviour by type
 - [FINANCE_PRESENTATION_CONTRACT.md](./FINANCE_PRESENTATION_CONTRACT.md) — screen / print / archived PDF must share one presentation model
 - [PHASE17_DOCUMENT_ARCHIVE_SNAPSHOT_ENGINE.md](./PHASE17_DOCUMENT_ARCHIVE_SNAPSHOT_ENGINE.md) — receipt pilot and shared `lib/document-archive/` kernel

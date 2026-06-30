@@ -69,6 +69,7 @@ Presentation and voucher layout rules (read before print/PDF work):
 - [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) — canonical header identity
 - [FINANCE_DOCUMENT_AUDIT_MATRIX.md](./FINANCE_DOCUMENT_AUDIT_MATRIX.md) — **Finance Document Audit Matrix** — read-only inquiry, print, PDF/archive, journal drill-down, POS-origin REC/REF routing, and known audit gaps by document type
 - [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) — **Document Vault design** — central PDF archive registry (approval gate; no schema wiring yet)
+- [DOCUMENT_ARCHIVE_IMPLEMENTATION_PLAN.md](./DOCUMENT_ARCHIVE_IMPLEMENTATION_PLAN.md) — **Document Vault rollout plan** — phased schema, resolver, API, legacy bridge, COL evidence
 
 ## Phase status
 
