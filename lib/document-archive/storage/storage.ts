@@ -36,10 +36,11 @@ export { buildReceiptArchivePdfPathname, assertSafeReceiptNo } from "../paths/re
 export async function storeDocumentArchivePdf(
   relativePath: string,
   buffer: Buffer,
-  backend: DocumentArchiveStorageBackend = resolveDocumentArchiveStorageBackend()
+  backend: DocumentArchiveStorageBackend = resolveDocumentArchiveStorageBackend(),
+  contentType = "application/pdf"
 ): Promise<StoredDocumentPdfRef> {
   if (backend === "blob") {
-    return writeBlobDocumentArchivePdfFile(relativePath, buffer)
+    return writeBlobDocumentArchivePdfFile(relativePath, buffer, contentType)
   }
   return writeLocalDocumentArchivePdfFile(relativePath, buffer)
 }

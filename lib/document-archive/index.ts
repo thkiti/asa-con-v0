@@ -53,6 +53,45 @@ export {
 } from "./vault-lookup"
 
 export {
+  getDocumentArchiveStatus,
+  loadActiveArchiveByDocumentRef,
+  loadActiveArchiveById,
+  safeArchiveDownloadFileName,
+  type DocumentArchiveDownloadDb,
+  type DocumentArchiveStatusDb,
+  type DocumentArchiveStatusPayload,
+  type DocumentArchiveStatusQuery,
+} from "./get-archive-status"
+
+export {
+  uploadDocumentArchive,
+  type UploadDocumentArchiveInput,
+  type UploadDocumentArchiveResult,
+  type ActiveArchiveDownloadRow,
+} from "./upload-archive"
+
+export {
+  assertArchiveFileSize,
+  assertMimeTypeAllowedForArchiveKind,
+  normalizeMimeType,
+  parseArchiveRequirementPolicy,
+  parseDocumentArchiveKind,
+  parseDocumentArchiveLinks,
+  parseDocumentKind,
+  type DocumentArchiveLinkInput,
+  MAX_DOCUMENT_ARCHIVE_FILE_BYTES,
+} from "./validation"
+
+export { buildVaultArchiveStoragePathname } from "./paths/vault"
+
+export {
+  readStoredDocumentArchive,
+  storeDocumentArchiveFile,
+  type DocumentArchiveReadRef,
+  type StoredDocumentArchiveRef,
+} from "./storage/store-archive-file"
+
+export {
   buildDocumentArchiveReadinessPayload,
   isDocumentArchivePdfReadable,
   isDocumentArchiveStorageReadable,

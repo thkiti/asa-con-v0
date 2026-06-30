@@ -6,12 +6,12 @@ import {
 } from "../errors"
 import type { DocumentPdfReadRef, StoredDocumentPdfRef } from "../types"
 
-function blobPutOptions() {
+function blobPutOptions(contentType: string) {
   const auth = getBlobAuthConfig()
   const options = {
     access: "public" as const,
     allowOverwrite: true,
-    contentType: "application/pdf",
+    contentType,
     addRandomSuffix: false,
   }
   if (auth.mode === "token") {
@@ -22,7 +22,8 @@ function blobPutOptions() {
 
 export async function writeBlobDocumentArchivePdfFile(
   relativePath: string,
-  buffer: Buffer
+  buffer: Buffer,
+  contentType = "application/pdf"
 ): Promise<StoredDocumentPdfRef> {
   const pdfPath = String(relativePath ?? "").trim()
   if (!pdfPath) {
@@ -33,7 +34,7 @@ export async function writeBlobDocumentArchivePdfFile(
   }
 
   try {
-    const blob = await put(pdfPath, buffer, blobPutOptions())
+    const blob = await put(pdfPath, buffer, blobPutOptions(contentType))
     const pdfBlobUrl = String(blob.url ?? "").trim()
     if (!pdfBlobUrl) {
       throw new DocumentArchiveError(
