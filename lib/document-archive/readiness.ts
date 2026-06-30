@@ -3,24 +3,46 @@ import { resolveDocumentArchiveStorageBackend } from "./storage/resolve-backend"
 import type {
   DocumentArchivePdfFields,
   DocumentArchiveReadinessStatus,
+  DocumentArchiveStorageFields,
 } from "./types"
 
 export { resolveDocumentArchivePdfBlobUrl } from "./blob-url"
+
+function resolveStoragePath(archive: DocumentArchiveStorageFields): string {
+  return String(archive.storagePath ?? archive.pdfPath ?? "").trim()
+}
+
+function resolveStorageUrl(archive: DocumentArchiveStorageFields): string | null | undefined {
+  return archive.storageUrl ?? archive.pdfBlobUrl
+}
+
+function isReadableArchiveStatus(status: string): boolean {
+  return status === "ACTIVE" || status === "READY"
+}
+
+/** True when vault or legacy stored bytes can be read without re-rendering. */
+export function isDocumentArchiveStorageReadable(
+  archive: DocumentArchiveStorageFields
+): boolean {
+  const status = String(archive.status ?? "").trim()
+  if (!isReadableArchiveStatus(status)) return false
+
+  const storagePath = resolveStoragePath(archive)
+  if (!storagePath) return false
+
+  const backend = resolveDocumentArchiveStorageBackend()
+  if (backend === "filesystem") return true
+
+  return Boolean(
+    resolveDocumentArchivePdfBlobUrl(storagePath, resolveStorageUrl(archive) ?? null)
+  )
+}
 
 /** True when stored PDF bytes can be read without re-rendering. */
 export function isDocumentArchivePdfReadable(
   archive: DocumentArchivePdfFields
 ): boolean {
-  const status = String(archive.status ?? "").trim()
-  if (status !== "ACTIVE" && status !== "READY") return false
-
-  const pdfPath = String(archive.pdfPath ?? "").trim()
-  if (!pdfPath) return false
-
-  const backend = resolveDocumentArchiveStorageBackend()
-  if (backend === "filesystem") return true
-
-  return Boolean(resolveDocumentArchivePdfBlobUrl(pdfPath, archive.pdfBlobUrl))
+  return isDocumentArchiveStorageReadable(archive)
 }
 
 export function resolveDocumentArchiveReadinessStatus(

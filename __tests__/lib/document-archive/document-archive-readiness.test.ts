@@ -1,6 +1,7 @@
 import {
   buildDocumentArchiveReadinessPayload,
   isDocumentArchivePdfReadable,
+  isDocumentArchiveStorageReadable,
   resolveDocumentArchivePdfBlobUrl,
   resolveDocumentArchiveReadinessStatus,
 } from "@/lib/document-archive/readiness"
@@ -35,6 +36,14 @@ describe("document-archive readiness", () => {
       isDocumentArchivePdfReadable({
         status: "ACTIVE",
         pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
+        pdfBlobUrl: null,
+      })
+    ).toBe(true)
+    expect(
+      isDocumentArchiveStorageReadable({
+        status: "ACTIVE",
+        storagePath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
+        pdfPath: null,
         pdfBlobUrl: null,
       })
     ).toBe(true)

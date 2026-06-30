@@ -24,4 +24,9 @@ export type DocumentArchivePdfFields = {
   errorMessage?: string | null
 }
 
+export type DocumentArchiveStorageFields = DocumentArchivePdfFields & {
+  storagePath?: string | null
+  storageUrl?: string | null
+}
+
 export type DocumentArchiveReadinessStatus = "ready" | "pending" | "failed"
