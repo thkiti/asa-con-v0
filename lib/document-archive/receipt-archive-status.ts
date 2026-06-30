@@ -31,7 +31,7 @@ export async function applyReceiptArchivePdfReady(
   await tx.documentArchive.update({
     where: { id: documentArchiveId },
     data: {
-      status: "READY",
+      status: "ACTIVE",
       pdfPath: input.pdfPath,
       pdfBlobUrl: input.pdfBlobUrl,
       generatedAt: input.pdfGeneratedAt,

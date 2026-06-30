@@ -67,7 +67,7 @@ describe("resolveReceiptLookupArchiveStatus", () => {
         pdfPath: "documents/receipt/2026/06/REC.pdf",
         pdfBlobUrl: null,
         documentArchive: {
-          status: "READY",
+          status: "ACTIVE",
           pdfPath: "documents/receipt/2026/06/REC.pdf",
           pdfBlobUrl: null,
           errorMessage: null,

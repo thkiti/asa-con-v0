@@ -411,42 +411,113 @@ model Payment {
   paymentEvidence PaymentEvidence?
 }
 
+/// Vault file lifecycle — ACTIVE replaces legacy pilot READY.
 enum DocumentArchiveStatus {
   PENDING
-  READY
+  ACTIVE
   FAILED
+  SUPERSEDED
+  VOID
 }
 
+/// Legacy receipt-pilot upsert key — prefer DocumentArchiveLink.documentKind in new code.
 enum DocumentArchiveType {
   RECEIPT
 }
 
+/// Source document type for DocumentArchiveLink (finance, stock, POS).
+enum DocumentKind {
+  OPB
+  MJV
+  PAY
+  PAV
+  REV
+  PCV
+  CNT
+  ADJ
+  ORD
+  DEY
+  ORS
+  ORI
+  REC
+  REF
+  COL
+  READ_X
+  READ_Z
+}
+
+/// Stored file purpose — independent of source document kind.
+enum DocumentArchiveKind {
+  DOCUMENT_PDF
+  BANK_PAY_IN_SLIP
+  RECEIPT_SLIP
+  REFUND_SLIP
+  READ_REPORT
+}
+
+/// Central vault file row — bytes metadata and storage location.
 model DocumentArchive {
-  id              String                @id @default(uuid())
-  documentType    DocumentArchiveType
-  documentId      String
-  documentNo      String
-  legalEntityId   String?
-  branchId        String?
+  id                String                @id @default(uuid())
+  archiveKind       DocumentArchiveKind   @default(DOCUMENT_PDF)
+  archiveNo         String?
+  referenceNo       String?
+  legalEntityCode   String?
+  branchId          String?
 
-  pdfPath         String?
-  pdfBlobUrl      String?
+  storagePath       String?
+  storageUrl        String?
+  fileName          String?
+  mimeType          String                @default("application/pdf")
+  sizeBytes         Int?
+  checksum          String?
+
+  status            DocumentArchiveStatus @default(PENDING)
+  archivedAt        DateTime?
+  archivedByStaffId String?
+
   snapshotJson    Json?
-  snapshotVersion Int
+  snapshotVersion Int?
+  errorMessage    String? @db.Text
 
-  status          DocumentArchiveStatus @default(PENDING)
-  generatedAt     DateTime?
-  errorMessage    String?               @db.Text
+  /// Legacy pilot — receipt attach upsert; mirrored in DocumentArchiveLink from Phase 4.
+  documentType DocumentArchiveType?
+  documentId   String?
+  documentNo   String?
+
+  /// Legacy storage paths — dual column with storagePath/storageUrl until Phase 4 bridge.
+  pdfPath      String?
+  pdfBlobUrl   String?
+  generatedAt  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  links   DocumentArchiveLink[]
   receipt Receipt?
 
   @@unique([documentType, documentId])
-  @@index([documentType, documentNo])
-  @@index([branchId, documentType, createdAt])
+  @@index([legalEntityCode, archiveKind, archivedAt])
+  @@index([branchId, archiveKind, createdAt])
   @@index([status])
+}
+
+/// Join from vault file to one or more source documents (COL many-to-one allowed).
+/// One active archive per normal document: resolver-enforced in Phase 2 (no partial unique here).
+model DocumentArchiveLink {
+  id           String       @id @default(uuid())
+  archiveId    String
+  documentKind DocumentKind
+  documentId   String
+  documentNo   String
+  linkType     String?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  archive DocumentArchive @relation(fields: [archiveId], references: [id], onDelete: Restrict)
+
+  @@index([archiveId])
+  @@index([documentKind, documentId])
+  @@index([documentKind, documentNo])
 }
 
 model Receipt {

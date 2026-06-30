@@ -38,7 +38,7 @@ const readyReceipt = {
   pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
   pdfBlobUrl: null,
   documentArchive: {
-    status: "READY",
+    status: "ACTIVE",
     pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
     pdfBlobUrl: null,
     errorMessage: null,

@@ -11,7 +11,8 @@ export { resolveDocumentArchivePdfBlobUrl } from "./blob-url"
 export function isDocumentArchivePdfReadable(
   archive: DocumentArchivePdfFields
 ): boolean {
-  if (String(archive.status ?? "").trim() !== "READY") return false
+  const status = String(archive.status ?? "").trim()
+  if (status !== "ACTIVE" && status !== "READY") return false
 
   const pdfPath = String(archive.pdfPath ?? "").trim()
   if (!pdfPath) return false

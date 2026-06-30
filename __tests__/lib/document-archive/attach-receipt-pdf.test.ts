@@ -108,7 +108,7 @@ describe("attachReceiptPdfArchive", () => {
     expect(mockArchiveUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "archive-1" },
-        data: expect.objectContaining({ status: "READY" }),
+        data: expect.objectContaining({ status: "ACTIVE" }),
       })
     )
     expect(mockReceiptUpdate).toHaveBeenCalledWith(
@@ -134,7 +134,7 @@ describe("attachReceiptPdfArchive", () => {
       documentArchiveId: "archive-1",
       documentArchive: {
         id: "archive-1",
-        status: "READY",
+        status: "ACTIVE",
         pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
         generatedAt,
       },

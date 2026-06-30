@@ -82,7 +82,7 @@ function existingArchiveResult(row: ReceiptArchiveRow): AttachReceiptPdfArchiveR
 
   const archive = row.documentArchive
   if (
-    archive?.status === "READY" &&
+    (archive?.status === "ACTIVE" || archive?.status === "READY") &&
     String(archive.pdfPath ?? "").trim() &&
     archive.generatedAt
   ) {

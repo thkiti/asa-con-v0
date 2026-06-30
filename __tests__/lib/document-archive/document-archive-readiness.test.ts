@@ -29,7 +29,23 @@ describe("document-archive readiness", () => {
     )
   })
 
-  it("marks READY archive readable on filesystem backend", () => {
+  it("marks ACTIVE archive readable on filesystem backend", () => {
+    process.env.DOCUMENT_ARCHIVE_PDF_STORAGE = "filesystem"
+    expect(
+      isDocumentArchivePdfReadable({
+        status: "ACTIVE",
+        pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
+        pdfBlobUrl: null,
+      })
+    ).toBe(true)
+    expect(resolveDocumentArchiveReadinessStatus({
+      status: "ACTIVE",
+      pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
+      pdfBlobUrl: null,
+    })).toBe("ready")
+  })
+
+  it("still accepts legacy READY status for pilot rows", () => {
     process.env.DOCUMENT_ARCHIVE_PDF_STORAGE = "filesystem"
     expect(
       isDocumentArchivePdfReadable({
@@ -38,11 +54,6 @@ describe("document-archive readiness", () => {
         pdfBlobUrl: null,
       })
     ).toBe(true)
-    expect(resolveDocumentArchiveReadinessStatus({
-      status: "READY",
-      pdfPath: "documents/receipt/2026/06/REC-SH001-202606-0001.pdf",
-      pdfBlobUrl: null,
-    })).toBe("ready")
   })
 
   it("marks PENDING when status is PENDING or pdfPath missing", () => {
