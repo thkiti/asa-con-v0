@@ -10,6 +10,14 @@ import type { RevenueVoucherRead } from "@/lib/finance-ui/revenue-vouchers"
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}))
+
+jest.mock("@/lib/finance-ui/finance-voucher-local-font", () => ({
+  financeVoucherLocalFont: {
+    variable: "font-finance-voucher",
+    className: "font-finance-voucher",
+  },
 }))
 
 jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
@@ -151,6 +159,35 @@ describe("RevenueVoucherEditorPage edit DRAFT", () => {
     expect(html).not.toContain('data-testid="rev-derived-debit-line"')
     expect(html).toContain('data-testid="line-debit"')
     expect(html).toContain("3,000.00")
+  })
+})
+
+describe("RevenueVoucherEditorPage edit POSTED", () => {
+  it("renders POSTED print sheet without archived PDF panel", () => {
+    const html = renderToStaticMarkup(
+      <RevenueVoucherEditorPage
+        mode="edit"
+        entryId="rev-1"
+        initialEntry={asEntry(
+          baseEntry({
+            status: "POSTED",
+            submittedAt: "2026-06-21T13:00:00.000Z",
+            confirmedAt: "2026-06-21T14:00:00.000Z",
+            postedAt: "2026-06-21T15:00:00.000Z",
+            postedJournalEntryId: "journal-rev-1",
+          })
+        )}
+      />
+    )
+    expect(html).toContain('data-testid="finance-voucher-print-root"')
+    expect(html).toContain('data-testid="finance-voucher-print-sheet"')
+    expect(html).toContain('data-testid="action-print-out"')
+    expect(html).toContain("Received from")
+    expect(html).toContain("Receive to")
+    expect(html).toContain("posted-journal-link")
+    expect(html).not.toContain("finance-legacy-pdf-snapshot")
+    expect(html).not.toContain('data-testid="action-post"')
+    expect(html).not.toContain('data-testid="field-receive-to-select"')
   })
 })
 

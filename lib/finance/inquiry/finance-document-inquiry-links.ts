@@ -1,4 +1,9 @@
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
+import {
+  buildOperationalVoucherEditorPath,
+  buildOperationalVoucherPrintPath,
+  buildOperationalVoucherPrintPathByDocType,
+} from "@/lib/finance-ui/finance-voucher-print-path"
 import { VOUCHER_INQUIRY_DOC_TYPE } from "./voucher-document-types"
 import { buildPosOriginShopPath } from "./pos-origin-shop-path"
 
@@ -46,6 +51,7 @@ export function resolvePostedVoucherInquiryPath(input: {
 }): string {
   return (
     buildPostedPosOriginInquiryPath(input) ??
+    buildOperationalVoucherEditorPath(input.refType, input.refId) ??
     buildPostedVoucherInquiryPath(input.voucherId)
   )
 }
@@ -82,7 +88,7 @@ export function buildPostedVoucherPrintPath(input: {
     return `${MANUAL_JOURNAL_PATH}/${encodeURIComponent(id)}/print`
   }
 
-  return null
+  return buildOperationalVoucherPrintPath(input.refType, input.refId)
 }
 
 export function buildUnpostedOperationalInquiryPath(input: {
@@ -112,18 +118,7 @@ export function buildUnpostedOperationalPrintPath(input: {
   status: string
 }): string | null {
   if (input.status !== "POSTED") return null
-  const id = encodeURIComponent(input.id)
-  if (
-    input.documentTypeCode === VOUCHER_INQUIRY_DOC_TYPE.MJV ||
-    input.documentTypeCode === VOUCHER_INQUIRY_DOC_TYPE.OPB
-  ) {
-    const base =
-      input.documentTypeCode === VOUCHER_INQUIRY_DOC_TYPE.OPB
-        ? OPENING_BALANCE_PATH
-        : MANUAL_JOURNAL_PATH
-    return `${base}/${id}/print`
-  }
-  return null
+  return buildOperationalVoucherPrintPathByDocType(input.documentTypeCode, input.id)
 }
 
 export function buildManualJournalPdfApiPath(entryId: string): string {

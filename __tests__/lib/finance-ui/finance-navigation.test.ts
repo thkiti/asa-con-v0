@@ -47,6 +47,15 @@ describe("finance-navigation", () => {
         "rev-1"
       )
     ).toBeNull()
+    expect(
+      buildOperationalParentDocumentPath(FINANCE_REF_TYPES.PAYMENT_VOUCHER, "pav-1")
+    ).toBe("/finance/payment-vouchers/pav-1")
+    expect(
+      buildOperationalParentDocumentPath(FINANCE_REF_TYPES.REVENUE_VOUCHER, "rev-1")
+    ).toBe("/finance/revenue-vouchers/rev-1")
+    expect(
+      buildOperationalParentDocumentPath(FINANCE_REF_TYPES.PETTY_CASH_VOUCHER, "pcv-1")
+    ).toBe("/finance/petty-cash-vouchers/pcv-1")
   })
 
   it("resolves back link with returnTo priority", () => {

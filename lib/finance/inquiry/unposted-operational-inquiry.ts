@@ -212,7 +212,11 @@ function mapAmountVoucherRow(
       documentTypeCode,
       id: row.id,
     }),
-    printPath: null,
+    printPath: buildUnpostedOperationalPrintPath({
+      documentTypeCode,
+      id: row.id,
+      status: row.status,
+    }),
   }
 }
 

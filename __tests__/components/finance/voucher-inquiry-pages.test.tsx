@@ -145,6 +145,52 @@ const postedMjvWithPdfRow = {
   printPath: "/finance/manual-journal-entries/mje-posted-1/print",
 }
 
+const postedPavRow = {
+  id: "voucher-pav-1",
+  rowKind: "posted" as const,
+  legalEntityCode: "AS",
+  documentTypeCode: "PAV",
+  documentNo: "PAV-260001",
+  voucherNo: "V-2026-06-00020",
+  date: "2026-06-16T00:00:00.000Z",
+  periodKey: "2026-06",
+  branchId: "branch-1",
+  branchCode: "SH001",
+  branchName: "Shop 1",
+  status: "POSTED",
+  amount: "1500",
+  journalEntryId: "journal-pav-1",
+  operationalDocumentId: "pav-1",
+  pdfAvailable: null,
+  inquiryPath: "/finance/payment-vouchers/pav-1",
+  printPath: "/finance/payment-vouchers/pav-1?autoprint=1",
+}
+
+const postedRevRow = {
+  ...postedPavRow,
+  id: "voucher-rev-1",
+  documentTypeCode: "REV",
+  documentNo: "REV-260001",
+  voucherNo: "V-2026-06-00021",
+  journalEntryId: "journal-rev-1",
+  operationalDocumentId: "rev-1",
+  amount: "3000",
+  inquiryPath: "/finance/revenue-vouchers/rev-1",
+  printPath: "/finance/revenue-vouchers/rev-1?autoprint=1",
+}
+
+const postedPcvRow = {
+  ...postedPavRow,
+  id: "voucher-pcv-1",
+  documentTypeCode: "PCV",
+  documentNo: "PCV-260001",
+  voucherNo: "V-2026-06-00022",
+  journalEntryId: "journal-pcv-1",
+  operationalDocumentId: "pcv-1",
+  inquiryPath: "/finance/petty-cash-vouchers/pcv-1",
+  printPath: "/finance/petty-cash-vouchers/pcv-1?autoprint=1",
+}
+
 const collectorPickupVoucher = {
   id: "voucher-pickup-1",
   voucherNo: "V-2026-06-00001",
@@ -360,6 +406,30 @@ describe("VoucherInquiryListPage", () => {
     expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-ref-1"')
     expect(html).toContain('aria-label="PDF not supported"')
     expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-')
+  })
+
+  it("renders PAV, REV, and PCV rows with operational inquiry and print paths", () => {
+    const html = renderToStaticMarkup(
+      <VoucherInquiryResultsTable
+        documents={[postedPavRow, postedRevRow, postedPcvRow]}
+        total={3}
+        listReturnPath="/finance/vouchers"
+      />
+    )
+    expect(html).toContain("PAV-260001")
+    expect(html).toContain("REV-260001")
+    expect(html).toContain("PCV-260001")
+    expect(html).toContain("/finance/payment-vouchers/pav-1")
+    expect(html).toContain("/finance/revenue-vouchers/rev-1")
+    expect(html).toContain("/finance/petty-cash-vouchers/pcv-1")
+    expect(html).toContain('data-testid="voucher-inquiry-print-voucher-pav-1"')
+    expect(html).toContain('data-testid="voucher-inquiry-print-voucher-rev-1"')
+    expect(html).toContain('data-testid="voucher-inquiry-print-voucher-pcv-1"')
+    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-pav-1"')
+    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-rev-1"')
+    expect(html).toContain('data-testid="voucher-inquiry-pdf-voucher-pcv-1"')
+    expect(html).toContain('aria-label="PDF not supported"')
+    expect(html).not.toContain('aria-label="PDF missing"')
   })
 
   it("uses doc type dropdown with OPB option", () => {

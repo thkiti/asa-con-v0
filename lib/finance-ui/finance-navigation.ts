@@ -1,4 +1,5 @@
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
+import { buildOperationalVoucherEditorPath } from "@/lib/finance-ui/finance-voucher-print-path"
 import type { ManualJournalEntryTypeCode } from "@/lib/finance-ui/manual-journal-entry-display"
 
 export const FINANCE_RETURN_TO_QUERY = "returnTo"
@@ -110,7 +111,7 @@ export function buildOperationalParentDocumentPath(
     return `/finance/manual-journal-entries/${encodeURIComponent(id)}`
   }
 
-  return null
+  return buildOperationalVoucherEditorPath(refType, refId)
 }
 
 function inferBackLabelFromHref(href: string): string | null {
@@ -119,6 +120,15 @@ function inferBackLabelFromHref(href: string): string | null {
   }
   if (href.startsWith("/finance/manual-journal-entries/")) {
     return "← Journal Entry"
+  }
+  if (href.startsWith("/finance/payment-vouchers/")) {
+    return "← Payment Voucher"
+  }
+  if (href.startsWith("/finance/revenue-vouchers/")) {
+    return "← Revenue Voucher"
+  }
+  if (href.startsWith("/finance/petty-cash-vouchers/")) {
+    return "← Petty Cash Voucher"
   }
   if (href.startsWith("/finance/reports/general-ledger")) {
     return "← General Ledger"

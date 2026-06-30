@@ -4,6 +4,14 @@ import { PettyCashVoucherListPage } from "@/components/finance/PettyCashVoucherL
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}))
+
+jest.mock("@/lib/finance-ui/finance-voucher-local-font", () => ({
+  financeVoucherLocalFont: {
+    variable: "font-finance-voucher",
+    className: "font-finance-voucher",
+  },
 }))
 
 jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
@@ -188,6 +196,35 @@ describe("PettyCashVoucherEditorPage edit DRAFT", () => {
     expect(html).toContain('data-testid="pcv-entry-totals"')
     expect(html).toContain('data-testid="pcv-balance-this-voucher"')
     expect(html).toContain("1,500.00")
+  })
+})
+
+describe("PettyCashVoucherEditorPage edit POSTED", () => {
+  it("renders POSTED print sheet without archived PDF panel", () => {
+    const html = renderToStaticMarkup(
+      <PettyCashVoucherEditorPage
+        mode="edit"
+        entryId="pcv-1"
+        initialEntry={asEntry(
+          baseEntry({
+            status: "POSTED",
+            submittedAt: "2026-06-21T13:00:00.000Z",
+            confirmedAt: "2026-06-21T14:00:00.000Z",
+            postedAt: "2026-06-21T15:00:00.000Z",
+            postedJournalEntryId: "journal-pcv-1",
+          })
+        )}
+      />
+    )
+    expect(html).toContain('data-testid="finance-voucher-print-root"')
+    expect(html).toContain('data-testid="finance-voucher-print-sheet"')
+    expect(html).toContain('data-testid="action-print-out"')
+    expect(html).toContain("Payee")
+    expect(html).toContain("Petty cash")
+    expect(html).toContain("posted-journal-link")
+    expect(html).not.toContain("finance-legacy-pdf-snapshot")
+    expect(html).not.toContain('data-testid="action-post"')
+    expect(html).not.toContain('data-testid="field-payee-name"')
   })
 })
 

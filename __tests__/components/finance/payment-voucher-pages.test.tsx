@@ -4,6 +4,7 @@ import { PaymentVoucherListPage } from "@/components/finance/PaymentVoucherListP
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }))
 
 jest.mock("@/lib/finance-ui/finance-voucher-local-font", () => ({

@@ -38,6 +38,7 @@ import {
   type PettyCashVoucherRead,
 } from "@/lib/finance-ui/petty-cash-vouchers"
 import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
+import { useFinanceVoucherAutoprint } from "@/lib/finance-ui/use-finance-voucher-autoprint"
 import {
   financeAccount,
   financeAuditLine,
@@ -229,6 +230,7 @@ export function PettyCashVoucherEditorPage({
   const isSubmitted = status === "SUBMITTED"
   const isConfirmed = status === "CONFIRMED"
   const isPosted = status === "POSTED"
+  useFinanceVoucherAutoprint(isPosted)
   const isCancelled = status === "CANCELLED"
   const readOnly = isPosted || isCancelled || isSubmitted || isConfirmed
   const canEditHeader = isDraft
@@ -583,11 +585,7 @@ export function PettyCashVoucherEditorPage({
           listBackLabel="Back to petty cash vouchers"
           postedJournalHref={postedJournalHref}
           disabled={busyAction !== null}
-          archive={{
-            entryId: entry.id,
-            entryNo: documentNo,
-            pdfSnapshotReady: false,
-          }}
+          showArchivePanel={false}
         />
       ) : isCancelled && entry ? (
         <div className="space-y-4">

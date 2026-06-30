@@ -40,6 +40,7 @@ import {
   type PaymentVoucherRead,
 } from "@/lib/finance-ui/payment-vouchers"
 import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
+import { useFinanceVoucherAutoprint } from "@/lib/finance-ui/use-finance-voucher-autoprint"
 import {
   financeAccount,
   financeAuditLine,
@@ -234,6 +235,7 @@ export function PaymentVoucherEditorPage({
   const isSubmitted = status === "SUBMITTED"
   const isConfirmed = status === "CONFIRMED"
   const isPosted = status === "POSTED"
+  useFinanceVoucherAutoprint(isPosted)
   const isCancelled = status === "CANCELLED"
   const readOnly = isPosted || isCancelled || isSubmitted || isConfirmed
   const canEditHeader = isDraft
@@ -591,11 +593,7 @@ export function PaymentVoucherEditorPage({
           listBackLabel="Back to payment vouchers"
           postedJournalHref={postedJournalHref}
           disabled={busyAction !== null}
-          archive={{
-            entryId: entry.id,
-            entryNo: documentNo,
-            pdfSnapshotReady: false,
-          }}
+          showArchivePanel={false}
         />
       ) : isCancelled && entry ? (
         <div className="space-y-4">
