@@ -40,8 +40,8 @@ Related:
 | **PCV** | `Voucher` → `PettyCashVoucher` | `PettyCashVoucher` | Yes | `/finance/petty-cash-vouchers/{id}` | `/finance/petty-cash-vouchers/{id}?autoprint=1` | — (vault not wired) | Yes | Yes |
 | **REC** | `Voucher` → `Sale` / `Receipt` | — (POS posts directly) | Yes | `/shop/receipt/{saleId}?branchId={branchId}` | Same + `&autoprint=1` | `Receipt.pdfPath` — **status only**; reprint does **not** regenerate PDF | Yes | Yes |
 | **REF** | `Voucher` → `Refund` | — | Yes | `/shop/refund-receipt/{refundId}?branchId={branchId}` | Same + `&autoprint=1` | **—** (no `pdfPath` on `Refund`) | Yes | Yes |
-| **COL** | `Voucher` → `CollectorReport` | — | Yes | `/finance/vouchers/{voucherId}` (voucher/journal detail) | — | — | Yes | Yes (voucher layer only) |
-| **PAY** | `Voucher` → `PosPayInEvidence` / bank deposit ref | — | Yes | `/finance/vouchers/{voucherId}` | — | — | Yes | Yes (voucher layer only) |
+| **COL** | `Voucher` → `CollectorReport` | — | Yes | `/finance/vouchers/{voucherId}` (voucher/journal detail) | — | — (vault: `BANK_PAY_IN_SLIP` via COL links — not wired) | Yes | Yes (voucher layer only) |
+| **PAY** | `Voucher` → `PosPayInEvidence` / bank deposit ref | — | Yes | `/finance/vouchers/{voucherId}` | — | — (inquiry label **PAY** = bank deposit voucher; pay-in slip archive is **COL**, not PAY — see vault design) | Yes | Yes (voucher layer only) |
 | **INV** | `Voucher` → `InvoiceVoucher` (if posted) | `InvoiceVoucher` (not in unposted inquiry) | **No** (label only) | `/finance/vouchers/{voucherId}` or `/finance/invoice-vouchers/{id}` via editor | — | — | Yes | Partial — not in type filter |
 | **STK** | `Voucher` (`STOCK_DOC_POST`) | — | **No** | `/finance/vouchers/{voucherId}` | — | — | Yes | Partial |
 | **Stock ops** | `StockDocument` + lines | All workflow statuses | Yes — filter **CNT/ADJ/ORD/DEY/ORS/ORI** | `/finance/stock-documents/{id}` | `/finance/stock-documents/{id}?autoprint=1` | — (vault not wired; `pdfAvailable: null`) | Yes when posted | Yes (read-only inquiry) |
@@ -175,26 +175,26 @@ Related:
 | **Appears in Finance Document Inquiry** | Yes — filter **COL** |
 | **Inquiry route** | `/finance/vouchers/{voucherId}` (no dedicated COL slip route from inquiry) |
 | **Print route** | None from inquiry |
-| **PDF / archive** | None in inquiry — column `—` |
+| **PDF / archive** | None in inquiry — column `—` today. **Vault design:** bank pay-in slip = `archiveKind=BANK_PAY_IN_SLIP` linked to **one or many COL tickets** (many-to-one). See [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md). |
 | **Journal drill-down** | Yes |
 | **Branch / legal entity** | Yes |
-| **Known gaps** | Operational settlement UI: `/finance/pos-settlement/collector-pickup` — not linked from inquiry row. No COL thermal/PDF archive in inquiry. |
+| **Known gaps** | Operational settlement UI: `/finance/pos-settlement/collector-pickup` — not linked from inquiry row. Pay-in evidence exists (`PosPayInEvidence`) but is not vault-wired. |
 | **Read-only audit safe** | Yes at voucher detail |
 
 ---
 
-### PAY — Bank Deposit (POS settlement)
+### PAY — Bank Deposit (inquiry filter code)
 
 | Field | Value |
 |-------|--------|
-| **Source table / workflow** | `PosPayInEvidence` / bank deposit posting; `Voucher` (`POS_SETTLEMENT_BANK_DEPOSIT`). Business code **PAY** = bank deposit, not PAV. |
+| **Source table / workflow** | `PosPayInEvidence` / bank deposit posting; `Voucher` (`POS_SETTLEMENT_BANK_DEPOSIT`). Inquiry filter code **PAY** labels this bank deposit voucher — **not** the same as vault `documentKind=PAY` (outbound payment document). |
 | **Appears in Finance Document Inquiry** | Yes — filter **PAY** |
 | **Inquiry route** | `/finance/vouchers/{voucherId}` |
 | **Print route** | None from inquiry |
-| **PDF / archive** | Pay-in **image evidence** (`PosPayInEvidence.blobPathname`) exists but is **not** surfaced in Finance Document Inquiry |
+| **PDF / archive** | Pay-in **image evidence** (`PosPayInEvidence.blobPathname`) exists operationally but is **not** surfaced in inquiry. **Vault design:** bank pay-in slip archive belongs to **COL**, not PAY. PAY vault scope (if any) is outbound payment voucher `DOCUMENT_PDF` only — see vault design §5. |
 | **Journal drill-down** | Yes |
 | **Branch / legal entity** | Yes |
-| **Known gaps** | No inquiry link to settlement UI (`/finance/pos-settlement/bank-deposit`) or pay-in evidence viewer |
+| **Known gaps** | No inquiry link to settlement UI (`/finance/pos-settlement/bank-deposit`) or pay-in evidence viewer. Inquiry **PAY** vs vault **PAY** terminology alignment open. |
 | **Read-only audit safe** | Yes at voucher detail |
 
 ---
@@ -252,6 +252,7 @@ Related:
 4. **HO POS slip branch** — Finance inquiry links include `branchId` from the posted voucher row. Shop pages call `resolveSaleReceiptPrintBranchId` / `resolveRefundReceiptPrintBranchId` so HO users are not pinned to the HO session branch.
 5. **Finance Inquiry boundary** — The hub at `/finance/vouchers` and `GET /api/finance/vouchers` are **audit/navigation only**. They must not post, repair, renumber, or regenerate documents.
 6. **Central vault** — PDF archive for PAV/REV/PCV, Stock ops, and REF is **intentionally not wired**. `pdfAvailable` remains `null` (neutral) until [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md) is approved and schema/API migration completes. MJV/OPB and REC continue to use legacy per-table `pdfPath` until backfill.
+7. **PAY vs COL archive** — Bank pay-in slip archive is **`documentKind=COL` + `archiveKind=BANK_PAY_IN_SLIP`** (one slip → many COL tickets). **Not** vault `documentKind=PAY`. Inquiry filter **PAY** (bank deposit voucher) must not be interpreted as pay-in slip container in vault design.
 
 ---
 
@@ -267,7 +268,8 @@ Related:
 | Stock ops inquiry browser print | **Done** (`?autoprint=1`) |
 | COL / PAY settlement deep links from inquiry | **Missing** |
 | INV / STK / CLS filter + unposted visibility | **Partial** (STK ops inquiry live at `/finance/stock-documents`) |
-| PAV / REV / PCV / Stock / REF archived PDF (central vault) | **Design only** — [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md); not started |
+| PAV / REV / PCV / Stock / REF archived PDF (central vault) | **Design only** — [FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md](./FINANCE_DOCUMENT_ARCHIVE_VAULT_DESIGN.md); `DocumentArchive` + `DocumentArchiveLink`; not started |
+| COL bank pay-in slip archive (many COL → one slip) | **Design only** — vault §4.4 / §6.2; not started |
 | Document Trace / Attachments audit hub items | **Coming Soon** |
 | Digital Document Vault cross-registry | **Design** — vault schema expansion pending approval |
 
