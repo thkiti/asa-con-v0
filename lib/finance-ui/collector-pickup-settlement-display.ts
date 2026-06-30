@@ -1,11 +1,12 @@
+import type { CollectorPickupSettlementStatus } from "./collector-pickup-settlement"
+import type { BankDepositSettlementStatus } from "./bank-deposit-settlement"
 import {
   themeBadgeOrange,
   themeBadgeSuccess,
   themeBadgeWarning,
 } from "@/lib/finance-ui/finance-visual-classes"
-import type { CollectorPickupSettlementStatus } from "./collector-pickup-settlement"
-import type { BankDepositSettlementStatus } from "./bank-deposit-settlement"
-import { isPayInEvidenceUploadedStatus, type PayInEvidenceUiStatus } from "./pay-in-display"
+import type { PayInEvidenceUiStatus } from "./pay-in-display"
+import { isPayInEvidenceUploadedStatus } from "./pay-in-display"
 
 export type CollectorPickupBusinessStatus =
   | "COLLECTED"
@@ -27,21 +28,43 @@ export function mapCollectorPickupBusinessStatus(
   }
 }
 
-export function isPayInSlipUploaded(
-  status: PayInEvidenceUiStatus | null | undefined
-): boolean {
-  return isPayInEvidenceUploadedStatus(status)
+export function isPayInSlipUploaded(input: {
+  archiveAvailable?: boolean | null
+  payInEvidenceStatus?: PayInEvidenceUiStatus | null
+}): boolean {
+  if (input.archiveAvailable === true) return true
+  return isPayInEvidenceUploadedStatus(input.payInEvidenceStatus)
+}
+
+export function isEligibleForPayInEvidenceUpload(input: {
+  pickupStatus: CollectorPickupSettlementStatus
+  depositStatus: BankDepositSettlementStatus
+  archiveAvailable?: boolean | null
+  payInEvidenceStatus?: PayInEvidenceUiStatus | null
+}): boolean {
+  return (
+    input.pickupStatus === "POSTED" &&
+    input.depositStatus === "NOT_POSTED" &&
+    !isPayInSlipUploaded({
+      archiveAvailable: input.archiveAvailable,
+      payInEvidenceStatus: input.payInEvidenceStatus,
+    })
+  )
 }
 
 export function shouldShowDepositPostButton(input: {
   pickupStatus: CollectorPickupSettlementStatus
   depositStatus: BankDepositSettlementStatus
   payInEvidenceStatus: PayInEvidenceUiStatus | null
+  archiveAvailable?: boolean | null
 }): boolean {
   return (
     input.pickupStatus === "POSTED" &&
     input.depositStatus === "NOT_POSTED" &&
-    isPayInSlipUploaded(input.payInEvidenceStatus)
+    isPayInSlipUploaded({
+      archiveAvailable: input.archiveAvailable,
+      payInEvidenceStatus: input.payInEvidenceStatus,
+    })
   )
 }
 
@@ -49,13 +72,20 @@ export function shouldShowDepositPostDisabled(input: {
   pickupStatus: CollectorPickupSettlementStatus
   depositStatus: BankDepositSettlementStatus
   payInEvidenceStatus: PayInEvidenceUiStatus | null
+  archiveAvailable?: boolean | null
 }): boolean {
   return (
     input.pickupStatus === "POSTED" &&
     input.depositStatus === "NOT_POSTED" &&
-    !isPayInSlipUploaded(input.payInEvidenceStatus)
+    !isPayInSlipUploaded({
+      archiveAvailable: input.archiveAvailable,
+      payInEvidenceStatus: input.payInEvidenceStatus,
+    })
   )
 }
+
+export const PAY_IN_EVIDENCE_MISSING_TOOLTIP =
+  "Upload bank pay-in evidence before posting deposit."
 
 export function depositColumnLabel(input: {
   depositStatus: BankDepositSettlementStatus

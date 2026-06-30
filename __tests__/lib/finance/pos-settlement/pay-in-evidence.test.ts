@@ -13,6 +13,7 @@ describe("pay-in evidence summary", () => {
 
     expect(summary.payInSlipMissingWarning).toBe(true)
     expect(summary.payInEvidenceUrl).toBeNull()
+    expect(summary.archiveAvailable).toBeNull()
   })
 
   it("returns evidence url when slip uploaded", () => {

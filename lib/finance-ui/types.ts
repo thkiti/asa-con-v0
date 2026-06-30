@@ -151,6 +151,7 @@ export type FinanceDocumentInquiryRow = {
   journalEntryId: string | null
   operationalDocumentId: string | null
   pdfAvailable: boolean | null
+  archiveAvailable?: boolean | null
   inquiryPath: string
   printPath: string | null
 }

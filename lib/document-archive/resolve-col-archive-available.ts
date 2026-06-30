@@ -19,8 +19,6 @@ export type ColArchiveAvailableInput = Pick<
 
 /**
  * COL bank pay-in slip evidence tri-state (`archiveAvailable` column semantics).
- * Workflow gating is not wired in Phase 2 — requirement stays null unless caller
- * passes `requiredPolicy: "required"`.
  */
 export function resolveColBankPayInArchiveAvailable(
   input: ColArchiveAvailableInput,

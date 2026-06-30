@@ -44,6 +44,7 @@ export type FinanceVoucherListRow = {
   documentTypeCode: string
   documentNo: string | null
   pdfAvailable: boolean | null
+  archiveAvailable?: boolean | null
 }
 
 export type FinanceVoucherListResult = {

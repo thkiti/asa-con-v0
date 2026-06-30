@@ -4,8 +4,10 @@ import { PayInSlipIndicator } from "@/components/finance/PayInSlipIndicator"
 import type { CollectorPickupSettlementReconciliation } from "@/lib/finance-ui/collector-pickup-settlement"
 import {
   collectorPickupBusinessStatusTone,
+  isEligibleForPayInEvidenceUpload,
   isPayInSlipUploaded,
   mapCollectorPickupBusinessStatus,
+  PAY_IN_EVIDENCE_MISSING_TOOLTIP,
   shouldShowDepositPostButton,
   shouldShowDepositPostDisabled,
   shouldShowPickupRepairButton,
@@ -34,6 +36,8 @@ import {
 type CollectorPickupSettlementTableProps = {
   items: CollectorPickupSettlementReconciliation[]
   depositPostingReportId?: string | null
+  selectedPayInReportIds?: ReadonlySet<string>
+  onTogglePayInSelect?: (collectorReportId: string) => void
   onUploadSlip?: (row: CollectorPickupSettlementReconciliation) => void
   onPreviewPayInSlip?: (row: CollectorPickupSettlementReconciliation) => void
   onDepositPost?: (collectorReportId: string) => void
@@ -93,11 +97,13 @@ function DepositWorkflowAction({
     pickupStatus: row.status,
     depositStatus: row.depositStatus,
     payInEvidenceStatus: row.payInEvidenceStatus,
+    archiveAvailable: row.archiveAvailable,
   })
   const showDepositPostDisabled = shouldShowDepositPostDisabled({
     pickupStatus: row.status,
     depositStatus: row.depositStatus,
     payInEvidenceStatus: row.payInEvidenceStatus,
+    archiveAvailable: row.archiveAvailable,
   })
 
   if (row.depositStatus === "POSTED") {
@@ -130,9 +136,8 @@ function DepositWorkflowAction({
       <button
         type="button"
         data-testid={`deposit-post-disabled-${row.collectorReportId}`}
-        disabled={isDepositPosting}
-        title="Upload PAY-IN Slip first"
-        onClick={() => onDepositPost?.(row.collectorReportId)}
+        disabled
+        title={PAY_IN_EVIDENCE_MISSING_TOOLTIP}
         className={collectorPickupPostBtnMuted}
       >
         POST
@@ -146,6 +151,8 @@ function DepositWorkflowAction({
 export function CollectorPickupSettlementTable({
   items,
   depositPostingReportId = null,
+  selectedPayInReportIds,
+  onTogglePayInSelect,
   onUploadSlip,
   onPreviewPayInSlip,
   onDepositPost,
@@ -183,11 +190,22 @@ export function CollectorPickupSettlementTable({
         </thead>
         <tbody>
           {items.map((row) => {
-            const slipUploaded = isPayInSlipUploaded(row.payInEvidenceStatus)
+            const slipUploaded = isPayInSlipUploaded({
+              archiveAvailable: row.archiveAvailable,
+              payInEvidenceStatus: row.payInEvidenceStatus,
+            })
+            const previewUrl =
+              row.payInEvidenceDownloadPath ?? row.payInEvidenceUrl
             const isDepositPosting = depositPostingReportId === row.collectorReportId
             const showRepair = shouldShowPickupRepairButton(row.status)
-            const canUploadSlip =
-              row.status === "POSTED" && row.depositStatus === "NOT_POSTED"
+            const canUploadSlip = isEligibleForPayInEvidenceUpload({
+              pickupStatus: row.status,
+              depositStatus: row.depositStatus,
+              archiveAvailable: row.archiveAvailable,
+              payInEvidenceStatus: row.payInEvidenceStatus,
+            })
+            const showPayInSelect =
+              canUploadSlip && onUploadSlip != null && onTogglePayInSelect != null
 
             return (
               <tr key={row.collectorReportId}>
@@ -226,6 +244,17 @@ export function CollectorPickupSettlementTable({
                 </td>
                 <td className={collectorPickupTdWorkflow}>
                   <div className={collectorPickupWorkflowActions}>
+                    {showPayInSelect ? (
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5 shrink-0 accent-emerald-600"
+                        data-testid={`pay-in-select-${row.collectorReportId}`}
+                        checked={selectedPayInReportIds?.has(row.collectorReportId) ?? false}
+                        title="Include in batch pay-in slip upload"
+                        aria-label={`Select ${row.collectNo} for batch pay-in slip upload`}
+                        onChange={() => onTogglePayInSelect(row.collectorReportId)}
+                      />
+                    ) : null}
                     <PayInSlipIndicator
                       status={row.payInEvidenceStatus}
                       missingWarning={row.payInSlipMissingWarning}
@@ -236,7 +265,7 @@ export function CollectorPickupSettlementTable({
                           : undefined
                       }
                       onPreview={
-                        slipUploaded && row.payInEvidenceUrl && onPreviewPayInSlip
+                        slipUploaded && previewUrl && onPreviewPayInSlip
                           ? () => onPreviewPayInSlip(row)
                           : undefined
                       }

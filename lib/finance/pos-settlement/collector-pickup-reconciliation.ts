@@ -14,6 +14,7 @@ import {
   getPayInEvidenceByCollectorReportId,
   type PayInEvidenceSummary,
 } from "./pay-in-evidence"
+import { resolveColPayInArchiveContext } from "./pay-in-evidence-vault"
 import {
   PosSettlementError,
   PosSettlementErrorCodes,
@@ -57,7 +58,7 @@ export type ListCollectorPickupSettlementStatusesInput = {
 
 type CollectorPickupReconciliationDb = Pick<
   PrismaClient,
-  "collectorReport" | "voucher" | "posPayInEvidence"
+  "collectorReport" | "voucher" | "posPayInEvidence" | "documentArchiveLink" | "documentArchive" | "$transaction"
 >
 
 type SettlementJournalLine = {
@@ -437,9 +438,54 @@ export async function getCollectorPickupSettlementStatus(
   const depositPosted =
     depositVoucher?.journalEntry != null &&
     depositVoucher.journalEntry.lines.length > 0
+
+  const { expectedAmount, isValidSource } = deriveExpectedAmount(report)
+  const pickupJournalLines = pickupVoucher?.journalEntry?.lines ?? []
+  const { debitCashInTransit, creditCashDrawer } =
+    sumSettlementJournalAmounts(pickupJournalLines)
+  const pickupStatusFields = resolvePickupSettlementStatus({
+    isValidSource,
+    expectedAmount,
+    voucher: pickupVoucher,
+    debitCashInTransit,
+    creditCashDrawer,
+  })
+
+  const pickupPosted =
+    pickupVoucher?.journalEntry != null &&
+    pickupVoucher.journalEntry.lines.length > 0
+  const pickupInTransitDebit = pickupPosted
+    ? sumCollectorPickupInTransitDebit(pickupVoucher!.journalEntry!.lines)
+    : ZERO
+  const inTransitAmount =
+    pickupPosted && pickupInTransitDebit.gt(ZERO)
+      ? pickupInTransitDebit
+      : expectedAmount
+
+  const depositJournalLines = depositVoucher?.journalEntry?.lines ?? []
+  const { debitBank, creditCashInTransit } =
+    sumBankDepositJournalAmounts(depositJournalLines)
+  const depositStatus = resolveDepositSettlementStatus({
+    isValidSource,
+    pickupPosted,
+    inTransitAmount,
+    voucher: depositVoucher,
+    debitBank,
+    creditCashInTransit,
+  })
+
+  const archiveContext = await resolveColPayInArchiveContext(db, {
+    collectorReportId: source.id,
+    collectNo: source.collectNo,
+    pickupStatus: pickupStatusFields.status,
+    depositStatus,
+  })
+
   const evidenceSummary = buildPayInEvidenceSummary({
     evidence,
     depositPosted,
+    archiveAvailable: archiveContext.archiveAvailable,
+    collectorReportId: source.id,
   })
 
   return buildCollectorPickupSettlementReconciliation(

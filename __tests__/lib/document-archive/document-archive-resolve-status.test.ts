@@ -224,13 +224,24 @@ describe("resolveDocumentArchiveStatus", () => {
     ).toBe(null)
   })
 
-  it("returns null for COL pay-in when workflow policy is not required yet", () => {
+  it("returns null for COL pay-in before pickup is posted", () => {
     expect(
       resolveColBankPayInArchiveAvailable({
         documentKind: "COL",
         documentId: "col-1",
+        workflowStatus: "COL_NOT_APPLICABLE",
       })
     ).toBe(null)
+  })
+
+  it("returns false for COL awaiting pay-in without vault link", () => {
+    expect(
+      resolveColBankPayInArchiveAvailable({
+        documentKind: "COL",
+        documentId: "col-1",
+        workflowStatus: "COL_AWAITING_PAY_IN",
+      })
+    ).toBe(false)
   })
 
   it("returns true for COL when BANK_PAY_IN_SLIP vault link exists", () => {

@@ -47,6 +47,7 @@ function mapPostedVoucherRow(row: FinanceVoucherListRow): FinanceDocumentInquiry
     journalEntryId: row.journalEntryId,
     operationalDocumentId: row.refId,
     pdfAvailable: row.pdfAvailable,
+    archiveAvailable: row.archiveAvailable ?? null,
     inquiryPath: resolvePostedVoucherInquiryPath({
       voucherId: row.id,
       refType: row.refType,

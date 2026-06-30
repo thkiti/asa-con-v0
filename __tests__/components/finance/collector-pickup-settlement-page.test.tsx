@@ -53,6 +53,8 @@ const baseRow: CollectorPickupSettlementReconciliation = {
   payInSlipMissingWarning: false,
   bankDepositDate: null,
   bankAccountCode: null,
+  archiveAvailable: null,
+  payInEvidenceDownloadPath: null,
 }
 
 describe("collector pickup settlement display helpers", () => {
@@ -81,6 +83,25 @@ describe("collector pickup settlement display helpers", () => {
         pickupStatus: "POSTED",
         depositStatus: "NOT_POSTED",
         payInEvidenceStatus: null,
+      })
+    ).toBe(true)
+  })
+
+  it("enables deposit POST from vault archiveAvailable without legacy status", () => {
+    expect(
+      shouldShowDepositPostButton({
+        pickupStatus: "POSTED",
+        depositStatus: "NOT_POSTED",
+        payInEvidenceStatus: null,
+        archiveAvailable: true,
+      })
+    ).toBe(true)
+    expect(
+      shouldShowDepositPostDisabled({
+        pickupStatus: "POSTED",
+        depositStatus: "NOT_POSTED",
+        payInEvidenceStatus: null,
+        archiveAvailable: false,
       })
     ).toBe(true)
   })
@@ -152,11 +173,13 @@ describe("PayInSlipUploadModal", () => {
     const html = renderToStaticMarkup(
       <PayInSlipUploadModal
         open
-        row={{
-          collectorReportId: "collector-report-1",
-          collectNo: "COL-SH001-202606-0001",
-          branchLabel: "SH001 — Chidlom",
-        }}
+        rows={[
+          {
+            collectorReportId: "collector-report-1",
+            collectNo: "COL-SH001-202606-0001",
+            branchLabel: "SH001 — Chidlom",
+          },
+        ]}
         verifiedStaff={{ staffId: "001", staffName: "Collector" }}
         onClose={() => undefined}
         onSaved={() => undefined}
@@ -164,7 +187,7 @@ describe("PayInSlipUploadModal", () => {
     )
 
     expect(html).toContain('data-testid="pay-in-slip-upload-modal"')
-    expect(html).toContain("COL-SH001-202606-0001-001.jpg")
+    expect(html).toContain("COL-SH001-202606-0001-001")
     expect(html).toContain('data-testid="pay-in-slip-save-button"')
     expect(html).toContain("disabled")
     expect(html).toContain("theme-dialog-light")

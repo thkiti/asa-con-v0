@@ -1,4 +1,8 @@
 import type { DocumentArchiveKind, DocumentKind } from "@/generated/prisma/client"
+import {
+  COL_PAY_IN_ARCHIVE_WORKFLOW,
+  isColPayInEvidenceRequiredWorkflow,
+} from "./col-pay-in-workflow"
 
 export type { DocumentArchiveKind, DocumentKind }
 
@@ -103,6 +107,12 @@ export function resolveArchiveRequirementPolicy(input: {
   const workflowStatus = String(input.workflowStatus ?? "").trim().toUpperCase()
 
   if (documentKind === "COL" && archiveKind === "BANK_PAY_IN_SLIP") {
+    if (isColPayInEvidenceRequiredWorkflow(workflowStatus)) {
+      return "required"
+    }
+    if (workflowStatus === COL_PAY_IN_ARCHIVE_WORKFLOW.PAY_IN_POSTED) {
+      return "optional"
+    }
     return "unsupported"
   }
 
@@ -127,10 +137,6 @@ export function resolveArchiveRequirementPolicy(input: {
   }
 
   if (documentKind === "REF" && archiveKind === "REFUND_SLIP") {
-    return "unsupported"
-  }
-
-  if (documentKind === "COL") {
     return "unsupported"
   }
 

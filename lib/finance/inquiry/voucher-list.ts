@@ -26,6 +26,8 @@ import {
   resolvePostedVoucherDocumentNo,
 } from "./finance-document-inquiry-helpers"
 import { buildDocumentArchiveRefKey } from "@/lib/document-archive/kinds"
+import { resolveColPayInArchiveWorkflowStatus } from "@/lib/document-archive/col-pay-in-workflow"
+import { resolveColBankPayInArchiveAvailable } from "@/lib/document-archive/resolve-col-archive-available"
 import {
   OPERATIONAL_VOUCHER_REF_TYPES,
   resolveOperationalVoucherDocumentKind,
@@ -233,7 +235,8 @@ type VoucherListDbRow = {
 function mapVoucherRow(
   row: VoucherListDbRow,
   posReceipt?: { receiptNo: string; pdfPath: string | null },
-  vaultByKey?: Map<string, VaultArchiveRecord>
+  vaultByKey?: Map<string, VaultArchiveRecord>,
+  colDepositPostedByRefId?: Map<string, boolean>
 ): FinanceVoucherListRow {
   const amountLines = row.journalEntry?.lines.length ? row.journalEntry.lines : row.lines
   const { totalDebit, totalCredit } = sumLineTotals(amountLines)
@@ -251,6 +254,7 @@ function mapVoucherRow(
       ? posReceipt.receiptNo
       : documentNo
   let pdfAvailable: boolean | null = null
+  let archiveAvailable: boolean | null = null
   if (MANUAL_JOURNAL_FAMILY.has(row.refType)) {
     const documentTypeCode = resolveVoucherInquiryDocumentTypeCode(row.refType)
     const documentKind = documentTypeCode === "OPB" ? "OPB" : "MJV"
@@ -292,6 +296,28 @@ function mapVoucherRow(
   if (row.refType === FINANCE_REF_TYPES.POS_SALE && pdfAvailable === null && posReceipt) {
     pdfAvailable = resolvePosReceiptArchivePdfAvailable(posReceipt.pdfPath)
   }
+  if (row.refType === FINANCE_REF_TYPES.POS_SETTLEMENT_COLLECTOR_PICKUP) {
+    const depositPosted = colDepositPostedByRefId?.get(row.refId) ?? false
+    const workflowStatus = resolveColPayInArchiveWorkflowStatus({
+      pickupStatus: row.status,
+      depositStatus: depositPosted ? "POSTED" : "NOT_POSTED",
+    })
+    const vaultKey = buildDocumentArchiveRefKey(
+      "COL",
+      row.refId,
+      "BANK_PAY_IN_SLIP"
+    )
+    archiveAvailable = resolveColBankPayInArchiveAvailable(
+      {
+        documentKind: "COL",
+        documentId: row.refId,
+        documentNo: resolvedDocumentNo,
+        archiveKind: "BANK_PAY_IN_SLIP",
+        workflowStatus,
+      },
+      vaultByKey?.get(vaultKey)
+    )
+  }
 
   return {
     id: row.id,
@@ -314,6 +340,7 @@ function mapVoucherRow(
     documentTypeCode: resolveVoucherInquiryDocumentTypeCode(row.refType),
     documentNo: resolvedDocumentNo,
     pdfAvailable,
+    archiveAvailable,
   }
 }
 
@@ -330,6 +357,37 @@ function applyPostQueryFilters(
     }
     return true
   })
+}
+
+async function loadColDepositPostedByRefId(
+  prisma: FinanceVoucherListPrisma,
+  refIds: string[]
+): Promise<Map<string, boolean>> {
+  if (refIds.length === 0 || !prisma.voucher) {
+    return new Map()
+  }
+
+  const vouchers = await prisma.voucher.findMany({
+    where: {
+      refType: FINANCE_REF_TYPES.POS_SETTLEMENT_BANK_DEPOSIT,
+      refId: { in: refIds },
+    },
+    select: {
+      refId: true,
+      journalEntry: {
+        select: {
+          lines: { select: { id: true }, take: 1 },
+        },
+      },
+    },
+  })
+
+  return new Map(
+    vouchers.map((row) => [
+      row.refId,
+      Boolean(row.journalEntry?.lines?.length),
+    ])
+  )
 }
 
 export async function listFinanceVouchers(
@@ -435,15 +493,24 @@ export async function listFinanceVouchers(
         : null
     })
     .filter((ref): ref is NonNullable<typeof ref> => ref != null)
-  const vaultRefs = [...manualJournalRefs, ...operationalVoucherRefs]
+  const colRefIds = (rows as VoucherListDbRow[])
+    .filter((row) => row.refType === FINANCE_REF_TYPES.POS_SETTLEMENT_COLLECTOR_PICKUP)
+    .map((row) => row.refId)
+  const colVaultRefs = colRefIds.map((refId) => ({
+    documentKind: "COL" as const,
+    documentId: refId,
+    archiveKind: "BANK_PAY_IN_SLIP" as const,
+  }))
+  const vaultRefs = [...manualJournalRefs, ...operationalVoucherRefs, ...colVaultRefs]
   const vaultByKey =
     vaultRefs.length > 0
       ? await loadVaultArchivesForRefs(prisma, vaultRefs)
       : new Map<string, VaultArchiveRecord>()
+  const colDepositPostedByRefId = await loadColDepositPostedByRefId(prisma, colRefIds)
 
   let vouchers = applyPostQueryFilters(
     (rows as VoucherListDbRow[]).map((row) =>
-      mapVoucherRow(row, receiptBySaleId.get(row.refId), vaultByKey)
+      mapVoucherRow(row, receiptBySaleId.get(row.refId), vaultByKey, colDepositPostedByRefId)
     ),
     scopedFilter
   )

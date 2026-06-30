@@ -6,6 +6,7 @@ import {
   type BankDepositSettlementPostResult,
 } from "./bank-deposit-post-response"
 import { extractCollectorPickupCashAmount } from "./collector-cash-amount"
+import { getCollectorPickupSettlementStatus } from "./collector-pickup-reconciliation"
 import { loadCollectorReportForSettlement } from "./post-collector-pickup"
 import {
   assertPayInEvidenceUploadedForPosting,
@@ -66,9 +67,16 @@ export async function executePayInConfirm(
   const report = parseCollectorReportJson(source.reportJson)
   const cashAmount = extractCollectorPickupCashAmount(report)
 
+  const reconciliation = await getCollectorPickupSettlementStatus(prisma, collectorReportId)
+
   const evidence = await assertPayInEvidenceUploadedForPosting(
     prisma,
-    collectorReportId
+    collectorReportId,
+    {
+      collectNo: source.collectNo,
+      pickupStatus: reconciliation.status,
+      depositStatus: reconciliation.depositStatus,
+    }
   )
 
   await updatePayInEvidenceDepositMeta(prisma, {

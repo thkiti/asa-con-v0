@@ -24,7 +24,7 @@ export type PayInSlipUploadModalRow = {
 }
 
 type PayInSlipUploadModalProps = {
-  row: PayInSlipUploadModalRow | null
+  rows: PayInSlipUploadModalRow[]
   verifiedStaff: PayInVerifiedStaff | null
   open: boolean
   onClose: () => void
@@ -32,12 +32,13 @@ type PayInSlipUploadModalProps = {
 }
 
 export function PayInSlipUploadModal({
-  row,
+  rows,
   verifiedStaff,
   open,
   onClose,
   onSaved,
 }: PayInSlipUploadModalProps) {
+  const primaryRow = rows[0] ?? null
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -49,17 +50,18 @@ export function PayInSlipUploadModal({
     setSelectedFile(null)
     setUploading(false)
     setError(null)
-  }, [open, row?.collectorReportId])
+  }, [open, primaryRow?.collectorReportId])
 
-  if (!open || !row || !verifiedStaff) return null
+  if (!open || !primaryRow || !verifiedStaff || rows.length === 0) return null
 
   async function handleSave() {
-    if (!row || !verifiedStaff || !selectedFile) return
+    if (!primaryRow || !verifiedStaff || !selectedFile) return
     setUploading(true)
     setError(null)
     try {
       await uploadPayInSlipEvidence({
-        collectorReportId: row.collectorReportId,
+        collectorReportId: primaryRow.collectorReportId,
+        collectorReportIds: rows.map((row) => row.collectorReportId),
         staffId: verifiedStaff.staffId,
         file: selectedFile,
       })
@@ -80,7 +82,8 @@ export function PayInSlipUploadModal({
     setError(null)
   }
 
-  const storageName = `${row.collectNo}-${verifiedStaff.staffId}.jpg`
+  const storageName = `${primaryRow.collectNo}-${verifiedStaff.staffId}`
+  const collectLabels = rows.map((row) => row.collectNo).join(", ")
 
   return (
     <div
@@ -93,14 +96,14 @@ export function PayInSlipUploadModal({
       <div className={themeDialogLightWide}>
         <h2 className={themeDialogLightTitleLg}>Upload PAY-IN Slip</h2>
         <p className={themeDialogLightBody}>
-          {row.collectNo} · {row.branchLabel} · Staff {verifiedStaff.staffId}
+          {collectLabels} · Staff {verifiedStaff.staffId}
         </p>
 
         <label className="mt-4 block">
           <span className={themeDialogLightLabel}>Select or take photo</span>
           <input
             type="file"
-            accept="image/*"
+            accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"
             capture="environment"
             onChange={handleFileChange}
             disabled={uploading}

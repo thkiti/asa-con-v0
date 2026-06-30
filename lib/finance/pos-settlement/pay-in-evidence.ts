@@ -2,10 +2,16 @@ import {
   PaymentEvidenceStatus,
   type PrismaClient,
 } from "@/generated/prisma/client"
+import { buildDocumentArchiveByDocumentDownloadPath } from "@/lib/document-archive-ui/paths"
 import {
   PosSettlementError,
   PosSettlementErrorCodes,
 } from "./pos-settlement-errors"
+import {
+  assertPayInVaultEvidenceForPosting,
+  isPayInEvidenceReadyForPosting,
+  type PayInEvidenceVaultDb,
+} from "./pay-in-evidence-vault"
 
 export type PayInEvidenceRecord = {
   id: string
@@ -32,6 +38,8 @@ export type PayInEvidenceSummary = {
   payInSlipMissingWarning: boolean
   bankDepositDate: string | null
   bankAccountCode: string | null
+  archiveAvailable: boolean | null
+  payInEvidenceDownloadPath: string | null
 }
 
 export type PayInEvidenceDb = Pick<PrismaClient, "posPayInEvidence" | "collectorReport">
@@ -44,24 +52,49 @@ export function isPayInEvidenceUploaded(
   return evidence?.status === PaymentEvidenceStatus.UPLOADED
 }
 
+function buildColPayInEvidenceDownloadPath(collectorReportId: string): string {
+  return buildDocumentArchiveByDocumentDownloadPath(
+    "COL",
+    collectorReportId,
+    "BANK_PAY_IN_SLIP"
+  )
+}
+
 export function buildPayInEvidenceSummary(input: {
   evidence: PayInEvidenceRecord | null
   depositPosted: boolean
+  archiveAvailable?: boolean | null
+  collectorReportId?: string
 }): PayInEvidenceSummary {
   const evidence = input.evidence
-  const uploaded = isPayInEvidenceUploaded(evidence)
-  const payInSlipMissingWarning =
-    input.depositPosted && !uploaded
+  const vaultReady = input.archiveAvailable === true
+  const legacyUploaded = isPayInEvidenceUploaded(evidence)
+  const uploaded = vaultReady || legacyUploaded
+  const payInSlipMissingWarning = input.depositPosted && !uploaded
+  const collectorReportId = String(input.collectorReportId ?? evidence?.collectorReportId ?? "").trim()
+
+  const payInEvidenceUrl = vaultReady
+    ? collectorReportId
+      ? buildColPayInEvidenceDownloadPath(collectorReportId)
+      : null
+    : legacyUploaded
+      ? evidence?.blobUrl ?? null
+      : null
 
   return {
     payInEvidenceId: evidence?.id ?? null,
-    payInEvidenceStatus: evidence?.status ?? null,
-    payInEvidenceUrl: uploaded ? evidence?.blobUrl ?? null : null,
+    payInEvidenceStatus: uploaded ? PaymentEvidenceStatus.UPLOADED : evidence?.status ?? null,
+    payInEvidenceUrl,
     payInSlipMissingWarning,
     bankDepositDate: evidence?.bankDepositDate
       ? evidence.bankDepositDate.toISOString().slice(0, 10)
       : null,
     bankAccountCode: evidence?.bankAccountCode ?? null,
+    archiveAvailable: input.archiveAvailable ?? null,
+    payInEvidenceDownloadPath:
+      input.archiveAvailable === true && collectorReportId
+        ? buildColPayInEvidenceDownloadPath(collectorReportId)
+        : null,
   }
 }
 
@@ -114,11 +147,33 @@ export async function ensurePayInEvidenceRow(
 }
 
 export async function assertPayInEvidenceUploadedForPosting(
-  db: PayInEvidenceDb,
-  collectorReportId: string
+  db: PayInEvidenceDb & PayInEvidenceVaultDb,
+  collectorReportId: string,
+  input?: {
+    collectNo?: string
+    pickupStatus?: string
+    depositStatus?: string
+  }
 ): Promise<PayInEvidenceRecord> {
   const evidence = await getPayInEvidenceByCollectorReportId(db, collectorReportId)
-  if (!isPayInEvidenceUploaded(evidence)) {
+
+  if (input?.collectNo && input.pickupStatus && input.depositStatus) {
+    await assertPayInVaultEvidenceForPosting(db, {
+      collectorReportId,
+      collectNo: input.collectNo,
+      pickupStatus: input.pickupStatus,
+      depositStatus: input.depositStatus,
+      legacyEvidence: evidence,
+    })
+    if (evidence) return evidence
+    throw new PosSettlementError(
+      "PAY-IN slip evidence is required before bank deposit posting",
+      PosSettlementErrorCodes.PAY_IN_SLIP_REQUIRED,
+      409
+    )
+  }
+
+  if (!isPayInEvidenceReadyForPosting({ archiveAvailable: null, legacyEvidence: evidence })) {
     throw new PosSettlementError(
       "PAY-IN slip evidence is required before bank deposit posting",
       PosSettlementErrorCodes.PAY_IN_SLIP_REQUIRED,

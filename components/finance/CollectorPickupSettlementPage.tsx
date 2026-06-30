@@ -26,7 +26,10 @@ import {
   formatPayInConfirmError,
   postDepositSettlement,
 } from "@/lib/finance-ui/pay-in-settlement"
-import { isPayInSlipUploaded } from "@/lib/finance-ui/collector-pickup-settlement-display"
+import {
+  isEligibleForPayInEvidenceUpload,
+  isPayInSlipUploaded,
+} from "@/lib/finance-ui/collector-pickup-settlement-display"
 import { collectorPickupSettlementPageClass } from "@/lib/finance-ui/finance-visual-classes"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
@@ -80,7 +83,10 @@ export function CollectorPickupSettlementPage() {
   const [entityBlocked, setEntityBlocked] = useState(false)
   const [staffGateRow, setStaffGateRow] =
     useState<CollectorPickupSettlementReconciliation | null>(null)
-  const [uploadRow, setUploadRow] = useState<PayInSlipUploadModalRow | null>(null)
+  const [uploadRows, setUploadRows] = useState<PayInSlipUploadModalRow[]>([])
+  const [selectedPayInReportIds, setSelectedPayInReportIds] = useState<Set<string>>(
+    () => new Set()
+  )
   const [verifiedStaff, setVerifiedStaff] = useState<PayInVerifiedStaff | null>(null)
   const [previewRow, setPreviewRow] =
     useState<CollectorPickupSettlementReconciliation | null>(null)
@@ -142,24 +148,62 @@ export function CollectorPickupSettlementPage() {
     setStaffGateRow(row)
   }
 
+  function togglePayInSelection(collectorReportId: string) {
+    setSelectedPayInReportIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(collectorReportId)) next.delete(collectorReportId)
+      else next.add(collectorReportId)
+      return next
+    })
+  }
+
+  function buildPayInUploadGroup(
+    anchorRow: CollectorPickupSettlementReconciliation
+  ): CollectorPickupSettlementReconciliation[] {
+    const groupIds = new Set<string>([anchorRow.collectorReportId])
+    for (const id of selectedPayInReportIds) {
+      if (id === anchorRow.collectorReportId) continue
+      const row = items.find((item) => item.collectorReportId === id)
+      if (
+        row &&
+        isEligibleForPayInEvidenceUpload({
+          pickupStatus: row.status,
+          depositStatus: row.depositStatus,
+          archiveAvailable: row.archiveAvailable,
+          payInEvidenceStatus: row.payInEvidenceStatus,
+        })
+      ) {
+        groupIds.add(id)
+      }
+    }
+    return items.filter((item) => groupIds.has(item.collectorReportId))
+  }
+
   function handleStaffVerified(staff: PayInVerifiedStaff) {
     if (!staffGateRow) return
+    const group = buildPayInUploadGroup(staffGateRow)
     setVerifiedStaff(staff)
-    setUploadRow(toUploadModalRow(staffGateRow))
+    setUploadRows(group.map(toUploadModalRow))
+    setSelectedPayInReportIds(new Set())
     setStaffGateRow(null)
   }
 
   async function handleUploadSaved() {
     await load(filter)
     setVerifiedStaff(null)
-    setUploadRow(null)
+    setUploadRows([])
   }
 
   async function handleDepositPost(collectorReportId: string) {
     const row = items.find((item) => item.collectorReportId === collectorReportId)
     if (!row) return
 
-    if (!isPayInSlipUploaded(row.payInEvidenceStatus)) {
+    if (
+      !isPayInSlipUploaded({
+        archiveAvailable: row.archiveAvailable,
+        payInEvidenceStatus: row.payInEvidenceStatus,
+      })
+    ) {
       setDepositPostError("Upload PAY-IN Slip first.")
       return
     }
@@ -222,6 +266,8 @@ export function CollectorPickupSettlementPage() {
         items={items}
         depositPostingReportId={depositPostingReportId ?? repairPostingReportId}
         depositPostError={depositPostError}
+        selectedPayInReportIds={selectedPayInReportIds}
+        onTogglePayInSelect={entityBlocked ? undefined : togglePayInSelection}
         onUploadSlip={entityBlocked ? undefined : handleOpenUpload}
         onPreviewPayInSlip={setPreviewRow}
         onDepositPost={entityBlocked ? undefined : handleDepositPost}
@@ -248,11 +294,11 @@ export function CollectorPickupSettlementPage() {
       />
 
       <PayInSlipUploadModal
-        row={uploadRow}
+        rows={uploadRows}
         verifiedStaff={verifiedStaff}
-        open={uploadRow != null && verifiedStaff != null}
+        open={uploadRows.length > 0 && verifiedStaff != null}
         onClose={() => {
-          setUploadRow(null)
+          setUploadRows([])
           setVerifiedStaff(null)
         }}
         onSaved={handleUploadSaved}
@@ -260,7 +306,11 @@ export function CollectorPickupSettlementPage() {
 
       <PayInSlipPreviewModal
         open={previewRow != null}
-        imageUrl={previewRow?.payInEvidenceUrl ?? null}
+        imageUrl={
+          previewRow?.payInEvidenceDownloadPath ??
+          previewRow?.payInEvidenceUrl ??
+          null
+        }
         collectNo={previewRow?.collectNo}
         onClose={() => setPreviewRow(null)}
       />

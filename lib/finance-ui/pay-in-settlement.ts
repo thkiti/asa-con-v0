@@ -11,6 +11,8 @@ export type PayInEvidenceUploadResult = {
   status: Exclude<PayInEvidenceUiStatus, null>
   blobPathname: string
   blobUrl: string
+  archiveId?: string
+  linkedCollectorReportIds?: string[]
 }
 
 export type PayInVerifyStaffResult =
@@ -60,11 +62,15 @@ export async function verifyPayInUploadStaffCredential(input: {
 
 export function uploadPayInSlipEvidence(input: {
   collectorReportId: string
+  collectorReportIds?: string[]
   staffId: string
   file: File
 }): Promise<PayInEvidenceUploadResult> {
   const form = new FormData()
   form.append("collectorReportId", input.collectorReportId)
+  if (input.collectorReportIds?.length) {
+    form.append("collectorReportIds", JSON.stringify(input.collectorReportIds))
+  }
   form.append("staffId", input.staffId)
   form.append("file", input.file)
 

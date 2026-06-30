@@ -59,6 +59,10 @@ export async function loadVaultArchivesForRefs(
     return new Map()
   }
 
+  if (!prisma?.documentArchiveLink) {
+    return new Map()
+  }
+
   const documentIds = [...new Set(refs.map((ref) => ref.documentId.trim()).filter(Boolean))]
   const documentKinds = [...new Set(refs.map((ref) => ref.documentKind))]
 
