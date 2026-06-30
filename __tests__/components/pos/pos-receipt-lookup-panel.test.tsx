@@ -48,11 +48,20 @@ jest.mock("@/lib/pos-ui/read-report-client", () => ({
   verifyPosStaffCredential: jest.fn(),
 }))
 
+jest.mock("@/lib/pos-ui/pos-rec-ref-lookup", () => ({
+  searchPosRecRefLookup: jest.fn(),
+}))
+
 import { fetchReceiptLookup } from "@/lib/pos-ui/receipt-lookup-client"
 import { fetchRefundLookup } from "@/lib/pos-ui/refund-lookup-client"
 import { fetchCollectorLookup } from "@/lib/pos-ui/collector-lookup-client"
 import { fetchDocumentLookupRunningNumbers } from "@/lib/pos-ui/document-lookup-running-client"
 import { fetchPosReadZReviewReport } from "@/lib/pos-ui/read-report-client"
+import { searchPosRecRefLookup } from "@/lib/pos-ui/pos-rec-ref-lookup"
+import {
+  voucherInquiryFilterControl,
+  voucherInquiryFilterFramed,
+} from "@/lib/finance-ui/finance-visual-classes"
 
 const mockedFetch = fetchReceiptLookup as jest.MockedFunction<typeof fetchReceiptLookup>
 const mockedRefundFetch = fetchRefundLookup as jest.MockedFunction<typeof fetchRefundLookup>
@@ -62,6 +71,9 @@ const mockedRunningFetch = fetchDocumentLookupRunningNumbers as jest.MockedFunct
 >
 const mockedReadZReviewFetch = fetchPosReadZReviewReport as jest.MockedFunction<
   typeof fetchPosReadZReviewReport
+>
+const mockedRecRefSearch = searchPosRecRefLookup as jest.MockedFunction<
+  typeof searchPosRecRefLookup
 >
 
 const receiptThermalLayout = {
@@ -260,8 +272,9 @@ describe("PosReceiptPanel receipt lookup mode", () => {
     expect(html).toContain(posDocumentLookupPanel)
     expect(html).toContain(posDocumentLookupLabel)
     expect(html).toContain(posDocumentLookupSelect)
-    expect(html).toContain(posDocumentLookupInput)
-    expect(html).toContain(posDocumentLookupButton)
+    expect(html).toContain(voucherInquiryFilterFramed)
+    expect(html).toContain(voucherInquiryFilterControl)
+    expect(html).not.toContain(posDocumentLookupButton)
     expect(html).not.toContain("text-zinc-900")
     expect(html).not.toContain("text-white/80")
     expect(html).toContain('data-testid="document-lookup-doc-type"')
@@ -276,6 +289,7 @@ describe("PosReceiptLookupPanel", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockedFetch.mockResolvedValue({ ok: true, result: { receipts: [] } })
+    mockedRecRefSearch.mockResolvedValue({ ok: true, rows: [] })
     mockedRunningFetch.mockResolvedValue({ ok: true, runningNumbers: ["0001", "0008"] })
     mockedReadZReviewFetch.mockResolvedValue({ ok: true, report: readZReport })
     container = document.createElement("div")
@@ -327,81 +341,38 @@ describe("PosReceiptLookupPanel", () => {
     })
   }
 
-  it("uses running dropdown for Receipt and shows date picker without label", async () => {
-    mockedFetch.mockResolvedValue({
-      ok: true,
-      result: { receipts: [readyReceipt] },
-    })
+  it("uses compact inquiry filters for Receipt with period and more-filter dot", async () => {
     await mountPanelAndFlush()
 
-    expect(container.querySelector('[data-testid="receipt-lookup-running-no"]')).toBeNull()
-    expect(container.querySelector('[data-testid="document-lookup-running-select"]')).not.toBeNull()
-    expect(container.querySelector('[data-testid="receipt-lookup-date"]')).not.toBeNull()
-    expect(container.querySelector('[data-testid="receipt-lookup-search-row"]')).not.toBeNull()
-    const filterLabels = Array.from(
-      container.querySelectorAll('[data-testid="receipt-lookup-filters"] span')
-    ).map((node) => node.textContent)
-    expect(filterLabels).not.toContain("Date")
-    expect(container.querySelector('[data-testid="receipt-lookup-results-list"]')).toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-filter-period"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-more-filter"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-more-filter-panel"]')).toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-filter-no"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="document-lookup-running-select"]')).toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-date"]')).toBeNull()
   })
 
-  it("loads running dropdown options when date changes", async () => {
-    const receipt0114: ReceiptLookupRow = {
-      ...readyReceipt,
-      receiptId: "receipt-4",
-      receiptNo: "REC-SH001-202606-0114",
-      issuedAt: "2026-06-06T10:41:00.000Z",
-    }
-    const receipt0111: ReceiptLookupRow = {
-      ...readyReceipt,
-      receiptId: "receipt-3",
-      receiptNo: "REC-SH001-202606-0111",
-      issuedAt: "2026-06-06T08:00:00.000Z",
-    }
-
-    mockedFetch.mockResolvedValue({
+  it("searches receipts through inquiry search with period date range", async () => {
+    mockedRecRefSearch.mockResolvedValue({
       ok: true,
-      result: { receipts: [receipt0114, readyReceipt, receipt0111] },
-    })
-
-    mountHarness("")
-
-    await act(async () => {
-      await Promise.resolve()
-    })
-
-    const runningSelect = container.querySelector(
-      '[data-testid="document-lookup-running-select"]'
-    ) as HTMLSelectElement
-    const optionValues = Array.from(runningSelect.options)
-      .map((option) => option.value)
-      .filter(Boolean)
-    const optionLabels = Array.from(runningSelect.options)
-      .map((option) => option.textContent ?? "")
-      .filter((label) => label && label !== "Select…")
-
-    expect(optionValues).toEqual(["0114", "0113", "0111"])
-    expect(optionLabels).toEqual(["0114", "0113", "0111"])
-    expect(optionLabels.every((label) => !label.includes("REC-"))).toBe(true)
-    expect(runningSelect.value).toBe("0114")
-    expect(container.querySelector('[data-testid="receipt-lookup-results-list"]')).toBeNull()
-  })
-
-  it("searches exact receipt when running number is selected", async () => {
-    mockedFetch.mockResolvedValue({
-      ok: true,
-      result: { receipts: [readyReceipt] },
+      rows: [
+        {
+          id: readyReceipt.receiptId,
+          documentNo: readyReceipt.receiptNo,
+          issuedAt: readyReceipt.issuedAt,
+          branchCode: readyReceipt.branchCode,
+          branchName: readyReceipt.branchName,
+          docType: "REC",
+          statusLabel: readyReceipt.archiveStatusLabel,
+          pdfAvailable: true,
+          receipt: readyReceipt,
+        },
+      ],
     })
 
     mountPanel({ runningNo: "0113" })
     await act(async () => {
       await Promise.resolve()
-    })
-
-    mockedFetch.mockClear()
-    mockedFetch.mockResolvedValue({
-      ok: true,
-      result: { receipts: [readyReceipt] },
     })
 
     const searchBtn = container.querySelector(
@@ -413,33 +384,30 @@ describe("PosReceiptLookupPanel", () => {
       await Promise.resolve()
     })
 
-    expect(mockedFetch).toHaveBeenCalledWith({
-      branchId: "b1",
-      receiptNo: "REC-SH001-202606-0113",
-    })
-    expect(mockedFetch.mock.calls[0]?.[0]).not.toHaveProperty("dateFrom")
+    expect(mockedRecRefSearch).toHaveBeenCalledWith(
+      "b1",
+      expect.objectContaining({
+        docType: "REC",
+        periodKey: expect.any(String),
+      })
+    )
+    expect(container.querySelector('[data-testid="receipt-lookup-more-filter-panel"]')).toBeNull()
   })
 
-  it("clears running dropdown and shows message when no receipt exists for selected date", async () => {
-    mockedFetch.mockResolvedValue({ ok: true, result: { receipts: [] } })
+  it("shows empty inquiry table when no receipt matches", async () => {
+    mockedRecRefSearch.mockResolvedValue({ ok: true, rows: [] })
 
     mountHarness("0113")
 
     await act(async () => {
+      ;(
+        container.querySelector('[data-testid="receipt-lookup-search"]') as HTMLButtonElement
+      ).click()
       await Promise.resolve()
     })
 
-    const runningSelect = container.querySelector(
-      '[data-testid="document-lookup-running-select"]'
-    ) as HTMLSelectElement
-
-    expect(runningSelect.value).toBe("")
-    expect(Array.from(runningSelect.options).filter((o) => o.value).length).toBe(0)
-    expect(
-      container.querySelector('[data-testid="receipt-lookup-date-empty-message"]')
-    ).not.toBeNull()
-    expect(container.textContent).toContain("No receipt found for selected date.")
-    expect(container.querySelector('[data-testid="receipt-lookup-results-list"]')).toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-table"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-empty"]')).toBeNull()
   })
 
   it("closes panel when X button is clicked", () => {
@@ -571,18 +539,24 @@ describe("PosReceiptLookupPanel", () => {
   })
 
   it("uses shared print preview renderer with header, footer, and COPY watermark", async () => {
-    mockedFetch.mockResolvedValue({
+    mockedRecRefSearch.mockResolvedValue({
       ok: true,
-      result: { receipts: [readyReceipt] },
+      rows: [
+        {
+          id: readyReceipt.receiptId,
+          documentNo: readyReceipt.receiptNo,
+          issuedAt: readyReceipt.issuedAt,
+          branchCode: readyReceipt.branchCode,
+          branchName: readyReceipt.branchName,
+          docType: "REC",
+          statusLabel: readyReceipt.archiveStatusLabel,
+          pdfAvailable: true,
+          receipt: readyReceipt,
+        },
+      ],
     })
 
     await mountPanelAndFlush()
-
-    mockedFetch.mockClear()
-    mockedFetch.mockResolvedValue({
-      ok: true,
-      result: { receipts: [readyReceipt] },
-    })
 
     const searchBtn = container.querySelector(
       '[data-testid="receipt-lookup-search"]'
@@ -608,18 +582,24 @@ describe("PosReceiptLookupPanel", () => {
   })
 
   it("shows legacy slip preview, archive status, and no PDF buttons", async () => {
-    mockedFetch.mockResolvedValue({
+    mockedRecRefSearch.mockResolvedValue({
       ok: true,
-      result: { receipts: [legacyReceipt] },
+      rows: [
+        {
+          id: legacyReceipt.receiptId,
+          documentNo: legacyReceipt.receiptNo,
+          issuedAt: legacyReceipt.issuedAt,
+          branchCode: legacyReceipt.branchCode,
+          branchName: legacyReceipt.branchName,
+          docType: "REC",
+          statusLabel: legacyReceipt.archiveStatusLabel,
+          pdfAvailable: null,
+          receipt: legacyReceipt,
+        },
+      ],
     })
 
     await mountPanelAndFlush()
-
-    mockedFetch.mockClear()
-    mockedFetch.mockResolvedValue({
-      ok: true,
-      result: { receipts: [legacyReceipt] },
-    })
 
     const searchBtn = container.querySelector(
       '[data-testid="receipt-lookup-search"]'
@@ -643,7 +623,7 @@ describe("PosReceiptLookupPanel", () => {
     ).toBe("legacy")
   })
 
-  it("uses Running dropdown for Refund and reloads options when month changes", async () => {
+  it("uses compact inquiry filters for Refund", async () => {
     mountPanel({ runningNo: "" })
 
     const docTypeSelect = container.querySelector(
@@ -656,37 +636,29 @@ describe("PosReceiptLookupPanel", () => {
       await Promise.resolve()
     })
 
-    expect(container.querySelector('[data-testid="receipt-lookup-running-no"]')).toBeNull()
-    expect(container.querySelector('[data-testid="document-lookup-running-select"]')).not.toBeNull()
-    expect(container.querySelector('[data-testid="receipt-lookup-date"]')).toBeNull()
-    expect(mockedRunningFetch).toHaveBeenCalledWith({
-      branchId: "b1",
-      docType: "refund",
-      year: expect.any(Number),
-      month: expect.any(Number),
-    })
-
-    const monthSelect = container.querySelector(
-      '[data-testid="receipt-lookup-month"]'
-    ) as HTMLSelectElement
-
-    mockedRunningFetch.mockClear()
-
-    await act(async () => {
-      monthSelect.value = "5"
-      monthSelect.dispatchEvent(new Event("change", { bubbles: true }))
-      await Promise.resolve()
-    })
-
-    expect(mockedRunningFetch).toHaveBeenCalledWith(
-      expect.objectContaining({ docType: "refund", month: 5 })
-    )
+    expect(container.querySelector('[data-testid="refund-lookup-filter-period"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="refund-lookup-more-filter"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="refund-lookup-more-filter-panel"]')).toBeNull()
+    expect(container.querySelector('[data-testid="document-lookup-running-select"]')).toBeNull()
+    expect(mockedRunningFetch).not.toHaveBeenCalled()
   })
 
-  it("searches refund by built REF number when Refund doc type is selected", async () => {
-    mockedRefundFetch.mockResolvedValue({
+  it("searches refund through inquiry search when Refund doc type is selected", async () => {
+    mockedRecRefSearch.mockResolvedValue({
       ok: true,
-      result: { refunds: [legacyRefund] },
+      rows: [
+        {
+          id: legacyRefund.refundId,
+          documentNo: legacyRefund.refundNo,
+          issuedAt: legacyRefund.issuedAt,
+          branchCode: legacyRefund.branchCode,
+          branchName: legacyRefund.branchName,
+          docType: "REF",
+          statusLabel: legacyRefund.archiveStatusLabel,
+          pdfAvailable: null,
+          refund: legacyRefund,
+        },
+      ],
     })
 
     mountHarness("")
@@ -701,45 +673,32 @@ describe("PosReceiptLookupPanel", () => {
       await Promise.resolve()
     })
 
-    const yearSelect = container.querySelector(
-      '[data-testid="receipt-lookup-year"]'
-    ) as HTMLSelectElement
-    const monthSelect = container.querySelector(
-      '[data-testid="receipt-lookup-month"]'
-    ) as HTMLSelectElement
-    const runningSelect = container.querySelector(
-      '[data-testid="document-lookup-running-select"]'
-    ) as HTMLSelectElement
+    const noInput = container.querySelector(
+      '[data-testid="refund-lookup-filter-no"]'
+    ) as HTMLInputElement
 
     await act(async () => {
-      yearSelect.value = "2026"
-      yearSelect.dispatchEvent(new Event("change", { bubbles: true }))
-      monthSelect.value = "6"
-      monthSelect.dispatchEvent(new Event("change", { bubbles: true }))
-      await Promise.resolve()
-    })
-
-    await act(async () => {
-      runningSelect.value = "0008"
-      runningSelect.dispatchEvent(new Event("change", { bubbles: true }))
+      noInput.value = "REF-SH001-202606-0008"
+      noInput.dispatchEvent(new Event("input", { bubbles: true }))
+      noInput.dispatchEvent(new Event("change", { bubbles: true }))
     })
 
     const searchBtn = container.querySelector(
-      '[data-testid="receipt-lookup-search"]'
+      '[data-testid="refund-lookup-search"]'
     ) as HTMLButtonElement
-
-    mockedFetch.mockClear()
 
     await act(async () => {
       searchBtn.click()
       await Promise.resolve()
     })
 
-    expect(mockedRefundFetch).toHaveBeenCalledWith({
-      branchId: "b1",
-      refundNo: "REF-SH001-202606-0008",
-    })
-    expect(mockedFetch).not.toHaveBeenCalled()
+    expect(mockedRecRefSearch).toHaveBeenCalledWith(
+      "b1",
+      expect.objectContaining({
+        docType: "REF",
+      })
+    )
+    expect(mockedRefundFetch).not.toHaveBeenCalled()
     expect(container.querySelector('[data-testid="refund-lookup-print-preview"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="receipt-lookup-copy-watermark"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="refund-lookup-legacy-message"]')).not.toBeNull()
@@ -807,90 +766,6 @@ describe("PosReceiptLookupPanel", () => {
     expect(container.querySelector('[data-testid="collector-lookup-view-pdf"]')).toBeNull()
   })
 
-  it("does not steal focus from date picker while focus lock interval runs", async () => {
-    jest.useFakeTimers()
-    mockedFetch.mockResolvedValue({
-      ok: true,
-      result: { receipts: [readyReceipt] },
-    })
-    await mountPanelAndFlush()
-
-    const dateInput = container.querySelector(
-      '[data-testid="receipt-lookup-date"]'
-    ) as HTMLInputElement
-    const runningSelect = container.querySelector(
-      '[data-testid="document-lookup-running-select"]'
-    ) as HTMLSelectElement
-
-    act(() => {
-      dateInput.focus()
-    })
-
-    act(() => {
-      jest.advanceTimersByTime(1200)
-    })
-
-    expect(document.activeElement).toBe(dateInput)
-    expect(document.activeElement).not.toBe(runningSelect)
-
-    jest.useRealTimers()
-  })
-
-  it("does not steal focus from doc type select while focus lock interval runs", () => {
-    jest.useFakeTimers()
-    mountPanel()
-
-    const docTypeSelect = container.querySelector(
-      '[data-testid="document-lookup-doc-type"]'
-    ) as HTMLSelectElement
-    const runningSelect = container.querySelector(
-      '[data-testid="document-lookup-running-select"]'
-    ) as HTMLSelectElement
-
-    act(() => {
-      docTypeSelect.focus()
-    })
-
-    act(() => {
-      jest.advanceTimersByTime(1200)
-    })
-
-    expect(document.activeElement).toBe(docTypeSelect)
-    expect(document.activeElement).not.toBe(runningSelect)
-
-    jest.useRealTimers()
-  })
-
-  it("allows year and month selects to keep focus", () => {
-    jest.useFakeTimers()
-    mountPanel()
-
-    const yearSelect = container.querySelector(
-      '[data-testid="receipt-lookup-year"]'
-    ) as HTMLSelectElement
-    const monthSelect = container.querySelector(
-      '[data-testid="receipt-lookup-month"]'
-    ) as HTMLSelectElement
-
-    act(() => {
-      yearSelect.focus()
-    })
-    act(() => {
-      jest.advanceTimersByTime(800)
-    })
-    expect(document.activeElement).toBe(yearSelect)
-
-    act(() => {
-      monthSelect.focus()
-    })
-    act(() => {
-      jest.advanceTimersByTime(800)
-    })
-    expect(document.activeElement).toBe(monthSelect)
-
-    jest.useRealTimers()
-  })
-
   it("disables keypad running input mode for lookup", async () => {
     const onKeypadRunningInputEnabledChange = jest.fn()
     mountPanel({ onKeypadRunningInputEnabledChange })
@@ -914,9 +789,21 @@ describe("PosReceiptLookupPanel", () => {
   })
 
   it("searches selected Refund doc type via imperative handle", async () => {
-    mockedRefundFetch.mockResolvedValue({
+    mockedRecRefSearch.mockResolvedValue({
       ok: true,
-      result: { refunds: [legacyRefund] },
+      rows: [
+        {
+          id: legacyRefund.refundId,
+          documentNo: legacyRefund.refundNo,
+          issuedAt: legacyRefund.issuedAt,
+          branchCode: legacyRefund.branchCode,
+          branchName: legacyRefund.branchName,
+          docType: "REF",
+          statusLabel: legacyRefund.archiveStatusLabel,
+          pdfAvailable: null,
+          refund: legacyRefund,
+        },
+      ],
     })
 
     const handleRef: { current: PosReceiptLookupPanelHandle | null } = { current: null }
@@ -955,28 +842,18 @@ describe("PosReceiptLookupPanel", () => {
       await Promise.resolve()
     })
 
-    const runningSelect = container.querySelector(
-      '[data-testid="document-lookup-running-select"]'
-    ) as HTMLSelectElement
-
-    await act(async () => {
-      runningSelect.value = "0008"
-      runningSelect.dispatchEvent(new Event("change", { bubbles: true }))
-    })
-
-    act(() => {
-      docTypeSelect.focus()
-    })
-
     await act(async () => {
       handleRef.current?.search()
       await Promise.resolve()
     })
 
-    expect(mockedRefundFetch).toHaveBeenCalledWith({
-      branchId: "b1",
-      refundNo: "REF-SH001-202606-0008",
-    })
+    expect(mockedRecRefSearch).toHaveBeenCalledWith(
+      "b1",
+      expect.objectContaining({
+        docType: "REF",
+      })
+    )
+    expect(mockedRefundFetch).not.toHaveBeenCalled()
   })
 })
 

@@ -22,6 +22,8 @@ export async function GET(req: NextRequest) {
     const result = await searchRefundLookup(prisma, {
       branchId,
       refundNo: req.nextUrl.searchParams.get("refundNo"),
+      dateFrom: req.nextUrl.searchParams.get("dateFrom"),
+      dateTo: req.nextUrl.searchParams.get("dateTo"),
       limit: Number(req.nextUrl.searchParams.get("limit") ?? NaN) || undefined,
     })
 

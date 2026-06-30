@@ -34,5 +34,7 @@ export type RefundLookupResult = {
 export type SearchRefundLookupInput = {
   branchId: string
   refundNo?: string | null
+  dateFrom?: string | null
+  dateTo?: string | null
   limit?: number
 }

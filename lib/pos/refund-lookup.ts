@@ -11,6 +11,7 @@ import type {
 import { formatCashierDisplay } from "@/lib/pos/format-cashier-display"
 import { COMPANY_TAX_BRANCH_CODE, loadCompanyTaxId } from "@/lib/thermal/company-tax"
 import { toDec } from "@/lib/stock/decimal"
+import { parseLookupDateRangeFilter } from "@/lib/pos/lookup-date-range"
 
 export const REFUND_LOOKUP_DEFAULT_LIMIT = 50
 export const REFUND_LOOKUP_MAX_LIMIT = 200
@@ -93,6 +94,10 @@ export async function searchRefundLookup(
   }
 
   const refundNo = input.refundNo?.trim() ?? ""
+  const createdAt = parseLookupDateRangeFilter({
+    dateFrom: input.dateFrom,
+    dateTo: input.dateTo,
+  })
   const limit = normalizeLimit(input.limit)
 
   const refunds = await db.refund.findMany({
@@ -100,6 +105,14 @@ export async function searchRefundLookup(
       branchId,
       ...(refundNo
         ? { refundNo: { contains: refundNo, mode: "insensitive" as const } }
+        : {}),
+      ...(createdAt.gte || createdAt.lte
+        ? {
+            createdAt: {
+              ...(createdAt.gte ? { gte: createdAt.gte } : {}),
+              ...(createdAt.lte ? { lte: createdAt.lte } : {}),
+            },
+          }
         : {}),
     },
     include: {

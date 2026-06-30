@@ -61,6 +61,11 @@ import {
   readZLookupDailyHasTicket,
   type ReadZLookupMode,
 } from "@/lib/pos-ui/read-z-lookup-display"
+import {
+  PosRecRefLookupInquirySection,
+  type PosRecRefLookupInquirySectionHandle,
+} from "@/components/pos/PosRecRefLookupInquirySection"
+import type { PosRecRefLookupRow } from "@/lib/pos-ui/pos-rec-ref-lookup"
 import { bangkokCalendarParts, bangkokDateKey } from "@/lib/reporting/bangkok-calendar"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
@@ -194,6 +199,7 @@ export const PosReceiptLookupPanel = forwardRef<
   const branchId = session.branchId.trim()
   const branchCode = session.branchCode.trim()
   const searchControlsRef = useRef<HTMLDivElement>(null)
+  const recRefInquiryRef = useRef<PosRecRefLookupInquirySectionHandle>(null)
 
   const [docType, setDocType] = useState<PosDocumentLookupDocType>(initialDocType)
   const lookupEnabled = isPosDocumentLookupDocTypeAvailable(docType, session.role)
@@ -202,7 +208,8 @@ export const PosReceiptLookupPanel = forwardRef<
   const isReceiptLookup = docType === "receipt"
   const isRefundLookup = docType === "refund"
   const isCollectorLookup = docType === "collector"
-  const usesYearMonthRunningLookup = isRefundLookup || isCollectorLookup
+  const usesRecRefInquiry = isReceiptLookup || isRefundLookup
+  const usesYearMonthRunningLookup = isCollectorLookup
 
   const [year, setYear] = useState(nowParts.y)
   const [month, setMonth] = useState(nowParts.m)
@@ -230,6 +237,26 @@ export const PosReceiptLookupPanel = forwardRef<
     setReadZReport(null)
     setNotFoundMessage(null)
   }, [])
+
+  const handleRecRefRowSelect = useCallback(
+    (row: PosRecRefLookupRow | null) => {
+      clearResults()
+      setNotFoundMessage(null)
+      if (!row) {
+        setSearched(false)
+        return
+      }
+      setSearched(true)
+      if (row.receipt) {
+        setReceipt(row.receipt)
+        return
+      }
+      if (row.refund) {
+        setRefund(row.refund)
+      }
+    },
+    [clearResults]
+  )
 
   const loadReadZReview = useCallback(
     async (scope: "daily" | "cumulative-to-date", bangkokDate: string) => {
@@ -340,7 +367,7 @@ export const PosReceiptLookupPanel = forwardRef<
   )
 
   useEffect(() => {
-    if (!isReceiptLookup || !branchId) {
+    if (!isReceiptLookup || !branchId || usesRecRefInquiry) {
       setDateLookupMessage(null)
       return
     }
@@ -389,7 +416,7 @@ export const PosReceiptLookupPanel = forwardRef<
       cancelled = true
       setDateLookupLoading(false)
     }
-  }, [isReceiptLookup, branchId, receiptDate, clearResults, onRunningNoChange])
+  }, [isReceiptLookup, branchId, receiptDate, clearResults, onRunningNoChange, usesRecRefInquiry])
 
   useEffect(() => {
     if (!isReadZLookup || !lookupEnabled) return
@@ -550,10 +577,14 @@ export const PosReceiptLookupPanel = forwardRef<
           loadReadZCumulative()
           return
         }
+        if (usesRecRefInquiry) {
+          recRefInquiryRef.current?.search()
+          return
+        }
         void runSearch()
       },
     }),
-    [isReadZLookup, loadReadZCumulative, runSearch]
+    [isReadZLookup, loadReadZCumulative, runSearch, usesRecRefInquiry]
   )
 
   const activeArchiveStatus = isCollectorLookup
@@ -626,10 +657,8 @@ export const PosReceiptLookupPanel = forwardRef<
         </h2>
 
         <div ref={searchControlsRef} className="shrink-0 space-y-1.5">
-            <div
-              className="grid grid-cols-4 gap-1.5"
-              data-testid="receipt-lookup-filters"
-            >
+          {usesRecRefInquiry ? (
+            <>
               <label className="flex min-w-0 flex-col gap-0.5 text-left">
                 <span className={posDocumentLookupLabel}>Doc Type</span>
                 <select
@@ -656,116 +685,149 @@ export const PosReceiptLookupPanel = forwardRef<
                   })}
                 </select>
               </label>
-              <label className="flex min-w-0 flex-col gap-0.5 text-left">
-                <span className={posDocumentLookupLabel}>Year</span>
-                <select
-                  className={posDocumentLookupSelect}
-                  value={year}
-                  onChange={(e) => handleYearChange(Number(e.target.value))}
-                  disabled={loading}
-                  data-testid="receipt-lookup-year"
-                >
-                  {RECEIPT_LOOKUP_YEAR_OPTIONS.map((optionYear) => (
-                    <option key={optionYear} value={optionYear}>
-                      {optionYear}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex min-w-0 flex-col gap-0.5 text-left">
-                <span className={posDocumentLookupLabel}>Month</span>
-                <select
-                  className={posDocumentLookupSelect}
-                  value={month}
-                  onChange={(e) => handleMonthChange(Number(e.target.value))}
-                  disabled={loading}
-                  data-testid="receipt-lookup-month"
-                >
-                  {RECEIPT_LOOKUP_MONTH_OPTIONS.map((optionMonth) => (
-                    <option key={optionMonth} value={optionMonth}>
-                      {String(optionMonth).padStart(2, "0")}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex min-w-0 flex-col gap-0.5 text-left">
-                <span className={posDocumentLookupLabel}>Running</span>
-                <select
-                  className={posDocumentLookupSelect}
-                  value={runningNo}
-                  onChange={(e) =>
-                    onRunningNoChange(
-                      isReceiptLookup
-                        ? normalizeReceiptLookupRunningNo(e.target.value)
-                        : isCollectorLookup
-                          ? normalizeCollectorLookupRunningNo(e.target.value)
-                          : normalizeRefundLookupRunningNo(e.target.value)
-                    )
-                  }
-                  disabled={
-                    loading ||
-                    runningOptionsLoading ||
-                    dateLookupLoading ||
-                    !lookupEnabled
-                  }
-                  data-testid="document-lookup-running-select"
-                  aria-label="Running number"
-                >
-                  <option value="">
-                    {runningOptionsLoading || dateLookupLoading ? "Loading…" : "Select…"}
-                  </option>
-                  {runningOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div
-              className="grid grid-cols-2 items-stretch gap-1.5"
-              data-testid="receipt-lookup-search-row"
-            >
-              {usesReceiptDate ? (
-                <input
-                  type="date"
-                  className={posDocumentLookupInput}
-                  value={receiptDate}
-                  onChange={(e) => handleReceiptDateChange(e.target.value)}
-                  disabled={loading || (isReceiptLookup && dateLookupLoading)}
-                  data-testid="receipt-lookup-date"
-                  aria-label="Receipt date"
-                />
-              ) : (
-                <div aria-hidden />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  if (isReadZLookup) {
-                    loadReadZCumulative()
-                    return
-                  }
-                  void runSearch()
-                }}
-                disabled={!canSearch}
-                data-testid="receipt-lookup-search"
-                className={posDocumentLookupButton}
+              <PosRecRefLookupInquirySection
+                ref={recRefInquiryRef}
+                branchId={branchId}
+                docType={isReceiptLookup ? "REC" : "REF"}
+                loading={loading}
+                onLoadingChange={setLoading}
+                onSelectRow={handleRecRefRowSelect}
+                testIdPrefix={isReceiptLookup ? "receipt-lookup" : "refund-lookup"}
+              />
+            </>
+          ) : (
+            <>
+              <div
+                className="grid grid-cols-4 gap-1.5"
+                data-testid="receipt-lookup-filters"
               >
-                {searchButtonLabel}
-              </button>
-            </div>
+                <label className="flex min-w-0 flex-col gap-0.5 text-left">
+                  <span className={posDocumentLookupLabel}>Doc Type</span>
+                  <select
+                    className={posDocumentLookupSelect}
+                    value={docType}
+                    onChange={(e) =>
+                      handleDocTypeChange(e.target.value as PosDocumentLookupDocType)
+                    }
+                    disabled={loading}
+                    data-testid="document-lookup-doc-type"
+                    aria-label="Document type"
+                  >
+                    {POS_DOCUMENT_LOOKUP_DOC_TYPES.map((option) => {
+                      const available = isPosDocumentLookupDocTypeAvailable(
+                        option.id,
+                        session.role
+                      )
+                      return (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                          {!available ? " (Coming soon)" : ""}
+                        </option>
+                      )
+                    })}
+                  </select>
+                </label>
+                <label className="flex min-w-0 flex-col gap-0.5 text-left">
+                  <span className={posDocumentLookupLabel}>Year</span>
+                  <select
+                    className={posDocumentLookupSelect}
+                    value={year}
+                    onChange={(e) => handleYearChange(Number(e.target.value))}
+                    disabled={loading}
+                    data-testid="receipt-lookup-year"
+                  >
+                    {RECEIPT_LOOKUP_YEAR_OPTIONS.map((optionYear) => (
+                      <option key={optionYear} value={optionYear}>
+                        {optionYear}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex min-w-0 flex-col gap-0.5 text-left">
+                  <span className={posDocumentLookupLabel}>Month</span>
+                  <select
+                    className={posDocumentLookupSelect}
+                    value={month}
+                    onChange={(e) => handleMonthChange(Number(e.target.value))}
+                    disabled={loading}
+                    data-testid="receipt-lookup-month"
+                  >
+                    {RECEIPT_LOOKUP_MONTH_OPTIONS.map((optionMonth) => (
+                      <option key={optionMonth} value={optionMonth}>
+                        {String(optionMonth).padStart(2, "0")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex min-w-0 flex-col gap-0.5 text-left">
+                  <span className={posDocumentLookupLabel}>Running</span>
+                  <select
+                    className={posDocumentLookupSelect}
+                    value={runningNo}
+                    onChange={(e) =>
+                      onRunningNoChange(normalizeCollectorLookupRunningNo(e.target.value))
+                    }
+                    disabled={loading || runningOptionsLoading || !lookupEnabled}
+                    data-testid="document-lookup-running-select"
+                    aria-label="Running number"
+                  >
+                    <option value="">
+                      {runningOptionsLoading ? "Loading…" : "Select…"}
+                    </option>
+                    {runningOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
 
-            {dateLookupMessage ? (
-              <p
-                className={posDocumentLookupMessage}
-                data-testid="receipt-lookup-date-empty-message"
+              <div
+                className="grid grid-cols-2 items-stretch gap-1.5"
+                data-testid="receipt-lookup-search-row"
               >
-                {dateLookupMessage}
-              </p>
-            ) : null}
-          </div>
+                {usesReceiptDate ? (
+                  <input
+                    type="date"
+                    className={posDocumentLookupInput}
+                    value={receiptDate}
+                    onChange={(e) => handleReceiptDateChange(e.target.value)}
+                    disabled={loading || readZLoading}
+                    data-testid="receipt-lookup-date"
+                    aria-label="Receipt date"
+                  />
+                ) : (
+                  <div aria-hidden />
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isReadZLookup) {
+                      loadReadZCumulative()
+                      return
+                    }
+                    void runSearch()
+                  }}
+                  disabled={!canSearch}
+                  data-testid="receipt-lookup-search"
+                  className={posDocumentLookupButton}
+                >
+                  {searchButtonLabel}
+                </button>
+              </div>
+
+              {dateLookupMessage ? (
+                <p
+                  className={posDocumentLookupMessage}
+                  data-testid="receipt-lookup-date-empty-message"
+                >
+                  {dateLookupMessage}
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
 
           <div
             className="flex min-h-0 min-w-0 flex-1 flex-col items-center overflow-y-auto overflow-x-hidden"
@@ -835,9 +897,11 @@ export const PosReceiptLookupPanel = forwardRef<
               <PreviewPlaceholder>
                 {searched
                   ? "No document selected."
-                  : isReadZLookup || isReceiptLookup
-                    ? "Select date and running number, then search."
-                    : "Select year, month, and running number to search."}
+                  : usesRecRefInquiry
+                    ? "Search and select a document from the results."
+                    : isReadZLookup || isReceiptLookup
+                      ? "Select date and running number, then search."
+                      : "Select year, month, and running number to search."}
               </PreviewPlaceholder>
             )}
           </div>

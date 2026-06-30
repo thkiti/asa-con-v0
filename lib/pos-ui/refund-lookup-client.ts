@@ -3,6 +3,8 @@ import type { RefundLookupResult } from "@/lib/pos/refund-lookup-types"
 export type RefundLookupSearchParams = {
   branchId: string
   refundNo?: string
+  dateFrom?: string
+  dateTo?: string
 }
 
 export type RefundLookupFetchResult =
@@ -15,6 +17,12 @@ export async function fetchRefundLookup(
   const search = new URLSearchParams({ branchId: params.branchId.trim() })
   if (params.refundNo?.trim()) {
     search.set("refundNo", params.refundNo.trim())
+  }
+  if (params.dateFrom?.trim()) {
+    search.set("dateFrom", params.dateFrom.trim())
+  }
+  if (params.dateTo?.trim()) {
+    search.set("dateTo", params.dateTo.trim())
   }
 
   const res = await fetch(`/api/pos/refunds/lookup?${search.toString()}`)

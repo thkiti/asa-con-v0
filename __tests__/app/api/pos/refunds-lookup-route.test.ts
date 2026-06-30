@@ -76,6 +76,8 @@ describe("GET /api/pos/refunds/lookup", () => {
     expect(mockedSearch).toHaveBeenCalledWith(expect.anything(), {
       branchId: "branch-shop",
       refundNo: "REF-SH001-202606-0008",
+      dateFrom: null,
+      dateTo: null,
       limit: undefined,
     })
     await expect(res.json()).resolves.toEqual({
