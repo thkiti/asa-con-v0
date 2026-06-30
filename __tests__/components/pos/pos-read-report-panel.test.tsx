@@ -66,6 +66,8 @@ describe("PosReadReportPanel", () => {
     })
 
     expect(container.textContent).toContain("READ X")
+    expect(container.querySelector('[data-testid="pos-read-x-panel"]')).not.toBeNull()
+    expect(container.querySelector(".pos-read-x-title-badge")).not.toBeNull()
     expect(container.textContent).toContain("ณ เวลานี้")
     expect(container.textContent).not.toContain("Print Report and Exit")
     expect(container.querySelector('[aria-label="ปิดรายงาน"]')).not.toBeNull()
@@ -142,6 +144,7 @@ describe("PosReadReportPanel", () => {
     })
 
     expect(container.textContent).toContain("READ Z")
+    expect(container.querySelector(".pos-read-z-title-badge")).not.toBeNull()
     expect(container.querySelector(".readZReportColumn")).not.toBeNull()
     expect(container.querySelector(".readZHoControlRow")).toBeNull()
     expect(container.querySelector(".readZTicketCard")).not.toBeNull()

@@ -2,6 +2,11 @@
 
 import { ReadZTicketColumn } from "@/components/pos/ReadZTicketColumn"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+import {
+  posReadZTitle,
+  posReadZTitleBadge,
+  posReadZTodayWorkspace,
+} from "@/lib/pos-ui/pos-read-report-classes"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
 type ReadZTodayWorkspaceProps = {
@@ -26,7 +31,7 @@ export function ReadZTodayWorkspace({
 }: ReadZTodayWorkspaceProps) {
   return (
     <div
-      className="readZTodayWorkspace absolute inset-0 z-[46] flex min-h-0 flex-col bg-orange-600/98 text-white"
+      className={`${posReadZTodayWorkspace} absolute inset-0 z-[46] flex min-h-0 flex-col`}
       data-testid="pos-read-z-today-workspace"
     >
       <button
@@ -34,19 +39,20 @@ export function ReadZTodayWorkspace({
         aria-label="Emergency close"
         onClick={onClose}
         disabled={printPending}
-        className="group/emergency absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center bg-transparent p-0"
+        className="pos-read-z-emergency-close group/emergency absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center bg-transparent p-0"
       >
         <span
           aria-hidden="true"
-          className="flex h-5 w-5 items-center justify-center rounded-full border border-white/80 bg-white/20 text-[11px] font-bold leading-none text-white shadow opacity-0 transition-opacity duration-150 group-hover/emergency:opacity-100 hover:cursor-pointer hover:bg-white/30"
+          className="pos-read-z-emergency-close-dot flex h-5 w-5 items-center justify-center rounded-full border border-white/80 bg-white/20 text-[11px] font-bold leading-none text-white shadow opacity-0 transition-opacity duration-150 group-hover/emergency:opacity-100 hover:cursor-pointer hover:bg-white/30"
         >
           ×
         </span>
       </button>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden px-2 pb-2 pt-10">
-        <p className="shrink-0 text-center text-sm font-bold tracking-wide">
-          READ Z — สรุปยอดการขายประจำวัน
+        <p className={`${posReadZTitle} shrink-0 text-center`}>
+          <span className={posReadZTitleBadge}>READ Z</span>
+          {" — สรุปยอดการขายประจำวัน"}
         </p>
 
         <ReadZTicketColumn

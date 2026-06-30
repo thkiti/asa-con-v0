@@ -3,6 +3,10 @@
  */
 import { renderToStaticMarkup } from "react-dom/server"
 import { PosSessionBanner } from "@/components/pos/PosSessionBanner"
+import {
+  posTerminalBanner,
+  posTerminalBannerText,
+} from "@/lib/pos-ui/pos-terminal-classes"
 import type { PosTerminalSession } from "@/lib/pos-ui/types"
 
 const session: PosTerminalSession = {
@@ -13,6 +17,7 @@ const session: PosTerminalSession = {
   branchId: "b1",
   branchCode: "SH001",
   branchName: "Chidlom",
+  documentEntityCode: "ASAS",
 }
 
 describe("PosSessionBanner", () => {
@@ -22,10 +27,10 @@ describe("PosSessionBanner", () => {
     expect(html).toContain("SH001 • Chidlom")
     expect(html).toContain("Staff:")
     expect(html).toContain("103 • Somsak Kamnuch")
-    expect(html).toContain('bg-[#F2F6FA]')
-    expect(html).toContain('border-2')
-    expect(html).toContain('border-orange-600')
-    expect(html).toContain("font-black")
+    expect(html).toContain(posTerminalBanner)
+    expect(html).toContain(posTerminalBannerText)
+    expect(html).toContain("border-2")
+    expect(html).toContain("border-orange-600")
     expect(html).not.toContain("shadow-sm")
     expect(html).not.toContain("text-zinc-600")
     expect(html).not.toContain("Branch code")

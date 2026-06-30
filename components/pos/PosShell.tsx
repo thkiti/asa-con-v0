@@ -44,6 +44,12 @@ import type { RefundReceiptPrintContext } from "@/lib/pos/refund-receipt-print-c
 import type { RefundPreviewResult } from "@/lib/pos/refund"
 import type { RefundableReceiptSummary } from "@/lib/pos/search-refundable-receipts"
 import { POS_PANEL_FRAME_CLASS, POS_WORKSPACE_GAP_CLASS } from "@/lib/pos-ui/pos-panel-frame"
+import {
+  posTerminalKeypadFrame,
+  posTerminalRoot,
+  posTerminalTitle,
+  posTerminalTitleStrip,
+} from "@/lib/pos-ui/pos-terminal-classes"
 import type { PendingPaymentEvidenceRow } from "@/lib/pos/pending-payment-evidence-types"
 import type { PosKeypadActionId, PosPlaceholderId, PosTerminalSession } from "@/lib/pos-ui/types"
 
@@ -303,7 +309,7 @@ export function PosShell({
   const blankNumericKeypad = shouldBlankNumericKeypadForWorkspace(activeWorkspace)
 
   return (
-    <div className="pos-terminal-root fixed inset-0 flex bg-white">
+    <div className={`${posTerminalRoot} fixed inset-0 flex bg-white`}>
       <style
         dangerouslySetInnerHTML={{
           __html: THERMAL_CLONE_PRINT_STYLES,
@@ -341,11 +347,9 @@ export function PosShell({
         <div className="mx-auto flex h-full w-full min-h-0 max-w-[1200px] flex-1 flex-col gap-3">
           <PosSessionBanner session={session} onOpenReadZLookup={onOpenReadZLookup} />
 
-          <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-zinc-500 bg-gradient-to-b from-zinc-100 to-zinc-300 p-3 shadow-sm">
+          <div className={`${posTerminalTitleStrip} flex shrink-0 flex-col gap-2 rounded-xl border p-3 shadow-sm`}>
             <div className="flex items-center justify-center py-1">
-              <span className="text-center text-[28px] font-semibold leading-none tracking-wide text-zinc-900 sm:text-[36px]">
-                ASA • POS TERMINAL
-              </span>
+              <span className={posTerminalTitle}>ASA • POS TERMINAL</span>
             </div>
             <PosBarcodeCapture
               value={barcode}
@@ -356,7 +360,7 @@ export function PosShell({
             />
           </div>
 
-          <div className={`relative min-h-0 flex-1 ${POS_PANEL_FRAME_CLASS} bg-gradient-to-b from-slate-200 to-slate-300`}>
+          <div className={`relative min-h-0 flex-1 ${POS_PANEL_FRAME_CLASS} ${posTerminalKeypadFrame}`}>
             {repairTicketOpen ? (
               <div
                 ref={setRepairPhotoPreviewHost}

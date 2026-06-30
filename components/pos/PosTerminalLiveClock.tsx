@@ -1,6 +1,7 @@
 "use client"
 
 import { formatPosTerminalClock } from "@/lib/pos-ui/format-pos-terminal-clock"
+import { posTerminalClock } from "@/lib/pos-ui/pos-terminal-classes"
 import { useEffect, useState } from "react"
 
 export function PosTerminalLiveClock() {
@@ -20,10 +21,7 @@ export function PosTerminalLiveClock() {
       data-testid="pos-terminal-live-clock"
       className="flex h-full w-full min-w-0 items-center justify-center overflow-hidden px-2"
     >
-      <time
-        dateTime={now.toISOString()}
-        className="whitespace-nowrap text-center font-bold tabular-nums tracking-wide text-zinc-800 text-[clamp(0.75rem,1.1vw+0.55rem,1.625rem)]"
-      >
+      <time dateTime={now.toISOString()} className={posTerminalClock}>
         {display}
       </time>
     </div>

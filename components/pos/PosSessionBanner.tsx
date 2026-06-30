@@ -4,6 +4,10 @@ import type { PosTerminalSession } from "@/lib/pos-ui/types"
 import { isPosHoStaffRole } from "@/lib/pos-ui/pos-staff-role"
 import { POS_SESSION_BANNER_BORDER_CLASS } from "@/lib/pos-ui/pos-panel-frame"
 import {
+  posTerminalBanner,
+  posTerminalBannerText,
+} from "@/lib/pos-ui/pos-terminal-classes"
+import {
   formatBranchDisplay,
   formatStaffDisplay,
 } from "@/lib/pos-ui/pos-session-display"
@@ -18,9 +22,9 @@ export function PosSessionBanner({ session, onOpenReadZLookup }: PosSessionBanne
 
   return (
     <header
-      className={`shrink-0 rounded-lg ${POS_SESSION_BANNER_BORDER_CLASS} bg-[#F2F6FA] px-4 py-2.5 text-zinc-900`}
+      className={`${posTerminalBanner} shrink-0 rounded-lg ${POS_SESSION_BANNER_BORDER_CLASS} px-4 py-2.5`}
     >
-      <div className="space-y-1 text-sm font-black leading-snug text-zinc-900 sm:text-base">
+      <div className={`${posTerminalBannerText} space-y-1 text-sm leading-snug sm:text-base`}>
         <div>
           Branch: {formatBranchDisplay(session.branchCode, session.branchName)}
         </div>

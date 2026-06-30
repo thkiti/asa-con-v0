@@ -7,6 +7,13 @@ import {
   readZLookupDailyHasTicket,
   type ReadZLookupMode,
 } from "@/lib/pos-ui/read-z-lookup-display"
+import {
+  posReadZLookupEmpty,
+  posReadZLookupLoading,
+  posReadZLookupWorkspace,
+  posReadZTitle,
+  posReadZTitleBadge,
+} from "@/lib/pos-ui/pos-read-report-classes"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
@@ -53,7 +60,7 @@ export function ReadZLookupWorkspace({
 
   return (
     <div
-      className="readZLookupWorkspace absolute inset-0 z-[46] flex min-h-0 flex-col bg-orange-600/98 text-white"
+      className={`${posReadZLookupWorkspace} absolute inset-0 z-[46] flex min-h-0 flex-col`}
       data-testid="pos-read-z-lookup-workspace"
     >
       <button
@@ -61,14 +68,15 @@ export function ReadZLookupWorkspace({
         aria-label="ปิด READ Z Lookup"
         onClick={onClose}
         disabled={printPending || reviewLoading}
-        className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 bg-white/20 text-lg font-bold leading-none text-white shadow hover:bg-white/30"
+        className="pos-read-z-lookup-close absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center"
       >
         ×
       </button>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden px-2 pb-2 pt-10">
-        <p className="shrink-0 text-center text-sm font-bold tracking-wide">
-          READ Z Lookup — ดูย้อนหลัง / Cumulative (HO)
+        <p className={`${posReadZTitle} shrink-0 text-center`}>
+          <span className={posReadZTitleBadge}>READ Z Lookup</span>
+          {" — ดูย้อนหลัง / Cumulative (HO)"}
         </p>
 
         <div className="readZReportColumn min-h-0 flex-1 overflow-hidden">
@@ -81,19 +89,13 @@ export function ReadZLookupWorkspace({
           />
 
           {reviewLoading ? (
-            <p
-              className="mt-4 text-center text-xs text-white/85"
-              data-testid="pos-read-z-lookup-loading"
-            >
+            <p className={posReadZLookupLoading} data-testid="pos-read-z-lookup-loading">
               กำลังโหลดรายงาน…
             </p>
           ) : null}
 
           {showDailyEmpty ? (
-            <p
-              className="readZLookupEmptyState mt-4 text-center text-sm font-medium text-white/90"
-              data-testid="pos-read-z-lookup-empty"
-            >
+            <p className={posReadZLookupEmpty} data-testid="pos-read-z-lookup-empty">
               {READ_Z_LOOKUP_EMPTY_MESSAGE}
             </p>
           ) : null}

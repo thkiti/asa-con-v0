@@ -3,6 +3,11 @@
 import type { ReactNode } from "react"
 import { PosReadZPrintPreview } from "@/components/pos/PosReadZPrintPreview"
 import type { ReadReportPayload } from "@/lib/pos/read-report-types"
+import {
+  posReadZPrintButton,
+  posReadZPrintHint,
+  posReadZPrintHintError,
+} from "@/lib/pos-ui/pos-read-report-classes"
 import type { ResolvedThermalLayout } from "@/lib/thermal/types"
 
 type ReadZTicketColumnProps = {
@@ -52,7 +57,7 @@ export function ReadZTicketColumn({
       {showPrintButton ? (
         <div className="readZPrintActions">
           <p
-            className="readZPrintHint min-h-4 shrink-0 text-center text-sm font-medium text-red-100"
+            className={`${posReadZPrintHint} ${printError ? posReadZPrintHintError : ""} min-h-4 shrink-0 text-center`}
             role="alert"
             aria-live="polite"
           >
@@ -64,20 +69,18 @@ export function ReadZTicketColumn({
             onClick={() => onPrintReport?.()}
             disabled={!canPrint || !onPrintReport}
             data-testid="pos-read-z-print-report-button"
-            className="readZPrintButton shrink-0 cursor-pointer rounded-lg border-2 border-white bg-white px-6 py-2.5 text-base font-bold text-orange-700 shadow hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`${posReadZPrintButton} shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60`}
           >
             {printPending ? "Processing…" : printButtonLabel}
           </button>
 
           {printHint ? (
-            <p className="readZPrintHint shrink-0 text-center text-[10px] text-white/80">
-              {printHint}
-            </p>
+            <p className={`${posReadZPrintHint} shrink-0 text-center`}>{printHint}</p>
           ) : null}
         </div>
       ) : printError ? (
         <p
-          className="readZPrintHint min-h-4 shrink-0 text-center text-sm font-medium text-red-100"
+          className={`${posReadZPrintHint} ${posReadZPrintHintError} min-h-4 shrink-0 text-center`}
           role="alert"
           aria-live="polite"
         >

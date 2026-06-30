@@ -299,6 +299,13 @@ describe("PosTerminalPage", () => {
           }),
         } as Response)
       }
+      if (url.startsWith("/api/pos/refunds/lookup")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ refunds: [] }),
+        } as Response)
+      }
       return Promise.reject(new Error(`Unexpected fetch: ${url}`))
     }) as typeof fetch
   })
@@ -1157,10 +1164,9 @@ describe("PosTerminalPage", () => {
     await flushPromises()
 
     expect(container.querySelector('[data-testid="pos-receipt-lookup-panel"]')).not.toBeNull()
-    expect(
-      container.querySelector('[data-testid="document-lookup-running-select"]')
-    ).not.toBeNull()
-    expect(container.querySelector('[data-testid="receipt-lookup-running-no"]')).toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-filter-period"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="receipt-lookup-more-filter"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="document-lookup-running-select"]')).toBeNull()
 
     const numericBlankTiles = container.querySelectorAll(
       '[data-testid="pos-keypad-numeric-blank"]'
@@ -1178,7 +1184,7 @@ describe("PosTerminalPage", () => {
     act(() => root.unmount())
   })
 
-  it("triggers receipt lookup search when Search is clicked after selecting running", async () => {
+  it("triggers receipt lookup search when Search is clicked", async () => {
     const fetchMock = global.fetch as jest.Mock
     const { container, root } = renderPosTerminal()
     await flushPromises()
@@ -1203,8 +1209,7 @@ describe("PosTerminalPage", () => {
     const lookupCalls = fetchMock.mock.calls.filter(([url]) =>
       String(url).startsWith("/api/pos/receipts/lookup")
     )
-    const receiptNoCalls = lookupCalls.filter(([url]) => String(url).includes("receiptNo="))
-    expect(receiptNoCalls.length).toBeGreaterThan(0)
+    expect(lookupCalls.length).toBeGreaterThan(0)
 
     act(() => root.unmount())
   })

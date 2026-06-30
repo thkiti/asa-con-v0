@@ -50,6 +50,7 @@ describe("ReadZTodayWorkspace", () => {
     })
 
     expect(container.querySelector('[data-testid="pos-read-z-today-workspace"]')).not.toBeNull()
+    expect(container.querySelector(".pos-read-z-title-badge")).not.toBeNull()
     expect(container.querySelector(".readZLookupControlRow")).toBeNull()
     expect(container.querySelector(".readZTicketCard")).not.toBeNull()
     expect(container.textContent).toContain("PRINT REPORT AND EXIT")

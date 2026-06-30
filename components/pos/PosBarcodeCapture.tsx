@@ -1,6 +1,11 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import {
+  posTerminalBarcodeInput,
+  posTerminalBarcodePlaceholder,
+  posTerminalBarcodeWrap,
+} from "@/lib/pos-ui/pos-terminal-classes"
 
 type PosBarcodeCaptureProps = {
   value: string
@@ -36,12 +41,10 @@ export function PosBarcodeCapture({
   }, [disabled])
 
   return (
-    <div className="relative min-h-[56px] min-w-0 flex-1">
+    <div className={`${posTerminalBarcodeWrap} relative min-h-[56px] min-w-0 flex-1`}>
       {!value && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-end px-3">
-          <span className="text-[28px] font-bold leading-none text-zinc-400 sm:text-[30px]">
-            Scan barcode ....
-          </span>
+          <span className={posTerminalBarcodePlaceholder}>Scan barcode ....</span>
         </div>
       )}
       <input
@@ -58,10 +61,8 @@ export function PosBarcodeCapture({
         }}
         placeholder=""
         aria-label="Barcode scan input"
-        className={`h-full min-h-[56px] w-full rounded border px-3 text-right text-[30px] font-bold leading-none sm:text-[34px] ${
-          disabled
-            ? "cursor-not-allowed border-zinc-400 bg-zinc-300/80 text-zinc-500"
-            : "border-zinc-500 bg-white text-zinc-900"
+        className={`${posTerminalBarcodeInput} h-full min-h-[56px] w-full rounded border px-3 text-right text-[30px] font-bold leading-none sm:text-[34px] ${
+          disabled ? "pos-terminal-barcode-input--disabled" : ""
         }`}
       />
     </div>

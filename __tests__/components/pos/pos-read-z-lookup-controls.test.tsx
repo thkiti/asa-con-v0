@@ -26,6 +26,7 @@ describe("PosReadZLookupControls", () => {
     })
 
     expect(container.querySelector(".readZLookupControlRow")).not.toBeNull()
+    expect(container.querySelector(".pos-read-z-lookup-field")).not.toBeNull()
     expect(container.querySelector('[data-testid="pos-read-z-lookup-doc-type"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="pos-read-z-lookup-date"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="pos-read-z-lookup-cumulative"]')).not.toBeNull()

@@ -1,6 +1,7 @@
 "use client"
 
 import { PosTerminalLiveClock } from "./PosTerminalLiveClock"
+import { posTerminalClockStrip } from "@/lib/pos-ui/pos-terminal-classes"
 
 type PosKeypadMessageBlockProps = {
   pendingEvidenceCount: number
@@ -23,7 +24,7 @@ export function PosKeypadMessageBlock({
   return (
     <div
       data-testid="pos-keypad-message-block"
-      className="flex h-full min-h-0 items-stretch overflow-hidden rounded-lg border border-zinc-500/40 bg-zinc-300/60"
+      className={`${posTerminalClockStrip} flex h-full min-h-0 items-stretch overflow-hidden rounded-lg border`}
     >
       {showSlipPending ? (
         <button

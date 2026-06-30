@@ -6,6 +6,11 @@ import {
   type ReadZLookupDocType,
   type ReadZLookupMode,
 } from "@/lib/pos-ui/read-z-lookup-display"
+import {
+  posReadZLookupCumulativeActive,
+  posReadZLookupCumulativeIdle,
+  posReadZLookupField,
+} from "@/lib/pos-ui/pos-read-report-classes"
 
 type PosReadZLookupControlsProps = {
   docType?: ReadZLookupDocType
@@ -15,15 +20,6 @@ type PosReadZLookupControlsProps = {
   onDateSelect: (ymd: string) => void
   onCumulativePress: () => void
 }
-
-const FIELD_CLASS =
-  "w-full rounded border border-white/40 bg-white/95 px-2 py-1 font-mono text-xs text-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
-
-const CUMULATIVE_ACTIVE_CLASS =
-  "w-full rounded border border-amber-300 bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900 hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
-
-const CUMULATIVE_IDLE_CLASS =
-  "w-full rounded border border-white/40 bg-white/15 px-2 py-1 text-[10px] font-semibold text-white hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60"
 
 /** READ Z Lookup — doc type, date (auto-load), cumulative (no search). */
 export function PosReadZLookupControls({
@@ -44,7 +40,7 @@ export function PosReadZLookupControls({
       <select
         value={docType}
         disabled
-        className={FIELD_CLASS}
+        className={posReadZLookupField}
         data-testid="pos-read-z-lookup-doc-type"
         aria-label="Doc Type"
       >
@@ -58,7 +54,7 @@ export function PosReadZLookupControls({
           const ymd = e.target.value
           if (ymd) onDateSelect(ymd)
         }}
-        className={FIELD_CLASS}
+        className={posReadZLookupField}
         data-testid="pos-read-z-lookup-date"
         aria-label="Business date"
       >
@@ -74,7 +70,9 @@ export function PosReadZLookupControls({
         disabled={reviewLoading}
         onClick={onCumulativePress}
         className={
-          lookupMode === "cumulative" ? CUMULATIVE_ACTIVE_CLASS : CUMULATIVE_IDLE_CLASS
+          lookupMode === "cumulative"
+            ? posReadZLookupCumulativeActive
+            : posReadZLookupCumulativeIdle
         }
         data-testid="pos-read-z-lookup-cumulative"
       >
