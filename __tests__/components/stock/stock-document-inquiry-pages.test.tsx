@@ -49,8 +49,10 @@ jest.mock("@/lib/finance-ui/pos-settlement-branches", () => ({
 }))
 
 import { fetchStockDocumentsForInquiry } from "@/lib/stock-ui/stock-document-inquiry"
+import { fetchStockDocumentInquiryDetail } from "@/lib/stock-ui/stock-document-inquiry"
 
 const mockFetchStockDocuments = fetchStockDocumentsForInquiry as jest.Mock
+const mockFetchStockDocumentDetail = fetchStockDocumentInquiryDetail as jest.Mock
 
 const sampleRow = {
   id: "doc-1",
@@ -66,7 +68,7 @@ const sampleRow = {
   posted: false,
   pdfAvailable: null,
   inquiryPath: "/finance/stock-documents/doc-1",
-  printPath: null,
+  printPath: "/finance/stock-documents/doc-1?autoprint=1",
   voucherId: null,
   journalEntryId: null,
 }
@@ -190,6 +192,7 @@ describe("Stock Document Inquiry UI", () => {
   })
 
   it("renders detail view loading shell", () => {
+    mockFetchStockDocumentDetail.mockResolvedValue(null)
     const html = renderToStaticMarkup(
       <StockDocumentInquiryDetailView documentId="doc-1" returnTo="/finance/stock-documents" />
     )

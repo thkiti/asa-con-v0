@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { FinanceAdminPageShell } from "@/components/finance/FinanceAdminPageShell"
+import { StockDocumentInquiryPrintSheet } from "@/components/stock/StockDocumentInquiryPrintSheet"
+import { StockDocumentPrintActions } from "@/components/stock/StockDocumentPrintActions"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import {
   buildStockDocumentJournalInquiryPath,
@@ -14,6 +16,7 @@ import {
   fetchStockDocumentInquiryDetail,
   type StockDocumentInquiryDetail,
 } from "@/lib/stock-ui/stock-document-inquiry"
+import { useStockDocumentInquiryAutoprint } from "@/lib/stock-ui/use-stock-document-inquiry-autoprint"
 import { formatDocStatusLabel } from "@/lib/stock-ui/format"
 import {
   financeMemo,
@@ -91,6 +94,8 @@ export function StockDocumentInquiryDetailView({
     }
   }, [documentId])
 
+  useStockDocumentInquiryAutoprint(Boolean(detail))
+
   const header = detail ? formatStockDocumentInquiryHeader(detail) : ""
 
   return (
@@ -112,6 +117,7 @@ export function StockDocumentInquiryDetailView({
 
       {!loading && !error && detail ? (
         <div className="space-y-4" data-testid="stock-document-inquiry-detail">
+          <StockDocumentPrintActions />
           <div className={financeTableScroll}>
             <table className={financeTable} data-testid="stock-document-inquiry-lines">
               <thead>
@@ -222,11 +228,12 @@ export function StockDocumentInquiryDetailView({
                   className={themeLinkMuted}
                   data-testid="stock-document-inquiry-print-link"
                 >
-                  Print preview
+                  Print
                 </Link>
               ) : null}
             </div>
           </div>
+          <StockDocumentInquiryPrintSheet detail={detail} />
         </div>
       ) : null}
     </FinanceAdminPageShell>

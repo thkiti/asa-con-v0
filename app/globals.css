@@ -3759,3 +3759,29 @@ span.finance-account .finance-account-name-part {
     border-bottom-color: #999 !important;
   }
 }
+
+/* Finance stock document inquiry — browser print (audit read-only) */
+.stock-document-inquiry-print-sheet {
+  display: none;
+}
+
+@media print {
+  body.stock-document-inquiry-print-active .no-print {
+    display: none !important;
+  }
+
+  body.stock-document-inquiry-print-active .stock-document-inquiry-print-sheet {
+    display: block !important;
+  }
+
+  body.stock-document-inquiry-print-active .stock-document-inquiry-print-root,
+  body.stock-document-inquiry-print-active .stock-document-inquiry-print-root * {
+    color: #111 !important;
+  }
+
+  body.stock-document-inquiry-print-active .stock-document-inquiry-print-header,
+  body.stock-document-inquiry-print-active .stock-document-inquiry-print-meta,
+  body.stock-document-inquiry-print-active .stock-document-inquiry-print-lines {
+    break-inside: avoid;
+  }
+}

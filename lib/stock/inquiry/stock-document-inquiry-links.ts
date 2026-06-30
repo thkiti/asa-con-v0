@@ -4,11 +4,11 @@ export function buildStockDocumentInquiryPath(documentId: string): string {
   return `${STOCK_DOCUMENT_INQUIRY_PATH}/${documentId}`
 }
 
-/** Reserved for future print preview route — inquiry layer only. */
-export function buildStockDocumentInquiryPrintPath(
-  _documentId: string
-): string | null {
-  return null
+/** Finance inquiry print URL — browser print via `?autoprint=1` on detail page. */
+export function buildStockDocumentInquiryPrintPath(documentId: string): string | null {
+  const id = documentId.trim()
+  if (!id) return null
+  return `${buildStockDocumentInquiryPath(id)}?autoprint=1`
 }
 
 export function buildStockDocumentOperationalPath(documentId: string): string {
