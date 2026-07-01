@@ -6,7 +6,6 @@ import { formatAccountDisplay } from "@/lib/finance-ui/format-account"
 import { filterAndSortGlAccountsForInquiry } from "@/lib/finance-ui/gl-account-inquiry-search"
 import { fetchGlAccounts } from "@/lib/finance-ui/gl-accounts"
 import type { GlAccountListRow } from "@/lib/finance/gl-account-list"
-import { themeInput, themeLabel } from "@/lib/theme/theme-classes"
 
 type GlAccountComboboxProps = {
   accountCode: string
@@ -30,6 +29,7 @@ export function GlAccountCombobox({
   listTestId = "gl-account-combobox-list",
 }: GlAccountComboboxProps) {
   const listId = useId()
+  const inputId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const selectingRef = useRef(false)
   const [focused, setFocused] = useState(false)
@@ -159,11 +159,13 @@ export function GlAccountCombobox({
       : accountCode
 
   return (
-    <div ref={rootRef} className="gl-account-combobox-root relative">
-      <label className="flex min-w-0 flex-col gap-1 text-sm">
-        <span className={themeLabel}>{label}</span>
-        <input
-          className={`${themeInput} font-mono text-xs`}
+    <div ref={rootRef} className="gl-account-combobox-root finance-filter-field finance-filter-field--account relative">
+      <label htmlFor={inputId} className="finance-filter-label">
+        {label}
+      </label>
+      <input
+        id={inputId}
+        className="finance-filter-control finance-filter-control--mono w-full min-w-0"
           value={inputValue}
           disabled={disabled}
           placeholder={placeholder}
@@ -195,7 +197,6 @@ export function GlAccountCombobox({
           aria-autocomplete="list"
           data-testid={inputTestId}
         />
-      </label>
 
       {open ? (
         <div

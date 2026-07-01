@@ -51,4 +51,7 @@ export const financeWorkPanelClass = "finance-work-panel mx-auto mt-6 w-full max
 
 export const FINANCE_ADMIN_PAGE_MAX_WIDTH_PX = MAIN_MENU_PAGE_MAX_WIDTH_PX
 
+/** Finance menu dashboard hub — report pages reached from dashboard use this for back links. */
+export const FINANCE_DASHBOARD_HREF = "/finance/dashboard"
+
 export const FINANCE_WORK_PANEL_MAX_WIDTH_PX = 576

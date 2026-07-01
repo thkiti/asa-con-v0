@@ -1,0 +1,329 @@
+{
+  "exportedAt": "2026-07-01T23:12:26.880Z",
+  "outDir": "D:\\_projects\\asa-con-v0\\data\\uat-backups\\finance-pre-reset-2026-07-01T23-12-24",
+  "preservedNote": "CoA, branches, staff, products, stock, POS sales are NOT exported here — only finance UAT reference snapshots.",
+  "counts": {
+    "chartOfAccounts": 207,
+    "activeBranches": 13,
+    "manualJournalEntries": 9,
+    "openingBalanceDocuments": 0
+  },
+  "openingBalanceDocuments": [],
+  "manualJournalManifest": [
+    {
+      "id": "73208092-e555-48b7-8f12-353a6dba96b4",
+      "entryNo": "MJV-260001",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2025-12-31T00:00:00.000Z",
+      "description": "Opening Balance 2026",
+      "postedAt": "2026-06-25T02:55:06.448Z",
+      "postedJournalEntryId": "6d444850-d23b-4d39-ad4e-bde9e737f1e9",
+      "postedVoucherId": "b451c284-c146-4c4d-a203-7178dec27bca",
+      "createdAt": "2026-06-24T03:19:53.554Z",
+      "updatedAt": "2026-07-01T02:11:15.840Z"
+    },
+    {
+      "id": "ca207998-3b60-4ec1-896a-7395348c2a37",
+      "entryNo": "MJV-260002",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-16T00:00:00.000Z",
+      "description": "บันทึกสินค้าตาม Invoice #58  DATE : 05/11/2025 ใบขนเลขที่ A015-0-6901-05141",
+      "postedAt": "2026-06-25T02:56:43.971Z",
+      "postedJournalEntryId": "0dcffe55-1469-425b-907a-45b7e4e55429",
+      "postedVoucherId": "de5261ff-9ca9-4760-b625-40b6b01551ea",
+      "createdAt": "2026-06-24T10:21:06.815Z",
+      "updatedAt": "2026-06-25T02:56:43.971Z"
+    },
+    {
+      "id": "4c177a37-3cbd-40cf-a254-371f560e101c",
+      "entryNo": "MJV-260003",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-22T00:00:00.000Z",
+      "description": "บันทึกสินค้าตามใบกำกับภาษีเลขที่ IV69-0005-บริษัท เค.ไอ.ที.เทรดดิ้ง จำกัด",
+      "postedAt": "2026-06-25T02:57:13.901Z",
+      "postedJournalEntryId": "8fdbe85e-611c-48c3-9097-9e4bae951e9a",
+      "postedVoucherId": "0f54eba7-b974-4119-8f0a-fe2ab9ef06ab",
+      "createdAt": "2026-06-24T10:25:27.177Z",
+      "updatedAt": "2026-06-25T02:57:13.901Z"
+    },
+    {
+      "id": "588be748-005d-43d8-9347-57971a73bb66",
+      "entryNo": "MJV-260004",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-31T00:00:00.000Z",
+      "description": "บันทึกภาษีขายและภาษีซื้อประจำเดือน มกราคม 2569",
+      "postedAt": "2026-06-25T02:57:51.508Z",
+      "postedJournalEntryId": "75909dfc-558e-48fd-9c46-08f5d7d4e0b1",
+      "postedVoucherId": "c6c20b38-86c3-4206-96ee-bd318597eaae",
+      "createdAt": "2026-06-24T10:28:36.366Z",
+      "updatedAt": "2026-06-25T02:57:51.512Z"
+    },
+    {
+      "id": "482e1902-2365-4969-ab7b-ec3a62b13e71",
+      "entryNo": "MJV-260005",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-31T00:00:00.000Z",
+      "description": "ค่าตรวจสอบบัญชี ปี 2569",
+      "postedAt": "2026-06-25T02:58:22.986Z",
+      "postedJournalEntryId": "3b4685dd-ad4a-44a2-8f9f-a89b61a19558",
+      "postedVoucherId": "6c19a79a-e24c-4119-a86e-8f7b947b867d",
+      "createdAt": "2026-06-24T10:31:01.184Z",
+      "updatedAt": "2026-06-25T02:58:22.986Z"
+    },
+    {
+      "id": "6ef576c2-43e9-43ca-983d-12823bdf1e2f",
+      "entryNo": "MJV-260006",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-31T00:00:00.000Z",
+      "description": "บันทึกโบนัสปี 2569",
+      "postedAt": "2026-06-25T03:00:25.306Z",
+      "postedJournalEntryId": "858d648b-48f9-4523-81ab-d9b7f6b8b24e",
+      "postedVoucherId": "df081a24-e26a-45e4-99df-e8009cfb4269",
+      "createdAt": "2026-06-24T10:46:20.611Z",
+      "updatedAt": "2026-06-25T03:00:25.307Z"
+    },
+    {
+      "id": "9fc335d2-1e8d-463f-bd09-37021b02aceb",
+      "entryNo": "MJV-260007",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-31T00:00:00.000Z",
+      "description": "บันทึกต้นทุนขาย ประจำเดือน มกราคม  2569",
+      "postedAt": "2026-06-25T03:01:06.867Z",
+      "postedJournalEntryId": "0d5429b7-04cc-4bcf-bd38-f666b21e12a7",
+      "postedVoucherId": "8b77fe47-e186-4418-84bc-f0a38bcedc1d",
+      "createdAt": "2026-06-24T10:52:45.289Z",
+      "updatedAt": "2026-06-25T03:01:06.868Z"
+    },
+    {
+      "id": "1071e2c8-c396-45c6-8496-5a250362fa65",
+      "entryNo": "MJV-260008",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-31T00:00:00.000Z",
+      "description": "ปป.บันทึกบัญชีปี 68 บันทึกค่าซื้อสมุดเช็คผิดไปบันทึกเข้า ภาษีมูลค่าเพิ่มค้างจ่าย",
+      "postedAt": "2026-06-25T03:01:34.666Z",
+      "postedJournalEntryId": "9e48f7db-c463-440f-9d11-8020877289f8",
+      "postedVoucherId": "39817d85-f642-4de2-b6d0-35b3c3b29a43",
+      "createdAt": "2026-06-24T10:57:11.855Z",
+      "updatedAt": "2026-06-25T03:01:34.667Z"
+    },
+    {
+      "id": "d971455c-ed3d-42bf-b7d3-de37ff302c31",
+      "entryNo": "MJV-260009",
+      "entryType": "MANUAL",
+      "status": "POSTED",
+      "legalEntityCode": "AD",
+      "entryDate": "2026-01-31T00:00:00.000Z",
+      "description": "บันทึกต้นทุนขาย ประจำเดือน มกราคม 2569 (เพิ่มเติมที่ขาด)",
+      "postedAt": "2026-06-26T08:51:36.378Z",
+      "postedJournalEntryId": "c5ff7691-db75-4450-aa6f-8094d0afea1c",
+      "postedVoucherId": "eef51878-6d92-40f7-a044-529a0504f249",
+      "createdAt": "2026-06-26T08:51:01.142Z",
+      "updatedAt": "2026-07-01T02:20:15.084Z"
+    }
+  ],
+  "journalEntriesByRefType": [
+    {
+      "refType": "INVOICE_VOUCHER",
+      "count": 5
+    },
+    {
+      "refType": "MANUAL_JOURNAL",
+      "count": 9
+    },
+    {
+      "refType": "MANUAL_JOURNAL_REVERSAL",
+      "count": 1
+    },
+    {
+      "refType": "PAYMENT_VOUCHER",
+      "count": 5
+    },
+    {
+      "refType": "POS_SALE",
+      "count": 2
+    },
+    {
+      "refType": "POS_SETTLEMENT_BANK_DEPOSIT",
+      "count": 2
+    },
+    {
+      "refType": "POS_SETTLEMENT_COLLECTOR_PICKUP",
+      "count": 6
+    },
+    {
+      "refType": "REVENUE_VOUCHER",
+      "count": 1
+    }
+  ],
+  "vouchersByRefType": [
+    {
+      "refType": "POS_SETTLEMENT_COLLECTOR_PICKUP",
+      "count": 6
+    },
+    {
+      "refType": "INVOICE_VOUCHER",
+      "count": 5
+    },
+    {
+      "refType": "POS_SETTLEMENT_BANK_DEPOSIT",
+      "count": 2
+    },
+    {
+      "refType": "MANUAL_JOURNAL",
+      "count": 9
+    },
+    {
+      "refType": "POS_SALE",
+      "count": 2
+    },
+    {
+      "refType": "PAYMENT_VOUCHER",
+      "count": 5
+    },
+    {
+      "refType": "MANUAL_JOURNAL_REVERSAL",
+      "count": 1
+    },
+    {
+      "refType": "REVENUE_VOUCHER",
+      "count": 1
+    }
+  ],
+  "reportExports": {
+    "ASAS-2026-07": {
+      "trialBalance": {
+        "rowCount": 207,
+        "totalDebits": "142600",
+        "totalCredits": "142600",
+        "isBalanced": true
+      },
+      "balanceSheet": {
+        "totalAssets": "180",
+        "totalLiabilities": "13.08",
+        "totalEquity": "0",
+        "isBalanced": false
+      }
+    },
+    "ASAD-2026-07": {
+      "trialBalance": {
+        "rowCount": 0,
+        "totalDebits": "0",
+        "totalCredits": "0",
+        "isBalanced": true
+      },
+      "balanceSheet": {
+        "totalAssets": "0",
+        "totalLiabilities": "0",
+        "totalEquity": "0",
+        "isBalanced": true
+      }
+    },
+    "HO999-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "P1C01-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH001-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH006-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH010-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH012-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH024-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH025-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH026-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH028-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH030-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SH999-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "0",
+        "totalExpense": "0",
+        "netIncome": "0"
+      }
+    },
+    "SMOKE01-2026-07": {
+      "profitLoss": {
+        "totalRevenue": "186.92",
+        "totalExpense": "20",
+        "netIncome": "166.92"
+      }
+    }
+  }
+}

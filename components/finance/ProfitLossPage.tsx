@@ -148,16 +148,19 @@ export function ProfitLossPage() {
           net income. Activity-based only; no opening balances.
         </p>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Branch (optional)</span>
+        <div className="finance-filter-row">
+          <div className="finance-filter-field finance-filter-field--branch">
+            <label htmlFor="pl-branch-id" className="finance-filter-label">
+              Branch (optional)
+            </label>
             <input
-              className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
+              id="pl-branch-id"
+              className="finance-filter-control finance-filter-control--mono"
               placeholder="All branches"
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
             />
-          </label>
+          </div>
 
           <FinanceScopeRadioFieldset
             name="plFilterMode"
@@ -166,62 +169,73 @@ export function ProfitLossPage() {
           />
 
           {filterMode === "period" ? (
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-zinc-600">Period key</span>
+            <div className="finance-filter-field finance-filter-field--period-key">
+              <label htmlFor="pl-period-key" className="finance-filter-label">
+                Period key
+              </label>
               <input
-                className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
+                id="pl-period-key"
+                className="finance-filter-control finance-filter-control--mono"
                 placeholder="2026-05"
                 value={periodKey}
                 onChange={(e) => setPeriodKey(e.target.value)}
               />
-            </label>
+            </div>
           ) : (
             <>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">From</span>
+              <div className="finance-filter-field finance-filter-field--date">
+                <label htmlFor="pl-from-date" className="finance-filter-label">
+                  From
+                </label>
                 <input
+                  id="pl-from-date"
                   type="date"
-                  className="rounded border border-zinc-300 px-2 py-1"
+                  className="finance-filter-control"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">To</span>
+              </div>
+              <div className="finance-filter-field finance-filter-field--date">
+                <label htmlFor="pl-to-date" className="finance-filter-label">
+                  To
+                </label>
                 <input
+                  id="pl-to-date"
                   type="date"
-                  className="rounded border border-zinc-300 px-2 py-1"
+                  className="finance-filter-control"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
                 />
-              </label>
+              </div>
             </>
           )}
 
-          <button
-            type="button"
-            className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-            disabled={loading}
-            onClick={() => void handleRefresh()}
-          >
-            {loading ? "Loading…" : "Refresh"}
-          </button>
-          <button
-            type="button"
-            className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
-            disabled={!result}
-            onClick={handleExport}
-          >
-            Export CSV
-          </button>
-          <button
-            type="button"
-            className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
-            disabled={!result}
-            onClick={handlePrint}
-          >
-            Print
-          </button>
+          <div className="finance-filter-actions">
+            <button
+              type="button"
+              className="finance-filter-control finance-filter-button finance-filter-button--primary"
+              disabled={loading}
+              onClick={() => void handleRefresh()}
+            >
+              {loading ? "Loading…" : "Refresh"}
+            </button>
+            <button
+              type="button"
+              className="finance-filter-control finance-filter-button finance-filter-button--secondary"
+              disabled={!result}
+              onClick={handleExport}
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              className="finance-filter-control finance-filter-button finance-filter-button--secondary"
+              disabled={!result}
+              onClick={handlePrint}
+            >
+              Print
+            </button>
+          </div>
         </div>
 
         {error ? <p className="text-sm text-red-700">{error}</p> : null}

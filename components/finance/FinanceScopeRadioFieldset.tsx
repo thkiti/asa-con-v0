@@ -12,9 +12,9 @@ export function FinanceScopeRadioFieldset({
   onChange,
 }: FinanceScopeRadioFieldsetProps) {
   return (
-    <fieldset className="flex flex-col gap-1 text-sm">
-      <span className="text-zinc-600">Scope</span>
-      <div className="finance-radio-group">
+    <fieldset className="finance-filter-field finance-filter-fieldset">
+      <legend className="finance-filter-label">Scope</legend>
+      <div className="finance-filter-control finance-filter-control--radio finance-radio-group">
         <label className="finance-radio-option">
           <input
             type="radio"

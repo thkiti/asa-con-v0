@@ -1,10 +1,17 @@
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
-import { parseDatabaseTarget } from "@/lib/uat/finance-full-reset"
+import { financeTableExists, parseDatabaseTarget } from "@/lib/uat/finance-full-reset"
 
 export const JUNE_UAT_RESET_CONFIRM_TOKEN = "JUNE_UAT_RESET_CONFIRMED"
 
 export const DEFAULT_UAT_RESET_FROM = "2026-06-01"
 export const DEFAULT_UAT_RESET_BEFORE = "2026-07-01"
+
+export const DOCUMENT_ARCHIVE_LINK_MISSING_WARNING =
+  "DocumentArchiveLink table missing; skipping archive link cleanup."
+
+export type UatResetTablePresence = {
+  documentArchiveLink: boolean
+}
 
 /** GL ref types removed for June UAT POS/settlement/stock posting. */
 export const JUNE_UAT_OPERATIONAL_REF_TYPES: string[] = [
@@ -176,6 +183,97 @@ export function validateUatResetExecute(
   }
 }
 
+export function isPrismaMissingTableError(
+  err: unknown,
+  tableName: string
+): boolean {
+  if (!err || typeof err !== "object") return false
+  const e = err as { code?: string; meta?: { table?: string; modelName?: string } }
+  if (e.code !== "P2021") return false
+  const metaTable = e.meta?.table ?? ""
+  return (
+    metaTable === tableName ||
+    metaTable === `public.${tableName}` ||
+    e.meta?.modelName === tableName
+  )
+}
+
+export async function detectUatResetTablePresence(prisma: {
+  $queryRaw: (
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ) => Promise<unknown>
+}): Promise<UatResetTablePresence> {
+  const queryRaw = prisma.$queryRaw.bind(prisma)
+  const documentArchiveLink = await financeTableExists(
+    queryRaw,
+    "DocumentArchiveLink"
+  )
+  return { documentArchiveLink }
+}
+
+function buildDocumentArchiveLinkScopeWhere(
+  saleIds: string[],
+  refundIds: string[],
+  collectorReportIds: string[]
+) {
+  return {
+    OR: [
+      ...(saleIds.length > 0
+        ? [{ documentKind: "REC" as const, documentId: { in: saleIds } }]
+        : []),
+      ...(refundIds.length > 0
+        ? [{ documentKind: "REF" as const, documentId: { in: refundIds } }]
+        : []),
+      ...(collectorReportIds.length > 0
+        ? [{ documentKind: "COL" as const, documentId: { in: collectorReportIds } }]
+        : []),
+    ],
+  }
+}
+
+async function findDocumentArchiveLinksSafe(
+  findMany: ScopePrisma["documentArchiveLink"]["findMany"],
+  args: unknown,
+  tablePresence: UatResetTablePresence
+): Promise<Array<{ archiveId: string }>> {
+  if (!tablePresence.documentArchiveLink) return []
+  try {
+    return await findMany(args)
+  } catch (err) {
+    if (isPrismaMissingTableError(err, "DocumentArchiveLink")) return []
+    throw err
+  }
+}
+
+async function countDocumentArchiveLinksSafe(
+  count: CountPrisma["documentArchiveLink"]["count"],
+  args: unknown,
+  tablePresence: UatResetTablePresence
+): Promise<number> {
+  if (!tablePresence.documentArchiveLink) return 0
+  try {
+    return await count(args)
+  } catch (err) {
+    if (isPrismaMissingTableError(err, "DocumentArchiveLink")) return 0
+    throw err
+  }
+}
+
+async function deleteDocumentArchiveLinksSafe(
+  deleteMany: ResetTx["documentArchiveLink"]["deleteMany"],
+  args: unknown,
+  tablePresence: UatResetTablePresence
+): Promise<void> {
+  if (!tablePresence.documentArchiveLink) return
+  try {
+    await deleteMany(args)
+  } catch (err) {
+    if (isPrismaMissingTableError(err, "DocumentArchiveLink")) return
+    throw err
+  }
+}
+
 export function createdAtRangeWhere(range: UatResetDateRange) {
   return { gte: range.from, lt: range.before }
 }
@@ -311,7 +409,8 @@ function uniqueIds(ids: string[]): string[] {
 
 export async function resolveUatResetScope(
   prisma: ScopePrisma,
-  range: UatResetDateRange
+  range: UatResetDateRange,
+  tablePresence: UatResetTablePresence
 ): Promise<UatResetScopeIds> {
   const createdAtWhere = { createdAt: createdAtRangeWhere(range) }
   const [sales, refunds, collectors, stockDocuments] = await Promise.all([
@@ -343,22 +442,18 @@ export async function resolveUatResetScope(
 
   const [links, receiptRows, legacyArchives] = await Promise.all([
     saleIds.length + refundIds.length + collectorReportIds.length > 0
-      ? prisma.documentArchiveLink.findMany({
-          where: {
-            OR: [
-              ...(saleIds.length > 0
-                ? [{ documentKind: "REC" as const, documentId: { in: saleIds } }]
-                : []),
-              ...(refundIds.length > 0
-                ? [{ documentKind: "REF" as const, documentId: { in: refundIds } }]
-                : []),
-              ...(collectorReportIds.length > 0
-                ? [{ documentKind: "COL" as const, documentId: { in: collectorReportIds } }]
-                : []),
-            ],
+      ? findDocumentArchiveLinksSafe(
+          prisma.documentArchiveLink.findMany,
+          {
+            where: buildDocumentArchiveLinkScopeWhere(
+              saleIds,
+              refundIds,
+              collectorReportIds
+            ),
+            select: { archiveId: true },
           },
-          select: { archiveId: true },
-        })
+          tablePresence
+        )
       : Promise.resolve([]),
     saleIds.length > 0
       ? prisma.receipt.findMany({
@@ -442,7 +537,8 @@ type CountPrisma = {
 export async function countUatResetTargets(
   prisma: CountPrisma,
   scope: UatResetScopeIds,
-  range: UatResetDateRange
+  range: UatResetDateRange,
+  tablePresence: UatResetTablePresence
 ): Promise<UatResetTableCounts> {
   const saleWhere = scope.saleIds.length
     ? { id: { in: scope.saleIds } }
@@ -514,7 +610,11 @@ export async function countUatResetTargets(
     prisma.journalEntryLine.count({
       where: { journalEntry: { voucher: voucherWhere } },
     }),
-    prisma.documentArchiveLink.count({ where: { archiveId: { in: scope.archiveIds } } }),
+    countDocumentArchiveLinksSafe(
+      prisma.documentArchiveLink.count,
+      { where: { archiveId: { in: scope.archiveIds } } },
+      tablePresence
+    ),
     prisma.documentArchive.count({ where: archiveWhere }),
     prisma.reconciliationSnapshot.count({
       where: reconciliationSnapshotScopeWhere(range),
@@ -621,7 +721,8 @@ type ResetTx = {
 export async function executeUatReset(
   tx: ResetTx,
   scope: UatResetScopeIds,
-  range: UatResetDateRange
+  range: UatResetDateRange,
+  tablePresence: UatResetTablePresence
 ): Promise<void> {
   const {
     voucherIds,
@@ -651,27 +752,25 @@ export async function executeUatReset(
   }
 
   if (archiveIds.length > 0) {
-    await tx.documentArchiveLink.deleteMany({
-      where: { archiveId: { in: archiveIds } },
-    })
+    await deleteDocumentArchiveLinksSafe(
+      tx.documentArchiveLink.deleteMany,
+      { where: { archiveId: { in: archiveIds } } },
+      tablePresence
+    )
   }
 
   if (saleIds.length + refundIds.length + collectorReportIds.length > 0) {
-    await tx.documentArchiveLink.deleteMany({
-      where: {
-        OR: [
-          ...(saleIds.length > 0
-            ? [{ documentKind: "REC" as const, documentId: { in: saleIds } }]
-            : []),
-          ...(refundIds.length > 0
-            ? [{ documentKind: "REF" as const, documentId: { in: refundIds } }]
-            : []),
-          ...(collectorReportIds.length > 0
-            ? [{ documentKind: "COL" as const, documentId: { in: collectorReportIds } }]
-            : []),
-        ],
+    await deleteDocumentArchiveLinksSafe(
+      tx.documentArchiveLink.deleteMany,
+      {
+        where: buildDocumentArchiveLinkScopeWhere(
+          saleIds,
+          refundIds,
+          collectorReportIds
+        ),
       },
-    })
+      tablePresence
+    )
   }
 
   if (saleIds.length > 0) {

@@ -21,6 +21,8 @@ import {
   countUatResetTargets,
   DEFAULT_UAT_RESET_BEFORE,
   DEFAULT_UAT_RESET_FROM,
+  detectUatResetTablePresence,
+  DOCUMENT_ARCHIVE_LINK_MISSING_WARNING,
   executeUatReset,
   JUNE_UAT_RESET_CONFIRM_TOKEN,
   parseUatResetArgs,
@@ -55,8 +57,13 @@ async function main() {
     process.exit(1)
   }
 
-  const scope = await resolveUatResetScope(prisma, range)
-  const toRemove = await countUatResetTargets(prisma, scope, range)
+  const tablePresence = await detectUatResetTablePresence(prisma)
+  if (!tablePresence.documentArchiveLink) {
+    console.warn(DOCUMENT_ARCHIVE_LINK_MISSING_WARNING)
+  }
+
+  const scope = await resolveUatResetScope(prisma, range, tablePresence)
+  const toRemove = await countUatResetTargets(prisma, scope, range, tablePresence)
   const protectedCounts = await countProtectedMasterData(prisma, range)
 
   console.log("\n--- Scope IDs ---")
@@ -100,11 +107,16 @@ async function main() {
 
   console.log("\nExecuting reset in a single transaction…")
   await prisma.$transaction(async (tx) => {
-    await executeUatReset(tx, scope, range)
+    await executeUatReset(tx, scope, range, tablePresence)
   })
 
-  const afterScope = await resolveUatResetScope(prisma, range)
-  const afterRemove = await countUatResetTargets(prisma, afterScope, range)
+  const afterScope = await resolveUatResetScope(prisma, range, tablePresence)
+  const afterRemove = await countUatResetTargets(
+    prisma,
+    afterScope,
+    range,
+    tablePresence
+  )
   const afterProtected = await countProtectedMasterData(prisma, range)
 
   console.log("\n--- After reset: remaining scoped rows ---")

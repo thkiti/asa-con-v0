@@ -50,6 +50,7 @@
   --finance-document-max-width: 1120px;
   --finance-report-max-width: 1100px;
   --voucher-inquiry-filter-control-height: 34px;
+  --finance-report-filter-control-height: var(--voucher-inquiry-filter-control-height);
   --tone-success-bg: #ecfdf5;
   --tone-success-border: #a7f3d0;
   --tone-success-fg: #065f46;
@@ -114,6 +115,7 @@
   --finance-document-max-width: 1120px;
   --finance-report-max-width: 1100px;
   --voucher-inquiry-filter-control-height: 34px;
+  --finance-report-filter-control-height: var(--voucher-inquiry-filter-control-height);
   --tone-success-bg: #064e3b;
   --tone-success-border: #059669;
   --tone-success-fg: #a7f3d0;
@@ -1672,12 +1674,183 @@ span.finance-account .finance-account-name-part {
   color: #09090b;
 }
 
+/* Finance report filter row — shared label + control alignment */
+.finance-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.finance-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.finance-filter-label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: var(--label-text);
+}
+
+.finance-filter-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.finance-filter-fieldset > .finance-filter-label,
+.finance-filter-fieldset > legend.finance-filter-label {
+  padding: 0;
+  margin: 0;
+  float: none;
+}
+
+.finance-filter-control {
+  box-sizing: border-box;
+  height: var(--finance-report-filter-control-height);
+  min-height: var(--finance-report-filter-control-height);
+  max-height: var(--finance-report-filter-control-height);
+  margin: 0;
+  padding: 0 0.5rem;
+  border: 1px solid var(--input-border);
+  border-radius: 0.25rem;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.finance-filter-control:focus {
+  outline: none;
+}
+
+.finance-filter-control:focus-visible {
+  outline: 2px solid var(--link-primary);
+  outline-offset: 1px;
+  border-color: var(--link-primary);
+}
+
+.finance-filter-control::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.finance-filter-control--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.75rem;
+}
+
+.finance-filter-control[type="date"] {
+  color-scheme: light;
+  padding-right: 0.25rem;
+}
+
+.finance-filter-control[type="date"]::-webkit-calendar-picker-indicator {
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+[data-theme="dark"] .finance-filter-control[type="date"] {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .finance-filter-control[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.95;
+}
+
+.finance-filter-control--radio {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.finance-filter-control--checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--input-text);
+  white-space: nowrap;
+}
+
+.finance-filter-field--account {
+  flex: 1 1 12rem;
+  min-width: 12rem;
+  max-width: 20rem;
+}
+
+.finance-filter-field--branch {
+  width: 9rem;
+}
+
+.finance-filter-field--period-key {
+  width: 7.5rem;
+}
+
+.finance-filter-field--date {
+  width: 140px;
+}
+
+.finance-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.finance-filter-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 0.25rem;
+}
+
+.finance-filter-button--primary {
+  border: 1px solid transparent;
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+}
+
+.finance-filter-button--secondary {
+  border: 1px solid var(--input-border);
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-fg);
+}
+
+.finance-filter-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Finance filter radio groups — custom appearance, native input for a11y */
 .finance-radio-group {
   display: flex;
   align-items: center;
   gap: 1.125rem;
-  min-height: 1.875rem;
+  height: 100%;
+  min-height: var(--finance-report-filter-control-height);
 }
 
 .finance-radio-option {

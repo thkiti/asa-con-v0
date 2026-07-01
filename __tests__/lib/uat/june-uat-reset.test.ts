@@ -1,18 +1,23 @@
 import {
   DEFAULT_UAT_RESET_BEFORE,
   DEFAULT_UAT_RESET_FROM,
+  DOCUMENT_ARCHIVE_LINK_MISSING_WARNING,
   executeUatReset,
   isInstantInUatResetRange,
+  isPrismaMissingTableError,
   isWorkDateInUatResetRange,
   JUNE_UAT_RESET_CONFIRM_TOKEN,
   parseUatResetArgs,
   parseUatResetDateRange,
   PROTECTED_MASTER_DELETE_KEYS,
+  resolveUatResetScope,
   validateUatResetExecute,
 } from "@/lib/uat/june-uat-reset"
 
 describe("june-uat-reset", () => {
   const range = parseUatResetDateRange(DEFAULT_UAT_RESET_FROM, DEFAULT_UAT_RESET_BEFORE)
+  const tablePresencePresent = { documentArchiveLink: true }
+  const tablePresenceMissing = { documentArchiveLink: false }
 
   it("defaults to dry run without execute flag", () => {
     const cli = parseUatResetArgs([])
@@ -92,6 +97,41 @@ describe("june-uat-reset", () => {
     ).not.toThrow()
   })
 
+  it("detects Prisma P2021 missing-table errors for DocumentArchiveLink", () => {
+    expect(
+      isPrismaMissingTableError(
+        { code: "P2021", meta: { table: "public.DocumentArchiveLink" } },
+        "DocumentArchiveLink"
+      )
+    ).toBe(true)
+    expect(isPrismaMissingTableError({ code: "P2021", meta: { table: "Sale" } }, "DocumentArchiveLink")).toBe(
+      false
+    )
+  })
+
+  it("skips DocumentArchiveLink scope lookup when table is absent", async () => {
+    const findMany = jest.fn()
+    const prisma = {
+      sale: {
+        findMany: jest.fn().mockResolvedValue([{ id: "sale-june-1" }]),
+      },
+      refund: { findMany: jest.fn().mockResolvedValue([]) },
+      collectorReport: { findMany: jest.fn().mockResolvedValue([]) },
+      stockDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      voucher: { findMany: jest.fn().mockResolvedValue([]) },
+      documentArchiveLink: { findMany },
+      documentArchive: {
+        findMany: jest.fn().mockResolvedValue([{ id: "archive-legacy-1" }]),
+      },
+      receipt: { findMany: jest.fn().mockResolvedValue([]) },
+    }
+
+    const scope = await resolveUatResetScope(prisma as never, range, tablePresenceMissing)
+
+    expect(findMany).not.toHaveBeenCalled()
+    expect(scope.archiveIds).toEqual(["archive-legacy-1"])
+  })
+
   it("does not delete protected master-data delegates", async () => {
     const protectedDeletes = Object.fromEntries(
       PROTECTED_MASTER_DELETE_KEYS.map((key) => [key, jest.fn()])
@@ -152,18 +192,68 @@ describe("june-uat-reset", () => {
         collectorReportIds: [],
         stockDocumentIds: [],
         voucherIds: [],
-        archiveIds: [],
+        archiveIds: ["archive-1"],
       },
-      range
+      range,
+      tablePresenceMissing
     )
 
     for (const key of PROTECTED_MASTER_DELETE_KEYS) {
       expect(protectedDeletes[key]).not.toHaveBeenCalled()
     }
+    expect(tx.documentArchiveLink.deleteMany).not.toHaveBeenCalled()
+    expect(tx.documentArchive.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["archive-1"] } },
+    })
     expect(tx.reconciliationSnapshot.deleteMany).toHaveBeenCalled()
     expect(tx.workTimeEntry.deleteMany).toHaveBeenCalled()
     expect(tx.documentCounter.deleteMany).toHaveBeenCalledWith({
       where: { period: "202606" },
     })
+  })
+
+  it("still deletes DocumentArchiveLink rows when table exists", async () => {
+    const deleteMany = jest.fn().mockResolvedValue({ count: 0 })
+    const tx = {
+      posPayInEvidence: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      journalEntry: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      voucher: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      documentArchiveLink: { deleteMany },
+      receipt: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      documentArchive: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      collectorReport: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      refund: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      stockTransaction: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      stockDocument: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      sale: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      reconciliationSnapshot: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      workTimeEntry: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      documentCounter: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+    }
+
+    await executeUatReset(
+      tx as never,
+      {
+        saleIds: ["sale-1"],
+        refundIds: [],
+        collectorReportIds: [],
+        stockDocumentIds: [],
+        voucherIds: [],
+        archiveIds: ["archive-1"],
+      },
+      range,
+      tablePresencePresent
+    )
+
+    expect(deleteMany).toHaveBeenCalledTimes(2)
+  })
+
+  it("exports the missing-table warning message", () => {
+    expect(DOCUMENT_ARCHIVE_LINK_MISSING_WARNING).toBe(
+      "DocumentArchiveLink table missing; skipping archive link cleanup."
+    )
   })
 })

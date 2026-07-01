@@ -94,7 +94,7 @@ export function TrialBalancePage() {
           selected scope.
         </p>
 
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="finance-filter-row">
           <FinanceScopeRadioFieldset
             name="filterMode"
             value={filterMode}
@@ -102,71 +102,85 @@ export function TrialBalancePage() {
           />
 
           {filterMode === "period" ? (
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-zinc-600">Period key</span>
+            <div className="finance-filter-field finance-filter-field--period-key">
+              <label htmlFor="tb-period-key" className="finance-filter-label">
+                Period key
+              </label>
               <input
-                className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
+                id="tb-period-key"
+                className="finance-filter-control finance-filter-control--mono"
                 placeholder="2026-05"
                 value={periodKey}
                 onChange={(e) => setPeriodKey(e.target.value)}
               />
-            </label>
+            </div>
           ) : (
             <>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">From</span>
+              <div className="finance-filter-field finance-filter-field--date">
+                <label htmlFor="tb-from-date" className="finance-filter-label">
+                  From
+                </label>
                 <input
+                  id="tb-from-date"
                   type="date"
-                  className="rounded border border-zinc-300 px-2 py-1"
+                  className="finance-filter-control"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">To</span>
+              </div>
+              <div className="finance-filter-field finance-filter-field--date">
+                <label htmlFor="tb-to-date" className="finance-filter-label">
+                  To
+                </label>
                 <input
+                  id="tb-to-date"
                   type="date"
-                  className="rounded border border-zinc-300 px-2 py-1"
+                  className="finance-filter-control"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
                 />
-              </label>
+              </div>
             </>
           )}
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={hideZeroBalances}
-              onChange={(e) => setHideZeroBalances(e.target.checked)}
-            />
-            Hide zero-balance accounts
-          </label>
+          <div className="finance-filter-field">
+            <span className="finance-filter-label">Zero balances</span>
+            <label className="finance-filter-control finance-filter-control--checkbox">
+              <input
+                type="checkbox"
+                checked={hideZeroBalances}
+                onChange={(e) => setHideZeroBalances(e.target.checked)}
+              />
+              Hide zero-balance accounts
+            </label>
+          </div>
 
-          <button
-            type="button"
-            className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
-            disabled={loading}
-            onClick={() => void handleRefresh()}
-          >
-            {loading ? "Loading…" : "Refresh"}
-          </button>
-          <button
-            type="button"
-            className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
-            disabled={!result}
-            onClick={handleExport}
-          >
-            Export CSV
-          </button>
-          <button
-            type="button"
-            className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
-            disabled={!result}
-            onClick={handlePrint}
-          >
-            Print
-          </button>
+          <div className="finance-filter-actions">
+            <button
+              type="button"
+              className="finance-filter-control finance-filter-button finance-filter-button--primary"
+              disabled={loading}
+              onClick={() => void handleRefresh()}
+            >
+              {loading ? "Loading…" : "Refresh"}
+            </button>
+            <button
+              type="button"
+              className="finance-filter-control finance-filter-button finance-filter-button--secondary"
+              disabled={!result}
+              onClick={handleExport}
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              className="finance-filter-control finance-filter-button finance-filter-button--secondary"
+              disabled={!result}
+              onClick={handlePrint}
+            >
+              Print
+            </button>
+          </div>
         </div>
 
         {error ? <p className="text-sm text-red-700">{error}</p> : null}
