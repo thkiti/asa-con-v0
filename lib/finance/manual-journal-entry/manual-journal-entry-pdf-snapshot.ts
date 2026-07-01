@@ -37,6 +37,9 @@ export type ManualJournalEntryPdfSnapshotSource = {
   submittedAt: Date | null
   confirmedAt: Date | null
   postedAt: Date
+  createdByStaffId: string
+  submittedByStaffId: string | null
+  confirmedByStaffId: string | null
   postedByStaffId: string
   lines: ManualJournalEntryPdfSnapshotSourceLine[]
 }
@@ -88,6 +91,9 @@ export function buildManualJournalEntryPdfSnapshot(
     submittedAt: entry.submittedAt?.toISOString() ?? null,
     confirmedAt: entry.confirmedAt?.toISOString() ?? null,
     postedAt: entry.postedAt.toISOString(),
+    createdByStaffId: entry.createdByStaffId,
+    submittedByStaffId: entry.submittedByStaffId,
+    confirmedByStaffId: entry.confirmedByStaffId,
     postedByStaffId: entry.postedByStaffId,
     postedVoucherId: posted.voucherId,
     postedVoucherNo: posted.voucherNo,

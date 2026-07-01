@@ -1,78 +1,81 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
-import { formatDateTime } from "@/lib/finance-ui/format"
+import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import {
   formatManualJournalEntryDocumentNo,
   formatManualJournalEntryTypeLabel,
   MANUAL_JOURNAL_ENTRY_STATUSES,
   MANUAL_JOURNAL_ENTRY_TYPES,
-  type ManualJournalEntryStatusCode,
-  type ManualJournalEntryTypeCode,
 } from "@/lib/finance-ui/manual-journal-entry-display"
 import {
+  defaultManualJournalEntryListUiFilter,
+  toManualJournalEntryListFilter,
+  type ManualJournalEntryListUiFilter,
+} from "@/lib/finance-ui/manual-journal-entry-list-filter"
+import {
   fetchManualJournalEntries,
-  type ManualJournalEntryListFilterInput,
   type ManualJournalEntryListItem,
 } from "@/lib/finance-ui/manual-journal-entries"
-import { formatEntityShort } from "@/lib/legal-entity"
-import {
-  LEGAL_ENTITY_CODES,
-  type DocumentEntityCode,
-} from "@/lib/legal-entity/constants"
+import { FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS } from "@/lib/finance/inquiry/finance-document-inquiry-filter-options"
+import { useInquiryMoreFilterOpen } from "@/lib/finance-ui/inquiry-more-filter-state"
 import {
   financeMemo,
   financeNumber,
   financeTable,
   financeTableScroll,
   financeTh,
+  financeThRight,
+  manualJournalEntryListActionPrimary,
+  manualJournalEntryListActionRow,
+  manualJournalEntryListActionSecondary,
+  manualJournalEntryListFilterEntryType,
+  manualJournalEntryListTable,
+  manualJournalEntryListTdDate,
+  manualJournalEntryListTdDescription,
+  manualJournalEntryListTdDocNo,
+  manualJournalEntryListTdLines,
+  manualJournalEntryListTdStatus,
+  voucherInquiryFilterActions,
+  voucherInquiryFilterBar,
+  voucherInquiryFilterButtonPrimary,
+  voucherInquiryFilterButtonSecondary,
+  voucherInquiryFilterInput,
+  voucherInquiryFilterNo,
+  voucherInquiryFilterPostingState,
+  voucherInquiryFilterSelect,
+  voucherInquiryFilterStatus,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { themeLinkMuted } from "@/lib/theme/theme-classes"
+import { themeLabel, themeLinkMuted, themeTextSecondary } from "@/lib/theme/theme-classes"
 
 const ALL = ""
 
-type FilterState = {
-  legalEntityCode: string
-  status: string
-  entryType: string
-  dateFrom: string
-  dateTo: string
-}
-
-const defaultFilter: FilterState = {
-  legalEntityCode: ALL,
-  status: ALL,
-  entryType: ALL,
-  dateFrom: "",
-  dateTo: "",
-}
-
-function toListFilter(filter: FilterState): ManualJournalEntryListFilterInput {
-  return {
-    ...(filter.legalEntityCode ? { legalEntityCode: filter.legalEntityCode as DocumentEntityCode } : {}),
-    ...(filter.status ? { status: filter.status as ManualJournalEntryStatusCode } : {}),
-    ...(filter.entryType ? { entryType: filter.entryType as ManualJournalEntryTypeCode } : {}),
-    ...(filter.dateFrom ? { dateFrom: filter.dateFrom } : {}),
-    ...(filter.dateTo ? { dateTo: filter.dateTo } : {}),
-    limit: 50,
-    offset: 0,
-  }
-}
-
 export function ManualJournalEntryListPage() {
-  const [filter, setFilter] = useState<FilterState>(defaultFilter)
+  const [draft, setDraft] = useState<ManualJournalEntryListUiFilter>(
+    defaultManualJournalEntryListUiFilter
+  )
+  const [applied, setApplied] = useState<ManualJournalEntryListUiFilter>(
+    defaultManualJournalEntryListUiFilter
+  )
   const [entries, setEntries] = useState<ManualJournalEntryListItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const appliedFilterKey = useMemo(() => JSON.stringify(applied), [applied])
+  const { isMoreFilterOpen, setIsMoreFilterOpen } =
+    useInquiryMoreFilterOpen(appliedFilterKey)
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchManualJournalEntries(toListFilter(filter))
+      const result = await fetchManualJournalEntries(
+        toManualJournalEntryListFilter(applied)
+      )
       setEntries(result.entries)
       setTotal(result.total)
     } catch (err) {
@@ -80,53 +83,90 @@ export function ManualJournalEntryListPage() {
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [applied])
 
   useEffect(() => {
     void load()
   }, [load])
 
+  function handleSearch() {
+    setIsMoreFilterOpen(false)
+    setApplied({ ...draft })
+  }
+
+  function handleClear() {
+    setIsMoreFilterOpen(false)
+    const cleared = defaultManualJournalEntryListUiFilter()
+    setDraft(cleared)
+    setApplied(cleared)
+  }
+
   return (
     <div className="space-y-4" data-testid="manual-journal-entry-list">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Legal entity</span>
+      <div className={manualJournalEntryListActionRow} data-testid="manual-journal-entry-actions">
+        <Link
+          href="/finance/manual-journal-entries/new"
+          className={manualJournalEntryListActionPrimary}
+          data-testid="new-manual-journal-entry"
+        >
+          New journal entry
+        </Link>
+        <button
+          type="button"
+          className={manualJournalEntryListActionSecondary}
+          data-testid="manual-journal-entry-refresh"
+          onClick={() => void load()}
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div
+        className={voucherInquiryFilterBar}
+        data-testid="manual-journal-entry-filters"
+      >
+        <DocumentInquiryMoreFilter
+          periodKey={draft.periodKey}
+          onPeriodKeyChange={(value) =>
+            setDraft((prev) => ({ ...prev, periodKey: value }))
+          }
+          periodTestId="manual-journal-entry-filter-period"
+          from={draft.dateFrom}
+          to={draft.dateTo}
+          onFromChange={(value) =>
+            setDraft((prev) => ({ ...prev, dateFrom: value }))
+          }
+          onToChange={(value) => setDraft((prev) => ({ ...prev, dateTo: value }))}
+          testIdPrefix="manual-journal-entry"
+          isMoreFilterOpen={isMoreFilterOpen}
+          setIsMoreFilterOpen={setIsMoreFilterOpen}
+        />
+        <label className={voucherInquiryFilterStatus}>
+          <span className={themeLabel}>Status</span>
           <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.legalEntityCode}
+            className={voucherInquiryFilterSelect}
+            value={draft.status}
             onChange={(e) =>
-              setFilter((prev) => ({ ...prev, legalEntityCode: e.target.value }))
+              setDraft((prev) => ({ ...prev, status: e.target.value }))
             }
-            data-testid="filter-legal-entity"
-          >
-            <option value={ALL}>All</option>
-            {LEGAL_ENTITY_CODES.map((code) => (
-              <option key={code} value={code}>
-                {formatEntityShort(code)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Status</span>
-          <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.status}
-            onChange={(e) => setFilter((prev) => ({ ...prev, status: e.target.value }))}
             data-testid="filter-status"
           >
             <option value={ALL}>All</option>
             {MANUAL_JOURNAL_ENTRY_STATUSES.map((status) => (
-              <option key={status} value={status}>{status}</option>
+              <option key={status} value={status}>
+                {status}
+              </option>
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Entry type</span>
+        <label className={manualJournalEntryListFilterEntryType}>
+          <span className={themeLabel}>Entry type</span>
           <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.entryType}
-            onChange={(e) => setFilter((prev) => ({ ...prev, entryType: e.target.value }))}
+            className={voucherInquiryFilterSelect}
+            value={draft.entryType}
+            onChange={(e) =>
+              setDraft((prev) => ({ ...prev, entryType: e.target.value }))
+            }
             data-testid="filter-entry-type"
           >
             <option value={ALL}>All</option>
@@ -137,88 +177,102 @@ export function ManualJournalEntryListPage() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Date from</span>
+        <label className={voucherInquiryFilterNo}>
+          <span className={themeLabel}>No.</span>
           <input
-            type="date"
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.dateFrom}
-            onChange={(e) => setFilter((prev) => ({ ...prev, dateFrom: e.target.value }))}
-            data-testid="filter-date-from"
+            className={voucherInquiryFilterInput}
+            value={draft.entryNo}
+            onChange={(e) =>
+              setDraft((prev) => ({ ...prev, entryNo: e.target.value }))
+            }
+            placeholder="MJV-…"
+            data-testid="manual-journal-entry-filter-no"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Date to</span>
-          <input
-            type="date"
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.dateTo}
-            onChange={(e) => setFilter((prev) => ({ ...prev, dateTo: e.target.value }))}
-            data-testid="filter-date-to"
-          />
+        <label className={voucherInquiryFilterPostingState}>
+          <span className={themeLabel}>Post</span>
+          <select
+            className={voucherInquiryFilterSelect}
+            value={draft.postingState}
+            onChange={(e) =>
+              setDraft((prev) => ({
+                ...prev,
+                postingState: e.target.value as ManualJournalEntryListUiFilter["postingState"],
+              }))
+            }
+            data-testid="manual-journal-entry-filter-post"
+          >
+            {FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
+        <div className={voucherInquiryFilterActions}>
+          <button
+            type="button"
+            className={voucherInquiryFilterButtonPrimary}
+            onClick={handleSearch}
+            data-testid="manual-journal-entry-search"
+          >
+            Search
+          </button>
+          <button
+            type="button"
+            className={voucherInquiryFilterButtonSecondary}
+            onClick={handleClear}
+            data-testid="manual-journal-entry-clear"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href="/finance/manual-journal-entries/new"
-          className="rounded bg-zinc-900 px-4 py-2 text-sm text-white"
-          data-testid="new-manual-journal-entry"
-        >
-          New journal entry
-        </Link>
-        <button
-          type="button"
-          className="rounded border border-zinc-300 px-3 py-2 text-sm"
-          onClick={() => void load()}
-        >
-          Refresh
-        </button>
-      </div>
-
-      {loading ? <p className="text-sm text-zinc-500">Loading entries…</p> : null}
+      {loading ? <p className={`text-sm ${themeTextSecondary}`}>Loading entries…</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
       {!loading && !error ? (
         <>
-          <p className="text-sm text-zinc-600">
+          <p className={`text-sm ${themeTextSecondary}`}>
             {total} entr{total === 1 ? "y" : "ies"}
           </p>
           <div className={financeTableScroll}>
-            <table className={financeTable}>
+            <table
+              className={`${financeTable} ${manualJournalEntryListTable}`}
+              data-testid="manual-journal-entry-table"
+            >
               <thead>
                 <tr>
-                  <th className={financeTh}>Document no</th>
-                  <th className={financeTh}>Type</th>
-                  <th className={financeTh}>Entity</th>
+                  <th className={financeTh}>Document no.</th>
                   <th className={financeTh}>Date</th>
                   <th className={financeTh}>Description</th>
-                  <th className={financeTh}>Lines</th>
-                  <th className={financeTh}>Status</th>
+                  <th className={financeThRight}>Lines</th>
+                  <th className={financeThRight}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((row) => (
                   <tr key={row.id}>
-                    <td>
+                    <td className={manualJournalEntryListTdDocNo}>
                       <Link
                         href={`/finance/manual-journal-entries/${row.id}`}
-                        className={`font-mono text-xs ${themeLinkMuted}`}
+                        className={`${themeLinkMuted} font-mono text-xs`}
                         data-testid={`entry-link-${row.id}`}
                       >
                         {formatManualJournalEntryDocumentNo(row.entryNo, row.entryType)}
                       </Link>
                     </td>
-                    <td className={financeMemo}>
-                      {formatManualJournalEntryTypeLabel(row.entryType)}
+                    <td className={`${financeMemo} ${manualJournalEntryListTdDate}`}>
+                      {formatFinanceListDate(row.entryDate)}
                     </td>
-                    <td className={financeMemo}>
-                      {formatEntityShort(row.legalEntityCode)}
+                    <td className={`${financeMemo} ${manualJournalEntryListTdDescription}`}>
+                      {row.description ?? "—"}
                     </td>
-                    <td className={financeMemo}>{formatDateTime(row.entryDate)}</td>
-                    <td className={financeMemo}>{row.description ?? "—"}</td>
-                    <td className={financeNumber}>{row.lineCount}</td>
-                    <td className={financeMemo}>
+                    <td className={`${financeNumber} ${manualJournalEntryListTdLines}`}>
+                      {row.lineCount}
+                    </td>
+                    <td className={`${financeMemo} ${manualJournalEntryListTdStatus}`}>
                       <ManualJournalEntryStatusBadge status={row.status} />
                     </td>
                   </tr>

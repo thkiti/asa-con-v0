@@ -1,4 +1,19 @@
+jest.mock("playwright", () => ({
+  chromium: {
+    launch: jest.fn().mockResolvedValue({
+      newPage: jest.fn().mockResolvedValue({
+        setContent: jest.fn().mockResolvedValue(undefined),
+        emulateMedia: jest.fn().mockResolvedValue(undefined),
+        pdf: jest.fn().mockResolvedValue(Buffer.from("%PDF-1.4 canonical")),
+        close: jest.fn().mockResolvedValue(undefined),
+      }),
+      close: jest.fn().mockResolvedValue(undefined),
+    }),
+  },
+}))
+
 import { renderManualJournalEntryPdf } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-render"
+import { buildManualJournalEntryPdfDocumentHtml } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-document-html"
 import type { ManualJournalEntryPdfSnapshot } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-snapshot-types"
 
 const thaiSample = "เงินสดในมือ"
@@ -6,9 +21,9 @@ const thaiSample = "เงินสดในมือ"
 const snapshot: ManualJournalEntryPdfSnapshot = {
   snapshotVersion: 1,
   entryId: "00000000-0000-0000-0000-000000000001",
-  entryNo: "OPB-260001",
-  entryType: "OPENING_BALANCE",
-  entryTypeLabel: "Opening Balance Journal",
+  entryNo: "MJV-260001",
+  entryType: "MANUAL",
+  entryTypeLabel: "Manual Journal Voucher",
   branchId: "branch-1",
   legalEntityCode: "AD",
   entryDate: "2026-01-01",
@@ -18,9 +33,12 @@ const snapshot: ManualJournalEntryPdfSnapshot = {
   submittedAt: "2026-06-14T13:00:00.000Z",
   confirmedAt: "2026-06-14T14:00:00.000Z",
   postedAt: "2026-06-18T09:59:22.252Z",
+  createdByStaffId: "001",
+  submittedByStaffId: "002",
+  confirmedByStaffId: "003",
   postedByStaffId: "001",
   postedVoucherId: "voucher-1",
-  postedVoucherNo: "V-001",
+  postedVoucherNo: "MJV-260001",
   postedJournalEntryId: "journal-1",
   lines: [
     {
@@ -36,13 +54,16 @@ const snapshot: ManualJournalEntryPdfSnapshot = {
   totalCredit: "100.00",
 }
 
-describe("renderManualJournalEntryPdf Thai font", () => {
-  it("embeds THSarabunNew and preserves Thai text in the PDF stream", async () => {
-    const buffer = await renderManualJournalEntryPdf(snapshot)
-    const pdfText = buffer.toString("latin1")
+describe("renderManualJournalEntryPdf", () => {
+  it("renders archived PDF from canonical FinanceVoucherPrintSheet HTML", async () => {
+    const html = await buildManualJournalEntryPdfDocumentHtml({ snapshot })
 
-    expect(pdfText).toMatch(/FontFile2|FontFile3/)
-    expect(pdfText).toMatch(/THSarabunNew/)
-    expect(pdfText).not.toMatch(/\/BaseFont\s*\/Helvetica\b/)
+    expect(html).toContain('data-testid="finance-voucher-print-sheet"')
+    expect(html).toContain("END OF VOUCHER")
+    expect(html).toContain(thaiSample)
+    expect(html).not.toContain("Line  Account   Name")
+
+    const buffer = await renderManualJournalEntryPdf(snapshot)
+    expect(buffer.toString("utf8")).toMatch(/^%PDF/)
   })
 })

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react"
 import { financeDocumentContainer } from "@/lib/finance-ui/finance-visual-classes"
 
-/** Prototype max width for finance document pages (Opening Balance detail first). */
-export const FINANCE_DOCUMENT_MAX_WIDTH_PX = 1050
+/** Prototype max width for finance document pages (MJV, OPB, voucher detail). */
+export const FINANCE_DOCUMENT_MAX_WIDTH_PX = 1120
 
 type FinanceDocumentContainerProps = {
   children: ReactNode

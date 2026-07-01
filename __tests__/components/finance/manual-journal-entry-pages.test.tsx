@@ -70,6 +70,7 @@ jest.mock("@/lib/finance-ui/manual-journal-entry-session", () => ({
     branchCode: "HO999",
     branchName: "Head Office",
     documentEntityCode: "AS",
+    role: "HO_FINANCE",
   }),
 }))
 
@@ -144,16 +145,44 @@ function baseEntry(overrides: Record<string, unknown> = {}) {
 }
 
 describe("ManualJournalEntryListPage", () => {
-  it("renders list filters and entry link", () => {
+  it("renders compact inquiry filters, actions above filters, and simplified table", () => {
     const html = renderToStaticMarkup(<ManualJournalEntryListPage />)
-    expect(html).toContain("data-testid=\"manual-journal-entry-list\"")
-    expect(html).toContain("filter-status")
-    expect(html).toContain("filter-entry-type")
-    expect(html).toContain("filter-legal-entity")
-    expect(html).toContain("Loading entries")
-    expect(html).not.toContain("ASAS-MJV")
-    expect(html).not.toContain("ASAD-MJV")
+    expect(html).toContain('data-testid="manual-journal-entry-list"')
+    expect(html).toContain('data-testid="manual-journal-entry-filter-period"')
+    expect(html).toContain('data-testid="manual-journal-entry-more-filter"')
+    expect(html).toContain('data-testid="filter-status"')
+    expect(html).toContain('data-testid="filter-entry-type"')
+    expect(html).toContain('data-testid="manual-journal-entry-filter-no"')
+    expect(html).toContain('data-testid="manual-journal-entry-filter-post"')
+    expect(html).toContain('data-testid="manual-journal-entry-search"')
+    expect(html).toContain('data-testid="manual-journal-entry-clear"')
+    expect(html).toContain('data-testid="new-manual-journal-entry"')
+    expect(html).toContain('data-testid="manual-journal-entry-refresh"')
+    expect(html).not.toContain('data-testid="filter-legal-entity"')
+    expect(html).not.toContain("Legal entity")
+    expect(html).not.toContain('data-testid="filter-date-from"')
+    expect(html).not.toContain('data-testid="filter-date-to"')
+    expect(html).not.toContain(">Type<")
+    expect(html).not.toContain(">Entity<")
+    expect(html).not.toContain("07:00 AM")
+    expect(html.indexOf('data-testid="manual-journal-entry-actions"')).toBeLessThan(
+      html.indexOf('data-testid="manual-journal-entry-filters"')
+    )
     expect(html).toContain("/finance/manual-journal-entries/new")
+  })
+
+  it("uses simplified table columns in list markup", () => {
+    const fs = require("fs") as typeof import("fs")
+    const path = require("path") as typeof import("path")
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "components/finance/ManualJournalEntryListPage.tsx"),
+      "utf8"
+    )
+    expect(source).toContain(">Document no.<")
+    expect(source).toContain(">Description<")
+    expect(source).toContain(">Lines<")
+    expect(source).toContain("formatFinanceListDate")
+    expect(source).not.toContain("formatDateTime(row.entryDate)")
   })
 })
 
@@ -284,28 +313,22 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
         )}
       />
     )
-    expect(html).toContain('data-testid="finance-document-header"')
-    expect(html).toContain('data-testid="finance-document-identity-row2"')
-    expect(html).toContain("Entry Date: 14.06.2026")
+    expect(html).toContain('data-testid="finance-document-summary-row"')
+    expect(html).toContain("14/06/2026")
     expect(html).toContain("Period: 2026-06")
-    expect(html).toContain("Status: POSTED")
-    expect(html).toContain('data-testid="finance-document-workflow-audit"')
-    expect(html).toContain("Posted: 14.06.2026")
-    expect(html).not.toContain('data-testid="read-only-notice"')
-    expect(html).not.toContain('data-testid="field-branch-id"')
-    expect(html).not.toContain('data-testid="field-entry-date"')
-    expect(html).not.toContain('data-testid="field-description"')
-    expect(html).not.toContain("data-testid=\"action-post\"")
-    expect(html).not.toContain("data-testid=\"action-save\"")
+    expect(html).toContain("finance-voucher-print-root--compact-screen-header")
+    expect(html).not.toContain('data-testid="action-back"')
+    expect(html).not.toContain("Back to manual journal entries")
     expect(html).toContain("posted-journal-link")
     expect(html).toContain(
       `/finance/journal-entries/journal-1?returnTo=${encodeURIComponent("/finance/manual-journal-entries/entry-1")}`
     )
-    expect(html).toContain("data-testid=\"finance-legacy-pdf-snapshot\"")
-    expect(html).toContain("data-testid=\"legacy-pdf-missing-message\"")
-    expect(html).toContain("Saved PDF snapshot is missing. Use Print Out / Save as PDF.")
-    expect(html).toContain("data-testid=\"action-retry-pdf\"")
-    expect(html).toContain("data-testid=\"action-print-out\"")
+    expect(html).toContain('data-testid="finance-legacy-pdf-snapshot"')
+    expect(html).toContain('data-testid="legacy-pdf-missing-message"')
+    expect(html).toContain("Archived PDF snapshot is missing")
+    expect(html).toContain("Contact an administrator to regenerate")
+    expect(html).not.toContain('data-testid="action-regenerate-pdf"')
+    expect(html).toContain('data-testid="action-print-out"')
     expect(html).not.toContain("data-testid=\"pdf-pending-message\"")
   })
 
@@ -495,6 +518,39 @@ describe("ManualJournalEntryEditorPage edit by status", () => {
     expect(html).toContain("9999 • —")
     expect(html).toContain('data-testid="line-account-status-error"')
     expect(html).not.toContain('data-testid="line-account-status-success"')
+  })
+})
+
+describe("manual journal finance document page layout", () => {
+  const fs = require("fs") as typeof import("fs")
+  const path = require("path") as typeof import("path")
+  const ROOT = path.join(__dirname, "..", "..", "..")
+
+  it("wraps journal entries list page in FinanceDocumentContainer", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app", "(main)", "finance", "manual-journal-entries", "page.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("FinanceDocumentContainer")
+  })
+
+  it("wraps manual journal detail page in FinanceDocumentContainer", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app", "(main)", "finance", "manual-journal-entries", "[id]", "page.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("FinanceDocumentContainer")
+    expect(source).toContain("← Journal entries")
+  })
+
+  it("uses embedded print view without duplicate back link in editor", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "components", "finance", "ManualJournalEntryEditorPage.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("embeddedInDocumentContainer")
+    expect(source).toContain("showListBackLink={false}")
+    expect(source).toContain("FinanceDocumentSummaryRow")
   })
 })
 

@@ -42,6 +42,12 @@ export function parseManualJournalEntryListQuery(
   )
 
   const branchId = params.get("branchId")?.trim() || undefined
+  const entryNo = params.get("entryNo")?.trim() || undefined
+  const postingStateRaw = params.get("postingState")?.trim().toLowerCase()
+  const postingState =
+    postingStateRaw === "posted" || postingStateRaw === "unposted"
+      ? postingStateRaw
+      : undefined
   const dateFrom = params.get("dateFrom")?.trim() || undefined
   const dateTo = params.get("dateTo")?.trim() || undefined
 
@@ -64,6 +70,8 @@ export function parseManualJournalEntryListQuery(
     status,
     entryType,
     branchId,
+    entryNo,
+    postingState,
     dateFrom,
     dateTo,
     limit,

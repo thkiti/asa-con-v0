@@ -47,7 +47,7 @@
   --finance-grid-soft: #e4e4e7;
   --finance-grid-strong: #a1a1aa;
   --finance-number: var(--finance-amount);
-  --finance-document-max-width: 1050px;
+  --finance-document-max-width: 1120px;
   --finance-report-max-width: 1100px;
   --voucher-inquiry-filter-control-height: 34px;
   --tone-success-bg: #ecfdf5;
@@ -111,7 +111,7 @@
   --finance-grid-soft: #27272a;
   --finance-grid-strong: #52525b;
   --finance-number: var(--finance-amount);
-  --finance-document-max-width: 1050px;
+  --finance-document-max-width: 1120px;
   --finance-report-max-width: 1100px;
   --voucher-inquiry-filter-control-height: 34px;
   --tone-success-bg: #064e3b;
@@ -1557,6 +1557,54 @@ span.finance-account .finance-account-name-part {
 .voucher-inquiry-table .voucher-inquiry-td-journal {
   font-family: var(--font-mono);
   font-size: 0.75rem;
+}
+
+.manual-journal-entry-list-table .mjv-list-td-doc-no {
+  min-width: 8.5rem;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.manual-journal-entry-list-table .mjv-list-td-date {
+  white-space: nowrap;
+  padding-right: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.manual-journal-entry-list-table .mjv-list-td-description {
+  width: 100%;
+  max-width: 0;
+}
+
+.manual-journal-entry-list-table .mjv-list-td-lines,
+.manual-journal-entry-list-table .mjv-list-td-status {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.manual-journal-entry-list-actions .manual-journal-entry-list-action-primary,
+.manual-journal-entry-list-actions .manual-journal-entry-list-action-secondary {
+  min-height: var(--voucher-inquiry-filter-control-height, 2rem);
+}
+
+.finance-legacy-pdf-snapshot-panel {
+  border-color: var(--border);
+  background: var(--btn-secondary-hover);
+  color: var(--foreground);
+}
+
+.finance-legacy-pdf-snapshot-title {
+  color: var(--label-text);
+}
+
+@media not print {
+  .finance-voucher-print-root--compact-screen-header
+    [data-testid="finance-document-identity-row1"],
+  .finance-voucher-print-root--compact-screen-header
+    [data-testid="finance-document-identity-row2"] {
+    display: none;
+  }
 }
 
 .voucher-inquiry-actions {

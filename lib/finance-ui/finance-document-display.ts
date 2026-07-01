@@ -4,6 +4,8 @@ import type {
   ManualJournalEntryTypeCode,
 } from "@/lib/finance-ui/manual-journal-entry-display"
 
+import { formatFinanceListDate } from "@/lib/finance-ui/format"
+
 const FINANCE_DOCUMENT_AUDIT_SEP = " • "
 
 /** Canonical Row 1 document type titles (FINANCE_DOCUMENT_IDENTITY_STANDARD §5). */
@@ -99,6 +101,24 @@ export function buildFinanceDocumentIdentityRow2(input: {
   return [
     input.documentNo,
     `Entry Date: ${formatFinanceDocumentDate(input.entryDate)}`,
+    `Period: ${formatFinanceDocumentPeriodKey(input.entryDate)}`,
+    `Status: ${String(input.status).toUpperCase()}`,
+  ].join(FINANCE_DOCUMENT_AUDIT_SEP)
+}
+
+export type FinanceDocumentIdentityRow2Input = {
+  documentNo: string
+  entryDate: string
+  status: ManualJournalEntryStatusCode | string
+}
+
+/** Row 2 summary with DD/MM/YYYY dates for screen list/detail bars. */
+export function buildFinanceDocumentIdentityRow2Slash(
+  input: FinanceDocumentIdentityRow2Input
+): string {
+  return [
+    input.documentNo,
+    `Entry Date: ${formatFinanceListDate(input.entryDate)}`,
     `Period: ${formatFinanceDocumentPeriodKey(input.entryDate)}`,
     `Status: ${String(input.status).toUpperCase()}`,
   ].join(FINANCE_DOCUMENT_AUDIT_SEP)

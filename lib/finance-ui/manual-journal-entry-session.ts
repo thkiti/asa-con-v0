@@ -1,4 +1,5 @@
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import type { Role } from "@/lib/shared"
 
 export type ManualJournalSessionContext = {
   staffId: string
@@ -6,6 +7,7 @@ export type ManualJournalSessionContext = {
   branchCode: string
   branchName: string
   documentEntityCode: DocumentEntityCode
+  role: Role
 }
 
 export async function fetchManualJournalSessionContext(): Promise<
@@ -20,15 +22,17 @@ export async function fetchManualJournalSessionContext(): Promise<
       branchCode?: string
       branchName?: string
       documentEntityCode?: DocumentEntityCode
+      role?: Role
     } | null
   }
   const user = body.user
-  if (!user?.staffId?.trim() || !user.branchId?.trim()) return null
+  if (!user?.staffId?.trim() || !user.branchId?.trim() || !user.role) return null
   return {
     staffId: user.staffId.trim(),
     branchId: user.branchId.trim(),
     branchCode: user.branchCode?.trim() ?? "",
     branchName: user.branchName?.trim() ?? "",
     documentEntityCode: user.documentEntityCode ?? "AS",
+    role: user.role,
   }
 }

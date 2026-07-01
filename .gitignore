@@ -64,3 +64,5 @@ tmp/import-reports/
 # local working docs
 docs/migration/* - Copy.md
 docs/migration/MULTI_COMPANY_READINESS_AUDIT.md
+
+setup/*.exe

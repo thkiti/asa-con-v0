@@ -75,6 +75,17 @@ function buildWhere(filter: ManualJournalEntryListFilter): Prisma.ManualJournalE
   if (filter.branchId) {
     where.branchId = filter.branchId
   }
+  if (filter.entryNo?.trim()) {
+    where.entryNo = {
+      contains: filter.entryNo.trim(),
+      mode: "insensitive",
+    }
+  }
+  if (!filter.status && filter.postingState === "posted") {
+    where.status = "POSTED"
+  } else if (!filter.status && filter.postingState === "unposted") {
+    where.status = { in: ["DRAFT", "SUBMITTED", "CONFIRMED"] }
+  }
 
   const dateFrom = parseFilterDate(filter.dateFrom)
   const dateTo = parseFilterDate(filter.dateTo)

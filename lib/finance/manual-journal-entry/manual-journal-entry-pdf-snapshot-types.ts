@@ -27,6 +27,9 @@ export type ManualJournalEntryPdfSnapshot = {
   submittedAt: string | null
   confirmedAt: string | null
   postedAt: string
+  createdByStaffId: string
+  submittedByStaffId: string | null
+  confirmedByStaffId: string | null
   postedByStaffId: string
   postedVoucherId: string
   postedVoucherNo: string

@@ -31,6 +31,7 @@ import {
   type ManualJournalEntryRead,
 } from "@/lib/finance-ui/manual-journal-entries"
 import { FinanceVoucherPostedPrintView } from "@/components/finance/FinanceVoucherPostedPrintView"
+import { FinanceDocumentSummaryRow } from "@/components/finance/FinanceDocumentSummaryRow"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { OpeningBalancePostingVerificationPanel } from "@/components/finance/OpeningBalancePostingVerificationPanel"
@@ -41,10 +42,10 @@ import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-curren
 import {
   type DocumentEntityCode,
 } from "@/lib/legal-entity/constants"
+import type { Role } from "@/lib/shared"
 import {
   financeAccount,
   financeAuditLine,
-  financeDocumentContainer,
   financeMemo,
   financeNumber,
   financeTable,
@@ -220,6 +221,7 @@ export function ManualJournalEntryEditorPage({
   const [cancelReason, setCancelReason] = useState("")
   const [showCancelReason, setShowCancelReason] = useState(false)
   const [branchLabel, setBranchLabel] = useState("")
+  const [sessionRole, setSessionRole] = useState<Role | null>(null)
   const [focusedAccountLineKey, setFocusedAccountLineKey] = useState<string | null>(null)
   const accountEnterCommitRef = useRef<string | null>(null)
 
@@ -255,6 +257,7 @@ export function ManualJournalEntryEditorPage({
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
       setLegalEntityCode(session.documentEntityCode)
+      setSessionRole(session.role)
       if (mode === "create") {
         setBranchId(session.branchId)
       }
@@ -264,7 +267,7 @@ export function ManualJournalEntryEditorPage({
   }, [mode])
 
   useEffect(() => {
-    if (mode === "create") {
+    if (mode === "create" || initialEntry != null) {
       return
     }
 
@@ -282,7 +285,7 @@ export function ManualJournalEntryEditorPage({
         setError(err instanceof Error ? err.message : "Failed to load entry")
       })
       .finally(() => setLoading(false))
-  }, [mode, entryId, applyEntry])
+  }, [mode, entryId, applyEntry, initialEntry])
 
   function updateLine(key: string, patch: Partial<LineRow>) {
     setLines((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)))
@@ -501,27 +504,29 @@ export function ManualJournalEntryEditorPage({
     }
   }
 
-  async function handleRetryPdf() {
+  async function handleRegeneratePdf() {
     if (!entry) return
     setError(null)
     setStatusMessage(null)
     setPdfError(null)
-    setBusyAction("Retry PDF")
+    setBusyAction("Regenerate PDF")
     try {
       const result = await retryManualJournalEntryPdf(entry.id)
       applyEntry(result.entry)
       if (result.pdfStatus === "ready") {
-        setStatusMessage("PDF snapshot generated.")
+        setStatusMessage("Archived PDF regenerated.")
       } else {
         setPdfError(result.pdfError ?? "PDF snapshot is still pending / repair needed.")
         setStatusMessage("PDF snapshot is still pending / repair needed.")
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "PDF retry failed")
+      setPdfError(err instanceof Error ? err.message : "PDF regeneration failed")
     } finally {
       setBusyAction(null)
     }
   }
+
+  const canRegenerateArchivedPdf = sessionRole === "HO_ADMIN"
 
   async function handleCancel() {
     if (!entry) return
@@ -568,32 +573,42 @@ export function ManualJournalEntryEditorPage({
   return (
     <div className="space-y-4" data-testid="manual-journal-entry-editor">
       {isPosted && entry && voucherPrintModel ? (
-        <FinanceVoucherPostedPrintView
-          model={voucherPrintModel}
-          entryType={entry.entryType}
-          legalEntityCode={legalEntityCode}
-          entryDate={entryDate}
-          description={description}
-          listHref={listHref}
-          listBackLabel={
-            openingBalanceMode ? "Back to opening balance" : "Back to manual journal entries"
-          }
-          postedJournalHref={postedJournalHref}
-          disabled={busyAction !== null}
-          archive={{
-            entryId: entry.id,
-            entryNo: documentNo,
-            pdfSnapshotReady: entry.pdfSnapshotReady,
-            onRetry: () => void handleRetryPdf(),
-            retrying: busyAction === "Retry PDF",
-            retryError: pdfError,
-          }}
-        />
+        <>
+          <FinanceDocumentSummaryRow
+            documentNo={documentNo}
+            entryDate={entryDate}
+            status={entry.status}
+          />
+          <FinanceVoucherPostedPrintView
+            model={voucherPrintModel}
+            entryType={entry.entryType}
+            legalEntityCode={legalEntityCode}
+            entryDate={entryDate}
+            description={description}
+            listHref={listHref}
+            listBackLabel={
+              openingBalanceMode ? "Opening balance" : "Journal entries"
+            }
+            postedJournalHref={postedJournalHref}
+            disabled={busyAction !== null}
+            embeddedInDocumentContainer
+            compactScreenHeader
+            showListBackLink={false}
+            archive={{
+              entryId: entry.id,
+              entryNo: documentNo,
+              pdfSnapshotReady: entry.pdfSnapshotReady,
+              onRegenerate: canRegenerateArchivedPdf
+                ? () => void handleRegeneratePdf()
+                : undefined,
+              regenerating: busyAction === "Regenerate PDF",
+              regenerateError: pdfError,
+              showRegenerateButton: canRegenerateArchivedPdf,
+            }}
+          />
+        </>
       ) : (
-        <div
-          className={`${financeDocumentContainer} space-y-3`}
-          data-testid="mjv-entry-shell"
-        >
+        <div className="space-y-3" data-testid="mjv-entry-shell">
           {openingBalanceMode ? (
             <div
               className="rounded border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950"

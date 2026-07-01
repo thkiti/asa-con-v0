@@ -9,6 +9,8 @@ export type ManualJournalEntryListFilter = {
   status?: ManualJournalEntryStatus
   entryType?: ManualJournalEntryType
   branchId?: string
+  entryNo?: string
+  postingState?: "posted" | "unposted"
   dateFrom?: Date | string
   dateTo?: Date | string
   limit?: number

@@ -187,6 +187,33 @@ export const voucherInquiryFilterButtonPrimary =
 export const voucherInquiryFilterButtonSecondary =
   "voucher-inquiry-filter-button voucher-inquiry-filter-control rounded border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-fg)] hover:bg-[var(--btn-secondary-hover)]"
 
+export const manualJournalEntryListActionRow =
+  "manual-journal-entry-list-actions flex flex-wrap items-center gap-2"
+
+export const manualJournalEntryListActionPrimary =
+  "manual-journal-entry-list-action-primary rounded bg-zinc-900 px-4 py-2 text-sm text-white"
+
+export const manualJournalEntryListActionSecondary =
+  "manual-journal-entry-list-action-secondary rounded border border-zinc-300 px-3 py-2 text-sm"
+
+export const manualJournalEntryListTable = "manual-journal-entry-list-table"
+export const manualJournalEntryListTdDocNo = "mjv-list-td-doc-no"
+export const manualJournalEntryListTdDate = "mjv-list-td-date"
+export const manualJournalEntryListTdDescription = "mjv-list-td-description"
+export const manualJournalEntryListTdLines = "mjv-list-td-lines"
+export const manualJournalEntryListTdStatus = "mjv-list-td-status"
+export const manualJournalEntryListFilterEntryType =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-ref-type manual-journal-entry-filter-entry-type"
+
+export const financeLegacyPdfSnapshotPanel =
+  "finance-legacy-pdf-snapshot-panel no-print rounded border px-3 py-3"
+
+export const financeLegacyPdfSnapshotTitle =
+  "finance-legacy-pdf-snapshot-title text-xs font-medium uppercase tracking-wide"
+
+export const financeLegacyPdfSnapshotActions =
+  "finance-legacy-pdf-snapshot-actions mt-2 flex flex-wrap items-center gap-2"
+
 export const collectorPickupTh = "px-2 py-2 text-left whitespace-nowrap"
 export const collectorPickupThAmount = `${numericTh} px-2 py-2 whitespace-nowrap`
 export const collectorPickupThStatus =

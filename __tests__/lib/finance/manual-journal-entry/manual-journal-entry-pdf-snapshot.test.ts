@@ -17,6 +17,9 @@ describe("buildManualJournalEntryPdfSnapshot", () => {
         submittedAt: new Date("2026-06-14T09:00:00.000Z"),
         confirmedAt: new Date("2026-06-14T10:00:00.000Z"),
         postedAt: new Date("2026-06-15T10:00:00.000Z"),
+        createdByStaffId: "staff-prep",
+        submittedByStaffId: "staff-appr",
+        confirmedByStaffId: "staff-check",
         postedByStaffId: "staff-post",
         lines: [
           {

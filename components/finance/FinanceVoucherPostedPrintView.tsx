@@ -11,15 +11,17 @@ import { FinanceVoucherPrintFontProbe } from "@/components/finance/FinanceVouche
 import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
 import { financeVoucherLocalFont } from "@/lib/finance-ui/finance-voucher-local-font"
 import type { FinanceVoucherPrintModel } from "@/lib/finance-ui/finance-voucher-print"
+import { financeDocumentContainer } from "@/lib/finance-ui/finance-visual-classes"
 import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 export type FinanceVoucherPostedArchiveProps = {
   entryId: string
   entryNo: string
   pdfSnapshotReady: boolean
-  onRetry?: () => void | Promise<void>
-  retrying?: boolean
-  retryError?: string | null
+  onRegenerate?: () => void | Promise<void>
+  regenerating?: boolean
+  regenerateError?: string | null
+  showRegenerateButton?: boolean
 }
 
 type FinanceVoucherPostedPrintViewProps = {
@@ -35,6 +37,12 @@ type FinanceVoucherPostedPrintViewProps = {
   showArchivePanel?: boolean
   archive?: FinanceVoucherPostedArchiveProps
   archiveVault?: DocumentArchiveVaultConfig
+  /** When true, omit nested document container (parent page already wraps). */
+  embeddedInDocumentContainer?: boolean
+  /** Hide duplicate identity rows on screen; print sheet keeps full header when printing. */
+  compactScreenHeader?: boolean
+  /** When false, rely on page-level back link (e.g. MJV detail). Default true for legacy voucher pages. */
+  showListBackLink?: boolean
 }
 
 /** Canonical POSTED view: browser print/save PDF sheet + optional archived snapshot panel. */
@@ -51,12 +59,23 @@ export function FinanceVoucherPostedPrintView({
   showArchivePanel = true,
   archive,
   archiveVault,
+  embeddedInDocumentContainer = false,
+  compactScreenHeader = false,
+  showListBackLink = true,
 }: FinanceVoucherPostedPrintViewProps) {
+  const rootClass = [
+    "finance-voucher-print-root",
+    "finance-voucher-print-font",
+    financeVoucherLocalFont.variable,
+    financeVoucherLocalFont.className,
+    embeddedInDocumentContainer ? "" : financeDocumentContainer,
+    compactScreenHeader ? "finance-voucher-print-root--compact-screen-header" : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+
   return (
-    <div
-      className={`finance-voucher-print-root finance-document-container finance-voucher-print-font ${financeVoucherLocalFont.variable} ${financeVoucherLocalFont.className}`}
-      data-testid="finance-voucher-print-root"
-    >
+    <div className={rootClass} data-testid="finance-voucher-print-root">
       <div className="no-print flex w-full flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -81,18 +100,21 @@ export function FinanceVoucherPostedPrintView({
             entryNo={archive.entryNo}
             pdfSnapshotReady={archive.pdfSnapshotReady}
             disabled={disabled}
-            onRetry={archive.onRetry}
-            retrying={archive.retrying}
-            retryError={archive.retryError}
+            onRegenerate={archive.onRegenerate}
+            regenerating={archive.regenerating}
+            regenerateError={archive.regenerateError}
+            showRegenerateButton={archive.showRegenerateButton}
           />
         ) : null}
-        <Link
-          href={listHref}
-          className={`text-sm ${themeLinkMuted}`}
-          data-testid="action-back"
-        >
-          ← {listBackLabel}
-        </Link>
+        {showListBackLink ? (
+          <Link
+            href={listHref}
+            className={`text-sm ${themeLinkMuted}`}
+            data-testid="action-back"
+          >
+            ← {listBackLabel}
+          </Link>
+        ) : null}
       </div>
       <FinanceVoucherPrintSheet
         model={model}

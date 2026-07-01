@@ -18,6 +18,8 @@ export type ManualJournalEntryListFilterInput = Omit<
 > & {
   dateFrom?: string
   dateTo?: string
+  entryNo?: string
+  postingState?: "posted" | "unposted"
 }
 
 export type CreateManualJournalEntryDraftPayload = {
@@ -61,6 +63,8 @@ function buildListQuery(filter: ManualJournalEntryListFilterInput = {}): string 
   }
   if (filter.status) params.set("status", filter.status)
   if (filter.entryType) params.set("entryType", filter.entryType)
+  if (filter.entryNo?.trim()) params.set("entryNo", filter.entryNo.trim())
+  if (filter.postingState) params.set("postingState", filter.postingState)
   if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
   if (filter.dateFrom?.trim()) params.set("dateFrom", filter.dateFrom.trim())
   if (filter.dateTo?.trim()) params.set("dateTo", filter.dateTo.trim())

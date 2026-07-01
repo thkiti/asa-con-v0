@@ -2,16 +2,29 @@
 
 import { useCallback, useState } from "react"
 import { buildManualJournalEntryPdfUrl } from "@/lib/finance-ui/manual-journal-entries"
-import { LEGACY_PDF_SNAPSHOT_MISSING_MESSAGE } from "@/lib/finance-ui/finance-legacy-pdf-snapshot"
+import {
+  LEGACY_PDF_SNAPSHOT_ACCESS_ERROR,
+  LEGACY_PDF_SNAPSHOT_MISSING_BODY,
+  LEGACY_PDF_SNAPSHOT_MISSING_READONLY_BODY,
+  LEGACY_PDF_SNAPSHOT_MISSING_TITLE,
+} from "@/lib/finance-ui/finance-legacy-pdf-snapshot"
+import {
+  financeLegacyPdfSnapshotActions,
+  financeLegacyPdfSnapshotPanel,
+  financeLegacyPdfSnapshotTitle,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeBtnSecondary, themeInlineError, themeTextSecondary } from "@/lib/theme/theme-classes"
 
 type FinanceLegacyPdfSnapshotPanelProps = {
   entryId: string
   entryNo: string
   pdfSnapshotReady: boolean
   disabled?: boolean
-  onRetry?: () => void | Promise<void>
-  retrying?: boolean
-  retryError?: string | null
+  onRegenerate?: () => void | Promise<void>
+  regenerating?: boolean
+  regenerateError?: string | null
+  /** When false, show read-only missing message without regenerate action. */
+  showRegenerateButton?: boolean
 }
 
 async function fetchLegacyPdfBlob(
@@ -25,15 +38,16 @@ async function fetchLegacyPdfBlob(
   return res.blob()
 }
 
-/** De-emphasized archived PDFKit snapshot — separate from browser Print Out / Save as PDF. */
+/** Archived PDFKit snapshot — separate from browser Print Out / Save as PDF. */
 export function FinanceLegacyPdfSnapshotPanel({
   entryId,
   entryNo,
   pdfSnapshotReady,
   disabled = false,
-  onRetry,
-  retrying = false,
-  retryError = null,
+  onRegenerate,
+  regenerating = false,
+  regenerateError = null,
+  showRegenerateButton = false,
 }: FinanceLegacyPdfSnapshotPanelProps) {
   const [accessError, setAccessError] = useState<string | null>(null)
 
@@ -44,7 +58,7 @@ export function FinanceLegacyPdfSnapshotPanel({
       try {
         const blob = await fetchLegacyPdfBlob(entryId, disposition)
         if (!blob) {
-          setAccessError(LEGACY_PDF_SNAPSHOT_MISSING_MESSAGE)
+          setAccessError(LEGACY_PDF_SNAPSHOT_ACCESS_ERROR)
           return
         }
         const blobUrl = URL.createObjectURL(blob)
@@ -58,7 +72,7 @@ export function FinanceLegacyPdfSnapshotPanel({
         }
         window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
       } catch {
-        setAccessError(LEGACY_PDF_SNAPSHOT_MISSING_MESSAGE)
+        setAccessError(LEGACY_PDF_SNAPSHOT_ACCESS_ERROR)
       }
     },
     [disabled, entryId, entryNo]
@@ -66,17 +80,17 @@ export function FinanceLegacyPdfSnapshotPanel({
 
   return (
     <div
-      className="no-print rounded border border-dashed border-zinc-300 bg-zinc-50/80 px-3 py-2"
+      className={financeLegacyPdfSnapshotPanel}
       data-testid="finance-legacy-pdf-snapshot"
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-        Legacy PDF snapshot (archived)
+      <p className={financeLegacyPdfSnapshotTitle}>
+        {pdfSnapshotReady ? "Archived PDF snapshot" : LEGACY_PDF_SNAPSHOT_MISSING_TITLE}
       </p>
       {pdfSnapshotReady ? (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className={financeLegacyPdfSnapshotActions}>
           <button
             type="button"
-            className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-700 disabled:opacity-50"
+            className={themeBtnSecondary}
             disabled={disabled}
             onClick={() => void openPdf("inline")}
             data-testid="action-view-pdf"
@@ -85,7 +99,7 @@ export function FinanceLegacyPdfSnapshotPanel({
           </button>
           <button
             type="button"
-            className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-700 disabled:opacity-50"
+            className={themeBtnSecondary}
             disabled={disabled}
             onClick={() => void openPdf("attachment")}
             data-testid="action-download-pdf"
@@ -95,30 +109,32 @@ export function FinanceLegacyPdfSnapshotPanel({
         </div>
       ) : (
         <div className="mt-2 space-y-2">
-          <p className="text-sm text-zinc-700" data-testid="legacy-pdf-missing-message">
-            {LEGACY_PDF_SNAPSHOT_MISSING_MESSAGE}
+          <p className={`text-sm ${themeTextSecondary}`} data-testid="legacy-pdf-missing-message">
+            {showRegenerateButton && onRegenerate
+              ? LEGACY_PDF_SNAPSHOT_MISSING_BODY
+              : LEGACY_PDF_SNAPSHOT_MISSING_READONLY_BODY}
           </p>
-          {onRetry ? (
+          {showRegenerateButton && onRegenerate ? (
             <button
               type="button"
-              className="rounded border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-700 disabled:opacity-50"
-              disabled={disabled || retrying}
-              onClick={() => void onRetry()}
-              data-testid="action-retry-pdf"
+              className={themeBtnSecondary}
+              disabled={disabled || regenerating}
+              onClick={() => void onRegenerate()}
+              data-testid="action-regenerate-pdf"
             >
-              {retrying ? "Retrying…" : "Retry archived PDF generation"}
+              {regenerating ? "Regenerating…" : "Regenerate archived PDF"}
             </button>
           ) : null}
         </div>
       )}
       {accessError ? (
-        <p className="mt-2 text-sm text-amber-900" data-testid="legacy-pdf-access-error">
+        <p className={`mt-2 text-sm ${themeInlineError}`} data-testid="legacy-pdf-access-error">
           {accessError}
         </p>
       ) : null}
-      {retryError ? (
-        <p className="mt-2 text-sm text-red-700" data-testid="pdf-error-message">
-          {retryError}
+      {regenerateError ? (
+        <p className={`mt-2 text-sm ${themeInlineError}`} data-testid="pdf-error-message">
+          {regenerateError}
         </p>
       ) : null}
     </div>
