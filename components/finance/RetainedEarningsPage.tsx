@@ -146,19 +146,21 @@ export function RetainedEarningsPage() {
         <div className="flex flex-wrap items-end gap-3">
           <fieldset className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Scope</span>
-            <div className="flex gap-3">
-              <label className="flex items-center gap-1">
+            <div className="finance-radio-group">
+              <label className="finance-radio-option">
                 <input
                   type="radio"
+                  className="finance-radio-input"
                   name="reFilterMode"
                   checked={filterMode === "period"}
                   onChange={() => setFilterMode("period")}
                 />
                 Period
               </label>
-              <label className="flex items-center gap-1">
+              <label className="finance-radio-option">
                 <input
                   type="radio"
+                  className="finance-radio-input"
                   name="reFilterMode"
                   checked={filterMode === "dateRange"}
                   onChange={() => setFilterMode("dateRange")}

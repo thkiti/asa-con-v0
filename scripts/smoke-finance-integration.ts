@@ -200,11 +200,55 @@ async function main() {
         refId: openCheckout.saleId,
       },
     })
+    const receipt = openCheckout.ok
+      ? await prisma.receipt.findUnique({ where: { saleId: openCheckout.saleId } })
+      : null
     record(
       "P1 sale POS_SALE voucher",
-      Boolean(saleVoucher),
-      saleVoucher ? `voucherNo=${saleVoucher.voucherNo}` : "missing"
+      Boolean(saleVoucher) &&
+        saleVoucher?.refType === FINANCE_REF_TYPES.POS_SALE &&
+        saleVoucher.refId === openCheckout.saleId &&
+        Boolean(receipt) &&
+        saleVoucher.refNo === receipt?.receiptNo,
+      saleVoucher
+        ? `voucherNo=${saleVoucher.voucherNo} refNo=${saleVoucher.refNo ?? "null"} receiptNo=${receipt?.receiptNo ?? "?"}`
+        : "missing"
     )
+
+    if (saleVoucher && receipt) {
+      const journalEntry = await prisma.journalEntry.findFirst({
+        where: { voucherId: saleVoucher.id },
+        include: {
+          lines: {
+            include: { glAccount: { select: { code: true, name: true } } },
+          },
+        },
+      })
+      const lineSummary =
+        journalEntry?.lines
+          .map(
+            (line) =>
+              `${line.glAccount.code} Dr=${line.debit.toString()} Cr=${line.credit.toString()}`
+          )
+          .join("; ") ?? "no journal"
+      record(
+        "P1 sale journal lines include revenue",
+        Boolean(
+          journalEntry?.lines.some((line) => line.glAccount.code === DEFAULT_ACCOUNT_CODES.REVENUE)
+        ),
+        lineSummary
+      )
+      record(
+        "P1 sale journal lines include COGS/inventory",
+        Boolean(
+          journalEntry?.lines.some((line) => line.glAccount.code === DEFAULT_ACCOUNT_CODES.COGS) &&
+            journalEntry?.lines.some(
+              (line) => line.glAccount.code === DEFAULT_ACCOUNT_CODES.INVENTORY
+            )
+        ),
+        lineSummary
+      )
+    }
 
     const { runFinanceReconciliation } = await import("../lib/finance/reconciliation")
     const recon = await runFinanceReconciliation(prisma, { branchId })

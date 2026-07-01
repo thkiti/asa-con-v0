@@ -43,5 +43,6 @@ describe("POS receipt accounting wiring (REC-1 discovery)", () => {
     )
     expect(postingSource).toMatch(/refType:\s*FINANCE_REF_TYPES\.POS_SALE/)
     expect(postingSource).toMatch(/refId:\s*input\.sale\.id/)
+    expect(postingSource).toMatch(/refNo:\s*input\.sale\.receiptNo/)
   })
 })

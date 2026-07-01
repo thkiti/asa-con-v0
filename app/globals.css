@@ -1672,6 +1672,75 @@ span.finance-account .finance-account-name-part {
   color: #09090b;
 }
 
+/* Finance filter radio groups — custom appearance, native input for a11y */
+.finance-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+  min-height: 1.875rem;
+}
+
+.finance-radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--input-text);
+}
+
+.finance-radio-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  box-sizing: border-box;
+  margin: 0;
+  flex-shrink: 0;
+  width: 1.0625rem;
+  height: 1.0625rem;
+  border-radius: 50%;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+}
+
+.finance-radio-input::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.1s ease;
+  background-color: var(--btn-primary-bg);
+}
+
+.finance-radio-input:checked::before {
+  transform: scale(1);
+}
+
+.finance-radio-input:focus {
+  outline: none;
+}
+
+.finance-radio-input:focus-visible {
+  outline: 2px solid var(--link-primary);
+  outline-offset: 1px;
+  border-color: var(--link-primary);
+}
+
+.finance-radio-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.finance-radio-option:has(.finance-radio-input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .finance-pdf-indicator {
   display: inline-block;
   width: 0.625rem;

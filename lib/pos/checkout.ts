@@ -136,6 +136,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       await postSaleVoucher(
         buildPostSaleVoucherInput({
           tx,
+          receiptNo: receipt.receiptNo,
           sale,
           payment,
           ledgerRows,

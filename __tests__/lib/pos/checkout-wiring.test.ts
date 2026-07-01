@@ -145,6 +145,7 @@ describe("checkout finance wiring", () => {
     expect(payload.sale.id).toBe(state.sales[0]?.id)
     expect(payload.sale.branchId).toBe(branchId)
     expect(payload.sale.paymentMethod).toBe(PaymentMethod.CASH)
+    expect(payload.sale.receiptNo).toBe(state.receipts[0]?.receiptNo)
     expect(state.transactions.length).toBeGreaterThan(0)
   })
 

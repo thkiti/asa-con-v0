@@ -65,6 +65,7 @@ export type PostSaleVoucherInput = {
   sale: {
     id: string
     branchId: string
+    receiptNo?: string
     total: Prisma.Decimal | number | string
     paymentMethod: PaymentMethod
     createdAt: Date

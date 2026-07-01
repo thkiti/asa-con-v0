@@ -9,6 +9,7 @@ import {
   type GeneralLedgerFilter,
 } from "@/lib/finance-ui/general-ledger"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
+import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
 import { GlAccountCombobox } from "@/components/finance/GlAccountCombobox"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 
@@ -123,29 +124,11 @@ export function GeneralLedgerPage() {
             listTestId="gl-account-combobox-list"
           />
 
-          <fieldset className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Scope</span>
-            <div className="flex gap-3">
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="glFilterMode"
-                  checked={filterMode === "period"}
-                  onChange={() => setFilterMode("period")}
-                />
-                Period
-              </label>
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="glFilterMode"
-                  checked={filterMode === "dateRange"}
-                  onChange={() => setFilterMode("dateRange")}
-                />
-                Date range
-              </label>
-            </div>
-          </fieldset>
+          <FinanceScopeRadioFieldset
+            name="glFilterMode"
+            value={filterMode}
+            onChange={setFilterMode}
+          />
 
           {filterMode === "period" ? (
             <label className="flex flex-col gap-1 text-sm">
@@ -219,26 +202,30 @@ export function GeneralLedgerPage() {
         <section className="general-ledger-report" aria-label="General ledger results">
           <fieldset className="print:hidden mb-3 text-sm" data-testid="gl-view-mode">
             <span className="mr-3 text-zinc-600">View</span>
-            <label className="mr-3 inline-flex items-center gap-1">
-              <input
-                type="radio"
-                name="glViewMode"
-                checked={viewMode === "list"}
-                onChange={() => setViewMode("list")}
-                data-testid="gl-view-list"
-              />
-              List
-            </label>
-            <label className="inline-flex items-center gap-1">
-              <input
-                type="radio"
-                name="glViewMode"
-                checked={viewMode === "t-account"}
-                onChange={() => setViewMode("t-account")}
-                data-testid="gl-view-t-account"
-              />
-              T-account
-            </label>
+            <div className="finance-radio-group inline-flex">
+              <label className="finance-radio-option">
+                <input
+                  type="radio"
+                  className="finance-radio-input"
+                  name="glViewMode"
+                  checked={viewMode === "list"}
+                  onChange={() => setViewMode("list")}
+                  data-testid="gl-view-list"
+                />
+                List
+              </label>
+              <label className="finance-radio-option">
+                <input
+                  type="radio"
+                  className="finance-radio-input"
+                  name="glViewMode"
+                  checked={viewMode === "t-account"}
+                  onChange={() => setViewMode("t-account")}
+                  data-testid="gl-view-t-account"
+                />
+                T-account
+              </label>
+            </div>
           </fieldset>
 
           {result.accounts.length === 0 ? (

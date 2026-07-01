@@ -168,6 +168,7 @@ export async function postSaleVoucher(
     legalEntityCode,
     refType: FINANCE_REF_TYPES.POS_SALE,
     refId: input.sale.id,
+    refNo: input.sale.receiptNo,
     description: "POS sale",
     lines,
   })

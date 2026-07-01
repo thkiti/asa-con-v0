@@ -161,6 +161,7 @@ describe("P1 sale posting chain", () => {
     const payload = (postSaleVoucher as jest.Mock).mock.calls[0][0]
     expect(payload.tx).toBe(tx)
     expect(payload.sale.id).toBe(saleId)
+    expect(payload.sale.receiptNo).toBe(state.receipts[0]?.receiptNo)
     expect(payload.ledgerResult.cogsAmount.toNumber()).toBe(12.5 * qty)
   })
 

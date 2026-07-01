@@ -40,6 +40,7 @@ describe("checkout-finance DTO helpers", () => {
     const vatEconomics = testVatEconomicsForGross("100")
     const payload = buildPostSaleVoucherInput({
       tx,
+      receiptNo: "REC-SH001-202606-0042",
       legalEntityCode: "AS",
       sale: {
         id: "sale-1",
@@ -62,6 +63,7 @@ describe("checkout-finance DTO helpers", () => {
     expect(payload.sale).toMatchObject({
       id: "sale-1",
       branchId: "branch-1",
+      receiptNo: "REC-SH001-202606-0042",
       total: new Prisma.Decimal("100"),
       paymentMethod: PaymentMethod.CASH,
       createdAt,

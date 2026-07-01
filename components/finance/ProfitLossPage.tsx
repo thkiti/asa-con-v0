@@ -26,6 +26,7 @@ import {
   financeReportSection,
   financeTotalValue,
 } from "@/lib/finance-ui/finance-visual-classes"
+import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 
 type FilterMode = "period" | "dateRange"
@@ -158,29 +159,11 @@ export function ProfitLossPage() {
             />
           </label>
 
-          <fieldset className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Scope</span>
-            <div className="flex gap-3">
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="plFilterMode"
-                  checked={filterMode === "period"}
-                  onChange={() => setFilterMode("period")}
-                />
-                Period
-              </label>
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="plFilterMode"
-                  checked={filterMode === "dateRange"}
-                  onChange={() => setFilterMode("dateRange")}
-                />
-                Date range
-              </label>
-            </div>
-          </fieldset>
+          <FinanceScopeRadioFieldset
+            name="plFilterMode"
+            value={filterMode}
+            onChange={setFilterMode}
+          />
 
           {filterMode === "period" ? (
             <label className="flex flex-col gap-1 text-sm">

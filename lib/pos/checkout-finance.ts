@@ -22,6 +22,7 @@ export function sumCogsFromLedgerIssues(rows: LedgerIssueRow[]): Prisma.Decimal 
 export function buildPostSaleVoucherInput(input: {
   tx: Prisma.TransactionClient
   legalEntityCode: DocumentEntityCode
+  receiptNo: string
   sale: {
     id: string
     branchId: string
@@ -44,6 +45,7 @@ export function buildPostSaleVoucherInput(input: {
     sale: {
       id: input.sale.id,
       branchId: input.sale.branchId,
+      receiptNo: input.receiptNo,
       total: input.sale.total,
       paymentMethod: input.payment.method,
       createdAt: input.sale.createdAt,

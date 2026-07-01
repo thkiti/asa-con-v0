@@ -171,6 +171,7 @@ describe("finance posting", () => {
       sale: {
         id: "sale-uuid-1",
         branchId: "branch-1",
+        receiptNo: "REC-SH001-202606-0001",
         total: "107",
         paymentMethod: PaymentMethod.CASH,
         createdAt,
@@ -188,6 +189,7 @@ describe("finance posting", () => {
     const voucher = state.vouchers[0]
     expect(voucher?.refId).toBe("sale-uuid-1")
     expect(voucher?.refType).toBe(FINANCE_REF_TYPES.POS_SALE)
+    expect(voucher?.refNo).toBe("REC-SH001-202606-0001")
 
     const journalLines = state.journalEntryLines
       .map((line) => {
@@ -215,6 +217,70 @@ describe("finance posting", () => {
           line.accountCode === DEFAULT_ACCOUNT_CODES.BANK && line.debit !== "0.00"
       )
     ).toBe(false)
+  })
+
+  it("is idempotent for postSaleVoucher on refType + refId", async () => {
+    const { tx, state } = createFinanceMockTx()
+    const createdAt = new Date("2026-06-15T12:00:00.000Z")
+    await seedOpenPeriod(tx, "branch-1", createdAt)
+    const vatEconomics = testVatEconomicsForGross("107")
+    const input = {
+      tx,
+      sale: {
+        id: "sale-uuid-idem",
+        branchId: "branch-1",
+        receiptNo: "REC-SH001-202606-0099",
+        total: "107",
+        paymentMethod: PaymentMethod.CASH,
+        createdAt,
+        netAmount: vatEconomics.net,
+        vatAmount: vatEconomics.vat,
+        vatRateBps: vatEconomics.rateBps,
+        taxCode: VAT_OUTPUT_STANDARD_TAX_CODE,
+        outputVatAccountCode: vatEconomics.outputVatAccountCode,
+      },
+      vatEconomics,
+      ledgerResult: { cogsAmount: "0" },
+    }
+    const first = await postSaleVoucher(input)
+    const second = await postSaleVoucher(input)
+    expect(second.alreadyPosted).toBe(true)
+    expect(second.voucherId).toBe(first.voucherId)
+    expect(state.vouchers).toHaveLength(1)
+    expect(state.journalEntries).toHaveLength(1)
+  })
+
+  it("posts sale voucher without COGS lines when cogsAmount is zero", async () => {
+    const { tx, state } = createFinanceMockTx()
+    const createdAt = new Date("2026-06-15T12:00:00.000Z")
+    await seedOpenPeriod(tx, "branch-1", createdAt)
+    const vatEconomics = testVatEconomicsForGross("107")
+    await postSaleVoucher({
+      tx,
+      sale: {
+        id: "sale-no-cogs",
+        branchId: "branch-1",
+        receiptNo: "REC-SH001-202606-0002",
+        total: "107",
+        paymentMethod: PaymentMethod.CASH,
+        createdAt,
+        netAmount: vatEconomics.net,
+        vatAmount: vatEconomics.vat,
+        vatRateBps: vatEconomics.rateBps,
+        taxCode: VAT_OUTPUT_STANDARD_TAX_CODE,
+        outputVatAccountCode: vatEconomics.outputVatAccountCode,
+      },
+      vatEconomics,
+      ledgerResult: { cogsAmount: "0" },
+    })
+
+    const journalLines = state.journalEntryLines.map((line) => {
+      const account = state.glAccounts.find((a) => a.id === line.glAccountId)
+      return account?.code
+    })
+    expect(journalLines).toContain(DEFAULT_ACCOUNT_CODES.REVENUE)
+    expect(journalLines).not.toContain(DEFAULT_ACCOUNT_CODES.COGS)
+    expect(journalLines).not.toContain(DEFAULT_ACCOUNT_CODES.INVENTORY)
   })
 
   it("posts CARD sale voucher to card clearing without bank debit", async () => {
