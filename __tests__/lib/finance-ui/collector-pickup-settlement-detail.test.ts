@@ -3,6 +3,8 @@ import {
   buildDepositJournalDisplay,
   buildPickupJournalDisplay,
   formatPayInEvidenceStatusLabel,
+  formatSettlementAccountLabel,
+  formatSettlementJournalLine,
 } from "@/lib/finance-ui/collector-pickup-settlement-detail"
 
 const baseRow: CollectorPickupSettlementReconciliation = {
@@ -97,5 +99,14 @@ describe("collector pickup settlement detail helpers", () => {
         payInEvidenceUrl: "https://example.test/pay-in.jpg",
       })
     ).toBe("Uploaded")
+  })
+
+  it("formats settlement account labels for journal display", () => {
+    expect(formatSettlementAccountLabel("1031")).toBe("1031 Cash in Transit")
+    expect(formatSettlementAccountLabel("1001")).toBe("1001 Cash in Drawer")
+    expect(formatSettlementAccountLabel("1021")).toBe("1021 Bank")
+    expect(formatSettlementJournalLine("Dr", "1031", "1000.00")).toBe(
+      "Dr 1031 Cash in Transit    1000.00"
+    )
   })
 })

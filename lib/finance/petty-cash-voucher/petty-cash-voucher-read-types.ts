@@ -62,6 +62,7 @@ export type PettyCashVoucherListFilter = {
   status?: PettyCashVoucherStatus
   branchId?: string
   search?: string
+  postingState?: "posted" | "unposted"
   dateFrom?: Date | string
   dateTo?: Date | string
   limit?: number

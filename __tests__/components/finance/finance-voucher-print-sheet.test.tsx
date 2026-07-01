@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
-import { ACCOUNT_DISPLAY_SEPARATOR } from "@/lib/finance-ui/format-account"
+import { ACCOUNT_DISPLAY_BULLET, ACCOUNT_DISPLAY_SEPARATOR } from "@/lib/finance-ui/format-account"
 import type { FinanceVoucherPrintModel } from "@/lib/finance-ui/finance-voucher-print"
 
 const model: FinanceVoucherPrintModel = {
@@ -143,9 +143,9 @@ describe("FinanceVoucherPrintSheet", () => {
     )
 
     expect(html).toContain('data-testid="finance-voucher-line-account-1"')
-    expect(html).toContain("finance-account-code-part")
-    expect(html).toContain("finance-account-name-part")
-    expect(html).toContain(ACCOUNT_DISPLAY_SEPARATOR.trim())
+    expect(html).toContain('class="finance-account-code finance-account-code-part"')
+    expect(html).toContain('class="finance-account-name finance-account-name-part"')
+    expect(html).toContain(ACCOUNT_DISPLAY_BULLET)
     expect(html).toContain("1100")
     expect(html).toContain("Cash")
   })

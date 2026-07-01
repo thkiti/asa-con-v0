@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { CollectorPickupSettlementDetailModal } from "@/components/finance/CollectorPickupSettlementDetailModal"
+import { CollectorPickupSettlementFilterBar } from "@/components/finance/CollectorPickupSettlementFilterBar"
 import { CollectorPickupSettlementTable } from "@/components/finance/CollectorPickupSettlementTable"
 import {
   PayInSlipUploadModal,
@@ -13,15 +14,19 @@ import {
   PayInStaffCredentialGate,
   type PayInVerifiedStaff,
 } from "@/components/finance/PayInStaffCredentialGate"
-import { PosSettlementFilterBar } from "@/components/finance/PosSettlementFilterBar"
 import {
   buildCollectorPickupSettlementReturnPath,
   fetchCollectorPickupSettlementStatusList,
   formatCollectorPickupPostError,
-  parseCollectorPickupSettlementFilterFromSearchParams,
+  parseCollectorPickupSettlementUiFilterFromSearchParams,
   postCollectorPickupSettlement,
   type CollectorPickupSettlementReconciliation,
 } from "@/lib/finance-ui/collector-pickup-settlement"
+import {
+  defaultCollectorPickupSettlementUiFilter,
+  toCollectorPickupFinanceFilter,
+  type CollectorPickupSettlementUiFilter,
+} from "@/lib/finance-ui/collector-pickup-settlement-list-filter"
 import {
   formatPayInConfirmError,
   postDepositSettlement,
@@ -31,17 +36,10 @@ import {
   isPayInSlipUploaded,
 } from "@/lib/finance-ui/collector-pickup-settlement-display"
 import { collectorPickupSettlementPageClass } from "@/lib/finance-ui/finance-visual-classes"
+import { useInquiryMoreFilterOpen } from "@/lib/finance-ui/inquiry-more-filter-state"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
-
-function defaultDateRange(): FinanceFilterValues {
-  const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  const toYmd = (date: Date) => date.toISOString().slice(0, 10)
-  return { from: toYmd(start), to: toYmd(end) }
-}
 
 function toUploadModalRow(
   row: CollectorPickupSettlementReconciliation
@@ -62,14 +60,12 @@ export function CollectorPickupSettlementPage() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const initialFilter = useMemo(
-    () =>
-      parseCollectorPickupSettlementFilterFromSearchParams(searchParams) ??
-      defaultDateRange(),
-    [searchParams]
-  )
 
-  const [filter, setFilter] = useState<FinanceFilterValues>(initialFilter)
+  const [draft, setDraft] = useState<CollectorPickupSettlementUiFilter>(() =>
+    parseCollectorPickupSettlementUiFilterFromSearchParams(searchParams) ??
+      defaultCollectorPickupSettlementUiFilter()
+  )
+  const [applied, setApplied] = useState<CollectorPickupSettlementUiFilter>(draft)
   const [items, setItems] = useState<CollectorPickupSettlementReconciliation[]>([])
   const [loading, setLoading] = useState(false)
   const [depositPostingReportId, setDepositPostingReportId] = useState<string | null>(
@@ -93,14 +89,23 @@ export function CollectorPickupSettlementPage() {
   const [detailRow, setDetailRow] =
     useState<CollectorPickupSettlementReconciliation | null>(null)
 
+  const appliedFilterKey = useMemo(() => JSON.stringify(applied), [applied])
+  const { isMoreFilterOpen, setIsMoreFilterOpen } =
+    useInquiryMoreFilterOpen(appliedFilterKey)
+
+  const appliedFinanceFilter = useMemo(
+    () => toCollectorPickupFinanceFilter(applied),
+    [applied]
+  )
+
   const settlementReturnPath = useMemo(
-    () => buildCollectorPickupSettlementReturnPath(filter),
-    [filter]
+    () => buildCollectorPickupSettlementReturnPath(applied),
+    [applied]
   )
 
   const load = useCallback(async (values: FinanceFilterValues) => {
     if (!values.from?.trim() || !values.to?.trim()) {
-      setError("From and to dates are required")
+      setError("Period or date range is required")
       setItems([])
       return
     }
@@ -126,13 +131,14 @@ export function CollectorPickupSettlementPage() {
   }, [])
 
   useEffect(() => {
-    const fromUrl = parseCollectorPickupSettlementFilterFromSearchParams(searchParams)
-    if (!fromUrl) return
-    setFilter(fromUrl)
-    void load(fromUrl)
+    const fromUrl = parseCollectorPickupSettlementUiFilterFromSearchParams(searchParams)
+    const next = fromUrl ?? defaultCollectorPickupSettlementUiFilter()
+    setDraft(next)
+    setApplied(next)
+    void load(toCollectorPickupFinanceFilter(next))
   }, [searchParams, load])
 
-  function syncFilterToUrl(values: FinanceFilterValues) {
+  function syncFilterToUrl(values: CollectorPickupSettlementUiFilter) {
     const returnPath = buildCollectorPickupSettlementReturnPath(values)
     const queryIndex = returnPath.indexOf("?")
     const query = queryIndex === -1 ? "" : returnPath.slice(queryIndex)
@@ -140,8 +146,20 @@ export function CollectorPickupSettlementPage() {
   }
 
   async function handleApply() {
-    syncFilterToUrl(filter)
-    await load(filter)
+    setIsMoreFilterOpen(false)
+    const next = { ...draft }
+    setApplied(next)
+    syncFilterToUrl(next)
+    await load(toCollectorPickupFinanceFilter(next))
+  }
+
+  function handleClear() {
+    setIsMoreFilterOpen(false)
+    const cleared = defaultCollectorPickupSettlementUiFilter()
+    setDraft(cleared)
+    setApplied(cleared)
+    syncFilterToUrl(cleared)
+    void load(toCollectorPickupFinanceFilter(cleared))
   }
 
   function handleOpenUpload(row: CollectorPickupSettlementReconciliation) {
@@ -189,7 +207,7 @@ export function CollectorPickupSettlementPage() {
   }
 
   async function handleUploadSaved() {
-    await load(filter)
+    await load(appliedFinanceFilter)
     setVerifiedStaff(null)
     setUploadRows([])
   }
@@ -212,7 +230,7 @@ export function CollectorPickupSettlementPage() {
     setDepositPostError(null)
     try {
       await postDepositSettlement(collectorReportId)
-      await load(filter)
+      await load(appliedFinanceFilter)
     } catch (err) {
       setDepositPostError(formatPayInConfirmError(err))
     } finally {
@@ -225,7 +243,7 @@ export function CollectorPickupSettlementPage() {
     setDepositPostError(null)
     try {
       await postCollectorPickupSettlement(collectorReportId)
-      await load(filter)
+      await load(appliedFinanceFilter)
     } catch (err) {
       setDepositPostError(formatCollectorPickupPostError(err))
     } finally {
@@ -245,10 +263,13 @@ export function CollectorPickupSettlementPage() {
         </p>
       ) : null}
 
-      <PosSettlementFilterBar
-        values={filter}
-        onChange={setFilter}
-        onApply={handleApply}
+      <CollectorPickupSettlementFilterBar
+        draft={draft}
+        onDraftChange={setDraft}
+        isMoreFilterOpen={isMoreFilterOpen}
+        setIsMoreFilterOpen={setIsMoreFilterOpen}
+        onApply={() => void handleApply()}
+        onClear={handleClear}
         loading={loading}
       />
 

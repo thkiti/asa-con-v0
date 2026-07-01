@@ -33,8 +33,8 @@ export const financeAmountCell = financeTdRight
 export const financeAccountCell = "finance-account-cell px-2 py-1"
 /** Table cell padding for account column */
 export const financeAccount = financeAccountCell
-/** Inline account row: fixed-width code • name */
-export const financeAccountDisplay = "finance-account"
+/** Inline account row: fixed-width code • name (CSS grid) */
+export const financeAccountDisplay = "finance-account-display finance-account"
 /** @deprecated Use financeAccount + FinanceAccountDisplay */
 export const financeAccountCode = "finance-account-code px-2 py-1"
 /** @deprecated Use financeAccount + FinanceAccountDisplay */
@@ -245,6 +245,21 @@ export const collectorPickupPostBtn =
 
 export const collectorPickupPostBtnMuted =
   "rounded border border-[var(--btn-disabled-border)] bg-[var(--btn-disabled-bg)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--btn-disabled-fg)]"
+
+export const collectorPickupSettlementDetailSectionTitle =
+  "collector-pickup-settlement-detail-section-title text-sm font-semibold"
+
+export const collectorPickupSettlementDetailStatus =
+  "collector-pickup-settlement-detail-status text-sm"
+
+export const collectorPickupSettlementDetailJournalBox =
+  "collector-pickup-settlement-detail-journal overflow-x-auto rounded p-3 font-mono text-sm leading-6"
+
+export const collectorPickupSettlementDetailVoucherLink =
+  "collector-pickup-settlement-detail-voucher-link text-sm underline underline-offset-2"
+
+export const collectorPickupSettlementDetailTechnical =
+  "collector-pickup-settlement-detail-technical mt-6 border-t border-[#e4e4e7] pt-3 text-xs"
 
 /** Re-export semantic admin UI classes for finance screens (see lib/theme/theme-classes). */
 export {

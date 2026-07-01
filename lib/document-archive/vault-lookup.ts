@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client"
 import { buildDocumentArchiveRefKey } from "./kinds"
+import { isPrismaTableMissingError } from "./prisma-errors"
 import { isDocumentArchiveStorageReadable } from "./readiness"
 import type {
   DocumentArchiveStatusInput,
@@ -66,32 +67,54 @@ export async function loadVaultArchivesForRefs(
   const documentIds = [...new Set(refs.map((ref) => ref.documentId.trim()).filter(Boolean))]
   const documentKinds = [...new Set(refs.map((ref) => ref.documentKind))]
 
-  const links = await prisma.documentArchiveLink.findMany({
-    where: {
-      isActive: true,
-      documentKind: { in: documentKinds },
-      documentId: { in: documentIds },
-      archive: {
-        status: "ACTIVE",
-      },
-    },
-    select: {
-      documentKind: true,
-      documentId: true,
-      archive: {
-        select: {
-          id: true,
-          archiveKind: true,
-          status: true,
-          storagePath: true,
-          storageUrl: true,
-          pdfPath: true,
-          pdfBlobUrl: true,
-          mimeType: true,
+  let links: Array<{
+    documentKind: string
+    documentId: string
+    archive: {
+      id: string
+      archiveKind: VaultArchiveRecord["archiveKind"]
+      status: string
+      storagePath: string | null
+      storageUrl: string | null
+      pdfPath: string | null
+      pdfBlobUrl: string | null
+      mimeType: string
+    }
+  }>
+
+  try {
+    links = await prisma.documentArchiveLink.findMany({
+      where: {
+        isActive: true,
+        documentKind: { in: documentKinds },
+        documentId: { in: documentIds },
+        archive: {
+          status: "ACTIVE",
         },
       },
-    },
-  })
+      select: {
+        documentKind: true,
+        documentId: true,
+        archive: {
+          select: {
+            id: true,
+            archiveKind: true,
+            status: true,
+            storagePath: true,
+            storageUrl: true,
+            pdfPath: true,
+            pdfBlobUrl: true,
+            mimeType: true,
+          },
+        },
+      },
+    })
+  } catch (error) {
+    if (isPrismaTableMissingError(error)) {
+      return new Map()
+    }
+    throw error
+  }
 
   const result = new Map<string, VaultArchiveRecord>()
   for (const link of links) {

@@ -26,6 +26,8 @@ type DocumentInquiryMoreFilterProps = {
   isMoreFilterOpen: boolean
   setIsMoreFilterOpen: Dispatch<SetStateAction<boolean>>
   onPeriodKeyEnter?: () => void
+  /** When set, overrides default active state (any from/to set). */
+  isMoreFilterActive?: boolean
 }
 
 export function DocumentInquiryMoreFilter({
@@ -40,10 +42,12 @@ export function DocumentInquiryMoreFilter({
   isMoreFilterOpen,
   setIsMoreFilterOpen,
   onPeriodKeyEnter,
+  isMoreFilterActive,
 }: DocumentInquiryMoreFilterProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const popoverId = useId()
   const hasDateFilter = Boolean(from.trim() || to.trim())
+  const moreFilterActive = isMoreFilterActive ?? hasDateFilter
 
   useEffect(() => {
     if (!isMoreFilterOpen) return
@@ -87,13 +91,13 @@ export function DocumentInquiryMoreFilter({
         <button
           type="button"
           className={`${voucherInquiryMoreFilterButton}${
-            hasDateFilter ? ` ${voucherInquiryMoreFilterButtonActive}` : ""
+            moreFilterActive ? ` ${voucherInquiryMoreFilterButtonActive}` : ""
           }`}
           title="More filter"
           aria-label="More filter"
           aria-expanded={isMoreFilterOpen}
           aria-controls={isMoreFilterOpen ? popoverId : undefined}
-          data-active={hasDateFilter ? "true" : "false"}
+          data-active={moreFilterActive ? "true" : "false"}
           onMouseDown={(event) => event.stopPropagation()}
           onClick={handleToggle}
           data-testid={`${testIdPrefix}-more-filter`}

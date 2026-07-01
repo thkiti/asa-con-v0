@@ -1,35 +1,40 @@
 import {
-  ACCOUNT_DISPLAY_SEPARATOR,
+  ACCOUNT_DISPLAY_BULLET,
   formatAccountDisplay,
 } from "@/lib/finance-ui/format-account"
 import { financeAccountDisplay } from "@/lib/finance-ui/finance-visual-classes"
 
 type FinanceAccountDisplayProps = {
-  accountCode: string | null | undefined
-  accountName: string | null | undefined
+  accountCode?: string | null
+  accountName?: string | null
+  /** Shorthand aliases for accountCode / accountName */
+  code?: string | null
+  name?: string | null
   className?: string
   "data-testid"?: string
-  /** When true, render a single plain string (export/print). */
+  /** When true, render a single plain string (export/print fallback). */
   plain?: boolean
 }
 
 export function FinanceAccountDisplay({
   accountCode,
   accountName,
+  code,
+  name,
   className = "",
   "data-testid": testId,
   plain = false,
 }: FinanceAccountDisplayProps) {
-  const code = String(accountCode ?? "").trim()
-  const name = String(accountName ?? "").trim()
+  const resolvedCode = String(code ?? accountCode ?? "").trim()
+  const resolvedName = String(name ?? accountName ?? "").trim()
 
-  if (plain || (!code && !name)) {
+  if (plain || (!resolvedCode && !resolvedName)) {
     return (
       <span
         className={[financeAccountDisplay, className].filter(Boolean).join(" ")}
         data-testid={testId}
       >
-        {formatAccountDisplay(code, name)}
+        {formatAccountDisplay(resolvedCode, resolvedName)}
       </span>
     )
   }
@@ -39,11 +44,15 @@ export function FinanceAccountDisplay({
       className={[financeAccountDisplay, className].filter(Boolean).join(" ")}
       data-testid={testId}
     >
-      {code ? <span className="finance-account-code-part">{code}</span> : null}
-      {code && name ? (
-        <span className="finance-account-separator">{ACCOUNT_DISPLAY_SEPARATOR}</span>
+      {resolvedCode ? (
+        <span className="finance-account-code finance-account-code-part">{resolvedCode}</span>
       ) : null}
-      {name ? <span className="finance-account-name-part">{name}</span> : null}
+      {resolvedCode && resolvedName ? (
+        <span className="finance-account-separator">{ACCOUNT_DISPLAY_BULLET}</span>
+      ) : null}
+      {resolvedName ? (
+        <span className="finance-account-name finance-account-name-part">{resolvedName}</span>
+      ) : null}
     </span>
   )
 }

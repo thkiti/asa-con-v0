@@ -89,34 +89,34 @@ body.finance-voucher-print-active {
 }
 
 span.finance-account {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: var(--finance-account-code-width) auto minmax(0, 1fr);
+  column-gap: 0.5ch;
   align-items: baseline;
   max-width: 100%;
   font-weight: 400;
   color: #000;
 }
 
+.finance-account-code,
 span.finance-account .finance-account-code-part {
-  display: block;
-  flex: 0 0 var(--finance-account-code-width);
-  width: var(--finance-account-code-width);
-  min-width: var(--finance-account-code-width);
-  text-align: right;
   font-family: inherit;
   font-size: 0.8125rem;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
   color: #000;
 }
 
+.finance-account-separator,
 span.finance-account .finance-account-separator {
-  flex: 0 0 auto;
+  opacity: 0.8;
   color: #333;
-  white-space: pre;
 }
 
+.finance-account-name,
 span.finance-account .finance-account-name-part {
-  flex: 1 1 auto;
   min-width: 0;
   font-weight: 400;
   color: #000;

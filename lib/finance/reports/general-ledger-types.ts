@@ -18,6 +18,9 @@ export type GeneralLedgerTransaction = {
   journalDate: string
   entryNo: string
   sourceRef: string | null
+  sourceRefType: string | null
+  sourceRefId: string | null
+  voucherId: string | null
   description: string | null
   lineMemo: string | null
   debit: string

@@ -265,6 +265,22 @@ Dr  1021  เงินฝากธนาคาร  (Bank)
 
 **Domain:** `lib/finance/pos-settlement/post-bank-deposit.ts`, `execute-bank-deposit-post.ts`
 
+### Collector settlement accounting — complete finance chain (no separate PAY document)
+
+Finance UI: **COL • COLLECTOR PICKUP / PAY-IN DEPOSIT** (`/finance/pos-settlement/collector-pickup`).
+
+The COL settlement flow is the **complete finance source** for collector cash pickup and PAY-IN bank deposit. **No separate PAY operational document** is required for collector cash deposit.
+
+| Step | User action | Accounting |
+|------|-------------|------------|
+| 1. COL pickup posting | Post collector pickup (or repair) | Dr **1031** Cash in Transit — Cr **1001** Cash in Drawer |
+| 2. PAY-IN slip | Upload bank pay-in evidence | Evidence only (no GL) |
+| 3. PAY-IN / Deposit posting | Post deposit after slip uploaded | Dr **1021** Bank — Cr **1031** Cash in Transit |
+
+Each posted step creates a **`Voucher`** + **`JournalEntry`** linked to `CollectorReport.id` via `refType` / `refId`. Business reference is **`COL-…` collect no.**, not the internal collector report UUID.
+
+This is distinct from **PAV** (Payment Voucher) — PAV is for general outbound payments, not collector PAY-IN deposit.
+
 ### Future Stage 2 GL patterns
 
 **Bank deposit** *(implemented — P2.4 / P3)*

@@ -1,41 +1,81 @@
 import type { CollectorPickupSettlementReconciliation } from "@/lib/finance/pos-settlement/collector-pickup-reconciliation"
 import type { Role } from "@/lib/shared"
+import {
+  defaultCollectorPickupSettlementPeriodKey,
+  toCollectorPickupFinanceFilter,
+  type CollectorPickupSettlementUiFilter,
+} from "./collector-pickup-settlement-list-filter"
 import { buildReconciliationQuery } from "./fetchers"
 import type { FinanceFilterValues } from "./types"
 
 export const COLLECTOR_PICKUP_SETTLEMENT_PATH =
   "/finance/pos-settlement/collector-pickup"
 
-/** Parse settlement filter values from page search params. */
-export function parseCollectorPickupSettlementFilterFromSearchParams(
+function derivePeriodKeyFromDateRange(from: string, to: string): string | null {
+  const match = /^(\d{4})-(\d{2})-01$/.exec(from)
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const lastDay = new Date(year, month, 0).getDate()
+  const expectedTo = `${match[1]}-${match[2]}-${String(lastDay).padStart(2, "0")}`
+  if (to !== expectedTo) return null
+  return `${match[1]}-${match[2]}`
+}
+
+/** Parse settlement UI filter from page search params. */
+export function parseCollectorPickupSettlementUiFilterFromSearchParams(
   searchParams: Pick<URLSearchParams, "get">
-): FinanceFilterValues | null {
+): CollectorPickupSettlementUiFilter | null {
+  const periodKey = searchParams.get("period")?.trim()
+  const dateFrom = searchParams.get("dateFrom")?.trim() ?? ""
+  const dateTo = searchParams.get("dateTo")?.trim() ?? ""
+  const branchId = searchParams.get("branchId")?.trim() ?? ""
+
+  if (periodKey) {
+    return { branchId, periodKey, dateFrom, dateTo }
+  }
+
   const from = searchParams.get("from")?.trim()
   const to = searchParams.get("to")?.trim()
   if (!from || !to) return null
 
-  const branchId = searchParams.get("branchId")?.trim()
+  const derivedPeriod = derivePeriodKeyFromDateRange(from, to)
   return {
-    branchId: branchId || undefined,
-    from,
-    to,
+    branchId,
+    periodKey: derivedPeriod ?? defaultCollectorPickupSettlementPeriodKey(),
+    dateFrom: derivedPeriod ? "" : from,
+    dateTo: derivedPeriod ? "" : to,
   }
 }
 
-/** returnTo target for voucher drill-down — preserves branch/from/to filters. */
+/** @deprecated Use parseCollectorPickupSettlementUiFilterFromSearchParams */
+export function parseCollectorPickupSettlementFilterFromSearchParams(
+  searchParams: Pick<URLSearchParams, "get">
+): FinanceFilterValues | null {
+  const ui = parseCollectorPickupSettlementUiFilterFromSearchParams(searchParams)
+  if (!ui) return null
+  return toCollectorPickupFinanceFilter(ui)
+}
+
+/** returnTo target for voucher drill-down — preserves branch/period/date filters. */
 export function buildCollectorPickupSettlementReturnPath(
-  filter: FinanceFilterValues
+  filter: CollectorPickupSettlementUiFilter | FinanceFilterValues
 ): string {
   const params = new URLSearchParams()
-  if (filter.branchId?.trim()) {
-    params.set("branchId", filter.branchId.trim())
+
+  if ("periodKey" in filter) {
+    const ui = filter as CollectorPickupSettlementUiFilter
+    if (ui.branchId.trim()) params.set("branchId", ui.branchId.trim())
+    if (ui.periodKey.trim()) params.set("period", ui.periodKey.trim())
+    if (ui.dateFrom.trim()) params.set("dateFrom", ui.dateFrom.trim())
+    if (ui.dateTo.trim()) params.set("dateTo", ui.dateTo.trim())
+  } else {
+    const legacy = filter as FinanceFilterValues
+    if (legacy.branchId?.trim()) params.set("branchId", legacy.branchId.trim())
+    if (legacy.from?.trim()) params.set("from", legacy.from.trim())
+    if (legacy.to?.trim()) params.set("to", legacy.to.trim())
   }
-  if (filter.from?.trim()) {
-    params.set("from", filter.from.trim())
-  }
-  if (filter.to?.trim()) {
-    params.set("to", filter.to.trim())
-  }
+
   const query = params.toString()
   return query
     ? `${COLLECTOR_PICKUP_SETTLEMENT_PATH}?${query}`

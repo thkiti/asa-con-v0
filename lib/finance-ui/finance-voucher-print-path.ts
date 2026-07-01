@@ -6,11 +6,13 @@ const MANUAL_JOURNAL_PATH = "/finance/manual-journal-entries"
 const PAYMENT_VOUCHER_PATH = "/finance/payment-vouchers"
 const REVENUE_VOUCHER_PATH = "/finance/revenue-vouchers"
 const PETTY_CASH_VOUCHER_PATH = "/finance/petty-cash-vouchers"
+const INVOICE_VOUCHER_PATH = "/finance/invoice-vouchers"
 
 const OPERATIONAL_VOUCHER_REF_TYPES = new Set<string>([
   FINANCE_REF_TYPES.PAYMENT_VOUCHER,
   FINANCE_REF_TYPES.REVENUE_VOUCHER,
   FINANCE_REF_TYPES.PETTY_CASH_VOUCHER,
+  FINANCE_REF_TYPES.INVOICE_VOUCHER,
 ])
 
 export function buildOperationalVoucherEditorPath(refType: string, refId: string): string | null {
@@ -24,6 +26,8 @@ export function buildOperationalVoucherEditorPath(refType: string, refId: string
       return `${REVENUE_VOUCHER_PATH}/${encodeURIComponent(id)}`
     case FINANCE_REF_TYPES.PETTY_CASH_VOUCHER:
       return `${PETTY_CASH_VOUCHER_PATH}/${encodeURIComponent(id)}`
+    case FINANCE_REF_TYPES.INVOICE_VOUCHER:
+      return `${INVOICE_VOUCHER_PATH}/${encodeURIComponent(id)}`
     default:
       return null
   }

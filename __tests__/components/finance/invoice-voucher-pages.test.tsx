@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { InvoiceVoucherEditorPage } from "@/components/finance/InvoiceVoucherEditorPage"
+import { InvoiceVoucherListPage } from "@/components/finance/InvoiceVoucherListPage"
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
@@ -132,6 +133,17 @@ describe("InvoiceVoucherEditorPage edit POSTED", () => {
     expect(html).not.toContain('data-testid="action-download-pdf"')
     expect(html).toContain("finance-voucher-print-root--embedded")
     expect(html).not.toContain("branch-1")
+  })
+})
+
+describe("InvoiceVoucherListPage", () => {
+  it("renders list with new INV link and inquiry filter shell", () => {
+    const html = renderToStaticMarkup(<InvoiceVoucherListPage />)
+    expect(html).toContain('data-testid="invoice-voucher-list"')
+    expect(html).toContain('data-testid="invoice-voucher-actions"')
+    expect(html).toContain('data-testid="invoice-voucher-filters"')
+    expect(html).toContain("/finance/invoice-vouchers/new")
+    expect(html).not.toContain("Legal entity")
   })
 })
 

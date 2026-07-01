@@ -2,25 +2,25 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { PettyCashVoucherStatusBadge } from "@/components/finance/PettyCashVoucherStatusBadge"
-import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
-import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
+import { formatAmount, formatFinanceListDate } from "@/lib/finance-ui/format"
 import {
   formatPettyCashVoucherDocumentNo,
   PETTY_CASH_VOUCHER_STATUSES,
-  type PettyCashVoucherStatusCode,
 } from "@/lib/finance-ui/petty-cash-voucher-display"
+import {
+  defaultPettyCashVoucherListUiFilter,
+  toPettyCashVoucherListFilter,
+  type PettyCashVoucherListUiFilter,
+} from "@/lib/finance-ui/petty-cash-voucher-list-filter"
 import {
   deleteDraftPettyCashVoucher,
   fetchPettyCashVouchers,
-  type PettyCashVoucherListFilterInput,
   type PettyCashVoucherListItem,
 } from "@/lib/finance-ui/petty-cash-vouchers"
-import { formatEntityShort } from "@/lib/legal-entity"
-import {
-  LEGAL_ENTITY_CODES,
-  type DocumentEntityCode,
-} from "@/lib/legal-entity/constants"
+import { FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS } from "@/lib/finance/inquiry/finance-document-inquiry-filter-options"
+import { useInquiryMoreFilterOpen } from "@/lib/finance-ui/inquiry-more-filter-state"
 import {
   financeMemo,
   financeNumber,
@@ -28,54 +28,49 @@ import {
   financeTableScroll,
   financeTh,
   financeThRight,
+  manualJournalEntryListActionPrimary,
+  manualJournalEntryListActionRow,
+  manualJournalEntryListActionSecondary,
+  manualJournalEntryListTdDate,
+  manualJournalEntryListTdDescription,
+  manualJournalEntryListTdDocNo,
+  manualJournalEntryListTdStatus,
+  voucherInquiryFilterActions,
+  voucherInquiryFilterBar,
+  voucherInquiryFilterButtonPrimary,
+  voucherInquiryFilterButtonSecondary,
+  voucherInquiryFilterInput,
+  voucherInquiryFilterNo,
+  voucherInquiryFilterPostingState,
+  voucherInquiryFilterSelect,
+  voucherInquiryFilterStatus,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { themeLinkMuted } from "@/lib/theme/theme-classes"
+import { themeLabel, themeLinkMuted, themeTextSecondary } from "@/lib/theme/theme-classes"
 
 const ALL = ""
 
-type FilterState = {
-  legalEntityCode: string
-  status: string
-  search: string
-  dateFrom: string
-  dateTo: string
-}
-
-const defaultFilter: FilterState = {
-  legalEntityCode: ALL,
-  status: ALL,
-  search: "",
-  dateFrom: "",
-  dateTo: "",
-}
-
-function toListFilter(filter: FilterState): PettyCashVoucherListFilterInput {
-  return {
-    ...(filter.legalEntityCode
-      ? { legalEntityCode: filter.legalEntityCode as DocumentEntityCode }
-      : {}),
-    ...(filter.status ? { status: filter.status as PettyCashVoucherStatusCode } : {}),
-    ...(filter.search.trim() ? { search: filter.search.trim() } : {}),
-    ...(filter.dateFrom ? { dateFrom: filter.dateFrom } : {}),
-    ...(filter.dateTo ? { dateTo: filter.dateTo } : {}),
-    limit: 50,
-    offset: 0,
-  }
-}
-
 export function PettyCashVoucherListPage() {
-  const [filter, setFilter] = useState<FilterState>(defaultFilter)
+  const [draft, setDraft] = useState<PettyCashVoucherListUiFilter>(
+    defaultPettyCashVoucherListUiFilter
+  )
+  const [applied, setApplied] = useState<PettyCashVoucherListUiFilter>(
+    defaultPettyCashVoucherListUiFilter
+  )
   const [entries, setEntries] = useState<PettyCashVoucherListItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  const appliedFilterKey = useMemo(() => JSON.stringify(applied), [applied])
+  const { isMoreFilterOpen, setIsMoreFilterOpen } =
+    useInquiryMoreFilterOpen(appliedFilterKey)
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchPettyCashVouchers(toListFilter(filter))
+      const result = await fetchPettyCashVouchers(toPettyCashVoucherListFilter(applied))
       setEntries(result.entries)
       setTotal(result.total)
     } catch (err) {
@@ -83,16 +78,23 @@ export function PettyCashVoucherListPage() {
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [applied])
 
   useEffect(() => {
     void load()
   }, [load])
 
-  const filterSummary = useMemo(() => {
-    if (filter.search.trim()) return ` matching “${filter.search.trim()}”`
-    return ""
-  }, [filter.search])
+  function handleSearch() {
+    setIsMoreFilterOpen(false)
+    setApplied({ ...draft })
+  }
+
+  function handleClear() {
+    setIsMoreFilterOpen(false)
+    const cleared = defaultPettyCashVoucherListUiFilter()
+    setDraft(cleared)
+    setApplied(cleared)
+  }
 
   async function handleDelete(row: PettyCashVoucherListItem) {
     if (row.status !== "DRAFT") return
@@ -113,42 +115,68 @@ export function PettyCashVoucherListPage() {
 
   return (
     <div className="space-y-4" data-testid="petty-cash-voucher-list">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <label className="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-2">
-          <span className="text-zinc-600">Search</span>
+      <div className={manualJournalEntryListActionRow} data-testid="petty-cash-voucher-actions">
+        <Link
+          href="/finance/petty-cash-vouchers/new"
+          className={manualJournalEntryListActionPrimary}
+          data-testid="new-petty-cash-voucher"
+        >
+          New PCV
+        </Link>
+        <button
+          type="button"
+          className={manualJournalEntryListActionSecondary}
+          data-testid="petty-cash-voucher-refresh"
+          onClick={() => void load()}
+        >
+          Refresh
+        </button>
+      </div>
+
+      <div className={voucherInquiryFilterBar} data-testid="petty-cash-voucher-filters">
+        <DocumentInquiryMoreFilter
+          periodKey={draft.periodKey}
+          onPeriodKeyChange={(value) =>
+            setDraft((prev) => ({ ...prev, periodKey: value }))
+          }
+          periodTestId="petty-cash-voucher-filter-period"
+          from={draft.dateFrom}
+          to={draft.dateTo}
+          onFromChange={(value) =>
+            setDraft((prev) => ({ ...prev, dateFrom: value }))
+          }
+          onToChange={(value) => setDraft((prev) => ({ ...prev, dateTo: value }))}
+          testIdPrefix="petty-cash-voucher"
+          isMoreFilterOpen={isMoreFilterOpen}
+          setIsMoreFilterOpen={setIsMoreFilterOpen}
+          onPeriodKeyEnter={handleSearch}
+        />
+        <label className={voucherInquiryFilterNo}>
+          <span className={themeLabel}>No.</span>
           <input
-            type="search"
-            className="rounded border border-zinc-300 px-2 py-1"
-            placeholder="PCV no, payee, reference…"
-            value={filter.search}
-            onChange={(e) => setFilter((prev) => ({ ...prev, search: e.target.value }))}
-            data-testid="filter-search"
+            className={voucherInquiryFilterInput}
+            value={draft.entryNo}
+            onChange={(e) =>
+              setDraft((prev) => ({ ...prev, entryNo: e.target.value }))
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                handleSearch()
+              }
+            }}
+            placeholder="PCV-…"
+            data-testid="petty-cash-voucher-filter-no"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Legal entity</span>
+        <label className={voucherInquiryFilterStatus}>
+          <span className={themeLabel}>Status</span>
           <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.legalEntityCode}
+            className={voucherInquiryFilterSelect}
+            value={draft.status}
             onChange={(e) =>
-              setFilter((prev) => ({ ...prev, legalEntityCode: e.target.value }))
+              setDraft((prev) => ({ ...prev, status: e.target.value }))
             }
-            data-testid="filter-legal-entity"
-          >
-            <option value={ALL}>All</option>
-            {LEGAL_ENTITY_CODES.map((code) => (
-              <option key={code} value={code}>
-                {formatEntityShort(code)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Status</span>
-          <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.status}
-            onChange={(e) => setFilter((prev) => ({ ...prev, status: e.target.value }))}
             data-testid="filter-status"
           >
             <option value={ALL}>All</option>
@@ -159,91 +187,89 @@ export function PettyCashVoucherListPage() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Date from</span>
-          <input
-            type="date"
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.dateFrom}
-            onChange={(e) => setFilter((prev) => ({ ...prev, dateFrom: e.target.value }))}
-            data-testid="filter-date-from"
-          />
+        <label className={voucherInquiryFilterPostingState}>
+          <span className={themeLabel}>Post</span>
+          <select
+            className={voucherInquiryFilterSelect}
+            value={draft.postingState}
+            onChange={(e) =>
+              setDraft((prev) => ({
+                ...prev,
+                postingState: e.target.value as PettyCashVoucherListUiFilter["postingState"],
+              }))
+            }
+            data-testid="petty-cash-voucher-filter-post"
+          >
+            {FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Date to</span>
-          <input
-            type="date"
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.dateTo}
-            onChange={(e) => setFilter((prev) => ({ ...prev, dateTo: e.target.value }))}
-            data-testid="filter-date-to"
-          />
-        </label>
+        <div className={voucherInquiryFilterActions}>
+          <button
+            type="button"
+            className={voucherInquiryFilterButtonPrimary}
+            onClick={handleSearch}
+            data-testid="petty-cash-voucher-search"
+          >
+            Search
+          </button>
+          <button
+            type="button"
+            className={voucherInquiryFilterButtonSecondary}
+            onClick={handleClear}
+            data-testid="petty-cash-voucher-clear"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href="/finance/petty-cash-vouchers/new"
-          className="rounded bg-zinc-900 px-4 py-2 text-sm text-white"
-          data-testid="new-petty-cash-voucher"
-        >
-          New PCV
-        </Link>
-        <button
-          type="button"
-          className="rounded border border-zinc-300 px-3 py-2 text-sm"
-          onClick={() => void load()}
-        >
-          Refresh
-        </button>
-      </div>
-
-      {loading ? <p className="text-sm text-zinc-500">Loading petty cash vouchers…</p> : null}
+      {loading ? (
+        <p className={`text-sm ${themeTextSecondary}`}>Loading petty cash vouchers…</p>
+      ) : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
       {!loading && !error ? (
         <>
-          <p className="text-sm text-zinc-600">
+          <p className={`text-sm ${themeTextSecondary}`}>
             {total} voucher{total === 1 ? "" : "s"}
-            {filterSummary}
           </p>
           <div className={financeTableScroll}>
-            <table className={financeTable}>
+            <table className={financeTable} data-testid="petty-cash-voucher-table">
               <thead>
                 <tr>
-                  <th className={financeTh}>PCV no</th>
-                  <th className={financeTh}>Voucher date</th>
+                  <th className={financeTh}>Document no.</th>
+                  <th className={financeTh}>Date</th>
                   <th className={financeTh}>Payee</th>
-                  <th className={financeThRight}>Total amount</th>
-                  <th className={financeTh}>Status</th>
-                  <th className={financeTh}>Created by</th>
-                  <th className={financeTh}>Posted date</th>
+                  <th className={financeThRight}>Amount</th>
+                  <th className={financeThRight}>Status</th>
                   <th className={financeTh}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((row) => (
                   <tr key={row.id}>
-                    <td>
+                    <td className={manualJournalEntryListTdDocNo}>
                       <Link
                         href={`/finance/petty-cash-vouchers/${row.id}`}
-                        className={`font-mono text-xs ${themeLinkMuted}`}
+                        className={`${themeLinkMuted} font-mono text-xs`}
                         data-testid={`entry-link-${row.id}`}
                       >
                         {formatPettyCashVoucherDocumentNo(row.entryNo)}
                       </Link>
                     </td>
-                    <td className={financeMemo}>
-                      {formatFinanceDocumentDate(row.entryDate)}
+                    <td className={`${financeMemo} ${manualJournalEntryListTdDate}`}>
+                      {formatFinanceListDate(row.entryDate)}
                     </td>
-                    <td className={financeMemo}>{row.payeeName}</td>
+                    <td className={`${financeMemo} ${manualJournalEntryListTdDescription}`}>
+                      {row.payeeName}
+                    </td>
                     <td className={financeNumber}>{formatAmount(row.totalAmount)}</td>
-                    <td className={financeMemo}>
+                    <td className={`${financeMemo} ${manualJournalEntryListTdStatus}`}>
                       <PettyCashVoucherStatusBadge status={row.status} />
-                    </td>
-                    <td className={financeMemo}>{row.createdByStaffId}</td>
-                    <td className={financeMemo}>
-                      {row.postedAt ? formatDateTime(row.postedAt) : "—"}
                     </td>
                     <td className={financeMemo}>
                       <div className="flex flex-wrap gap-2 text-xs">

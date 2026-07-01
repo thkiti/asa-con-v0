@@ -1,5 +1,6 @@
 import {
   formatAccountDisplay,
+  formatFinanceAccountDisplay,
   ACCOUNT_DISPLAY_BULLET,
   ACCOUNT_DISPLAY_SEPARATOR,
   FINANCE_ACCOUNT_CODE_WIDTH,
@@ -21,6 +22,14 @@ describe("formatAccountDisplay", () => {
   it("returns code or name alone when one side missing", () => {
     expect(formatAccountDisplay("1021", "")).toBe("1021")
     expect(formatAccountDisplay("", "Cash")).toBe("Cash")
+  })
+})
+
+describe("formatFinanceAccountDisplay", () => {
+  it("is an alias for formatAccountDisplay", () => {
+    expect(formatFinanceAccountDisplay("1303", "วัสดุรองเท้า")).toBe(
+      formatAccountDisplay("1303", "วัสดุรองเท้า")
+    )
   })
 })
 

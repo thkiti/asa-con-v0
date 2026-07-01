@@ -123,7 +123,7 @@ describe("finance menu", () => {
   it("does not show separate Bank Deposit Settlement in daily work", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
     const labels = hub?.items.map((item) => item.label) ?? []
-    expect(labels).toContain("PAY • PAY-IN SLIP / COLLECTOR TICKET")
+    expect(labels).toContain("COL • COLLECTOR PICKUP / PAY-IN DEPOSIT")
     expect(labels).not.toContain("Bank Deposit Settlement")
   })
 })
@@ -308,11 +308,101 @@ describe("CollectorPickupSettlementTable detail drill-down", () => {
     expect(html).toContain("COL-SH001-202606-0001")
     expect(html).toContain('data-testid="status-detail-collector-report-1"')
   })
+
+  it("renders clickable COLLECTED status badge when pickup is posted", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementTable
+        items={[
+          {
+            ...baseRow,
+            status: "POSTED",
+            depositStatus: "NOT_POSTED",
+            variance: "0.00",
+          },
+        ]}
+        onViewDetail={() => undefined}
+      />
+    )
+
+    expect(html).toContain("COLLECTED")
+    expect(html).toContain('data-testid="status-detail-collector-report-1"')
+    expect(html).toContain('title="View settlement detail"')
+    expect(html).toContain('type="button"')
+  })
+
+  it("renders clickable POSTED deposit badge when bank deposit is posted", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementTable
+        items={[
+          {
+            ...baseRow,
+            status: "POSTED",
+            depositStatus: "POSTED",
+            payInEvidenceStatus: "UPLOADED",
+            payInEvidenceUrl: "https://example.test/pay-in.jpg",
+            bankDepositVoucherId: "voucher-deposit-1",
+            bankDepositVoucherNo: "V-2026-06-00002",
+            glDebitBank1021: "1000.00",
+            glCreditCashInTransit1031: "1000.00",
+            variance: "0.00",
+          },
+        ]}
+        onViewDetail={() => undefined}
+      />
+    )
+
+    expect(html).toContain('data-testid="deposit-posted-collector-report-1"')
+    expect(html).toMatch(
+      /data-testid="deposit-posted-collector-report-1"[^>]*title="View settlement detail"/
+    )
+    expect(html).not.toContain('data-testid="deposit-post-collector-report-1"')
+  })
+
+  it("keeps deposit POST non-clickable detail for eligible not-yet-posted rows", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementTable
+        items={[
+          {
+            ...baseRow,
+            status: "POSTED",
+            depositStatus: "NOT_POSTED",
+            payInEvidenceStatus: "UPLOADED",
+            payInEvidenceUrl: "https://example.test/pay-in.jpg",
+            variance: "0.00",
+          },
+        ]}
+        onDepositPost={() => undefined}
+        onViewDetail={() => undefined}
+      />
+    )
+
+    expect(html).toContain('data-testid="deposit-post-collector-report-1"')
+    expect(html).not.toContain('data-testid="deposit-posted-collector-report-1"')
+  })
+
+  it("does not render deposit POSTED as detail button without onViewDetail", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementTable
+        items={[
+          {
+            ...baseRow,
+            status: "POSTED",
+            depositStatus: "POSTED",
+            payInEvidenceStatus: "UPLOADED",
+            variance: "0.00",
+          },
+        ]}
+      />
+    )
+
+    expect(html).toContain('data-testid="deposit-posted-collector-report-1"')
+    expect(html).not.toContain('title="View settlement detail"')
+  })
 })
 
 describe("CollectorPickupSettlementDetailModal", () => {
   const settlementReturnTo =
-    "/finance/pos-settlement/collector-pickup?branchId=branch-1&from=2026-06-01&to=2026-06-30"
+    "/finance/pos-settlement/collector-pickup?branchId=branch-1&period=2026-06"
 
   it("shows pickup and deposit journal lines with voucher links", () => {
     const html = renderToStaticMarkup(
@@ -340,15 +430,17 @@ describe("CollectorPickupSettlementDetailModal", () => {
     )
 
     expect(html).toContain('data-testid="collector-pickup-settlement-detail-modal"')
-    expect(html).toContain("Dr 1031")
-    expect(html).toContain("Cr 1001")
-    expect(html).toContain("Dr 1021")
-    expect(html).toContain("Cr 1031")
+    expect(html).toContain("Pickup posting")
+    expect(html).toContain("PAY-IN / Deposit posting")
+    expect(html).toContain("Dr 1031 Cash in Transit")
+    expect(html).toContain("Cr 1001 Cash in Drawer")
+    expect(html).toContain("Dr 1021 Bank")
+    expect(html).toContain("Cr 1031 Cash in Transit")
     expect(html).toContain("/finance/vouchers/voucher-pickup-1")
     expect(html).toContain("/finance/vouchers/voucher-deposit-1")
     expect(html).toContain(
       encodeURIComponent(
-        "/finance/pos-settlement/collector-pickup?branchId=branch-1&from=2026-06-01&to=2026-06-30"
+        "/finance/pos-settlement/collector-pickup?branchId=branch-1&period=2026-06"
       )
     )
     expect(html).toContain("V-2026-06-00001")
@@ -368,13 +460,72 @@ describe("CollectorPickupSettlementDetailModal", () => {
     expect(html).toContain("No journal posted.")
     expect(html).toContain("Not uploaded")
     expect(html).not.toContain('data-testid="settlement-voucher-link"')
+    expect(html).not.toMatch(/<dt[^>]*>Collector report ID<\/dt>/)
+    expect(html).toContain('data-testid="collector-report-id-audit"')
+  })
+
+  it("does not show collector report ID in main detail fields", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementDetailModal
+        open
+        returnTo={settlementReturnTo}
+        row={{
+          ...baseRow,
+          status: "POSTED",
+          voucherId: "voucher-pickup-1",
+          voucherNo: "V-2026-06-00001",
+        }}
+        onClose={() => undefined}
+      />
+    )
+
+    expect(html).not.toMatch(/<dt[^>]*>Collector report ID<\/dt>/)
+    expect(html).toContain('data-testid="collector-report-id-audit"')
+    expect(html).toContain("collector-report-1")
+  })
+
+  it("shows pickup and deposit voucher links when both stages are posted", () => {
+    const html = renderToStaticMarkup(
+      <CollectorPickupSettlementDetailModal
+        open
+        returnTo={settlementReturnTo}
+        row={{
+          ...baseRow,
+          status: "POSTED",
+          voucherId: "voucher-pickup-1",
+          voucherNo: "V-2026-06-00001",
+          glDebitCashInTransit1031: "1000.00",
+          glCreditCashDrawer1001: "1000.00",
+          depositStatus: "POSTED",
+          bankDepositVoucherId: "voucher-deposit-1",
+          bankDepositVoucherNo: "V-2026-06-00002",
+          glDebitBank1021: "1000.00",
+          glCreditCashInTransit1031: "1000.00",
+          payInEvidenceStatus: "UPLOADED",
+          payInEvidenceUrl: "https://example.test/pay-in.jpg",
+        }}
+        onClose={() => undefined}
+        onPreviewPayInSlip={() => undefined}
+      />
+    )
+
+    expect(html).toContain('data-testid="pickup-settlement-detail"')
+    expect(html).toContain('data-testid="deposit-settlement-detail"')
+    expect(html).toContain("PAY-IN / Deposit posting")
+    expect(html).toContain("Dr 1031 Cash in Transit")
+    expect(html).toContain("Cr 1001 Cash in Drawer")
+    expect(html).toContain("Dr 1021 Bank")
+    expect(html).toContain("Cr 1031 Cash in Transit")
+    expect(html).toContain("Voucher V-2026-06-00001")
+    expect(html).toContain("Voucher V-2026-06-00002")
+    expect(html).toContain('data-testid="pay-in-slip-preview-link"')
   })
 })
 
 describe("VoucherDetailView collector settlement return", () => {
   it("uses returnTo for back navigation to collector pickup settlement", () => {
     const returnTo =
-      "/finance/pos-settlement/collector-pickup?branchId=branch-1&from=2026-06-01&to=2026-06-30"
+      "/finance/pos-settlement/collector-pickup?branchId=branch-1&period=2026-06"
 
     const html = renderToStaticMarkup(
       <VoucherDetailView
@@ -401,7 +552,7 @@ describe("VoucherDetailView collector settlement return", () => {
     )
 
     expect(html).toContain(
-      'href="/finance/pos-settlement/collector-pickup?branchId=branch-1&amp;from=2026-06-01&amp;to=2026-06-30"'
+      'href="/finance/pos-settlement/collector-pickup?branchId=branch-1&amp;period=2026-06"'
     )
   })
 })

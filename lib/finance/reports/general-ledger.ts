@@ -28,8 +28,11 @@ type PeriodLineRow = {
     id: string
     date: Date
     voucher: {
+      id: string
       voucherNo: string
       refNo: string | null
+      refType: string
+      refId: string
       description: string | null
     }
   }
@@ -131,6 +134,9 @@ function buildTransactions(
       journalDate: line.journalEntry.date.toISOString(),
       entryNo: line.journalEntry.voucher.voucherNo,
       sourceRef: line.journalEntry.voucher.refNo,
+      sourceRefType: line.journalEntry.voucher.refType,
+      sourceRefId: line.journalEntry.voucher.refId,
+      voucherId: line.journalEntry.voucher.id,
       description: line.journalEntry.voucher.description,
       lineMemo: line.memo,
       debit: debit.toString(),
@@ -207,8 +213,11 @@ export async function getGeneralLedger(
           date: true,
           voucher: {
             select: {
+              id: true,
               voucherNo: true,
               refNo: true,
+              refType: true,
+              refId: true,
               description: true,
             },
           },

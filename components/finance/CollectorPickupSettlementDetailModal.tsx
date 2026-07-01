@@ -8,18 +8,24 @@ import {
   formatDepositSettlementStatus,
   formatPayInEvidenceStatusLabel,
   formatPickupSettlementStatus,
+  formatSettlementJournalLine,
   type SettlementJournalPairDisplay,
 } from "@/lib/finance-ui/collector-pickup-settlement-detail"
 import { formatAmount } from "@/lib/finance-ui/format"
 import { buildFinanceVoucherDetailPath } from "@/lib/finance-ui/finance-navigation"
 import {
+  collectorPickupSettlementDetailJournalBox,
+  collectorPickupSettlementDetailSectionTitle,
+  collectorPickupSettlementDetailStatus,
+  collectorPickupSettlementDetailTechnical,
+  collectorPickupSettlementDetailVoucherLink,
+} from "@/lib/finance-ui/finance-visual-classes"
+import {
   themeDialogLight,
-  themeDialogLightBody,
   themeDialogLightBtnSecondary,
+  themeDialogLightLabel,
   themeDialogLightTitle,
   themeDialogOverlayCentered,
-  themeLabel,
-  themeMuted,
 } from "@/lib/theme/theme-classes"
 
 type CollectorPickupSettlementDetailModalProps = {
@@ -41,8 +47,8 @@ function formatBranch(row: CollectorPickupSettlementReconciliation): string {
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className={themeLabel}>{label}</dt>
-      <dd className={`mt-0.5 text-sm ${themeDialogLightBody}`}>{value}</dd>
+      <dt className={themeDialogLightLabel}>{label}</dt>
+      <dd className={`mt-0.5 text-sm font-medium text-[#18181b]`}>{value}</dd>
     </div>
   )
 }
@@ -61,23 +67,23 @@ function SettlementJournalLines({
   onNavigateAway?: () => void
 }) {
   if (!journal.posted) {
-    return <p className={`text-sm ${themeMuted}`}>No journal posted.</p>
+    return <p className={collectorPickupSettlementDetailStatus}>No journal posted.</p>
   }
 
   return (
     <div className="space-y-2">
       <pre
-        className="overflow-x-auto rounded border border-[#d4d4d8] bg-[#fafafa] p-3 font-mono text-sm leading-6 text-[#18181b]"
+        className={collectorPickupSettlementDetailJournalBox}
         data-testid="settlement-journal-lines"
       >
-        {`Dr ${journal.debitAccount}    ${formatAmount(journal.debitAmount)}
-    Cr ${journal.creditAccount}    ${formatAmount(journal.creditAmount)}`}
+        {`${formatSettlementJournalLine("Dr", journal.debitAccount, formatAmount(journal.debitAmount))}
+    ${formatSettlementJournalLine("Cr", journal.creditAccount, formatAmount(journal.creditAmount))}`}
       </pre>
       {voucherId ? (
         <p className="text-sm">
           <Link
             href={buildFinanceVoucherDetailPath(voucherId, returnTo)}
-            className="text-[#2563eb] underline underline-offset-2 hover:text-[#1d4ed8]"
+            className={collectorPickupSettlementDetailVoucherLink}
             data-testid="settlement-voucher-link"
             onClick={onNavigateAway}
           >
@@ -128,12 +134,11 @@ export function CollectorPickupSettlementDetailModal({
         <dl className="grid gap-3 sm:grid-cols-2">
           <DetailField label="Branch" value={formatBranch(row)} />
           <DetailField label="Expected" value={formatAmount(row.expectedAmount)} />
-          <DetailField label="Collector report ID" value={row.collectorReportId} />
         </dl>
 
         <section className="mt-5 space-y-2" data-testid="pickup-settlement-detail">
-          <h3 className="text-sm font-semibold text-[#18181b]">Pickup posting</h3>
-          <p className={`text-sm ${themeMuted}`}>
+          <h3 className={collectorPickupSettlementDetailSectionTitle}>Pickup posting</h3>
+          <p className={collectorPickupSettlementDetailStatus}>
             Status: {formatPickupSettlementStatus(row.status)}
           </p>
           <SettlementJournalLines
@@ -146,14 +151,14 @@ export function CollectorPickupSettlementDetailModal({
         </section>
 
         <section className="mt-5 space-y-2" data-testid="pay-in-evidence-detail">
-          <h3 className="text-sm font-semibold text-[#18181b]">PAY-IN slip</h3>
-          <p className={`text-sm ${themeMuted}`}>
+          <h3 className={collectorPickupSettlementDetailSectionTitle}>PAY-IN slip</h3>
+          <p className={collectorPickupSettlementDetailStatus}>
             {formatPayInEvidenceStatusLabel(row)}
           </p>
           {row.payInEvidenceUrl && onPreviewPayInSlip ? (
             <button
               type="button"
-              className="text-sm text-[#2563eb] underline underline-offset-2 hover:text-[#1d4ed8]"
+              className={collectorPickupSettlementDetailVoucherLink}
               data-testid="pay-in-slip-preview-link"
               onClick={() => onPreviewPayInSlip(row)}
             >
@@ -163,8 +168,10 @@ export function CollectorPickupSettlementDetailModal({
         </section>
 
         <section className="mt-5 space-y-2" data-testid="deposit-settlement-detail">
-          <h3 className="text-sm font-semibold text-[#18181b]">Deposit posting</h3>
-          <p className={`text-sm ${themeMuted}`}>
+          <h3 className={collectorPickupSettlementDetailSectionTitle}>
+            PAY-IN / Deposit posting
+          </h3>
+          <p className={collectorPickupSettlementDetailStatus}>
             Status: {formatDepositSettlementStatus(row.depositStatus)}
           </p>
           <SettlementJournalLines
@@ -175,6 +182,13 @@ export function CollectorPickupSettlementDetailModal({
             onNavigateAway={onClose}
           />
         </section>
+
+        <details className={collectorPickupSettlementDetailTechnical}>
+          <summary>Technical reference</summary>
+          <p className="mt-2 font-mono text-[11px] leading-5" data-testid="collector-report-id-audit">
+            Collector report ID: {row.collectorReportId}
+          </p>
+        </details>
       </div>
     </div>
   )

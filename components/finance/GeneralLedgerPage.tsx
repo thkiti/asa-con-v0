@@ -1,34 +1,21 @@
 "use client"
 
-import Link from "next/link"
 import { useCallback, useState } from "react"
+import { GeneralLedgerListView } from "@/components/finance/GeneralLedgerListView"
+import { GeneralLedgerTAccountView } from "@/components/finance/GeneralLedgerTAccountView"
 import {
   downloadGeneralLedgerCsv,
   fetchGeneralLedger,
   type GeneralLedgerFilter,
 } from "@/lib/finance-ui/general-ledger"
-import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
-import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
-import {
-  FINANCE_REPORT_TITLES,
-  formatFinanceReportPeriodLabel,
-} from "@/lib/finance-ui/finance-report-display"
-import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
-import {
-  financeMemo,
-  financeNumber,
-  financeReportTable,
-  financeTableScroll,
-  financeTh,
-  financeThRight,
-  financeReportSection,
-  financeTextMuted,
-} from "@/lib/finance-ui/finance-visual-classes"
+import { GlAccountCombobox } from "@/components/finance/GlAccountCombobox"
 import { formatEntityShort } from "@/lib/legal-entity/display"
-import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type FilterMode = "period" | "dateRange"
+type ViewMode = "list" | "t-account"
+
+const GL_RETURN_TO = "/finance/reports/general-ledger"
 
 export function GeneralLedgerPage() {
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
@@ -41,44 +28,65 @@ export function GeneralLedgerPage() {
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const [accountCode, setAccountCode] = useState("")
+  const [accountName, setAccountName] = useState("")
+  const [viewMode, setViewMode] = useState<ViewMode>("list")
   const [result, setResult] = useState<GeneralLedgerResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const buildFilter = useCallback((): GeneralLedgerFilter => {
-    const base: GeneralLedgerFilter = {}
-    if (accountCode.trim()) {
-      base.accountCode = accountCode.trim()
-    }
-    if (filterMode === "period") {
-      return { ...base, periodKey: periodKey.trim() }
-    }
-    return { ...base, from: from.trim(), to: to.trim() }
-  }, [accountCode, filterMode, from, periodKey, to])
+  const buildFilter = useCallback(
+    (codeOverride?: string): GeneralLedgerFilter => {
+      const code = (codeOverride ?? accountCode).trim()
+      const base: GeneralLedgerFilter = {}
+      if (code) {
+        base.accountCode = code
+      }
+      if (filterMode === "period") {
+        return { ...base, periodKey: periodKey.trim() }
+      }
+      return { ...base, from: from.trim(), to: to.trim() }
+    },
+    [accountCode, filterMode, from, periodKey, to]
+  )
 
-  async function handleRefresh() {
-    if (!accountCode.trim()) {
-      setError("Account code is required")
+  const refreshLedger = useCallback(
+    async (codeOverride?: string) => {
+      const code = (codeOverride ?? accountCode).trim()
+      if (!code) {
+        setError("Account code is required")
+        setResult(null)
+        return
+      }
+      if (filterMode === "dateRange" && (!from.trim() || !to.trim())) {
+        setError("From and to dates are required for date range scope")
+        setResult(null)
+        return
+      }
+
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await fetchGeneralLedger(buildFilter(code))
+        setResult(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load general ledger")
+        setResult(null)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [accountCode, buildFilter, filterMode, from, to]
+  )
+
+  function handleAccountChange(code: string, name: string) {
+    setAccountCode(code)
+    setAccountName(name)
+    if (!code.trim()) {
       setResult(null)
+      setError(null)
       return
     }
-    if (filterMode === "dateRange" && (!from.trim() || !to.trim())) {
-      setError("From and to dates are required for date range scope")
-      setResult(null)
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchGeneralLedger(buildFilter())
-      setResult(data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load general ledger")
-      setResult(null)
-    } finally {
-      setLoading(false)
-    }
+    void refreshLedger(code)
   }
 
   function handleExport() {
@@ -106,16 +114,14 @@ export function GeneralLedgerPage() {
         </p>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">Account code</span>
-            <input
-              className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
-              placeholder="1100"
-              required
-              value={accountCode}
-              onChange={(e) => setAccountCode(e.target.value)}
-            />
-          </label>
+          <GlAccountCombobox
+            accountCode={accountCode}
+            accountName={accountName}
+            onAccountChange={handleAccountChange}
+            label="Account"
+            inputTestId="gl-account-combobox-input"
+            listTestId="gl-account-combobox-list"
+          />
 
           <fieldset className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">Scope</span>
@@ -149,6 +155,7 @@ export function GeneralLedgerPage() {
                 placeholder="2026-05"
                 value={periodKey}
                 onChange={(e) => setPeriodKey(e.target.value)}
+                data-testid="gl-period-key"
               />
             </label>
           ) : (
@@ -160,6 +167,7 @@ export function GeneralLedgerPage() {
                   className="rounded border border-zinc-300 px-2 py-1"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
+                  data-testid="gl-from-date"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -169,6 +177,7 @@ export function GeneralLedgerPage() {
                   className="rounded border border-zinc-300 px-2 py-1"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
+                  data-testid="gl-to-date"
                 />
               </label>
             </>
@@ -178,7 +187,8 @@ export function GeneralLedgerPage() {
             type="button"
             className="rounded bg-zinc-900 px-4 py-2 text-sm text-white disabled:opacity-50"
             disabled={loading}
-            onClick={() => void handleRefresh()}
+            onClick={() => void refreshLedger()}
+            data-testid="gl-refresh-button"
           >
             {loading ? "Loading…" : "Refresh"}
           </button>
@@ -187,6 +197,7 @@ export function GeneralLedgerPage() {
             className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
             disabled={!result}
             onClick={handleExport}
+            data-testid="gl-export-button"
           >
             Export CSV
           </button>
@@ -195,6 +206,7 @@ export function GeneralLedgerPage() {
             className="rounded border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50"
             disabled={!result}
             onClick={handlePrint}
+            data-testid="gl-print-button"
           >
             Print
           </button>
@@ -205,18 +217,29 @@ export function GeneralLedgerPage() {
 
       {result ? (
         <section className="general-ledger-report" aria-label="General ledger results">
-          <header className={`${financeReportSection} space-y-1`}>
-            <p className="text-sm text-zinc-500">
-              {formatEntityShort(result.filter.legalEntityCode)} •{" "}
-              {FINANCE_REPORT_TITLES.generalLedger}
-            </p>
-            <p className="text-sm text-zinc-600">
-              {formatFinanceReportPeriodLabel(result.filter)}
-            </p>
-            {result.filter.accountCode ? (
-              <p className="text-sm text-zinc-500">Account {result.filter.accountCode}</p>
-            ) : null}
-          </header>
+          <fieldset className="print:hidden mb-3 text-sm" data-testid="gl-view-mode">
+            <span className="mr-3 text-zinc-600">View</span>
+            <label className="mr-3 inline-flex items-center gap-1">
+              <input
+                type="radio"
+                name="glViewMode"
+                checked={viewMode === "list"}
+                onChange={() => setViewMode("list")}
+                data-testid="gl-view-list"
+              />
+              List
+            </label>
+            <label className="inline-flex items-center gap-1">
+              <input
+                type="radio"
+                name="glViewMode"
+                checked={viewMode === "t-account"}
+                onChange={() => setViewMode("t-account")}
+                data-testid="gl-view-t-account"
+              />
+              T-account
+            </label>
+          </fieldset>
 
           {result.accounts.length === 0 ? (
             <p className="text-sm text-zinc-500">No accounts in scope.</p>
@@ -225,81 +248,13 @@ export function GeneralLedgerPage() {
           {result.accounts.map((account) => (
             <section
               key={account.accountCode}
-              className={`${financeReportSection} general-ledger-account break-inside-avoid border-t border-zinc-300 pt-4`}
+              className="general-ledger-account break-inside-avoid"
             >
-              <header className="space-y-1">
-                <h2 className="text-lg font-medium text-zinc-900">
-                  <FinanceAccountDisplay
-                    accountCode={account.accountCode}
-                    accountName={account.accountName}
-                    data-testid={`gl-account-${account.accountCode}`}
-                  />
-                  <span className="ml-2 text-sm font-normal text-zinc-500">
-                    ({account.accountType})
-                  </span>
-                </h2>
-                <p className="text-sm text-zinc-600">
-                  Opening balance:{" "}
-                  <span className="tabular-nums font-medium text-zinc-900">
-                    {formatAmount(account.openingBalance)}
-                  </span>
-                  <span className="ml-3 text-zinc-500">
-                    Dr {formatAmount(account.openingDebit)} / Cr{" "}
-                    {formatAmount(account.openingCredit)}
-                  </span>
-                </p>
-              </header>
-
-              {account.transactions.length === 0 ? (
-                <p className="mt-3 text-sm text-zinc-500">No period transactions.</p>
+              {viewMode === "list" ? (
+                <GeneralLedgerListView account={account} returnTo={GL_RETURN_TO} />
               ) : (
-                <div className={`mt-3 ${financeTableScroll}`}>
-                  <table className={financeReportTable}>
-                    <thead>
-                      <tr>
-                        <th className={financeTh}>Date</th>
-                        <th className={financeTh}>Ref</th>
-                        <th className={financeTh}>Description</th>
-                        <th className={financeThRight}>Debit</th>
-                        <th className={financeThRight}>Credit</th>
-                        <th className={financeThRight}>Running Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {account.transactions.map((tx) => (
-                        <tr key={tx.journalLineId}>
-                          <td className={financeMemo}>{formatDateTime(tx.journalDate)}</td>
-                          <td className={financeMemo}>
-                            <div>{tx.entryNo}</div>
-                            {tx.sourceRef ? (
-                              <div className={financeTextMuted}>{tx.sourceRef}</div>
-                            ) : null}
-                          </td>
-                          <td className={financeMemo}>
-                            <Link
-                              href={buildFinanceJournalInquiryPath(
-                                tx.journalEntryId,
-                                "/finance/reports/general-ledger"
-                              )}
-                              className={`${themeLinkMuted} print:no-underline`}
-                            >
-                              {tx.description ?? tx.lineMemo ?? "Journal entry"}
-                            </Link>
-                          </td>
-                          <td className={financeNumber}>{formatAmount(tx.debit)}</td>
-                          <td className={financeNumber}>{formatAmount(tx.credit)}</td>
-                          <td className={financeNumber}>{formatAmount(tx.runningBalance)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <GeneralLedgerTAccountView account={account} returnTo={GL_RETURN_TO} />
               )}
-
-              <p className="mt-3 text-sm font-medium text-zinc-900">
-                Closing balance:{" "}
-                <span className="tabular-nums">{formatAmount(account.closingBalance)}</span>
-              </p>
             </section>
           ))}
         </section>

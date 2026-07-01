@@ -235,10 +235,13 @@ describe("PettyCashVoucherEditorPage edit POSTED", () => {
 })
 
 describe("PettyCashVoucherListPage", () => {
-  it("renders list with new PCV link", () => {
+  it("renders list with new PCV link and inquiry filter shell", () => {
     const html = renderToStaticMarkup(<PettyCashVoucherListPage />)
     expect(html).toContain('data-testid="petty-cash-voucher-list"')
+    expect(html).toContain('data-testid="petty-cash-voucher-actions"')
+    expect(html).toContain('data-testid="petty-cash-voucher-filters"')
     expect(html).toContain("/finance/petty-cash-vouchers/new")
+    expect(html).not.toContain("Legal entity")
   })
 })
 

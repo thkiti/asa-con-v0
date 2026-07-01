@@ -17,7 +17,7 @@ export default function PettyCashVouchersPage() {
           ← Daily Work
         </Link>
         <EntityContextPageHeading
-          title="Petty cash vouchers"
+          title="PETTY CASH VOUCHERS"
           className="mt-4 text-xl font-semibold"
         />
         <p className={financeAdminIntroClass}>

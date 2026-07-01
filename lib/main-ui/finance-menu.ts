@@ -124,9 +124,9 @@ function buildPrimaryFinanceMenuHubs(): Record<
         ),
         done(
           "collector-pickup-settlement",
-          "PAY • PAY-IN SLIP / COLLECTOR TICKET",
+          "COL • COLLECTOR PICKUP / PAY-IN DEPOSIT",
           "/finance/pos-settlement/collector-pickup",
-          "Pay-in / Collector"
+          "Collector settlement"
         ),
       ],
     },

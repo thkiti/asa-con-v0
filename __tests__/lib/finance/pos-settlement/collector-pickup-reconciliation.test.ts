@@ -180,6 +180,84 @@ describe("collector pickup settlement reconciliation", () => {
     expect(result.voucherNo).toBeTruthy()
   })
 
+  it("read query for posted COL returns linked voucher and Dr 1031 / Cr 1001 journal lines", async () => {
+    const base = createFinanceMockTx()
+    const { tx, state } = extendFinanceTxWithCollectorReport(base)
+    const createdAt = new Date("2026-06-26T10:00:00.000Z")
+    await seedOpenPeriod(tx, createdAt)
+    seedCollectorReport(state, {
+      id: "collector-report-0001",
+      collectNo: "COL-SH001-202606-0001",
+      createdAt,
+      report: collectReport({ grandTotal: 32060 }),
+    })
+    seedCollectorReport(state, {
+      id: "collector-report-0002",
+      collectNo: "COL-SH001-202606-0002",
+      createdAt: new Date("2026-06-26T10:28:23.762Z"),
+      report: collectReport({
+        collectNo: "COL-SH001-202606-0002",
+        grandTotal: 21410,
+        bangkokDateFrom: "2026-06-04",
+        bangkokDateTo: "2026-06-05",
+      }),
+    })
+
+    await postCollectorPickupSettlement({
+      tx: tx as never,
+      collectorReportId: "collector-report-0001",
+    })
+    await postCollectorPickupSettlement({
+      tx: tx as never,
+      collectorReportId: "collector-report-0002",
+    })
+
+    const first = await getCollectorPickupSettlementStatus(
+      tx as never,
+      "collector-report-0001"
+    )
+    const second = await getCollectorPickupSettlementStatus(
+      tx as never,
+      "collector-report-0002"
+    )
+
+    expect(first).toMatchObject({
+      collectNo: "COL-SH001-202606-0001",
+      status: "POSTED",
+      expectedAmount: "32060.00",
+      glDebitCashInTransit1031: "32060.00",
+      glCreditCashDrawer1001: "32060.00",
+      variance: "0.00",
+    })
+    expect(second).toMatchObject({
+      collectNo: "COL-SH001-202606-0002",
+      status: "POSTED",
+      expectedAmount: "21410.00",
+      glDebitCashInTransit1031: "21410.00",
+      glCreditCashDrawer1001: "21410.00",
+      variance: "0.00",
+    })
+
+    for (const result of [first, second]) {
+      expect(result.voucherId).toBeTruthy()
+      expect(result.voucherNo).toMatch(/^V-2026-06-/)
+      const voucher = state.vouchers.find((row) => row.id === result.voucherId)
+      expect(voucher?.refType).toBe(FINANCE_REF_TYPES.POS_SETTLEMENT_COLLECTOR_PICKUP)
+      const journal = state.journalEntries.find((row) => row.voucherId === result.voucherId)
+      expect(journal).toBeTruthy()
+      const lines = state.journalEntryLines.filter(
+        (line) => line.journalEntryId === journal?.id
+      )
+      const codes = lines.map(
+        (line) => state.glAccounts.find((account) => account.id === line.glAccountId)?.code
+      )
+      expect(codes.sort()).toEqual([
+        DEFAULT_ACCOUNT_CODES.CASH,
+        DEFAULT_ACCOUNT_CODES.CASH_IN_TRANSIT_COLLECTOR,
+      ])
+    }
+  })
+
   it("returns VARIANCE when Dr 1031 does not match expected amount", async () => {
     const base = createFinanceMockTx()
     const { tx, state } = extendFinanceTxWithCollectorReport(base)
@@ -418,5 +496,56 @@ describe("collector pickup settlement reconciliation", () => {
     expect(results).toHaveLength(1)
     expect(results[0]?.collectorReportId).toBe("collector-report-collect")
     expect(results[0]?.mode).toBe("COLLECT")
+  })
+
+  it("lists SH001 collector report for June 2026 period", async () => {
+    const base = createFinanceMockTx()
+    const { tx, state } = extendFinanceTxWithCollectorReport(base)
+    const createdAt = new Date("2026-06-26T10:00:00.000Z")
+    seedCollectorReport(state, { createdAt })
+
+    const results = await listCollectorPickupSettlementStatuses(tx as never, {
+      branchId: "branch-1",
+      from: "2026-06-01",
+      to: "2026-06-30",
+    })
+
+    expect(results).toHaveLength(1)
+    expect(results[0]).toMatchObject({
+      collectNo: "COL-SH001-202606-0001",
+      branchCode: "SH001",
+      branchName: "Chidlom",
+    })
+  })
+
+  it("lists collector reports when DocumentArchiveLink table is unavailable", async () => {
+    const base = createFinanceMockTx()
+    const { tx, state } = extendFinanceTxWithCollectorReport(base)
+    const createdAt = new Date("2026-06-26T10:00:00.000Z")
+    seedCollectorReport(state, { createdAt })
+
+    const txWithMissingArchiveTable = {
+      ...tx,
+      documentArchiveLink: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError(
+            'The table `public.DocumentArchiveLink` does not exist in the current database.',
+            { code: "P2021", clientVersion: "test" }
+          )
+        ),
+      },
+    }
+
+    const results = await listCollectorPickupSettlementStatuses(
+      txWithMissingArchiveTable as never,
+      {
+        from: "2026-06-01",
+        to: "2026-06-30",
+      }
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0]?.collectNo).toBe("COL-SH001-202606-0001")
+    expect(txWithMissingArchiveTable.documentArchiveLink.findMany).toHaveBeenCalled()
   })
 })

@@ -1,6 +1,6 @@
 "use client"
 
-import { formatPreviewLabel } from "@/components/auth/LoginPreviewInput"
+import { formatAccountDisplay } from "@/lib/finance-ui/format-account"
 import { themeInput } from "@/lib/theme/theme-classes"
 import type { KeyboardEvent } from "react"
 
@@ -35,10 +35,10 @@ export function MjvLineAccountInput({
     if (hasError && accountError) {
       displayValue =
         accountCode.trim().length > 0
-          ? formatPreviewLabel(accountCode, accountError)
+          ? formatAccountDisplay(accountCode, accountError)
           : accountError
     } else if (hasSuccess) {
-      displayValue = formatPreviewLabel(accountCode, accountName)
+      displayValue = formatAccountDisplay(accountCode, accountName)
     }
   }
 
@@ -87,7 +87,7 @@ export function MjvLineAccountInput({
       ) : null}
       {hasSuccess ? (
         <span className="sr-only" data-testid="line-account-name">
-          {formatPreviewLabel(accountCode, accountName)}
+          {formatAccountDisplay(accountCode, accountName)}
         </span>
       ) : (
         <span className="sr-only" data-testid="line-account-name" />

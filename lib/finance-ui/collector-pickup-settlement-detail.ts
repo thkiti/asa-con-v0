@@ -83,3 +83,23 @@ export function formatPayInEvidenceStatusLabel(
   if (row.payInSlipMissingWarning) return "Missing (deposit posted without slip)"
   return "Not uploaded"
 }
+
+const SETTLEMENT_ACCOUNT_LABELS: Record<string, string> = {
+  "1001": "1001 Cash in Drawer",
+  "1021": "1021 Bank",
+  "1031": "1031 Cash in Transit",
+}
+
+export function formatSettlementAccountLabel(accountCode: string): string {
+  const code = accountCode.trim()
+  return SETTLEMENT_ACCOUNT_LABELS[code] ?? code
+}
+
+export function formatSettlementJournalLine(
+  side: "Dr" | "Cr",
+  accountCode: string,
+  amount: string
+): string {
+  const label = formatSettlementAccountLabel(accountCode)
+  return `${side} ${label}    ${amount}`
+}

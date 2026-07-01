@@ -70,13 +70,13 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain("INV • INVOICE")
     expect(html).toContain("REV • RECEIVABLE VOUCHER")
     expect(html).toContain("PCV • PETTY CASH")
-    expect(html).toContain("PAY • PAY-IN SLIP / COLLECTOR TICKET")
+    expect(html).toContain("COL • COLLECTOR PICKUP / PAY-IN DEPOSIT")
     expect(html).toContain("Manual Journal")
     expect(html).toContain("Payment Voucher")
     expect(html).toContain("Invoice")
     expect(html).toContain("Receivable Voucher")
     expect(html).toContain("Petty Cash")
-    expect(html).toContain("Pay-in / Collector")
+    expect(html).toContain("Collector settlement")
     expect(html).toContain(
       "Create and process finance documents — MJV, PAV, INV, REV, and PCV are live."
     )
@@ -114,14 +114,14 @@ describe("FinanceMenuHubView", () => {
     expect(titleMatches).toContain("INV • INVOICE")
     expect(titleMatches).toContain("REV • RECEIVABLE VOUCHER")
     expect(titleMatches).toContain("PCV • PETTY CASH")
-    expect(titleMatches).toContain("PAY • PAY-IN SLIP / COLLECTOR TICKET")
+    expect(titleMatches).toContain("COL • COLLECTOR PICKUP / PAY-IN DEPOSIT")
 
     expect(subtitleMatches).toContain("Manual Journal")
     expect(subtitleMatches).toContain("Payment Voucher")
     expect(subtitleMatches).toContain("Invoice")
     expect(subtitleMatches).toContain("Receivable Voucher")
     expect(subtitleMatches).toContain("Petty Cash")
-    expect(subtitleMatches).toContain("Pay-in / Collector")
+    expect(subtitleMatches).toContain("Collector settlement")
 
     expect(html.indexOf("MJV • MANUAL JOURNAL VOUCHER")).toBeLessThan(
       html.indexOf("Manual Journal")

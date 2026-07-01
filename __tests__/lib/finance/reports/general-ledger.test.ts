@@ -505,6 +505,9 @@ describe("getGeneralLedger", () => {
       journalLineId: "jline-journal-ref-1",
       entryNo: "V-REF-001",
       sourceRef: "MJ-2026-001",
+      sourceRefType: "MANUAL_JOURNAL",
+      sourceRefId: "journal-ref",
+      voucherId: "voucher-journal-ref",
       signedMovement: "100",
       runningBalance: "100",
     })

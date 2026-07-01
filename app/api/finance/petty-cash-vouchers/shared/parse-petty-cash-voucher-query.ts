@@ -12,6 +12,7 @@ export type PettyCashVoucherListQuery = {
   status?: PettyCashVoucherStatus
   branchId?: string
   search?: string
+  postingState?: "posted" | "unposted"
   dateFrom?: Date
   dateTo?: Date
   limit?: number
@@ -33,6 +34,11 @@ export function parsePettyCashVoucherListQuery(
 
   const search = params.get("search")?.trim()
   if (search) filter.search = search
+
+  const postingStateRaw = params.get("postingState")?.trim().toLowerCase()
+  if (postingStateRaw === "posted" || postingStateRaw === "unposted") {
+    filter.postingState = postingStateRaw
+  }
 
   const dateFrom = params.get("dateFrom")?.trim()
   if (dateFrom) filter.dateFrom = new Date(dateFrom)

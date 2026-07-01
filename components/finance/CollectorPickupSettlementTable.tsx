@@ -88,10 +88,12 @@ function DepositWorkflowAction({
   row,
   isDepositPosting,
   onDepositPost,
+  onViewDetail,
 }: {
   row: CollectorPickupSettlementReconciliation
   isDepositPosting: boolean
   onDepositPost?: (collectorReportId: string) => void
+  onViewDetail?: (row: CollectorPickupSettlementReconciliation) => void
 }) {
   const showDepositPost = shouldShowDepositPostButton({
     pickupStatus: row.status,
@@ -107,13 +109,26 @@ function DepositWorkflowAction({
   })
 
   if (row.depositStatus === "POSTED") {
+    const postedBadge = (
+      <span className={`${themeBadgeSuccess} px-1.5 py-0.5 text-[10px]`}>POSTED</span>
+    )
+
+    if (!onViewDetail) {
+      return (
+        <span data-testid={`deposit-posted-${row.collectorReportId}`}>{postedBadge}</span>
+      )
+    }
+
     return (
-      <span
-        className={`${themeBadgeSuccess} px-1.5 py-0.5 text-[10px]`}
+      <button
+        type="button"
+        className="inline-flex items-center border-0 bg-transparent p-0"
         data-testid={`deposit-posted-${row.collectorReportId}`}
+        title="View settlement detail"
+        onClick={() => onViewDetail(row)}
       >
-        POSTED
-      </span>
+        {postedBadge}
+      </button>
     )
   }
 
@@ -274,6 +289,7 @@ export function CollectorPickupSettlementTable({
                       row={row}
                       isDepositPosting={isDepositPosting}
                       onDepositPost={onDepositPost}
+                      onViewDetail={onViewDetail}
                     />
                   </div>
                 </td>

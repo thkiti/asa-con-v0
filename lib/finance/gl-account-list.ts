@@ -54,10 +54,20 @@ function buildWhere(filter: GlAccountListFilter): Prisma.GlAccountWhereInput {
 
   if (filter.search?.trim()) {
     const q = filter.search.trim()
-    where.OR = [
-      { code: { contains: q, mode: "insensitive" } },
-      { name: { contains: q, mode: "insensitive" } },
-    ]
+    if (/^\d+$/.test(q)) {
+      where.code = { startsWith: q }
+    } else if (/[A-Za-z\u0E00-\u0E7F]/.test(q)) {
+      const clauses: Prisma.GlAccountWhereInput[] = [
+        { name: { contains: q, mode: "insensitive" } },
+      ]
+      const digitPrefix = q.match(/^\d+/)?.[0]
+      if (digitPrefix) {
+        clauses.push({ code: { startsWith: digitPrefix } })
+      }
+      where.OR = clauses
+    } else {
+      where.OR = [{ name: { contains: q, mode: "insensitive" } }]
+    }
   }
 
   return where

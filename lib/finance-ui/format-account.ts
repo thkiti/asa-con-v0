@@ -17,3 +17,6 @@ export function formatAccountDisplay(
   if (!name) return code
   return `${code}${ACCOUNT_DISPLAY_SEPARATOR}${name}`
 }
+
+/** Alias for finance account plain-text display. */
+export const formatFinanceAccountDisplay = formatAccountDisplay

@@ -17,7 +17,7 @@ export default function InvoiceVouchersPage() {
           ← Daily Work
         </Link>
         <EntityContextPageHeading
-          title="Invoice vouchers"
+          title="INVOICES"
           className="mt-4 text-xl font-semibold"
         />
         <p className={financeAdminIntroClass}>

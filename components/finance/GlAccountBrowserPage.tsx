@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
+import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
   downloadGlAccountsExport,
   fetchGlAccounts,
@@ -187,8 +188,7 @@ export function GlAccountBrowserPage() {
         <table className="min-w-full text-left text-sm">
           <thead className="bg-zinc-50 text-zinc-600">
             <tr>
-              <th className="px-3 py-2">Code</th>
-              <th className="px-3 py-2">Name</th>
+              <th className="px-3 py-2">Account</th>
               <th className="px-3 py-2">Type</th>
               <th className="px-3 py-2">Parent</th>
               <th className="px-3 py-2">Active</th>
@@ -198,12 +198,15 @@ export function GlAccountBrowserPage() {
           <tbody>
             {accounts.map((row) => (
               <tr key={row.id} className="border-t border-zinc-100">
-                <td className="px-3 py-2 font-mono">
-                  {filter.view === "tree" && row.depth
-                    ? `${"—".repeat(row.depth)} ${row.code}`
-                    : row.code}
+                <td className="px-3 py-2">
+                  {filter.view === "tree" && row.depth ? (
+                    <span style={{ paddingLeft: `${(row.depth ?? 0) * 0.75}rem` }}>
+                      <FinanceAccountDisplay accountCode={row.code} accountName={row.name} />
+                    </span>
+                  ) : (
+                    <FinanceAccountDisplay accountCode={row.code} accountName={row.name} />
+                  )}
                 </td>
-                <td className="px-3 py-2">{row.name}</td>
                 <td className="px-3 py-2">{row.accountType}</td>
                 <td className="px-3 py-2 font-mono text-zinc-500">
                   {row.parentCode ?? "—"}
