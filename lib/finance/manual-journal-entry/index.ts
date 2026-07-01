@@ -35,7 +35,9 @@ export {
 } from "./manual-journal-entry-post"
 export {
   regenerateManualJournalEntryArchivedPdf,
+  deleteManualJournalEntryArchivedPdf,
   type RegenerateManualJournalEntryArchivedPdfResult,
+  type DeleteManualJournalEntryArchivedPdfResult,
 } from "./manual-journal-entry-pdf-repair"
 export {
   attachManualJournalEntryPdfFromSnapshot,

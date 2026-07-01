@@ -7,7 +7,9 @@ const mjv260001Snapshot: ManualJournalEntryPdfSnapshot = {
   entryNo: "MJV-260001",
   entryType: "MANUAL",
   entryTypeLabel: "Manual Journal Voucher",
-  branchId: "branch-1",
+  branchId: "4778631f-a86c-45c4-82cf-09520087ee1a",
+  branchCode: "HO999",
+  branchName: "Head Office",
   legalEntityCode: "AS",
   entryDate: "2026-06-14",
   description: "Month-end accrual",
@@ -39,11 +41,16 @@ const mjv260001Snapshot: ManualJournalEntryPdfSnapshot = {
 
 describe("buildManualJournalEntryPdfDocumentHtml", () => {
   it("uses FinanceVoucherPrintSheet markup for archived PDF generation", async () => {
-    const html = await buildManualJournalEntryPdfDocumentHtml({ snapshot: mjv260001Snapshot })
+    const html = await buildManualJournalEntryPdfDocumentHtml({
+      snapshot: mjv260001Snapshot,
+      branchLabel: "HO999 • Head Office",
+    })
 
     expect(html).toContain('data-testid="finance-voucher-print-sheet"')
     expect(html).toContain('data-testid="finance-document-header"')
     expect(html).toContain("MANUAL JOURNAL VOUCHER")
+    expect(html).toContain("HO999 • Head Office")
+    expect(html).not.toContain("4778631f-a86c-45c4-82cf-09520087ee1a")
     expect(html).toContain("MJV-260001")
     expect(html).toContain(">Account<")
     expect(html).toContain(">Debit<")
@@ -56,5 +63,25 @@ describe("buildManualJournalEntryPdfDocumentHtml", () => {
     expect(html).toContain("@font-face")
     expect(html).toContain("THSarabunNew")
     expect(html).not.toContain("Line  Account   Name")
+    expect(html).toContain("@page")
+    expect(html).toContain("size: A4")
+    expect(html).toMatch(/@media print[\s\S]*font-size:\s*14pt/)
+    expect(html).not.toContain("1120px")
+    expect(html).not.toContain("finance-voucher-print-root--embedded")
+  })
+
+  it("never emits branch UUID when snapshot fields are corrupt", async () => {
+    const html = await buildManualJournalEntryPdfDocumentHtml({
+      snapshot: {
+        ...mjv260001Snapshot,
+        branchId: "4778631f-a86c-45c4-82cf-09520087ee1a",
+        branchCode: "4778631f-a86c-45c4-82cf-09520087ee1a",
+        branchName: null,
+      },
+      branchLabel: "HO999 • Head Office",
+    })
+
+    expect(html).toContain("HO999 • Head Office")
+    expect(html).not.toContain("4778631f-a86c-45c4-82cf-09520087ee1a")
   })
 })

@@ -1,4 +1,5 @@
-const FINANCE_VOUCHER_PDF_MARGIN_MM = "12mm"
+/** A4 at 96dpi — matches browser print page width for layout scale. */
+const FINANCE_VOUCHER_PDF_VIEWPORT = { width: 794, height: 1123 } as const
 
 /** Render standalone finance voucher HTML to A4 PDF bytes (same layout as browser print). */
 export async function renderFinanceVoucherPrintHtmlToPdf(
@@ -9,17 +10,19 @@ export async function renderFinanceVoucherPrintHtmlToPdf(
   const browser = await chromium.launch({ headless: true })
   try {
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: "networkidle" })
     await page.emulateMedia({ media: "print" })
+    await page.setViewportSize(FINANCE_VOUCHER_PDF_VIEWPORT)
+    await page.setContent(html, { waitUntil: "networkidle" })
 
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
+      preferCSSPageSize: true,
       margin: {
-        top: FINANCE_VOUCHER_PDF_MARGIN_MM,
-        bottom: FINANCE_VOUCHER_PDF_MARGIN_MM,
-        left: FINANCE_VOUCHER_PDF_MARGIN_MM,
-        right: FINANCE_VOUCHER_PDF_MARGIN_MM,
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
       },
     })
 

@@ -99,6 +99,12 @@ describe("JournalEntryInquiryView", () => {
     expect(html).not.toContain('data-testid="journal-inquiry-dashboard-title"')
     expect(html).not.toContain("<h2>Journal lines</h2>")
     expect(html).not.toMatch(/journal-inquiry-lineage[^>]*rounded border border-zinc-200 p-4/)
+    expect(html).toContain('data-testid="journal-inquiry-lines-table"')
+    expect(html).toContain("w-full max-w-full")
+    expect(html).not.toContain("max-w-3xl")
+    expect(html).not.toContain("max-w-4xl")
+    expect(html).not.toContain("max-w-[720px]")
+    expect(html).not.toContain("max-w-[800px]")
   })
 
   it("falls back to operational parent when returnTo is absent", () => {
@@ -128,6 +134,21 @@ describe("JournalEntryInquiryView", () => {
     expect(html).toContain('data-testid="journal-inquiry-dashboard-title"')
     expect(html).toContain("Journal inquiry")
     expect(html).toContain("rounded border border-zinc-200 p-4")
+  })
+})
+
+describe("posted GL journal page shell", () => {
+  const fs = require("fs") as typeof import("fs")
+  const path = require("path") as typeof import("path")
+  const ROOT = path.join(__dirname, "..", "..", "..")
+
+  it("uses financeDocumentPageClass on journal entry detail route", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app", "(main)", "finance", "journal-entries", "[id]", "page.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("financeDocumentPageClass")
+    expect(source).not.toContain("financeAdminPageClass")
   })
 })
 

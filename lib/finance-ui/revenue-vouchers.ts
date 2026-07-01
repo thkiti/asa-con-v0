@@ -18,6 +18,7 @@ export type RevenueVoucherListFilterInput = Omit<
 > & {
   dateFrom?: string
   dateTo?: string
+  postingState?: "posted" | "unposted"
 }
 
 export type CreateRevenueVoucherDraftPayload = {
@@ -67,6 +68,7 @@ function buildListQuery(filter: RevenueVoucherListFilterInput = {}): string {
   if (filter.status) params.set("status", filter.status)
   if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
   if (filter.search?.trim()) params.set("search", filter.search.trim())
+  if (filter.postingState) params.set("postingState", filter.postingState)
   if (filter.dateFrom?.trim()) params.set("dateFrom", filter.dateFrom.trim())
   if (filter.dateTo?.trim()) params.set("dateTo", filter.dateTo.trim())
   if (filter.limit != null) params.set("limit", String(filter.limit))

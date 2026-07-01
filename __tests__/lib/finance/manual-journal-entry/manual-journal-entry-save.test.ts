@@ -70,6 +70,27 @@ function createSaveMockTx(initialAccounts: GlAccountRow[]) {
             entry.entryDate < where.entryDate.lt
         ).length
       }),
+      findMany: jest.fn(async ({ where, select }: {
+        where: {
+          legalEntityCode: string
+          entryType: string
+          entryDate: { gte: Date; lt: Date }
+          entryNo?: { startsWith: string }
+        }
+        select: { entryNo: true }
+      }) => {
+        return entries
+          .filter(
+            (entry) =>
+              entry.legalEntityCode === where.legalEntityCode &&
+              entry.entryType === where.entryType &&
+              entry.entryDate >= where.entryDate.gte &&
+              entry.entryDate < where.entryDate.lt &&
+              (!where.entryNo?.startsWith ||
+                entry.entryNo.startsWith(where.entryNo.startsWith))
+          )
+          .map((entry) => ({ entryNo: entry.entryNo }))
+      }),
       create: jest.fn(async ({ data, include }: {
         data: {
           entryNo: string
@@ -91,6 +112,18 @@ function createSaveMockTx(initialAccounts: GlAccountRow[]) {
         }
         include?: { lines: boolean }
       }) => {
+        const duplicate = entries.some(
+          (entry) =>
+            entry.legalEntityCode === data.legalEntityCode &&
+            entry.entryNo === data.entryNo
+        )
+        if (duplicate) {
+          throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+            code: "P2002",
+            clientVersion: "test",
+          })
+        }
+
         const id = nextId("entry")
         const createdAt = new Date("2026-06-01")
         const entry: ManualJournalEntryWithLines = {
@@ -437,5 +470,119 @@ describe("manual-journal-entry-save", () => {
         lines: [{ accountCode: "1100", debit: 10, credit: 0 }],
       })
     ).rejects.toMatchObject({ code })
+  })
+
+  it("allows ASAS to use MJV-260001 when ASAD already has MJV-260001", async () => {
+    const { tx, entries } = createSaveMockTx(defaultAccounts)
+    entries.push({
+      id: "asad-entry",
+      entryNo: "MJV-260001",
+      entryType: "MANUAL",
+      status: "POSTED",
+      branchId: "branch-ad",
+      legalEntityCode: "AD",
+      entryDate,
+      description: "ASAD opening",
+      refNo: null,
+      createdByStaffId: "staff-ad",
+      submittedAt: null,
+      submittedByStaffId: null,
+      confirmedAt: null,
+      confirmedByStaffId: null,
+      postedAt: null,
+      postedByStaffId: null,
+      cancelledAt: null,
+      cancelledByStaffId: null,
+      cancelReason: null,
+      postedVoucherId: null,
+      postedJournalEntryId: null,
+      reversalJournalEntryId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lines: [],
+    })
+
+    const created = await createManualJournalEntryDraft({
+      tx: tx as never,
+      branchId: "branch-as",
+      legalEntityCode: "AS",
+      entryDate: new Date("2026-01-01T12:00:00.000Z"),
+      entryType: "MANUAL",
+      createdByStaffId: "staff-as",
+      lines: [{ accountCode: "1100", debit: 100, credit: 0 }],
+    })
+
+    expect(created.entryNo).toBe("MJV-260001")
+    expect(created.legalEntityCode).toBe("AS")
+    expect(entries.find((entry) => entry.id === "asad-entry")?.entryNo).toBe("MJV-260001")
+  })
+
+  it("advances ASAS sequence when the same legal entity already has the candidate number", async () => {
+    const { tx, entries } = createSaveMockTx(defaultAccounts)
+    entries.push({
+      id: "as-entry-1",
+      entryNo: "MJV-260001",
+      entryType: "MANUAL",
+      status: "POSTED",
+      branchId: "branch-as",
+      legalEntityCode: "AS",
+      entryDate: new Date("2026-01-01T12:00:00.000Z"),
+      description: null,
+      refNo: null,
+      createdByStaffId: "staff-as",
+      submittedAt: null,
+      submittedByStaffId: null,
+      confirmedAt: null,
+      confirmedByStaffId: null,
+      postedAt: null,
+      postedByStaffId: null,
+      cancelledAt: null,
+      cancelledByStaffId: null,
+      cancelReason: null,
+      postedVoucherId: null,
+      postedJournalEntryId: null,
+      reversalJournalEntryId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lines: [],
+    })
+
+    const created = await createManualJournalEntryDraft({
+      tx: tx as never,
+      branchId: "branch-as",
+      legalEntityCode: "AS",
+      entryDate: new Date("2026-01-01T12:00:00.000Z"),
+      entryType: "MANUAL",
+      createdByStaffId: "staff-as",
+      lines: [{ accountCode: "1100", debit: 50, credit: 0 }],
+    })
+
+    expect(created.entryNo).toBe("MJV-260002")
+  })
+
+  it("returns a friendly allocation error after repeated entryNo collisions", async () => {
+    const { tx } = createSaveMockTx(defaultAccounts)
+    tx.manualJournalEntry.create.mockImplementation(async () => {
+      throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      })
+    })
+
+    await expect(
+      createManualJournalEntryDraft({
+        tx: tx as never,
+        branchId: "branch-as",
+        legalEntityCode: "AS",
+        entryDate,
+        entryType: "MANUAL",
+        createdByStaffId: "staff-as",
+        lines: [{ accountCode: "1100", debit: 10, credit: 0 }],
+      })
+    ).rejects.toMatchObject({
+      code: ManualJournalEntryErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED,
+      message:
+        "Could not allocate a new manual journal number for ASAS. Please retry. If the problem continues, contact admin.",
+    })
   })
 })

@@ -101,6 +101,7 @@ function buildWhere(filter: ManualJournalEntryListFilter): Prisma.ManualJournalE
 type EntryWithLines = Awaited<
   ReturnType<ManualJournalEntryReadPrisma["manualJournalEntry"]["findFirst"]>
 > & {
+  branch: { code: string; name: string }
   lines: Array<{
     id: string
     lineNo: number
@@ -135,6 +136,8 @@ function mapEntry(
     entryType: entry.entryType,
     status: entry.status,
     branchId: entry.branchId,
+    branchCode: entry.branch.code,
+    branchName: entry.branch.name,
     legalEntityCode: entry.legalEntityCode,
     entryDate: entry.entryDate.toISOString(),
     description: entry.description,
@@ -204,6 +207,8 @@ function mapListItem(
     entryType: entry.entryType,
     status: entry.status,
     branchId: entry.branchId,
+    branchCode: null,
+    branchName: null,
     legalEntityCode: entry.legalEntityCode,
     entryDate: entry.entryDate.toISOString(),
     description: entry.description,
@@ -276,6 +281,7 @@ export async function getManualJournalEntryById(
   const entry = await prisma.manualJournalEntry.findFirst({
     where: { id, legalEntityCode },
     include: {
+      branch: { select: { code: true, name: true } },
       lines: {
         orderBy: { lineNo: "asc" },
         include: {

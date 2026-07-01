@@ -18,6 +18,8 @@ function baseEntry(overrides: Partial<ManualJournalEntryRead> = {}): ManualJourn
     entryType: "MANUAL",
     status: "POSTED",
     branchId: "branch-1",
+    branchCode: "HO999",
+    branchName: "Head Office",
     legalEntityCode: "AS",
     entryDate: "2026-06-14T12:00:00.000Z",
     description: "Month-end accrual",
@@ -69,13 +71,11 @@ function baseEntry(overrides: Partial<ManualJournalEntryRead> = {}): ManualJourn
 
 describe("finance-voucher-print", () => {
   it("maps saved manual journal entry to print model without recalculation path", () => {
-    const model = buildFinanceVoucherPrintModelFromManualJournalEntry(baseEntry(), {
-      branchLabel: "HO999 — Head Office",
-    })
+    const model = buildFinanceVoucherPrintModelFromManualJournalEntry(baseEntry())
 
     expect(model.documentTypeCode).toBe("MJV")
     expect(model.documentNo).toBe("MJV-260001")
-    expect(model.branchLabel).toBe("HO999 — Head Office")
+    expect(model.branchLabel).toBe("HO999 • Head Office")
     expect(model.reference).toBe("REF-100")
     expect(model.description).toBe("Month-end accrual")
     expect(model.totalDebit).toBe("100")
@@ -94,6 +94,19 @@ describe("finance-voucher-print", () => {
     )
     expect(model.documentTypeCode).toBe("OPB")
     expect(model.documentTypeTitle).toBe("OPENING BALANCE")
+  })
+
+  it("never uses branchId UUID as branch label", () => {
+    const model = buildFinanceVoucherPrintModelFromManualJournalEntry(
+      baseEntry({
+        branchCode: null,
+        branchName: null,
+        branchId: "4778631f-a86c-45c4-82cf-09520087ee1a",
+      })
+    )
+
+    expect(model.branchLabel).toBe("—")
+    expect(model.branchLabel).not.toContain("4778631f")
   })
 })
 

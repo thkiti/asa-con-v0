@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
+import { FinanceDocumentSummaryRow } from "@/components/finance/FinanceDocumentSummaryRow"
 import { FinanceVoucherPostedPrintView } from "@/components/finance/FinanceVoucherPostedPrintView"
 import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
+import { formatFinanceBranchLabel } from "@/lib/finance-ui/finance-branch-display"
+import { financePostedDocumentScreenProps } from "@/lib/finance-ui/finance-posted-document-layout"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
 import { formatAmount } from "@/lib/finance-ui/format"
 import { formatThaiBahtAmountInWords } from "@/lib/finance-ui/format-thai-baht-words"
@@ -251,8 +254,12 @@ export function InvoiceVoucherEditorPage({
       if (mode === "create") {
         setBranchId(session.branchId)
       }
-      const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
-      setBranchLabel(label || session.branchId)
+      setBranchLabel(
+        formatFinanceBranchLabel({
+          branchCode: session.branchCode,
+          branchName: session.branchName,
+        })
+      )
     })
   }, [mode])
 
@@ -524,24 +531,32 @@ export function InvoiceVoucherEditorPage({
   }
 
   return (
-    <div className="space-y-4" data-testid="invoice-voucher-editor">
+    <div className="w-full space-y-4" data-testid="invoice-voucher-editor">
       {isPosted && entry && voucherPrintModel ? (
-        <FinanceVoucherPostedPrintView
-          model={voucherPrintModel}
-          entryType={INVOICE_VOUCHER_ENTRY_TYPE}
-          legalEntityCode={legalEntityCode}
-          entryDate={invoiceDate}
-          description={description}
-          listHref={listHref}
-          listBackLabel="Back to invoice vouchers"
-          postedJournalHref={postedJournalHref}
-          disabled={busyAction !== null}
-          archive={{
-            entryId: entry.id,
-            entryNo: documentNo,
-            pdfSnapshotReady: false,
-          }}
-        />
+        <>
+          <FinanceDocumentSummaryRow
+            documentNo={documentNo}
+            entryDate={invoiceDate}
+            status={entry.status}
+          />
+          <FinanceVoucherPostedPrintView
+            model={voucherPrintModel}
+            entryType={INVOICE_VOUCHER_ENTRY_TYPE}
+            legalEntityCode={legalEntityCode}
+            entryDate={invoiceDate}
+            description={description}
+            listHref={listHref}
+            listBackLabel="Invoice vouchers"
+            postedJournalHref={postedJournalHref}
+            disabled={busyAction !== null}
+            {...financePostedDocumentScreenProps}
+            archive={{
+              entryId: entry.id,
+              entryNo: documentNo,
+              pdfSnapshotReady: false,
+            }}
+          />
+        </>
       ) : isCancelled && entry ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">

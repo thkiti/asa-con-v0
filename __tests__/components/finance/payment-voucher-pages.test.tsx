@@ -204,15 +204,28 @@ function baseEntry(overrides: Record<string, unknown> = {}) {
 }
 
 describe("PaymentVoucherListPage", () => {
-  it("renders list filters, search, and entry link", () => {
+  it("renders inquiry filters, actions above filters, and entry link", () => {
     const html = renderToStaticMarkup(<PaymentVoucherListPage />)
     expect(html).toContain('data-testid="payment-voucher-list"')
-    expect(html).toContain("filter-search")
-    expect(html).toContain("filter-status")
-    expect(html).toContain("filter-legal-entity")
+    expect(html).toContain('data-testid="payment-voucher-filter-period"')
+    expect(html).toContain('data-testid="payment-voucher-more-filter"')
+    expect(html).toContain('data-testid="payment-voucher-filter-no"')
+    expect(html).toContain('data-testid="filter-status"')
+    expect(html).toContain('data-testid="payment-voucher-filter-post"')
+    expect(html).toContain('data-testid="payment-voucher-search"')
+    expect(html).toContain('data-testid="payment-voucher-clear"')
+    expect(html).toContain('data-testid="new-payment-voucher"')
+    expect(html).toContain('data-testid="payment-voucher-refresh"')
+    expect(html).not.toContain('data-testid="filter-legal-entity"')
+    expect(html).not.toContain("Legal entity")
+    expect(html).not.toContain('data-testid="filter-search"')
+    expect(html).toContain('placeholder="PAV-…"')
     expect(html).toContain("Loading payment vouchers")
     expect(html).toContain("/finance/payment-vouchers/new")
     expect(html).toContain("New PAV")
+    expect(html.indexOf('data-testid="payment-voucher-actions"')).toBeLessThan(
+      html.indexOf('data-testid="payment-voucher-filters"')
+    )
   })
 })
 
@@ -349,7 +362,7 @@ describe("PaymentVoucherEditorPage edit by status", () => {
     expect(html).not.toContain('data-testid="action-confirm"')
   })
 
-  it("renders POSTED print sheet without archived PDF panel", () => {
+  it("renders POSTED print sheet with MJV-style compact actions", () => {
     const html = renderToStaticMarkup(
       <PaymentVoucherEditorPage
         mode="edit"
@@ -368,14 +381,21 @@ describe("PaymentVoucherEditorPage edit by status", () => {
     )
     expect(html).toContain('data-testid="finance-voucher-print-root"')
     expect(html).toContain('data-testid="finance-voucher-print-sheet"')
-    expect(html).toContain('data-testid="action-print-out"')
-    expect(html).toContain('data-testid="action-upload-pdf"')
+    expect(html).toContain('data-testid="finance-document-summary-row"')
+    expect(html).toContain('data-testid="posted-document-sticky-bar"')
     expect(html).toContain("Payee")
     expect(html).toContain("Pay from")
     expect(html).toContain("posted-journal-link")
-    expect(html).not.toContain("finance-legacy-pdf-snapshot")
+    expect(html).not.toContain('data-testid="action-print-out"')
+    expect(html).not.toContain('data-testid="action-save-pdf"')
+    expect(html).not.toContain('data-testid="action-upload-pdf"')
+    expect(html).not.toContain('data-testid="action-download-pdf"')
+    expect(html).not.toContain('data-testid="finance-legacy-pdf-snapshot"')
+    expect(html).toContain('data-testid="document-archive-missing-panel"')
     expect(html).not.toContain('data-testid="action-post"')
     expect(html).not.toContain('data-testid="field-pay-from-select"')
+    expect(html).toContain("finance-voucher-print-root--embedded")
+    expect(html).not.toContain("branch-1")
   })
 })
 
@@ -426,6 +446,34 @@ describe("PAV amount in words", () => {
   it("formats zero and whole-baht totals", () => {
     expect(formatThaiBahtAmountInWords(0)).toBe("## ศูนย์บาทถ้วน ##")
     expect(formatThaiBahtAmountInWords("3000.00")).toBe("## สามพันบาทถ้วน ##")
+  })
+})
+
+describe("PAV document page shell", () => {
+  const fs = require("fs") as typeof import("fs")
+  const path = require("path") as typeof import("path")
+  const ROOT = path.join(__dirname, "..", "..", "..")
+
+  it("wraps payment voucher list page in FinanceDocumentContainer with document page shell", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app/(main)/finance/payment-vouchers/page.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("FinanceDocumentContainer")
+    expect(source).toContain("financeDocumentPageClass")
+    expect(source).toContain('title="PAYMENT VOUCHERS"')
+    expect(source).not.toContain("financeAdminPageClass")
+  })
+
+  it("wraps payment voucher detail page in FinanceDocumentContainer with document page shell", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "app/(main)/finance/payment-vouchers/[id]/page.tsx"),
+      "utf8"
+    )
+    expect(source).toContain("FinanceDocumentContainer")
+    expect(source).toContain("financeDocumentPageClass")
+    expect(source).toContain("financeAdminContentClass")
+    expect(source).not.toContain("financeAdminPageClass")
   })
 })
 

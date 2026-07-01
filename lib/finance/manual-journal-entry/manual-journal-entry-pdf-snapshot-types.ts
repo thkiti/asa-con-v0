@@ -19,6 +19,8 @@ export type ManualJournalEntryPdfSnapshot = {
   entryType: ManualJournalEntryType
   entryTypeLabel: string
   branchId: string
+  branchCode: string | null
+  branchName: string | null
   legalEntityCode: string
   entryDate: string
   description: string | null

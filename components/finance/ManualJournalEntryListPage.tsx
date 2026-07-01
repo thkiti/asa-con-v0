@@ -140,7 +140,26 @@ export function ManualJournalEntryListPage() {
           testIdPrefix="manual-journal-entry"
           isMoreFilterOpen={isMoreFilterOpen}
           setIsMoreFilterOpen={setIsMoreFilterOpen}
+          onPeriodKeyEnter={handleSearch}
         />
+        <label className={voucherInquiryFilterNo}>
+          <span className={themeLabel}>No.</span>
+          <input
+            className={voucherInquiryFilterInput}
+            value={draft.entryNo}
+            onChange={(e) =>
+              setDraft((prev) => ({ ...prev, entryNo: e.target.value }))
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+                handleSearch()
+              }
+            }}
+            placeholder="MJV-…"
+            data-testid="manual-journal-entry-filter-no"
+          />
+        </label>
         <label className={voucherInquiryFilterStatus}>
           <span className={themeLabel}>Status</span>
           <select
@@ -176,18 +195,6 @@ export function ManualJournalEntryListPage() {
               </option>
             ))}
           </select>
-        </label>
-        <label className={voucherInquiryFilterNo}>
-          <span className={themeLabel}>No.</span>
-          <input
-            className={voucherInquiryFilterInput}
-            value={draft.entryNo}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, entryNo: e.target.value }))
-            }
-            placeholder="MJV-…"
-            data-testid="manual-journal-entry-filter-no"
-          />
         </label>
         <label className={voucherInquiryFilterPostingState}>
           <span className={themeLabel}>Post</span>

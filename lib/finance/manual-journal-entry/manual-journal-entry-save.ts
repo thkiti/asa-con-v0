@@ -3,10 +3,14 @@ import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
 import { prisma } from "@/lib/shared/prisma"
-import { allocateManualJournalEntryNo } from "./manual-journal-entry-allocate-no"
+import {
+  MANUAL_JOURNAL_ENTRY_ALLOCATION_MAX_ATTEMPTS,
+  allocateManualJournalEntryNo,
+} from "./manual-journal-entry-allocate-no"
 import {
   ManualJournalEntryError,
   ManualJournalEntryErrorCodes,
+  formatManualJournalEntryAllocationFailedMessage,
 } from "./manual-journal-entry-errors"
 import type {
   CreateManualJournalEntryDraftInput,
@@ -75,48 +79,65 @@ export async function createManualJournalEntryDraft(
 
   const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> => {
     const lines = await resolveManualJournalEntryLines(tx, input.lines)
-    const entryNo = await allocateManualJournalEntryNo(tx, {
-      legalEntityCode,
-      entryType: input.entryType,
-      entryDate,
-    })
 
-    try {
-      return await tx.manualJournalEntry.create({
-        data: {
-          entryNo,
-          entryType: input.entryType,
-          status: "DRAFT",
-          branchId,
-          legalEntityCode,
-          entryDate,
-          description: input.description ?? null,
-          refNo: input.refNo ?? null,
-          createdByStaffId,
-          lines: {
-            create: lines.map((line) => ({
-              lineNo: line.lineNo,
-              glAccountId: line.glAccountId,
-              debit: line.debit,
-              credit: line.credit,
-              memo: line.memo,
-            })),
-          },
-        },
-        include: { lines: true },
+    for (let attempt = 0; attempt < MANUAL_JOURNAL_ENTRY_ALLOCATION_MAX_ATTEMPTS; attempt++) {
+      const entryNo = await allocateManualJournalEntryNo(tx, {
+        legalEntityCode,
+        entryType: input.entryType,
+        entryDate,
       })
-    } catch (err) {
-      if (
-        err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
-        throw new ManualJournalEntryError(
-          "Manual journal entry number already exists",
-          ManualJournalEntryErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
-        )
+
+      try {
+        return await tx.manualJournalEntry.create({
+          data: {
+            entryNo,
+            entryType: input.entryType,
+            status: "DRAFT",
+            branchId,
+            legalEntityCode,
+            entryDate,
+            description: input.description ?? null,
+            refNo: input.refNo ?? null,
+            createdByStaffId,
+            lines: {
+              create: lines.map((line) => ({
+                lineNo: line.lineNo,
+                glAccountId: line.glAccountId,
+                debit: line.debit,
+                credit: line.credit,
+                memo: line.memo,
+              })),
+            },
+          },
+          include: { lines: true },
+        })
+      } catch (err) {
+        if (
+          err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
+          err.code === "P2002" &&
+          attempt + 1 < MANUAL_JOURNAL_ENTRY_ALLOCATION_MAX_ATTEMPTS
+        ) {
+          continue
+        }
+
+        if (
+          err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
+          err.code === "P2002"
+        ) {
+          throw new ManualJournalEntryError(
+            formatManualJournalEntryAllocationFailedMessage(legalEntityCode),
+            ManualJournalEntryErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
+          )
+        }
+
+        throw err
       }
-      throw err
     }
+
+    throw new ManualJournalEntryError(
+      formatManualJournalEntryAllocationFailedMessage(legalEntityCode),
+      ManualJournalEntryErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
+    )
   }
 
   if (input.tx) return run(input.tx)

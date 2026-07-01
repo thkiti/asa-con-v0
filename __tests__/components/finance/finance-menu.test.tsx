@@ -65,11 +65,18 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain('href="/finance/manual-journal-entries"')
     expect(html).toContain('href="/finance/payment-vouchers"')
     expect(html).toContain('href="/finance/invoice-vouchers"')
-    expect(html).toContain("MJV")
-    expect(html).toContain("PAV")
-    expect(html).toContain("INV")
-    expect(html).toContain("REV")
+    expect(html).toContain("MJV • MANUAL JOURNAL VOUCHER")
+    expect(html).toContain("PAV • PAYMENT VOUCHER")
+    expect(html).toContain("INV • INVOICE")
+    expect(html).toContain("REV • RECEIVABLE VOUCHER")
+    expect(html).toContain("PCV • PETTY CASH")
+    expect(html).toContain("PAY • PAY-IN SLIP / COLLECTOR TICKET")
+    expect(html).toContain("Manual Journal")
+    expect(html).toContain("Payment Voucher")
+    expect(html).toContain("Invoice")
+    expect(html).toContain("Receivable Voucher")
     expect(html).toContain("Petty Cash")
+    expect(html).toContain("Pay-in / Collector")
     expect(html).toContain(
       "Create and process finance documents — MJV, PAV, INV, REV, and PCV are live."
     )
@@ -83,6 +90,45 @@ describe("FinanceMenuHubView", () => {
     expect(html).not.toContain("APV")
     expect(html).not.toContain("ACC")
     expect(html).toContain(mainMenuGridClass)
+  })
+
+  it("renders daily work document codes as primary card titles with friendly names below", () => {
+    const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
+    const html = renderToStaticMarkup(
+      <FinanceMenuHubView user={hoFinance} hub={hub!} />
+    )
+
+    const titleMatches = [
+      ...html.matchAll(
+        /data-testid="main-menu-card-title"[^>]*>([^<]+)</g
+      ),
+    ].map((match) => match[1])
+    const subtitleMatches = [
+      ...html.matchAll(
+        /data-testid="main-menu-card-subtitle"[^>]*>([^<]+)</g
+      ),
+    ].map((match) => match[1])
+
+    expect(titleMatches).toContain("MJV • MANUAL JOURNAL VOUCHER")
+    expect(titleMatches).toContain("PAV • PAYMENT VOUCHER")
+    expect(titleMatches).toContain("INV • INVOICE")
+    expect(titleMatches).toContain("REV • RECEIVABLE VOUCHER")
+    expect(titleMatches).toContain("PCV • PETTY CASH")
+    expect(titleMatches).toContain("PAY • PAY-IN SLIP / COLLECTOR TICKET")
+
+    expect(subtitleMatches).toContain("Manual Journal")
+    expect(subtitleMatches).toContain("Payment Voucher")
+    expect(subtitleMatches).toContain("Invoice")
+    expect(subtitleMatches).toContain("Receivable Voucher")
+    expect(subtitleMatches).toContain("Petty Cash")
+    expect(subtitleMatches).toContain("Pay-in / Collector")
+
+    expect(html.indexOf("MJV • MANUAL JOURNAL VOUCHER")).toBeLessThan(
+      html.indexOf("Manual Journal")
+    )
+    expect(html).toContain("font-semibold")
+    expect(html).toContain("text-muted-foreground")
+    expect(html).toContain("Done")
   })
 
   it("renders dashboard hub with GL, TB, P&L, and BS", () => {

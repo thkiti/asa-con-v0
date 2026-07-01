@@ -54,6 +54,25 @@ export async function writeLocalManualJournalPdfFile(
   return { pdfPath, pdfBlobUrl: null }
 }
 
+export async function deleteLocalManualJournalPdfFile(
+  relativePath: string
+): Promise<void> {
+  const trimmed = String(relativePath ?? "").trim()
+  if (!trimmed) return
+
+  try {
+    const absolutePath = resolveLocalManualJournalPdfAbsolutePath(trimmed)
+    await fs.unlink(absolutePath)
+  } catch (err: unknown) {
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? String((err as NodeJS.ErrnoException).code)
+        : ""
+    if (code === "ENOENT") return
+    throw err
+  }
+}
+
 export async function readLocalManualJournalPdfFile(
   ref: ManualJournalPdfReadRef
 ): Promise<Buffer> {

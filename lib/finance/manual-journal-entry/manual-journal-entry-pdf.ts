@@ -127,6 +127,7 @@ export async function loadPostedManualJournalEntryPdfSnapshot(
   const entry = await tx.manualJournalEntry.findFirst({
     where: { id, legalEntityCode },
     include: {
+      branch: { select: { code: true, name: true } },
       lines: {
         orderBy: { lineNo: "asc" },
         include: {
@@ -166,6 +167,8 @@ export async function loadPostedManualJournalEntryPdfSnapshot(
       entryNo: entry.entryNo,
       entryType: entry.entryType,
       branchId: entry.branchId,
+      branchCode: entry.branch.code,
+      branchName: entry.branch.name,
       legalEntityCode: entry.legalEntityCode,
       entryDate: entry.entryDate,
       description: entry.description,

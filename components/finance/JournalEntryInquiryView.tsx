@@ -36,8 +36,11 @@ type JournalEntryInquiryViewProps = {
 
 function JournalLinesTable({ lines }: { lines: JournalInquiryResult["lines"] }) {
   return (
-    <div className={financeTableScroll}>
-      <table className={financeTable}>
+    <div
+      className={`${financeTableScroll} w-full max-w-full`}
+      data-testid="journal-inquiry-lines-table"
+    >
+      <table className={`${financeTable} w-full`}>
         <thead>
           <tr>
             <th className={financeTh}>#</th>
@@ -246,7 +249,7 @@ export function JournalEntryInquiryView({
           backHref={backLink.href}
           backLabel={backLink.label}
         >
-          <div className="space-y-4" data-testid="journal-entry-inquiry">
+          <div className="w-full max-w-full space-y-4" data-testid="journal-entry-inquiry">
             <FinanceDocumentCanonicalHeader {...journal.documentHeader!} />
             <FinanceDocumentAccountingSection
               voucherNo={journal.voucherNo}

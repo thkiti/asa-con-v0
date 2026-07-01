@@ -163,7 +163,7 @@ describe("RevenueVoucherEditorPage edit DRAFT", () => {
 })
 
 describe("RevenueVoucherEditorPage edit POSTED", () => {
-  it("renders POSTED print sheet without archived PDF panel", () => {
+  it("renders POSTED print sheet with MJV-style compact actions", () => {
     const html = renderToStaticMarkup(
       <RevenueVoucherEditorPage
         mode="edit"
@@ -181,21 +181,31 @@ describe("RevenueVoucherEditorPage edit POSTED", () => {
     )
     expect(html).toContain('data-testid="finance-voucher-print-root"')
     expect(html).toContain('data-testid="finance-voucher-print-sheet"')
-    expect(html).toContain('data-testid="action-print-out"')
+    expect(html).toContain('data-testid="finance-document-summary-row"')
+    expect(html).toContain('data-testid="posted-document-sticky-bar"')
     expect(html).toContain("Received from")
     expect(html).toContain("Receive to")
     expect(html).toContain("posted-journal-link")
-    expect(html).not.toContain("finance-legacy-pdf-snapshot")
+    expect(html).not.toContain('data-testid="action-print-out"')
+    expect(html).not.toContain('data-testid="action-upload-pdf"')
+    expect(html).not.toContain('data-testid="action-download-pdf"')
+    expect(html).not.toContain('data-testid="finance-legacy-pdf-snapshot"')
+    expect(html).toContain('data-testid="document-archive-missing-panel"')
     expect(html).not.toContain('data-testid="action-post"')
     expect(html).not.toContain('data-testid="field-receive-to-select"')
+    expect(html).toContain("finance-voucher-print-root--embedded")
+    expect(html).not.toContain("branch-1")
   })
 })
 
 describe("RevenueVoucherListPage", () => {
-  it("renders list with new REV link", () => {
+  it("renders list with new REV link and inquiry filter shell", () => {
     const html = renderToStaticMarkup(<RevenueVoucherListPage />)
     expect(html).toContain('data-testid="revenue-voucher-list"')
+    expect(html).toContain('data-testid="revenue-voucher-actions"')
+    expect(html).toContain('data-testid="revenue-voucher-filters"')
     expect(html).toContain("/finance/revenue-vouchers/new")
+    expect(html).not.toContain("Legal entity")
   })
 })
 

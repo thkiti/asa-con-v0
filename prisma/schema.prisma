@@ -1058,7 +1058,7 @@ model JournalEntryLine {
 /// Document numbers: see docs/99_ASA_HANDBOOK.md Finance Vocabulary.
 model ManualJournalEntry {
   id               String                   @id @default(uuid())
-  entryNo          String                   @unique
+  entryNo          String
   entryType        ManualJournalEntryType
   status           ManualJournalEntryStatus @default(DRAFT)
   branchId         String
@@ -1097,6 +1097,7 @@ model ManualJournalEntry {
   reversalJournalEntry JournalEntry? @relation("ManualJournalReversal", fields: [reversalJournalEntryId], references: [id])
   lines                ManualJournalEntryLine[]
 
+  @@unique([legalEntityCode, entryNo])
   @@index([branchId, entryDate])
   @@index([legalEntityCode, entryDate])
   @@index([legalEntityCode, entryType, status])

@@ -4,10 +4,13 @@ export const runtime = "nodejs"
 
 import { manualJournalEntryErrorResponse } from "@/app/api/finance/manual-journal-entries/shared/manual-journal-entry-api-errors"
 import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
+import { PeriodAdminAuthError } from "@/lib/auth"
 import {
   ManualJournalEntryError,
   ManualJournalEntryErrorCodes,
 } from "@/lib/finance/manual-journal-entry/manual-journal-entry-errors"
+import { deleteManualJournalEntryArchivedPdf } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-repair"
+import { getManualJournalEntryById } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read"
 import { readStoredManualJournalPdf } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-storage"
 import { prisma } from "@/lib/shared/prisma"
 
@@ -77,5 +80,36 @@ export async function GET(req: NextRequest, context: Context) {
     })
   } catch (err: unknown) {
     return manualJournalEntryErrorResponse(err, "GET manual-journal-entries/[id]/pdf")
+  }
+}
+
+export async function DELETE(_req: NextRequest, context: Context) {
+  try {
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
+    if (actor.role !== "HO_ADMIN") {
+      throw new PeriodAdminAuthError(
+        "Deleting an archived PDF requires HO_ADMIN",
+        "FORBIDDEN",
+        403
+      )
+    }
+
+    const { id } = await context.params
+    const deleteResult = await deleteManualJournalEntryArchivedPdf(id, legalEntityCode)
+    if (!deleteResult.ok) {
+      throw new ManualJournalEntryError(
+        deleteResult.error,
+        ManualJournalEntryErrorCodes.PDF_MISSING,
+        409
+      )
+    }
+
+    const fresh = await getManualJournalEntryById(prisma, id, legalEntityCode)
+    return NextResponse.json({ entry: fresh })
+  } catch (err: unknown) {
+    return manualJournalEntryErrorResponse(
+      err,
+      "DELETE manual-journal-entries/[id]/pdf"
+    )
   }
 }

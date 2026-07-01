@@ -29,6 +29,8 @@ export type ManualJournalEntryPdfSnapshotSource = {
   entryNo: string
   entryType: ManualJournalEntryType
   branchId: string
+  branchCode: string | null
+  branchName: string | null
   legalEntityCode: string
   entryDate: Date
   description: string | null
@@ -83,6 +85,8 @@ export function buildManualJournalEntryPdfSnapshot(
     entryType: entry.entryType,
     entryTypeLabel: ENTRY_TYPE_LABEL[entry.entryType],
     branchId: entry.branchId,
+    branchCode: entry.branchCode,
+    branchName: entry.branchName,
     legalEntityCode: entry.legalEntityCode,
     entryDate: formatEntryDate(entry.entryDate),
     description: entry.description,

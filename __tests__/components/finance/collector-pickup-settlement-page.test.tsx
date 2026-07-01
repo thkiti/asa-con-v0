@@ -123,7 +123,7 @@ describe("finance menu", () => {
   it("does not show separate Bank Deposit Settlement in daily work", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "daily-work")
     const labels = hub?.items.map((item) => item.label) ?? []
-    expect(labels).toContain("Collector Pickup Settlement")
+    expect(labels).toContain("PAY • PAY-IN SLIP / COLLECTOR TICKET")
     expect(labels).not.toContain("Bank Deposit Settlement")
   })
 })

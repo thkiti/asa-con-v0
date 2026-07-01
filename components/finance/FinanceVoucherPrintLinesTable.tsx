@@ -36,8 +36,11 @@ export function FinanceVoucherPrintLinesTable({
   lineTestIdPrefix = "finance-voucher-line-account",
 }: FinanceVoucherPrintLinesTableProps) {
   return (
-    <table className={`${financeTable} finance-voucher-lines-table`}>
-      <thead>
+    <table
+      className={`${financeTable} finance-voucher-lines-table w-full`}
+      data-testid="finance-voucher-lines-table"
+    >
+      <thead data-testid="finance-voucher-lines-table-header">
         <tr className="finance-voucher-lines-col-header">
           <th className={`${financeTh} finance-voucher-account-col`}>Account</th>
           <th className={financeThRight}>Debit</th>

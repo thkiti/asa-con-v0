@@ -160,6 +160,52 @@ export async function applyPdfSnapshotRepair(
 }
 
 /**
+ * Remove archived PDF metadata after explicit admin repair delete.
+ * Clears pdfPath / pdfBlobUrl / pdfGeneratedAt only — never workflow or accounting fields.
+ */
+export async function applyPdfSnapshotClear(
+  tx: Prisma.TransactionClient,
+  input: { entryId: string }
+): Promise<ManualJournalEntryWithLines> {
+  const entry = await loadEntryWithLines(tx, input.entryId)
+  if (!entry) {
+    throw new ManualJournalEntryError(
+      "Manual journal entry not found",
+      ManualJournalEntryErrorCodes.ENTRY_NOT_FOUND,
+      404
+    )
+  }
+
+  if (entry.status !== "POSTED") {
+    throw new ManualJournalEntryError(
+      "PDF snapshot delete is only allowed for POSTED entries",
+      ManualJournalEntryErrorCodes.INVALID_TRANSITION,
+      409
+    )
+  }
+
+  const existingPdfPath = String(entry.pdfPath ?? "").trim()
+  const existingBlobUrl = String(entry.pdfBlobUrl ?? "").trim()
+  if (!existingPdfPath && !existingBlobUrl) {
+    throw new ManualJournalEntryError(
+      "No archived PDF snapshot exists to delete",
+      ManualJournalEntryErrorCodes.PDF_MISSING,
+      409
+    )
+  }
+
+  return tx.manualJournalEntry.update({
+    where: { id: input.entryId },
+    data: {
+      pdfPath: null,
+      pdfBlobUrl: null,
+      pdfGeneratedAt: null,
+    },
+    include: { lines: true },
+  })
+}
+
+/**
  * Sole writer for pdfPath / pdfGeneratedAt. Idempotent when snapshot already attached.
  */
 export async function applyPdfSnapshot(

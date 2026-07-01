@@ -18,11 +18,14 @@ import {
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
 import { fetchGlAccounts } from "@/lib/finance-ui/gl-accounts"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
+import { LEGACY_PDF_SNAPSHOT_DELETE_CONFIRM } from "@/lib/finance-ui/finance-legacy-pdf-snapshot"
+import { verifyArchivedPdfRegenerationResult } from "@/lib/finance-ui/manual-journal-entry-pdf-archive"
 import {
   cancelManualJournalEntry,
   confirmManualJournalEntry,
   createManualJournalEntryDraft,
   deleteDraftManualJournalEntry,
+  deleteManualJournalEntryArchivedPdf,
   fetchManualJournalEntry,
   postManualJournalEntry,
   retryManualJournalEntryPdf,
@@ -261,8 +264,10 @@ export function ManualJournalEntryEditorPage({
       if (mode === "create") {
         setBranchId(session.branchId)
       }
-      const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
-      setBranchLabel(label || session.branchId)
+      const label = [session.branchCode, session.branchName]
+        .filter(Boolean)
+        .join(" • ")
+      setBranchLabel(label)
     })
   }, [mode])
 
@@ -510,9 +515,21 @@ export function ManualJournalEntryEditorPage({
     setStatusMessage(null)
     setPdfError(null)
     setBusyAction("Regenerate PDF")
+    const hadArchive = entry.pdfSnapshotReady
+    const beforePdfGeneratedAt = entry.pdfGeneratedAt
     try {
       const result = await retryManualJournalEntryPdf(entry.id)
       applyEntry(result.entry)
+      const verificationError = verifyArchivedPdfRegenerationResult({
+        hadArchive,
+        beforePdfGeneratedAt,
+        afterEntry: result.entry,
+      })
+      if (verificationError) {
+        setPdfError(verificationError)
+        setStatusMessage(null)
+        return
+      }
       if (result.pdfStatus === "ready") {
         setStatusMessage("Archived PDF regenerated.")
       } else {
@@ -521,6 +538,24 @@ export function ManualJournalEntryEditorPage({
       }
     } catch (err) {
       setPdfError(err instanceof Error ? err.message : "PDF regeneration failed")
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  async function handleDeleteArchivedPdf() {
+    if (!entry) return
+    if (!window.confirm(LEGACY_PDF_SNAPSHOT_DELETE_CONFIRM)) return
+    setError(null)
+    setStatusMessage(null)
+    setPdfError(null)
+    setBusyAction("Delete PDF")
+    try {
+      const result = await deleteManualJournalEntryArchivedPdf(entry.id)
+      applyEntry(result.entry)
+      setStatusMessage("Archived PDF deleted.")
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : "PDF delete failed")
     } finally {
       setBusyAction(null)
     }
@@ -563,7 +598,7 @@ export function ManualJournalEntryEditorPage({
 
   const voucherPrintModel =
     isPosted && entry
-      ? buildFinanceVoucherPrintModelFromManualJournalEntry(entry, { branchLabel })
+      ? buildFinanceVoucherPrintModelFromManualJournalEntry(entry)
       : null
 
   if (loading) {
@@ -571,7 +606,7 @@ export function ManualJournalEntryEditorPage({
   }
 
   return (
-    <div className="space-y-4" data-testid="manual-journal-entry-editor">
+    <div className="w-full space-y-4" data-testid="manual-journal-entry-editor">
       {isPosted && entry && voucherPrintModel ? (
         <>
           <FinanceDocumentSummaryRow
@@ -579,6 +614,11 @@ export function ManualJournalEntryEditorPage({
             entryDate={entryDate}
             status={entry.status}
           />
+          {statusMessage ? (
+            <p className="text-sm text-emerald-800" data-testid="editor-status">
+              {statusMessage}
+            </p>
+          ) : null}
           <FinanceVoucherPostedPrintView
             model={voucherPrintModel}
             entryType={entry.entryType}
@@ -594,21 +634,29 @@ export function ManualJournalEntryEditorPage({
             embeddedInDocumentContainer
             compactScreenHeader
             showListBackLink={false}
+            showPrintActions={false}
+            showArchiveDownload={false}
+            compactArchiveActions
             archive={{
               entryId: entry.id,
               entryNo: documentNo,
               pdfSnapshotReady: entry.pdfSnapshotReady,
+              pdfCacheKey: entry.pdfGeneratedAt,
               onRegenerate: canRegenerateArchivedPdf
                 ? () => void handleRegeneratePdf()
                 : undefined,
+              onDelete: canRegenerateArchivedPdf
+                ? () => void handleDeleteArchivedPdf()
+                : undefined,
               regenerating: busyAction === "Regenerate PDF",
+              deleting: busyAction === "Delete PDF",
               regenerateError: pdfError,
               showRegenerateButton: canRegenerateArchivedPdf,
             }}
           />
         </>
       ) : (
-        <div className="space-y-3" data-testid="mjv-entry-shell">
+        <div className="w-full space-y-3" data-testid="mjv-entry-shell">
           {openingBalanceMode ? (
             <div
               className="rounded border border-sky-200 bg-sky-50/60 px-4 py-3 text-sm text-sky-950"

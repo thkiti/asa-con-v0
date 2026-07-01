@@ -9,6 +9,7 @@ import {
 } from "@/lib/finance-ui/finance-document-display"
 import { formatDateTime } from "@/lib/finance-ui/format"
 import { formatEntityShort } from "@/lib/legal-entity/display"
+import { resolveFinanceBranchLabel } from "@/lib/finance-ui/finance-branch-display"
 import type { ManualJournalEntryRead } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read-types"
 import type { PaymentVoucherRead } from "@/lib/finance/payment-voucher/payment-voucher-read-types"
 import type { InvoiceVoucherRead } from "@/lib/finance/invoice-voucher/invoice-voucher-read-types"
@@ -108,7 +109,11 @@ export function buildFinanceVoucherPrintModelFromManualJournalEntry(
     }))
   )
 
-  const branchLabel = options?.branchLabel?.trim() || entry.branchId
+  const branchLabel = resolveFinanceBranchLabel({
+    branchCode: entry.branchCode,
+    branchName: entry.branchName,
+    overrideLabel: options?.branchLabel,
+  })
 
   return {
     documentTypeCode: documentTypeCodeFromEntryNo(entry.entryNo, entry.entryType),
@@ -173,7 +178,9 @@ export function buildFinanceVoucherPrintModelFromPaymentVoucher(
     (sum, line) => sum + Number.parseFloat(line.credit || "0"),
     0
   )
-  const branchLabel = options?.branchLabel?.trim() || entry.branchId
+  const branchLabel = resolveFinanceBranchLabel({
+    overrideLabel: options?.branchLabel,
+  })
 
   return {
     documentTypeCode: PAYMENT_VOUCHER_DOCUMENT_CODE,
@@ -317,7 +324,9 @@ export function buildFinanceVoucherPrintModelFromInvoiceVoucher(
   entry: InvoiceVoucherRead,
   options?: { branchLabel?: string | null }
 ): FinanceVoucherPrintModel {
-  const branchLabel = options?.branchLabel?.trim() || entry.branchId
+  const branchLabel = resolveFinanceBranchLabel({
+    overrideLabel: options?.branchLabel,
+  })
   return buildWorkflowVoucherPrintModel({
     documentTypeCode: INVOICE_VOUCHER_DOCUMENT_CODE,
     documentTypeTitle: INVOICE_VOUCHER_TYPE_TITLE,
@@ -351,7 +360,9 @@ export function buildFinanceVoucherPrintModelFromRevenueVoucher(
   entry: RevenueVoucherRead,
   options?: { branchLabel?: string | null }
 ): FinanceVoucherPrintModel {
-  const branchLabel = options?.branchLabel?.trim() || entry.branchId
+  const branchLabel = resolveFinanceBranchLabel({
+    overrideLabel: options?.branchLabel,
+  })
   return buildWorkflowVoucherPrintModel({
     documentTypeCode: REVENUE_VOUCHER_DOCUMENT_CODE,
     documentTypeTitle: REVENUE_VOUCHER_TYPE_TITLE,
@@ -389,7 +400,9 @@ export function buildFinanceVoucherPrintModelFromPettyCashVoucher(
   entry: PettyCashVoucherRead,
   options?: { branchLabel?: string | null }
 ): FinanceVoucherPrintModel {
-  const branchLabel = options?.branchLabel?.trim() || entry.branchId
+  const branchLabel = resolveFinanceBranchLabel({
+    overrideLabel: options?.branchLabel,
+  })
   return buildWorkflowVoucherPrintModel({
     documentTypeCode: PETTY_CASH_VOUCHER_DOCUMENT_CODE,
     documentTypeTitle: PETTY_CASH_VOUCHER_TYPE_TITLE,

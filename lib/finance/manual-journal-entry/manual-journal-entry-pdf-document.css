@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 16px;
+}
+
 body.finance-voucher-print-active {
   margin: 0;
   background: #fff;
@@ -14,11 +18,10 @@ body.finance-voucher-print-active {
 
 .finance-voucher-print-root {
   width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 0;
   font-family: "THSarabunNew", "Noto Sans Thai", sans-serif;
-  font-size: 14pt;
-  line-height: 1.3;
   font-synthesis: none;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -330,6 +333,28 @@ span.finance-account .finance-account-name-part {
   @page {
     size: A4 portrait;
     margin: 12mm;
+  }
+
+  body.finance-voucher-print-active .finance-voucher-print-root {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    font-family: "THSarabunNew", "Noto Sans Thai", sans-serif;
+    font-size: 14pt;
+    line-height: 1.3;
+    font-synthesis: none;
+    color: #000;
+    background: #fff;
+  }
+
+  body.finance-voucher-print-active .finance-voucher-print-sheet,
+  body.finance-voucher-print-active .finance-voucher-print-font,
+  body.finance-voucher-print-active .finance-voucher-print-root * {
+    font-family: inherit;
+    font-synthesis: none;
+    color: #000;
+    background: transparent;
   }
 
   body.finance-voucher-print-active .no-print {

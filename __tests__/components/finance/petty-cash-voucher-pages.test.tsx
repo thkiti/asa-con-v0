@@ -200,7 +200,7 @@ describe("PettyCashVoucherEditorPage edit DRAFT", () => {
 })
 
 describe("PettyCashVoucherEditorPage edit POSTED", () => {
-  it("renders POSTED print sheet without archived PDF panel", () => {
+  it("renders POSTED print sheet with MJV-style compact actions", () => {
     const html = renderToStaticMarkup(
       <PettyCashVoucherEditorPage
         mode="edit"
@@ -218,13 +218,19 @@ describe("PettyCashVoucherEditorPage edit POSTED", () => {
     )
     expect(html).toContain('data-testid="finance-voucher-print-root"')
     expect(html).toContain('data-testid="finance-voucher-print-sheet"')
-    expect(html).toContain('data-testid="action-print-out"')
+    expect(html).toContain('data-testid="finance-document-summary-row"')
+    expect(html).toContain('data-testid="posted-document-sticky-bar"')
     expect(html).toContain("Payee")
     expect(html).toContain("Petty cash")
     expect(html).toContain("posted-journal-link")
-    expect(html).not.toContain("finance-legacy-pdf-snapshot")
+    expect(html).not.toContain('data-testid="action-print-out"')
+    expect(html).not.toContain('data-testid="action-upload-pdf"')
+    expect(html).not.toContain('data-testid="action-download-pdf"')
+    expect(html).not.toContain('data-testid="finance-legacy-pdf-snapshot"')
+    expect(html).toContain('data-testid="document-archive-missing-panel"')
     expect(html).not.toContain('data-testid="action-post"')
     expect(html).not.toContain('data-testid="field-payee-name"')
+    expect(html).toContain("finance-voucher-print-root--embedded")
   })
 })
 

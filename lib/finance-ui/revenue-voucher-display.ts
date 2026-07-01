@@ -2,7 +2,7 @@ export const REVENUE_VOUCHER_DOCUMENT_CODE = "REV"
 
 export const REVENUE_VOUCHER_ENTRY_TYPE = "REV"
 
-export const REVENUE_VOUCHER_TYPE_TITLE = "REVENUE VOUCHER"
+export const REVENUE_VOUCHER_TYPE_TITLE = "RECEIVABLE VOUCHER"
 
 export type RevenueVoucherStatusCode =
   | "DRAFT"

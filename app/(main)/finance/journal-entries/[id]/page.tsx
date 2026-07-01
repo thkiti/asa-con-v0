@@ -1,5 +1,5 @@
 import { JournalEntryInquiryView } from "@/components/finance/JournalEntryInquiryView"
-import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
+import { financeDocumentPageClass } from "@/lib/main-ui/finance-page-layout"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -11,7 +11,7 @@ export default async function Page({ params, searchParams }: PageProps) {
   const { returnTo } = await searchParams
 
   return (
-    <main className={financeAdminPageClass}>
+    <main className={financeDocumentPageClass}>
       <JournalEntryInquiryView journalEntryId={id} returnTo={returnTo} />
     </main>
   )

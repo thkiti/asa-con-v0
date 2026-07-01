@@ -25,6 +25,7 @@ type DocumentInquiryMoreFilterProps = {
   testIdPrefix: string
   isMoreFilterOpen: boolean
   setIsMoreFilterOpen: Dispatch<SetStateAction<boolean>>
+  onPeriodKeyEnter?: () => void
 }
 
 export function DocumentInquiryMoreFilter({
@@ -38,6 +39,7 @@ export function DocumentInquiryMoreFilter({
   testIdPrefix,
   isMoreFilterOpen,
   setIsMoreFilterOpen,
+  onPeriodKeyEnter,
 }: DocumentInquiryMoreFilterProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const popoverId = useId()
@@ -68,6 +70,12 @@ export function DocumentInquiryMoreFilter({
           className={voucherInquiryFilterInput}
           value={periodKey}
           onChange={(event) => onPeriodKeyChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault()
+              onPeriodKeyEnter?.()
+            }
+          }}
           placeholder="2026-06"
           data-testid={periodTestId}
         />

@@ -10,6 +10,7 @@ import {
   calendarYearFromEntryDate,
   countManualJournalEntriesInScope,
   documentCodeForEntryType,
+  findMaxManualJournalEntrySequenceInScope,
 } from "@/lib/finance/manual-journal-entry/manual-journal-entry-allocate-no"
 
 describe("manual-journal-entry-allocate-no", () => {
@@ -71,14 +72,14 @@ describe("manual-journal-entry-allocate-no", () => {
 
       await countManualJournalEntriesInScope(
         tx as never,
-        "ASAS",
+        "AS",
         "MANUAL",
         entryDate
       )
 
       expect(count).toHaveBeenCalledWith({
         where: {
-          legalEntityCode: "ASAS",
+          legalEntityCode: "AS",
           entryType: "MANUAL",
           entryDate: {
             gte: new Date("2026-01-01T00:00:00+07:00"),
@@ -90,27 +91,35 @@ describe("manual-journal-entry-allocate-no", () => {
   })
 
   describe("allocateManualJournalEntryNo", () => {
-    function createTx(entries: Array<{
+    type SeedEntry = {
       legalEntityCode: string
       entryType: ManualJournalEntryType
       entryDate: Date
-    }>) {
+      entryNo: string
+    }
+
+    function createTx(entries: SeedEntry[]) {
       return {
         manualJournalEntry: {
-          count: jest.fn(async ({ where }: {
+          findMany: jest.fn(async ({ where }: {
             where: {
               legalEntityCode: string
               entryType: ManualJournalEntryType
               entryDate: { gte: Date; lt: Date }
+              entryNo?: { startsWith: string }
             }
           }) => {
-            return entries.filter(
-              (e) =>
-                e.legalEntityCode === where.legalEntityCode &&
-                e.entryType === where.entryType &&
-                e.entryDate >= where.entryDate.gte &&
-                e.entryDate < where.entryDate.lt
-            ).length
+            return entries
+              .filter(
+                (entry) =>
+                  entry.legalEntityCode === where.legalEntityCode &&
+                  entry.entryType === where.entryType &&
+                  entry.entryDate >= where.entryDate.gte &&
+                  entry.entryDate < where.entryDate.lt &&
+                  (!where.entryNo?.startsWith ||
+                    entry.entryNo.startsWith(where.entryNo.startsWith))
+              )
+              .map((entry) => ({ entryNo: entry.entryNo }))
           }),
         },
       }
@@ -119,14 +128,15 @@ describe("manual-journal-entry-allocate-no", () => {
     it("returns next sequence within legalEntityCode + type + year", async () => {
       const tx = createTx([
         {
-          legalEntityCode: "ASAS",
+          legalEntityCode: "AS",
           entryType: "MANUAL",
           entryDate: entryDate,
+          entryNo: "MJV-260001",
         },
       ])
 
       const no = await allocateManualJournalEntryNo(tx as never, {
-        legalEntityCode: "ASAS",
+        legalEntityCode: "AS",
         entryType: "MANUAL",
         entryDate,
       })
@@ -134,27 +144,48 @@ describe("manual-journal-entry-allocate-no", () => {
       expect(no).toBe("MJV-260002")
     })
 
+    it("allows the same entryNo across different legalEntityCode scopes", async () => {
+      const tx = createTx([
+        {
+          legalEntityCode: "AD",
+          entryType: "MANUAL",
+          entryDate: entryDate,
+          entryNo: "MJV-260001",
+        },
+      ])
+
+      const no = await allocateManualJournalEntryNo(tx as never, {
+        legalEntityCode: "AS",
+        entryType: "MANUAL",
+        entryDate,
+      })
+
+      expect(no).toBe("MJV-260001")
+    })
+
     it("isolates sequence per legalEntityCode", async () => {
       const tx = createTx([
         {
-          legalEntityCode: "ASAS",
+          legalEntityCode: "AS",
           entryType: "MANUAL",
           entryDate: entryDate,
+          entryNo: "MJV-260001",
         },
         {
-          legalEntityCode: "ASAD",
+          legalEntityCode: "AD",
           entryType: "MANUAL",
           entryDate: entryDate,
+          entryNo: "MJV-260001",
         },
       ])
 
       const asas = await allocateManualJournalEntryNo(tx as never, {
-        legalEntityCode: "ASAS",
+        legalEntityCode: "AS",
         entryType: "MANUAL",
         entryDate,
       })
       const asad = await allocateManualJournalEntryNo(tx as never, {
-        legalEntityCode: "ASAD",
+        legalEntityCode: "AD",
         entryType: "MANUAL",
         entryDate,
       })
@@ -163,22 +194,56 @@ describe("manual-journal-entry-allocate-no", () => {
       expect(asad).toBe("MJV-260002")
     })
 
+    it("advances past gaps in the same legal entity sequence", async () => {
+      const tx = createTx([
+        {
+          legalEntityCode: "AS",
+          entryType: "MANUAL",
+          entryDate: entryDate,
+          entryNo: "MJV-260001",
+        },
+        {
+          legalEntityCode: "AS",
+          entryType: "MANUAL",
+          entryDate: entryDate,
+          entryNo: "MJV-260003",
+        },
+      ])
+
+      const no = await findMaxManualJournalEntrySequenceInScope(
+        tx as never,
+        "AS",
+        "MANUAL",
+        entryDate
+      )
+
+      expect(no).toBe(3)
+      expect(
+        await allocateManualJournalEntryNo(tx as never, {
+          legalEntityCode: "AS",
+          entryType: "MANUAL",
+          entryDate,
+        })
+      ).toBe("MJV-260004")
+    })
+
     it("isolates sequence per entryType", async () => {
       const tx = createTx([
         {
-          legalEntityCode: "ASAS",
+          legalEntityCode: "AS",
           entryType: "MANUAL",
           entryDate: entryDate,
+          entryNo: "MJV-260001",
         },
       ])
 
       const mjv = await allocateManualJournalEntryNo(tx as never, {
-        legalEntityCode: "ASAS",
+        legalEntityCode: "AS",
         entryType: "MANUAL",
         entryDate,
       })
       const opb = await allocateManualJournalEntryNo(tx as never, {
-        legalEntityCode: "ASAS",
+        legalEntityCode: "AS",
         entryType: "OPENING_BALANCE",
         entryDate,
       })
@@ -204,13 +269,13 @@ describe("manual-journal-entry-allocate-no", () => {
     it("wraps unexpected errors as DOCUMENT_NUMBER_ALLOCATION_FAILED", async () => {
       const tx = {
         manualJournalEntry: {
-          count: jest.fn().mockRejectedValue(new Error("db down")),
+          findMany: jest.fn().mockRejectedValue(new Error("db down")),
         },
       }
 
       await expect(
         allocateManualJournalEntryNo(tx as never, {
-          legalEntityCode: "ASAS",
+          legalEntityCode: "AS",
           entryType: "MANUAL",
           entryDate,
         })

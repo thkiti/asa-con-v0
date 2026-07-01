@@ -93,6 +93,27 @@ export function createManualJournalMockTx(initialAccounts: GlAccountRow[]) {
             entry.entryDate < where.entryDate!.lt
         ).length
       }),
+      findMany: jest.fn(async ({ where, select }: {
+        where: {
+          legalEntityCode: string
+          entryType: string
+          entryDate: { gte: Date; lt: Date }
+          entryNo?: { startsWith: string }
+        }
+        select: { entryNo: true }
+      }) => {
+        return entries
+          .filter(
+            (entry) =>
+              entry.legalEntityCode === where.legalEntityCode &&
+              entry.entryType === where.entryType &&
+              entry.entryDate >= where.entryDate.gte &&
+              entry.entryDate < where.entryDate.lt &&
+              (!where.entryNo?.startsWith ||
+                entry.entryNo.startsWith(where.entryNo.startsWith))
+          )
+          .map((entry) => ({ entryNo: entry.entryNo }))
+      }),
       create: jest.fn(async ({ data, include }: {
         data: {
           entryNo: string
@@ -114,6 +135,18 @@ export function createManualJournalMockTx(initialAccounts: GlAccountRow[]) {
         }
         include?: { lines: boolean }
       }) => {
+        const duplicate = entries.some(
+          (entry) =>
+            entry.legalEntityCode === data.legalEntityCode &&
+            entry.entryNo === data.entryNo
+        )
+        if (duplicate) {
+          throw new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+            code: "P2002",
+            clientVersion: "test",
+          })
+        }
+
         const id = nextId("entry")
         const createdAt = new Date("2026-06-01")
         const entry: ManualJournalEntryWithLines = {

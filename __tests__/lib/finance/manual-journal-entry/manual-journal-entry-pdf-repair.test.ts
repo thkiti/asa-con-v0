@@ -1,9 +1,14 @@
+jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-storage-local", () => ({
+  deleteLocalManualJournalPdfFile: jest.fn().mockResolvedValue(undefined),
+}))
+
 jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-render", () => ({
   renderManualJournalEntryPdf: jest.fn(),
 }))
 
 jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-storage", () => ({
   storeManualJournalPdf: jest.fn(),
+  resolveManualJournalPdfStorageBackend: jest.fn(() => "filesystem"),
 }))
 
 const mockLoadSnapshot = jest.fn()
@@ -31,14 +36,19 @@ jest.mock("@/lib/shared/prisma", () => ({
 jest.mock("@/lib/finance/manual-journal-entry/manual-journal-entry-status", () => ({
   applyPdfSnapshot: jest.fn(),
   applyPdfSnapshotRepair: jest.fn(),
+  applyPdfSnapshotClear: jest.fn(),
 }))
 
 import { renderManualJournalEntryPdf } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-render"
 import { attachManualJournalEntryPdfFromSnapshot } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf"
-import { regenerateManualJournalEntryArchivedPdf } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-repair"
+import {
+  deleteManualJournalEntryArchivedPdf,
+  regenerateManualJournalEntryArchivedPdf,
+} from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-repair"
 import { storeManualJournalPdf } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-storage"
 import {
   applyPdfSnapshot,
+  applyPdfSnapshotClear,
   applyPdfSnapshotRepair,
 } from "@/lib/finance/manual-journal-entry/manual-journal-entry-status"
 import { prisma } from "@/lib/shared/prisma"
@@ -48,6 +58,7 @@ const mockRender = renderManualJournalEntryPdf as jest.Mock
 const mockStore = storeManualJournalPdf as jest.Mock
 const mockApplyPdfSnapshot = applyPdfSnapshot as jest.Mock
 const mockApplyPdfSnapshotRepair = applyPdfSnapshotRepair as jest.Mock
+const mockApplyPdfSnapshotClear = applyPdfSnapshotClear as jest.Mock
 
 const entryId = "11111111-1111-1111-1111-111111111111"
 
@@ -146,6 +157,50 @@ describe("regenerateManualJournalEntryArchivedPdf", () => {
       expect(result.error).toContain("existing archived PDF")
     }
     expect(mockRender).not.toHaveBeenCalled()
+  })
+})
+
+describe("deleteManualJournalEntryArchivedPdf", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockApplyPdfSnapshotClear.mockResolvedValue({
+      id: entryId,
+      pdfPath: null,
+      pdfBlobUrl: null,
+      pdfGeneratedAt: null,
+    })
+  })
+
+  it("clears archived PDF metadata for POSTED entries", async () => {
+    mockFindFirst.mockResolvedValue({
+      status: "POSTED",
+      pdfPath: `manual-journal/${entryId}.pdf`,
+      pdfBlobUrl: null,
+    })
+
+    const result = await deleteManualJournalEntryArchivedPdf(entryId, "AS")
+
+    expect(result.ok).toBe(true)
+    expect(mockApplyPdfSnapshotClear).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({ entryId })
+    )
+  })
+
+  it("rejects delete when no archived PDF metadata exists", async () => {
+    mockFindFirst.mockResolvedValue({
+      status: "POSTED",
+      pdfPath: null,
+      pdfBlobUrl: null,
+    })
+
+    const result = await deleteManualJournalEntryArchivedPdf(entryId, "AS")
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain("No archived PDF")
+    }
+    expect(mockApplyPdfSnapshotClear).not.toHaveBeenCalled()
   })
 })
 

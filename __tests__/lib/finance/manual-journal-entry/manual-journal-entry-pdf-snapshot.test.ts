@@ -9,6 +9,8 @@ describe("buildManualJournalEntryPdfSnapshot", () => {
         entryNo: "MJV-260001",
         entryType: "OPENING_BALANCE",
         branchId: "branch-1",
+        branchCode: "HO999",
+        branchName: "Head Office",
         legalEntityCode: "AS",
         entryDate: new Date("2026-06-14T00:00:00.000Z"),
         description: "Opening",
@@ -21,6 +23,8 @@ describe("buildManualJournalEntryPdfSnapshot", () => {
         submittedByStaffId: "staff-appr",
         confirmedByStaffId: "staff-check",
         postedByStaffId: "staff-post",
+        branchCode: "HO999",
+        branchName: "Head Office",
         lines: [
           {
             lineNo: 2,
@@ -46,6 +50,8 @@ describe("buildManualJournalEntryPdfSnapshot", () => {
     )
 
     expect(snapshot.entryTypeLabel).toBe("Opening Balance Journal")
+    expect(snapshot.branchCode).toBe("HO999")
+    expect(snapshot.branchName).toBe("Head Office")
     expect(snapshot.lines.map((line) => line.lineNo)).toEqual([1, 2])
     expect(snapshot.totalDebit).toBe("100")
     expect(snapshot.totalCredit).toBe("100")

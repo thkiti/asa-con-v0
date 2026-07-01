@@ -50,6 +50,12 @@ export const financeTotalValue = `finance-total-value ${numericCell} px-2 py-2`
 export const financeDocumentContainer = "finance-document-container"
 export const financeReportContainer = "finance-report-container"
 
+/** Sticky compact identity + actions on posted MJV detail (screen only — see globals.css). */
+export const financePostedDocumentStickyBar = "finance-posted-document-sticky-bar"
+
+/** @deprecated Use financePostedDocumentStickyBar */
+export const financePostedDocumentActionsSticky = financePostedDocumentStickyBar
+
 export const financeReportSection = "finance-report-section"
 
 export const financeAuditLine = "finance-audit-line"

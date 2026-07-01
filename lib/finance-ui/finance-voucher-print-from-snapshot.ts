@@ -8,6 +8,7 @@ import {
 } from "@/lib/finance-ui/manual-journal-entry-display"
 import { formatDateTime } from "@/lib/finance-ui/format"
 import { formatEntityShort } from "@/lib/legal-entity/display"
+import { resolveFinanceBranchLabel } from "@/lib/finance-ui/finance-branch-display"
 import type { ManualJournalEntryPdfSnapshot } from "@/lib/finance/manual-journal-entry/manual-journal-entry-pdf-snapshot-types"
 import type { FinanceVoucherPrintModel } from "@/lib/finance-ui/finance-voucher-print"
 
@@ -27,7 +28,11 @@ export function buildFinanceVoucherPrintModelFromManualJournalEntryPdfSnapshot(
   snapshot: ManualJournalEntryPdfSnapshot,
   options?: { branchLabel?: string | null }
 ): FinanceVoucherPrintModel {
-  const branchLabel = options?.branchLabel?.trim() || snapshot.branchId
+  const branchLabel = resolveFinanceBranchLabel({
+    branchCode: snapshot.branchCode,
+    branchName: snapshot.branchName,
+    overrideLabel: options?.branchLabel,
+  })
   const entryType = snapshot.entryType as ManualJournalEntryTypeCode
 
   return {

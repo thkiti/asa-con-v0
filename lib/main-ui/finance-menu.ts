@@ -94,39 +94,39 @@ function buildPrimaryFinanceMenuHubs(): Record<
       items: [
         done(
           "mjv",
-          "MJV",
+          "MJV • MANUAL JOURNAL VOUCHER",
           "/finance/manual-journal-entries",
-          "Manual journal vouchers — MJV, OPB, adjustments, accruals, corrections"
+          "Manual Journal"
         ),
         done(
           "pav",
-          "PAV",
+          "PAV • PAYMENT VOUCHER",
           "/finance/payment-vouchers",
-          "Outbound payments, cheques, and settlement disbursements"
+          "Payment Voucher"
         ),
         done(
           "inv",
-          "INV",
+          "INV • INVOICE",
           "/finance/invoice-vouchers",
-          "Finance invoices — bill receivables before payment (not POS sales invoice)"
+          "Invoice"
         ),
         done(
           "rev",
-          "REV",
+          "REV • RECEIVABLE VOUCHER",
           "/finance/revenue-vouchers",
-          "Inbound receipts — receive to bank or cash, allocate credits, post to GL"
+          "Receivable Voucher"
         ),
         done(
           "petty-cash",
-          "Petty Cash",
+          "PCV • PETTY CASH",
           "/finance/petty-cash-vouchers",
-          "Small cash disbursements and replenishment (PCV)"
+          "Petty Cash"
         ),
         done(
           "collector-pickup-settlement",
-          "Collector Pickup Settlement",
+          "PAY • PAY-IN SLIP / COLLECTOR TICKET",
           "/finance/pos-settlement/collector-pickup",
-          "Review collector tickets, PAY-IN slip evidence, and post bank deposit"
+          "Pay-in / Collector"
         ),
       ],
     },

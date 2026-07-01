@@ -19,6 +19,8 @@ export const ENTRY_TYPE_DOCUMENT_CODE: Record<ManualJournalEntryType, string> = 
   AUDITOR_ADJUSTMENT: "AUJ",
 }
 
+export const MANUAL_JOURNAL_ENTRY_ALLOCATION_MAX_ATTEMPTS = 5
+
 export function documentCodeForEntryType(
   entryType: ManualJournalEntryType
 ): string {
@@ -66,6 +68,47 @@ export function buildManualJournalEntryNo(
   return `${code}-${yy}${nnnn}`
 }
 
+function parseSequenceFromEntryNo(
+  entryNo: string,
+  prefix: string
+): number | null {
+  if (!entryNo.startsWith(prefix)) return null
+  const suffix = entryNo.slice(prefix.length)
+  if (!/^\d{4}$/.test(suffix)) return null
+  const sequence = Number.parseInt(suffix, 10)
+  return Number.isInteger(sequence) && sequence >= 1 ? sequence : null
+}
+
+export async function findMaxManualJournalEntrySequenceInScope(
+  tx: Pick<Prisma.TransactionClient, "manualJournalEntry">,
+  legalEntityCode: string,
+  entryType: ManualJournalEntryType,
+  entryDate: Date
+): Promise<number> {
+  const year = calendarYearFromEntryDate(entryDate)
+  const { start, endExclusive } = utcRangeForBangkokCalendarYear(year)
+  const prefix = `${documentCodeForEntryType(entryType)}-${formatEntryYearSuffix(entryDate)}`
+
+  const existing = await tx.manualJournalEntry.findMany({
+    where: {
+      legalEntityCode,
+      entryType,
+      entryDate: { gte: start, lt: endExclusive },
+      entryNo: { startsWith: prefix },
+    },
+    select: { entryNo: true },
+  })
+
+  let max = 0
+  for (const row of existing) {
+    const sequence = parseSequenceFromEntryNo(row.entryNo, prefix)
+    if (sequence !== null && sequence > max) {
+      max = sequence
+    }
+  }
+  return max
+}
+
 export async function countManualJournalEntriesInScope(
   tx: Pick<Prisma.TransactionClient, "manualJournalEntry">,
   legalEntityCode: string,
@@ -86,7 +129,7 @@ export async function countManualJournalEntriesInScope(
 
 /**
  * Allocates the next `<CODE>-<YY><NNNN>` for legalEntityCode + entryType + calendar year.
- * Unique index on entryNo is the concurrency safety net.
+ * Composite unique on (legalEntityCode, entryNo) is the concurrency safety net.
  */
 export async function allocateManualJournalEntryNo(
   tx: Pick<Prisma.TransactionClient, "manualJournalEntry">,
@@ -101,7 +144,7 @@ export async function allocateManualJournalEntryNo(
   }
 
   try {
-    const count = await countManualJournalEntriesInScope(
+    const maxSequence = await findMaxManualJournalEntrySequenceInScope(
       tx,
       legalEntityCode,
       input.entryType,
@@ -110,7 +153,7 @@ export async function allocateManualJournalEntryNo(
     return buildManualJournalEntryNo(
       input.entryType,
       input.entryDate,
-      count + 1
+      maxSequence + 1
     )
   } catch (err) {
     if (err instanceof ManualJournalEntryError) {

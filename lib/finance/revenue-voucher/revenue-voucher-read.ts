@@ -48,6 +48,12 @@ function buildWhere(filter: RevenueVoucherListFilter): Prisma.RevenueVoucherWher
   if (filter.status) where.status = filter.status
   if (filter.branchId) where.branchId = filter.branchId
 
+  if (!filter.status && filter.postingState === "posted") {
+    where.status = "POSTED"
+  } else if (!filter.status && filter.postingState === "unposted") {
+    where.status = { in: ["DRAFT", "SUBMITTED", "CONFIRMED"] }
+  }
+
   const search = filter.search?.trim()
   if (search) {
     where.OR = [

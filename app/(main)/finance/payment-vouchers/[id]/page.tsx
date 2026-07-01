@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
+import { financeAdminContentClass, financeDocumentPageClass } from "@/lib/main-ui/finance-page-layout"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { PaymentVoucherEditorPage } from "@/components/finance/PaymentVoucherEditorPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
@@ -13,7 +13,7 @@ export default async function PaymentVoucherDetailPage({ params }: PageProps) {
   const { id } = await params
 
   return (
-    <main className={financeAdminPageClass}>
+    <main className={financeDocumentPageClass}>
       <FinanceDocumentContainer>
         <Link
           href="/finance/payment-vouchers"
@@ -25,7 +25,7 @@ export default async function PaymentVoucherDetailPage({ params }: PageProps) {
           title="PAYMENT VOUCHER"
           className="mt-4 text-xl font-semibold"
         />
-        <div className="mt-4">
+        <div className={financeAdminContentClass}>
           <PaymentVoucherEditorPage mode="edit" entryId={id} />
         </div>
       </FinanceDocumentContainer>

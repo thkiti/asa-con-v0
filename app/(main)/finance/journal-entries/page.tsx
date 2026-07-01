@@ -2,7 +2,7 @@ import Link from "next/link"
 import {
   financeAdminContentClass,
   financeAdminIntroClass,
-  financeAdminPageClass,
+  financeDocumentPageClass,
 } from "@/lib/main-ui/finance-page-layout"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { JournalEntryListPage } from "@/components/finance/JournalEntryListPage"
@@ -11,7 +11,7 @@ import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 export default function Page() {
   return (
-    <main className={financeAdminPageClass}>
+    <main className={financeDocumentPageClass}>
       <FinanceDocumentContainer>
         <Link href="/finance" className={`text-sm ${themeLinkMuted}`}>
           ← Finance

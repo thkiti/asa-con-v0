@@ -124,6 +124,21 @@ export function buildFinanceDocumentIdentityRow2Slash(
   ].join(FINANCE_DOCUMENT_AUDIT_SEP)
 }
 
+/** Compact sticky-bar identity for posted document detail screens. */
+export function buildFinanceDocumentStickyIdentityLabel(input: {
+  documentNo: string
+  status: ManualJournalEntryStatusCode | string
+  legalEntityCode?: string | null
+}): string {
+  const documentNo = String(input.documentNo ?? "").trim()
+  const status = String(input.status ?? "").trim().toUpperCase() || "—"
+  const entity = String(input.legalEntityCode ?? "").trim()
+  if (entity) {
+    return `${formatEntityShort(entity)}${FINANCE_DOCUMENT_AUDIT_SEP}${documentNo}${FINANCE_DOCUMENT_AUDIT_SEP}${status}`
+  }
+  return `${documentNo}${FINANCE_DOCUMENT_AUDIT_SEP}${status}`
+}
+
 export type FinanceDocumentWorkflowAuditInput = {
   createdAt: string
   submittedAt?: string | null

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
+import { financeAdminContentClass, financeDocumentPageClass } from "@/lib/main-ui/finance-page-layout"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { ManualJournalEntryEditorPage } from "@/components/finance/ManualJournalEntryEditorPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
@@ -13,7 +13,7 @@ export default async function ManualJournalEntryDetailPage({ params }: PageProps
   const { id } = await params
 
   return (
-    <main className={financeAdminPageClass}>
+    <main className={financeDocumentPageClass}>
       <FinanceDocumentContainer>
         <Link
           href="/finance/manual-journal-entries"
@@ -25,7 +25,7 @@ export default async function ManualJournalEntryDetailPage({ params }: PageProps
           title="MANUAL JOURNAL VOUCHER"
           className="mt-4 text-xl font-semibold"
         />
-        <div className="mt-4">
+        <div className={financeAdminContentClass}>
           <ManualJournalEntryEditorPage mode="edit" entryId={id} />
         </div>
       </FinanceDocumentContainer>

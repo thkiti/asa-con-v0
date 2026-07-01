@@ -1,3 +1,4 @@
+import { themeMuted, themePage, themePageTitle } from "@/lib/theme/theme-classes"
 import {
   mainMenuBackLinkClass,
   mainMenuPageClass,
@@ -9,10 +10,15 @@ import {
   APP_PAGE_CONTENT_WIDTH_PX,
   APP_PAGE_MAX_WIDTH_PX,
 } from "./page-container"
-import { themeMuted, themePageTitle } from "@/lib/theme/theme-classes"
 
 /** Finance admin/list pages — same centered container as `/main` (max-w-5xl / 1024px). */
 export const financeAdminPageClass = mainMenuPageClass
+
+/**
+ * Finance document pages (MJV, OPB, journal lists using FinanceDocumentContainer).
+ * Width and horizontal padding come from FinanceDocumentContainer only (1120px).
+ */
+export const financeDocumentPageClass = `w-full ${themePage}`
 
 export {
   appPageContainerClass,

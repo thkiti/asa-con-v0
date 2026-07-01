@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import { FinanceDocumentCanonicalHeader } from "@/components/finance/FinanceDocumentCanonicalHeader"
+import { FinanceDocumentSummaryRow } from "@/components/finance/FinanceDocumentSummaryRow"
 import { FinanceVoucherPostedPrintView } from "@/components/finance/FinanceVoucherPostedPrintView"
 import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
+import { formatFinanceBranchLabel } from "@/lib/finance-ui/finance-branch-display"
+import { financePostedDocumentScreenProps } from "@/lib/finance-ui/finance-posted-document-layout"
 import { buildFinanceVoucherPrintModelFromPaymentVoucher } from "@/lib/finance-ui/finance-voucher-print"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
 import { formatAmount } from "@/lib/finance-ui/format"
@@ -60,6 +63,7 @@ import {
   type DocumentEntityCode,
 } from "@/lib/legal-entity/constants"
 import { themeInput, themeLinkMuted } from "@/lib/theme/theme-classes"
+import type { Role } from "@/lib/shared"
 
 type LineField = "account" | "debit" | "credit" | "memo"
 
@@ -224,6 +228,7 @@ export function PaymentVoucherEditorPage({
   const [cancelReason, setCancelReason] = useState("")
   const [showCancelReason, setShowCancelReason] = useState(false)
   const [branchLabel, setBranchLabel] = useState("")
+  const [sessionRole, setSessionRole] = useState<Role | "">("")
   const [payFromOptions, setPayFromOptions] = useState<PavPayFromAccountOption[]>([])
   const [focusedAccountLineKey, setFocusedAccountLineKey] = useState<string | null>(null)
   const accountEnterCommitRef = useRef<string | null>(null)
@@ -268,11 +273,16 @@ export function PaymentVoucherEditorPage({
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
       setLegalEntityCode(session.documentEntityCode)
+      setSessionRole(session.role)
       if (mode === "create") {
         setBranchId(session.branchId)
       }
-      const label = [session.branchCode, session.branchName].filter(Boolean).join(" — ")
-      setBranchLabel(label || session.branchId)
+      setBranchLabel(
+        formatFinanceBranchLabel({
+          branchCode: session.branchCode,
+          branchName: session.branchName,
+        })
+      )
     })
   }, [mode])
 
@@ -575,34 +585,43 @@ export function PaymentVoucherEditorPage({
 
   const amountInWords = formatThaiBahtAmountInWords(lineTotals.debit)
   const showNotBalanced = lineTotals.debit > 0 || lineTotals.credit > 0 ? !totalsBalanced : false
+  const canAdminRepairArchive = sessionRole === "HO_ADMIN"
 
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading payment voucher…</p>
   }
 
   return (
-    <div className="space-y-4" data-testid="payment-voucher-editor">
+    <div className="w-full space-y-4" data-testid="payment-voucher-editor">
       {isPosted && entry && voucherPrintModel ? (
-        <FinanceVoucherPostedPrintView
-          model={voucherPrintModel}
-          entryType={PAYMENT_VOUCHER_ENTRY_TYPE}
-          legalEntityCode={legalEntityCode}
-          entryDate={entryDate}
-          description={description}
-          listHref={listHref}
-          listBackLabel="Back to payment vouchers"
-          postedJournalHref={postedJournalHref}
-          disabled={busyAction !== null}
-          showArchivePanel={false}
-          archiveVault={{
-            documentKind: "PAV",
-            documentId: entry.id,
-            documentNo: documentNo,
-            legalEntityCode,
-            branchId: entry.branchId,
-            workflowStatus: entry.status,
-          }}
-        />
+        <>
+          <FinanceDocumentSummaryRow
+            documentNo={documentNo}
+            entryDate={entryDate}
+            status={entry.status}
+          />
+          <FinanceVoucherPostedPrintView
+            model={voucherPrintModel}
+            entryType={PAYMENT_VOUCHER_ENTRY_TYPE}
+            legalEntityCode={legalEntityCode}
+            entryDate={entryDate}
+            description={description}
+            listHref={listHref}
+            listBackLabel="Payment vouchers"
+            postedJournalHref={postedJournalHref}
+            disabled={busyAction !== null}
+            {...financePostedDocumentScreenProps}
+            archiveVault={{
+              documentKind: "PAV",
+              documentId: entry.id,
+              documentNo: documentNo,
+              legalEntityCode,
+              branchId: entry.branchId,
+              workflowStatus: entry.status,
+            }}
+            archiveVaultAdminRepair={canAdminRepairArchive}
+          />
+        </>
       ) : isCancelled && entry ? (
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">

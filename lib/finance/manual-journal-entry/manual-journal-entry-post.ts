@@ -48,6 +48,7 @@ export type PostManualJournalEntryResult = {
 }
 
 type EntryWithGlLines = ManualJournalEntryWithLines & {
+  branch: { code: string; name: string }
   lines: Array<
     ManualJournalEntryWithLines["lines"][number] & {
       glAccount: { code: string; name: string }
@@ -75,6 +76,7 @@ async function loadEntryWithGlAccountsOrThrow(
   const entry = await tx.manualJournalEntry.findFirst({
     where: { id, legalEntityCode },
     include: {
+      branch: { select: { code: true, name: true } },
       lines: {
         orderBy: { lineNo: "asc" },
         include: {
@@ -111,6 +113,8 @@ function buildPdfSnapshotForPostedEntry(
       entryNo: entry.entryNo,
       entryType: entry.entryType,
       branchId: entry.branchId,
+      branchCode: entry.branch.code,
+      branchName: entry.branch.name,
       legalEntityCode: entry.legalEntityCode,
       entryDate: entry.entryDate,
       description: entry.description,

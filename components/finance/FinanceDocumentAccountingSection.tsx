@@ -13,7 +13,7 @@ export function FinanceDocumentAccountingSection({
 }: FinanceDocumentAccountingSectionProps) {
   return (
     <section
-      className="rounded border border-zinc-200 bg-zinc-50/60 p-4"
+      className="w-full max-w-full rounded border border-zinc-200 bg-zinc-50/60 p-4"
       data-testid="finance-document-accounting-information"
     >
       <h3 className="text-sm font-semibold text-zinc-900">Accounting Information</h3>

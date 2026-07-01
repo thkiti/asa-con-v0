@@ -214,10 +214,24 @@ export async function retryManualJournalEntryPdf(
   }
 }
 
+export async function deleteManualJournalEntryArchivedPdf(
+  entryId: string
+): Promise<{ entry: ManualJournalEntryRead }> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/pdf`, {
+    method: "DELETE",
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  const body = (await res.json()) as { entry: ManualJournalEntryRead }
+  return { entry: body.entry }
+}
+
 export function buildManualJournalEntryPdfUrl(
   entryId: string,
-  disposition: "inline" | "attachment" = "inline"
+  disposition: "inline" | "attachment" = "inline",
+  cacheKey?: string | null
 ): string {
   const params = new URLSearchParams({ disposition })
+  const version = String(cacheKey ?? "").trim()
+  if (version) params.set("v", version)
   return `${BASE}/${encodeURIComponent(entryId)}/pdf?${params.toString()}`
 }

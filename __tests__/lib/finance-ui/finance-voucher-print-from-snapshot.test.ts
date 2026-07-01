@@ -10,6 +10,8 @@ function mjv260001Entry(): ManualJournalEntryRead {
     entryType: "MANUAL",
     status: "POSTED",
     branchId: "branch-1",
+    branchCode: "HO999",
+    branchName: "Head Office",
     legalEntityCode: "AS",
     entryDate: "2026-06-14T12:00:00.000Z",
     description: "Month-end accrual",
@@ -66,6 +68,8 @@ function mjv260001Snapshot(): ManualJournalEntryPdfSnapshot {
     entryType: "MANUAL",
     entryTypeLabel: "Manual Journal Voucher",
     branchId: "branch-1",
+    branchCode: "HO999",
+    branchName: "Head Office",
     legalEntityCode: "AS",
     entryDate: "2026-06-14",
     description: "Month-end accrual",
@@ -106,13 +110,13 @@ function mjv260001Snapshot(): ManualJournalEntryPdfSnapshot {
 
 describe("buildFinanceVoucherPrintModelFromManualJournalEntryPdfSnapshot", () => {
   it("matches browser print model for MJV-260001", () => {
-    const fromEntry = buildFinanceVoucherPrintModelFromManualJournalEntry(mjv260001Entry(), {
-      branchLabel: "HO999 — Head Office",
-    })
+    const fromEntry = buildFinanceVoucherPrintModelFromManualJournalEntry(mjv260001Entry())
     const fromSnapshot = buildFinanceVoucherPrintModelFromManualJournalEntryPdfSnapshot(
-      mjv260001Snapshot(),
-      { branchLabel: "HO999 — Head Office" }
+      mjv260001Snapshot()
     )
+
+    expect(fromSnapshot.branchLabel).toBe("HO999 • Head Office")
+    expect(fromEntry.branchLabel).toBe("HO999 • Head Office")
 
     expect(fromSnapshot.documentNo).toBe(fromEntry.documentNo)
     expect(fromSnapshot.documentTypeCode).toBe(fromEntry.documentTypeCode)
@@ -125,5 +129,32 @@ describe("buildFinanceVoucherPrintModelFromManualJournalEntryPdfSnapshot", () =>
     expect(fromSnapshot.approvedBy).toBe(fromEntry.approvedBy)
     expect(fromSnapshot.postedBy).toBe(fromEntry.postedBy)
     expect(fromSnapshot.accountingVoucherId).toBe(fromEntry.accountingVoucherId)
+  })
+
+  it("does not render branchId UUID when snapshot lacks branch code/name", () => {
+    const model = buildFinanceVoucherPrintModelFromManualJournalEntryPdfSnapshot({
+      ...mjv260001Snapshot(),
+      branchId: "4778631f-a86c-45c4-82cf-09520087ee1a",
+      branchCode: null,
+      branchName: null,
+    })
+
+    expect(model.branchLabel).toBe("—")
+    expect(model.branchLabel).not.toContain("4778631f")
+  })
+
+  it("uses resolved branch override when snapshot branchCode is a UUID", () => {
+    const model = buildFinanceVoucherPrintModelFromManualJournalEntryPdfSnapshot(
+      {
+        ...mjv260001Snapshot(),
+        branchId: "4778631f-a86c-45c4-82cf-09520087ee1a",
+        branchCode: "4778631f-a86c-45c4-82cf-09520087ee1a",
+        branchName: null,
+      },
+      { branchLabel: "HO999 • Head Office" }
+    )
+
+    expect(model.branchLabel).toBe("HO999 • Head Office")
+    expect(model.branchLabel).not.toContain("4778631f")
   })
 })

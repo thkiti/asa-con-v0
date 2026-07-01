@@ -600,10 +600,52 @@ body {
 }
 
 .finance-document-container {
+  box-sizing: border-box;
   margin-left: auto;
   margin-right: auto;
   width: 100%;
   max-width: var(--finance-document-max-width);
+  padding: 1.5rem;
+}
+
+@media not print {
+  .finance-posted-document-sticky-bar {
+    --finance-posted-document-sticky-bar-height: 2.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--background);
+    border-bottom: 1px solid var(--finance-grid-soft);
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--foreground) 8%, transparent);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .finance-voucher-print-root--embedded .finance-voucher-lines-table thead th {
+    position: sticky;
+    top: var(--finance-posted-document-sticky-bar-height, 2.75rem);
+    z-index: 20;
+    background: var(--background);
+    box-shadow: 0 1px 0 var(--finance-grid-soft);
+  }
+}
+
+@media print {
+  .finance-posted-document-sticky-bar {
+    position: static;
+    border-bottom: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+  }
+
+  .finance-voucher-print-root--embedded .finance-voucher-lines-table thead th {
+    position: static;
+    box-shadow: none;
+    background: transparent;
+  }
 }
 
 .finance-report-container {
@@ -1592,6 +1634,104 @@ span.finance-account .finance-account-name-part {
   border-color: var(--border);
   background: var(--btn-secondary-hover);
   color: var(--foreground);
+}
+
+@media not print {
+  .finance-voucher-print-root {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .finance-voucher-print-root--embedded {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .finance-voucher-print-sheet {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .finance-legacy-pdf-snapshot-panel {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  [data-testid="manual-journal-entry-editor"] {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .finance-voucher-lines-table {
+    width: 100%;
+  }
+
+  .finance-voucher-lines-table .finance-voucher-line-desc-col {
+    width: auto;
+    max-width: none;
+  }
+
+  .mjv-entry-lines-table col.mjv-col-memo {
+    width: auto;
+  }
+
+  /* MJV detail screen — readable app/table scale, not print sheet typography */
+  .finance-voucher-print-root--embedded {
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .finance-voucher-print-root--embedded.finance-voucher-print-font,
+  .finance-voucher-print-root--embedded .finance-voucher-print-sheet,
+  .finance-voucher-print-root--embedded .finance-voucher-print-font {
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--finance-text-primary);
+  }
+
+  .finance-voucher-print-root--embedded .finance-voucher-meta-value,
+  .finance-voucher-print-root--embedded .finance-voucher-reference-grid dd,
+  .finance-voucher-print-root--embedded .finance-voucher-evidence-grid dd,
+  .finance-voucher-print-root--embedded .finance-voucher-posted-meta dd,
+  .finance-voucher-print-root--embedded .finance-voucher-section-title,
+  .finance-voucher-print-root--embedded .finance-description-line,
+  .finance-voucher-print-root--embedded .finance-audit-line {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .finance-voucher-print-root--embedded .finance-voucher-meta-label,
+  .finance-voucher-print-root--embedded .finance-voucher-reference-grid dt,
+  .finance-voucher-print-root--embedded .finance-voucher-evidence-grid dt,
+  .finance-voucher-print-root--embedded .finance-voucher-posted-meta dt,
+  .finance-voucher-print-root--embedded .finance-description-label {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  .finance-voucher-print-root--embedded .finance-voucher-lines-table,
+  .finance-voucher-print-root--embedded .finance-voucher-lines-table.finance-table {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  .finance-voucher-print-root--embedded .finance-voucher-lines-table thead tr {
+    font-size: 0.8125rem;
+  }
+
+  .finance-voucher-print-root--embedded .finance-voucher-print-compact-line {
+    font-size: 0.875rem;
+    line-height: 1.375;
+  }
+
+  .finance-voucher-print-root--embedded .finance-table .finance-number,
+  .finance-voucher-print-root--embedded .finance-table .finance-total-value {
+    font-size: inherit;
+    font-weight: 600;
+  }
 }
 
 .finance-legacy-pdf-snapshot-title {

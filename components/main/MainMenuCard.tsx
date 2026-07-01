@@ -17,7 +17,9 @@ type MainMenuCardProps = {
 function MainMenuCardDescription({ hint }: { hint?: string }) {
   return (
     <div className={mainMenuCardHintSlotClass}>
-      <span className={mainMenuCardHintClass}>{hint?.trim() ? hint : "\u00A0"}</span>
+      <span className={mainMenuCardHintClass} data-testid="main-menu-card-subtitle">
+        {hint?.trim() ? hint : "\u00A0"}
+      </span>
     </div>
   )
 }
@@ -39,7 +41,10 @@ export function MainMenuCard({ item }: MainMenuCardProps) {
         data-testid="main-menu-card"
       >
         <div className={mainMenuCardTitleSlotClass}>
-          <span className={`${mainMenuCardTitleClass} min-w-0 flex-1`}>
+          <span
+            className={`${mainMenuCardTitleClass} min-w-0 flex-1`}
+            data-testid="main-menu-card-title"
+          >
             {item.label}
           </span>
           {badge ? <span className={mainMenuCardBadgeClass}>{badge}</span> : null}
@@ -56,7 +61,10 @@ export function MainMenuCard({ item }: MainMenuCardProps) {
       data-testid="main-menu-card"
     >
       <div className={mainMenuCardTitleSlotClass}>
-        <span className={`${mainMenuCardTitleClass} min-w-0 flex-1`}>
+        <span
+          className={`${mainMenuCardTitleClass} min-w-0 flex-1`}
+          data-testid="main-menu-card-title"
+        >
           {item.label}
         </span>
         {badge ? <span className={mainMenuCardBadgeClass}>{badge}</span> : null}

@@ -2,7 +2,7 @@ export const PETTY_CASH_VOUCHER_DOCUMENT_CODE = "PCV"
 
 export const PETTY_CASH_VOUCHER_ENTRY_TYPE = "PCV"
 
-export const PETTY_CASH_VOUCHER_TYPE_TITLE = "PETTY CASH VOUCHER"
+export const PETTY_CASH_VOUCHER_TYPE_TITLE = "PETTY CASH"
 
 export type PettyCashVoucherStatusCode =
   | "DRAFT"

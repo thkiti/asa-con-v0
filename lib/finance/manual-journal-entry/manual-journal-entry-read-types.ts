@@ -34,6 +34,8 @@ export type ManualJournalEntryRead = {
   entryType: ManualJournalEntryType
   status: ManualJournalEntryStatus
   branchId: string
+  branchCode: string | null
+  branchName: string | null
   legalEntityCode: string
   entryDate: string
   description: string | null
