@@ -159,6 +159,7 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain('href="/finance/stock-documents"')
     expect(html).toContain("Done")
     expect(html).toContain("Document Trace")
+    expect(html).toContain('href="/finance/audit/document-trace"')
     expect(html).toContain("Attachments")
     expect(html).toContain('aria-disabled="true"')
     expect(html).not.toContain('href="/finance/reconciliation"')

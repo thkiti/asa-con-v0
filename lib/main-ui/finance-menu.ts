@@ -180,9 +180,10 @@ function buildPrimaryFinanceMenuHubs(): Record<
           "/finance/stock-documents",
           "Search and audit stock documents — CNT, ADJ, ORD, DEY, ORS, ORI — with posting and finance linkage."
         ),
-        comingSoon(
+        done(
           "document-trace",
           "Document Trace",
+          "/finance/audit/document-trace",
           "Lineage from business document through voucher to ledger"
         ),
         comingSoon(

@@ -16,6 +16,12 @@ export const financeTableCompact = "finance-table finance-table--compact"
 export const financeReportTable = "finance-table finance-report-table"
 /** Scroll wrapper for finance tables — horizontal scroll only */
 export const financeTableScroll = "finance-table-scroll overflow-x-auto"
+/** Document trace list — bounded vertical scroll with sticky header */
+export const documentTraceListScroll =
+  "finance-table-scroll max-h-[26.25rem] overflow-y-auto overflow-x-auto"
+
+export const documentTraceListTableHead =
+  "sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgb(228_228_231)]"
 
 export const financeTh = "px-2 py-2"
 export const financeThRight = `${numericTh} px-2 py-2`
