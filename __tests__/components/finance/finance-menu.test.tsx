@@ -219,9 +219,16 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain("Bank Reconciliation")
     expect(html).toContain("Cash Reconciliation")
     expect(html).toContain("Close Readiness")
-    expect(html).toContain("Accounting Periods")
+    expect(html).not.toContain("Accounting Periods")
     expect(html).not.toContain("Period Management")
+    expect(html).toContain(
+      "Select a period to review close readiness, perform soft/hard close and reopen, view timeline, and export audit evidence."
+    )
     expect(html).toContain('href="/finance/periods"')
+    const cardTitles = [
+      ...html.matchAll(/data-testid="main-menu-card-title"[^>]*>([^<]+)</g),
+    ].map((match) => match[1])
+    expect(cardTitles).toHaveLength(4)
   })
 })
 
@@ -244,10 +251,11 @@ describe("finance-menu config", () => {
     expect(rev?.href).toBe("/finance/revenue-vouchers")
     expect(keys).toContain("petty-cash")
     expect(keys).toContain("trial-balance")
-    expect(keys).toContain("period-management")
-    const periodManagement = items.find((item) => item.key === "period-management")
-    expect(periodManagement?.label).toBe("Accounting Periods")
-    expect(periodManagement?.href).toBe("/finance/periods")
+    expect(keys).toContain("close-readiness")
+    const closeReadiness = items.find((item) => item.key === "close-readiness")
+    expect(closeReadiness?.label).toBe("Close Readiness")
+    expect(closeReadiness?.href).toBe("/finance/periods")
+    expect(keys).not.toContain("period-management")
     expect(keys).toContain("bank-reconciliation")
     expect(keys).toContain("cash-reconciliation")
     expect(keys).toContain("operational-reconciliation")

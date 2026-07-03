@@ -201,13 +201,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
               "close-readiness",
               "Close Readiness",
               "/finance/periods",
-              "Select a period to review close readiness and blockers"
-            ),
-            done(
-              "period-management",
-              "Accounting Periods",
-              "/finance/periods",
-              "Open period, soft and hard close, reopen, timeline, and audit export"
+              "Select a period to review close readiness, perform soft/hard close and reopen, view timeline, and export audit evidence."
             ),
           ],
         },
