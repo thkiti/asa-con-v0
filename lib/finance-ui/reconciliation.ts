@@ -43,7 +43,7 @@ export type ReconciliationDashboardFilter = FinanceFilterValues & {
   status?: ReconciliationRowStatus | "ALL"
 }
 
-const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
+import { periodKeyToDateRange as financePeriodKeyToDateRange } from "@/lib/finance/period-key"
 
 export function isZeroAmount(value: string): boolean {
   const num = Number(value)
@@ -75,21 +75,7 @@ export function periodKeyToDateRange(periodKey: string): {
   from: string
   to: string
 } | null {
-  if (!PERIOD_KEY_PATTERN.test(periodKey)) {
-    return null
-  }
-  const [yearStr, monthStr] = periodKey.split("-")
-  const year = Number(yearStr)
-  const month = Number(monthStr)
-  if (!year || month < 1 || month > 12) {
-    return null
-  }
-  const lastDay = new Date(year, month, 0).getDate()
-  const mm = String(month).padStart(2, "0")
-  return {
-    from: `${yearStr}-${mm}-01`,
-    to: `${yearStr}-${mm}-${String(lastDay).padStart(2, "0")}`,
-  }
+  return financePeriodKeyToDateRange(periodKey)
 }
 
 export function buildApiFilter(

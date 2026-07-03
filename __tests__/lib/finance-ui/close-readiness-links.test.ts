@@ -106,6 +106,24 @@ describe("close-readiness-links", () => {
       "Snapshot history",
     ])
   })
+  it("includes bank and cash reconciliation quick links", () => {
+    const links = buildCloseReadinessQuickLinks(readiness())
+    expect(
+      links.some(
+        (link) =>
+          link.href ===
+          "/finance/reconciliation/bank?periodKey=2026-05&branchId=branch-1"
+      )
+    ).toBe(true)
+    expect(
+      links.some(
+        (link) =>
+          link.href ===
+          "/finance/reconciliation/cash?periodKey=2026-05&branchId=branch-1"
+      )
+    ).toBe(true)
+  })
+
   it("maps close gate blocker to snapshot and trace links", () => {
     const links = resolveCloseGateBlockerLinks(
       {

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { DocumentTraceListTable } from "@/components/finance/DocumentTraceListTable"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
 import { DocumentTraceMoreFilter, type DocumentTraceMoreFilterHandle } from "@/components/finance/DocumentTraceMoreFilter"
 import {
   formatTraceNodeDate,
@@ -547,13 +548,10 @@ export function DocumentTracePage() {
           <label htmlFor="document-trace-period" className="finance-filter-label">
             Period
           </label>
-          <input
+          <AccountingPeriodInput
             id="document-trace-period"
-            type="text"
-            inputMode="numeric"
-            placeholder="YYYY-MM"
             value={filters.period}
-            onChange={(event) => updateFilters({ period: event.target.value })}
+            onChange={(value) => updateFilters({ period: value })}
             onKeyDown={(event) => {
               if (event.key === "Enter" && searchEnabled) {
                 event.preventDefault()

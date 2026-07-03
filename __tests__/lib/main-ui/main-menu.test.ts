@@ -106,7 +106,13 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("HO_ADMIN", "retained-earnings")).toBeUndefined()
     expect(findItem("HO_ADMIN", "chart-of-accounts-import")).toBeUndefined()
     expect(findItem("HO_ADMIN", "reconciliation-dashboard")).toBeUndefined()
-    expect(findItem("HO_ADMIN", "accounting-periods")?.href).toBe("/finance/periods")
+    expect(findItem("HO_ADMIN", "period-management")?.href).toBe("/finance/periods")
+    expect(findItem("HO_ADMIN", "bank-reconciliation")?.href).toBe(
+      "/finance/reconciliation/bank"
+    )
+    expect(findItem("HO_ADMIN", "cash-reconciliation")?.href).toBe(
+      "/finance/reconciliation/cash"
+    )
     expect(findItem("HO_ADMIN", "opening-balance")).toBeUndefined()
   })
 

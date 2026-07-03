@@ -13,6 +13,8 @@ import {
   formatFinanceReportPeriodLabel,
 } from "@/lib/finance-ui/finance-report-display"
 import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
@@ -106,7 +108,8 @@ export function BalanceSheetPage() {
       hideZeroBalances,
     }
     if (filterMode === "period") {
-      return { ...base, periodKey: periodKey.trim() }
+      const normalized = resolveAccountingPeriodKeyFilter(periodKey)
+      return { ...base, ...(normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }) }
     }
     return { ...base, from: from.trim(), to: to.trim() }
   }, [filterMode, from, hideZeroBalances, periodKey, to])
@@ -160,12 +163,11 @@ export function BalanceSheetPage() {
               <label htmlFor="bs-period-key" className="finance-filter-label">
                 Period key
               </label>
-              <input
+              <AccountingPeriodInput
                 id="bs-period-key"
                 className="finance-filter-control finance-filter-control--mono"
-                placeholder="2026-05"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
+                onChange={setPeriodKey}
               />
             </div>
           ) : (

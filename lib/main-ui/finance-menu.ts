@@ -6,7 +6,7 @@ import type { Role } from "@/lib/shared"
  *
  * Document layer (Daily Work): MJV, PAV, INV, REV, Petty Cash
  * Reporting layer (Dashboard): GL, TB, P&L, BS
- * Period layer (Accounting Periods): month-end close, closing entry, reopen, timeline
+ * Period layer (Month-End Closing): reconciliation, close readiness, period admin
  * Audit layer (Audit): Voucher Lookup, Document Trace, Attachments
  *
  * No separate Ledger, Transactions, JV, APV, ACC, or Receivables groups.
@@ -169,17 +169,48 @@ function buildPrimaryFinanceMenuHubs(): Record<
       ],
     },
     "accounting-periods": {
-      label: "Accounting Periods",
+      label: "Month-End Closing",
       description:
-        "Manage accounting periods, month-end closing, closing entries, reopen workflow and audit timeline.",
-      href: "/finance/periods",
-      items: [
-        done(
-          "accounting-periods",
-          "Accounting Periods",
-          "/finance/periods",
-          "Month-end closing entry, soft and hard close, reopen, timeline, and audit export"
-        ),
+        "Reconciliation, close readiness, accounting period management, and month-end closing workflow.",
+      href: "/finance/accounting-periods",
+      items: [],
+      itemGroups: [
+        {
+          key: "reconciliation-close",
+          label: "Reconciliation / Close",
+          items: [
+            done(
+              "operational-reconciliation",
+              "Operational Reconciliation",
+              "/finance/reconciliation",
+              "Read-only operational vs GL comparison"
+            ),
+            done(
+              "bank-reconciliation",
+              "Bank Reconciliation",
+              "/finance/reconciliation/bank",
+              "Period bank worksheet for configured bank GL accounts"
+            ),
+            done(
+              "cash-reconciliation",
+              "Cash Reconciliation",
+              "/finance/reconciliation/cash",
+              "Branch cash count worksheet for configured cash GL accounts"
+            ),
+            done(
+              "close-readiness",
+              "Close Readiness",
+              "/finance/periods",
+              "Select a period to review close readiness and blockers"
+            ),
+            done(
+              "period-management",
+              "Accounting Periods",
+              "/finance/periods",
+              "Open period, soft and hard close, reopen, timeline, and audit export"
+            ),
+          ],
+        },
       ],
     },
     audit: {
@@ -334,4 +365,4 @@ export function getAllFinanceMenuItems(role: Role): FinanceMenuItem[] {
 }
 
 export const FINANCE_MENU_HOME_DESCRIPTION =
-  "Daily Work — create and process finance documents. Dashboard — view GL and financial statements. Accounting Periods — month-end close and audit timeline. Audit — trace and verify documents."
+  "Daily Work — create and process finance documents. Dashboard — view GL and financial statements. Month-End Closing — reconciliation, close readiness, and period administration. Audit — trace and verify documents."

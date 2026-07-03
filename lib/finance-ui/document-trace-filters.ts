@@ -1,4 +1,5 @@
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { normalizeAccountingPeriodKey } from "@/lib/finance/period-key"
 import {
   DOCUMENT_TRACE_DOC_TYPES,
   createDefaultDocumentTraceFilters,
@@ -34,7 +35,10 @@ export function parseDocumentTraceFiltersFromSearchParams(
     legalEntityCode,
     docType: parseDocumentTraceDocType(params.get("docType") ?? "", legalEntityCode),
     branchCode: params.get("branch")?.trim() ?? defaults.branchCode,
-    period: params.get("period")?.trim() ?? defaults.period,
+    period:
+      normalizeAccountingPeriodKey(params.get("period") ?? "") ??
+      params.get("period")?.trim() ??
+      defaults.period,
     dateFrom:
       params.get("dateFrom")?.trim() ?? params.get("from")?.trim() ?? defaults.dateFrom,
     dateTo: params.get("dateTo")?.trim() ?? params.get("to")?.trim() ?? defaults.dateTo,
@@ -54,7 +58,9 @@ export function buildDocumentTraceSearchParams(
     params.set("branch", filters.branchCode.trim())
   }
   if (filters.period.trim()) {
-    params.set("period", filters.period.trim())
+    const normalized =
+      normalizeAccountingPeriodKey(filters.period) ?? filters.period.trim()
+    params.set("period", normalized)
   }
   if (filters.dateFrom.trim()) {
     params.set("dateFrom", filters.dateFrom.trim())

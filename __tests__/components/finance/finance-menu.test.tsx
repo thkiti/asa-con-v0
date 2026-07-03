@@ -34,18 +34,18 @@ const hoFinance: SessionUserApi = {
 describe("FinanceMenuView", () => {
   it("renders four F0.2 finance hub cards", () => {
     const html = renderToStaticMarkup(<FinanceMenuView user={hoFinance} />)
-    expect(html).toContain('data-testid="main-menu-page"')
+    expect(html).toContain('data-testid="finance-hub-page"')
     expect(html).toContain(mainMenuGridClass)
     expect(html).toContain('href="/finance/daily-work"')
     expect(html).toContain('href="/finance/dashboard"')
-    expect(html).toContain('href="/finance/periods"')
+    expect(html).toContain('href="/finance/accounting-periods"')
     expect(html).toContain('href="/finance/audit"')
     expect(html).toContain("Daily Work")
     expect(html).toContain("Dashboard")
-    expect(html).toContain("Accounting Periods")
+    expect(html).toContain("Month-End Closing")
     expect(html).toContain("Audit")
     expect(html).toContain(
-      "Manage accounting periods, month-end closing, closing entries, reopen workflow and audit timeline."
+      "Reconciliation, close readiness, accounting period management, and month-end closing workflow."
     )
     expect(html).not.toContain("Transactions")
     expect(html).not.toContain("Ledger")
@@ -202,15 +202,26 @@ describe("FinanceMenuHubView", () => {
     expect(html).not.toContain('href="/finance/periods"')
   })
 
-  it("renders accounting periods hub linking to period admin", () => {
+  it("renders month-end closing hub with reconciliation and close links", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "accounting-periods")
-    expect(hub?.label).toBe("Accounting Periods")
-    expect(hub?.href).toBe("/finance/periods")
+    expect(hub?.label).toBe("Month-End Closing")
+    expect(hub?.href).toBe("/finance/accounting-periods")
+    expect(hub?.itemGroups?.[0]?.label).toBe("Reconciliation / Close")
+
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
+    expect(html).toContain("ASAS • MONTH-END CLOSING")
+    expect(html).toContain('href="/finance/reconciliation"')
+    expect(html).toContain('href="/finance/reconciliation/bank"')
+    expect(html).toContain('href="/finance/reconciliation/cash"')
+    expect(html).toContain("Operational Reconciliation")
+    expect(html).toContain("Bank Reconciliation")
+    expect(html).toContain("Cash Reconciliation")
+    expect(html).toContain("Close Readiness")
+    expect(html).toContain("Accounting Periods")
+    expect(html).not.toContain("Period Management")
     expect(html).toContain('href="/finance/periods"')
-    expect(html).toContain("Month-end closing entry")
   })
 })
 
@@ -233,7 +244,13 @@ describe("finance-menu config", () => {
     expect(rev?.href).toBe("/finance/revenue-vouchers")
     expect(keys).toContain("petty-cash")
     expect(keys).toContain("trial-balance")
-    expect(keys).toContain("accounting-periods")
+    expect(keys).toContain("period-management")
+    const periodManagement = items.find((item) => item.key === "period-management")
+    expect(periodManagement?.label).toBe("Accounting Periods")
+    expect(periodManagement?.href).toBe("/finance/periods")
+    expect(keys).toContain("bank-reconciliation")
+    expect(keys).toContain("cash-reconciliation")
+    expect(keys).toContain("operational-reconciliation")
     expect(keys).toContain("voucher-lookup")
     const voucherLookup = items.find((item) => item.key === "voucher-lookup")
     expect(voucherLookup?.status).toBe("available")

@@ -98,6 +98,12 @@ export const voucherInquiryFilterBar =
 export const voucherInquiryFilterBranch =
   "voucher-inquiry-filter-field voucher-inquiry-filter-branch"
 
+export const voucherInquiryFilterBranchWide =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-branch-wide"
+
+export const voucherInquiryFilterGlAccount =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-gl-account"
+
 export const voucherInquiryFilterStatus =
   "voucher-inquiry-filter-field voucher-inquiry-filter-status"
 

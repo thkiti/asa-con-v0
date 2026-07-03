@@ -38,6 +38,12 @@ function buildPrisma(period: unknown) {
       findMany: jest.fn(async () => []),
     },
     branch: { findFirst: jest.fn() },
+    bankReconciliation: {
+      findMany: jest.fn(async () => []),
+    },
+    cashReconciliation: {
+      findMany: jest.fn(async () => []),
+    },
   }
 }
 

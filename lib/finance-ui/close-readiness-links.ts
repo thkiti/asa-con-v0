@@ -5,6 +5,8 @@ import type {
 import type { CloseGateBlocker } from "@/lib/finance/close-gate-errors"
 import type { CloseReadinessResult } from "./close-readiness"
 import { buildSnapshotDetailPath } from "./trace-links"
+import { buildBankReconciliationPath } from "./bank-reconciliation"
+import { buildCashReconciliationPath } from "./cash-reconciliation"
 
 export type CloseReadinessNavLink = {
   label: string
@@ -115,6 +117,22 @@ export function buildCloseReadinessQuickLinks(
     href: buildReconciliationDashboardPath({
       branchId: period.branchId,
       periodKey: period.periodKey,
+    }),
+  })
+
+  links.push({
+    label: "Bank reconciliation",
+    href: buildBankReconciliationPath({
+      periodKey: period.periodKey,
+      branchId: period.branchId,
+    }),
+  })
+
+  links.push({
+    label: "Cash reconciliation",
+    href: buildCashReconciliationPath({
+      periodKey: period.periodKey,
+      branchId: period.branchId,
     }),
   })
 
@@ -259,6 +277,10 @@ function buildBlockerLinkReadiness(
       revenueDomainPresent: false,
       snapshotAgeDays: null,
       compareDriftDetected: false,
+      bankReconciliationCompleted: null,
+      cashReconciliationCompleted: null,
+      bankUnresolvedVarianceCount: null,
+      cashUnresolvedVarianceCount: null,
     },
     period: {
       id: context.periodId ?? "",

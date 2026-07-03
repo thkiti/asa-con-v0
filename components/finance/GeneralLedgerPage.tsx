@@ -10,6 +10,8 @@ import {
 } from "@/lib/finance-ui/general-ledger"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
 import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import { GlAccountCombobox } from "@/components/finance/GlAccountCombobox"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 
@@ -43,7 +45,11 @@ export function GeneralLedgerPage() {
         base.accountCode = code
       }
       if (filterMode === "period") {
-        return { ...base, periodKey: periodKey.trim() }
+        const normalized = resolveAccountingPeriodKeyFilter(periodKey)
+        return {
+          ...base,
+          ...(normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }),
+        }
       }
       return { ...base, from: from.trim(), to: to.trim() }
     },
@@ -135,12 +141,11 @@ export function GeneralLedgerPage() {
               <label htmlFor="gl-period-key" className="finance-filter-label">
                 Period key
               </label>
-              <input
+              <AccountingPeriodInput
                 id="gl-period-key"
                 className="finance-filter-control finance-filter-control--mono"
-                placeholder="2026-05"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
+                onChange={setPeriodKey}
                 data-testid="gl-period-key"
               />
             </div>

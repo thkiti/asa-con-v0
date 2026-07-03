@@ -8,6 +8,8 @@ import type {
   SessionDisplay,
 } from "@/lib/finance-ui/types"
 import { PeriodTable } from "./PeriodTable"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { isValidPeriodKey, normalizeAccountingPeriodKey } from "@/lib/finance/period-key"
 import {
   themeBannerError,
   themeInput,
@@ -22,8 +24,6 @@ import {
   voucherInquiryFilterField,
   voucherInquiryFilterSelect,
 } from "@/lib/finance-ui/finance-visual-classes"
-
-const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
 
 const STATUS_FILTER_OPTIONS: AccountingPeriodStatus[] = [
   "OPEN",
@@ -119,10 +119,12 @@ export function PeriodAdminPage({
     setMessage(null)
     setError(null)
 
-    const periodKey = createPeriodKey.trim()
+    const periodKey =
+      normalizeAccountingPeriodKey(createPeriodKey) ??
+      createPeriodKey.trim()
 
-    if (!PERIOD_KEY_PATTERN.test(periodKey)) {
-      setError("Period key must match YYYY-MM")
+    if (!isValidPeriodKey(periodKey)) {
+      setError("Period key must be a valid year and month (e.g. 202601 or 2026-01)")
       return
     }
 
@@ -209,11 +211,9 @@ export function PeriodAdminPage({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="block sm:col-span-2">
               <span className={themeLabel}>Period key</span>
-              <input
-                type="text"
+              <AccountingPeriodInput
                 value={createPeriodKey}
-                onChange={(e) => setCreatePeriodKey(e.target.value)}
-                placeholder="YYYY-MM"
+                onChange={setCreatePeriodKey}
                 className={`${themeInput} text-sm`}
                 disabled={controlsDisabled}
               />

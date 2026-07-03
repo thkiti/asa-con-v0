@@ -107,13 +107,15 @@ export type ManualSnapshotScopeValidationResult =
   | { ok: true; scope: ResolvedManualSnapshotScope }
   | { ok: false; code: "INVALID_SCOPE"; message: string }
 
+import { normalizeAccountingPeriodKey } from "./period-key"
+
 const PERIOD_KEY_PATTERN = /^\d{4}-\d{2}$/
 
 export function periodKeyToSnapshotDateRange(periodKey: string): {
   fromDate: Date
   toDate: Date
 } | null {
-  const trimmed = periodKey.trim()
+  const trimmed = normalizeAccountingPeriodKey(periodKey) ?? periodKey.trim()
   if (!PERIOD_KEY_PATTERN.test(trimmed)) {
     return null
   }

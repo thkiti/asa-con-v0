@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
 import {
   fetchJournalEntries,
   type JournalListFilter,
@@ -62,14 +63,13 @@ export function JournalEntryListPage() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-zinc-600">Period key</span>
-          <input
+          <AccountingPeriodInput
             className="rounded border border-zinc-300 px-2 py-1"
-            placeholder="2026-05"
             value={filter.periodKey ?? ""}
-            onChange={(e) =>
+            onChange={(value) =>
               setFilter((prev) => ({
                 ...prev,
-                periodKey: e.target.value || undefined,
+                periodKey: value || undefined,
                 offset: 0,
               }))
             }

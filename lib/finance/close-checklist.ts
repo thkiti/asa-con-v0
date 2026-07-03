@@ -24,6 +24,7 @@ import type {
   SnapshotDashboardRow,
   SnapshotIssueRow,
 } from "./reconciliation-snapshot-types"
+import type { PeriodReconciliationReadinessSummary } from "./period-reconciliation-readiness"
 
 export type {
   CloseChecklistGroup,
@@ -238,6 +239,154 @@ function makeChecklistItem(
   }
 }
 
+function appendPeriodReconciliationItems(
+  items: CloseChecklistItem[],
+  period: CloseChecklistPeriodInput,
+  summary: PeriodReconciliationReadinessSummary | null
+): void {
+  if (!summary?.applies) {
+    return
+  }
+
+  const refs = periodRefs(period)
+
+  if (summary.bank.configuredAccounts.length === 0) {
+    items.push(
+      makeChecklistItem(
+        "bank-reconciliation-not-configured",
+        "No bank reconciliation accounts configured",
+        "Mark one or more GL accounts with the bank reconciliation role in Chart of Accounts.",
+        refs
+      )
+    )
+  } else if (summary.bank.required) {
+    if (summary.bank.missingWorksheetAccountCodes.length > 0) {
+      items.push(
+        makeChecklistItem(
+          "bank-reconciliation-missing",
+          "Bank reconciliation not started",
+          `Create and confirm bank reconciliation for configured account(s): ${summary.bank.missingWorksheetAccountCodes.join(", ")}.`,
+          refs
+        )
+      )
+    } else if (
+      summary.bank.incompleteWorksheetAccountCodes.length > 0 ||
+      !summary.bank.completed
+    ) {
+      items.push(
+        makeChecklistItem(
+          "bank-reconciliation-incomplete",
+          "Bank reconciliation not confirmed",
+          `Bank reconciliation worksheet(s) exist but are not confirmed or locked for: ${summary.bank.incompleteWorksheetAccountCodes.join(", ") || "configured accounts"}.`,
+          {
+            ...refs,
+            bankReconciliationId: summary.bank.records[0]?.id,
+          }
+        )
+      )
+    } else {
+      items.push(
+        makeChecklistItem(
+          "bank-reconciliation-complete",
+          "Bank reconciliation confirmed",
+          `${summary.bank.configuredAccounts.length} configured bank account worksheet(s) confirmed for this period.`,
+          refs
+        )
+      )
+    }
+
+    if (summary.bank.unresolvedVarianceCount > 0) {
+      items.push(
+        makeChecklistItem(
+          "bank-reconciliation-variance",
+          "Bank reconciliation variance unresolved",
+          `${summary.bank.unresolvedVarianceCount} bank worksheet(s) have non-zero variance.`,
+          refs
+        )
+      )
+    }
+
+    if (summary.bank.missingEvidenceCount > 0) {
+      items.push(
+        makeChecklistItem(
+          "bank-reconciliation-evidence-missing",
+          "Bank reconciliation evidence missing",
+          `${summary.bank.missingEvidenceCount} bank worksheet(s) have no evidence note attached.`,
+          refs
+        )
+      )
+    }
+  }
+
+  if (summary.cash.configuredAccounts.length === 0) {
+    items.push(
+      makeChecklistItem(
+        "cash-reconciliation-not-configured",
+        "No cash reconciliation accounts configured",
+        "Mark one or more GL accounts with the cash reconciliation role in Chart of Accounts.",
+        refs
+      )
+    )
+  } else if (summary.cash.required) {
+    if (summary.cash.missingWorksheetAccountCodes.length > 0) {
+      items.push(
+        makeChecklistItem(
+          "cash-reconciliation-missing",
+          "Cash reconciliation not started",
+          `Create and confirm branch cash reconciliation for configured account(s): ${summary.cash.missingWorksheetAccountCodes.join(", ")}.`,
+          refs
+        )
+      )
+    } else if (
+      summary.cash.incompleteWorksheetAccountCodes.length > 0 ||
+      !summary.cash.completed
+    ) {
+      items.push(
+        makeChecklistItem(
+          "cash-reconciliation-incomplete",
+          "Cash reconciliation not confirmed",
+          `Cash reconciliation worksheet(s) exist but are not confirmed or locked for: ${summary.cash.incompleteWorksheetAccountCodes.join(", ") || "configured accounts"}.`,
+          {
+            ...refs,
+            cashReconciliationId: summary.cash.records[0]?.id,
+          }
+        )
+      )
+    } else {
+      items.push(
+        makeChecklistItem(
+          "cash-reconciliation-complete",
+          "Cash reconciliation confirmed",
+          `${summary.cash.configuredAccounts.length} configured cash account worksheet(s) confirmed for this period.`,
+          refs
+        )
+      )
+    }
+
+    if (summary.cash.unresolvedVarianceCount > 0) {
+      items.push(
+        makeChecklistItem(
+          "cash-reconciliation-variance",
+          "Cash reconciliation variance unresolved",
+          `${summary.cash.unresolvedVarianceCount} cash worksheet(s) have non-zero variance.`,
+          refs
+        )
+      )
+    }
+
+    if (summary.cash.missingEvidenceCount > 0) {
+      items.push(
+        makeChecklistItem(
+          "cash-reconciliation-evidence-missing",
+          "Cash reconciliation evidence missing",
+          `${summary.cash.missingEvidenceCount} cash worksheet(s) have no evidence note attached.`,
+          refs
+        )
+      )
+    }
+  }
+}
+
 export function evaluateCloseBlockerRules(
   context: CloseBlockerEvaluationContext
 ): CloseChecklistItem[] {
@@ -290,6 +439,12 @@ export function evaluateCloseBlockerRules(
       )
     )
   }
+
+  appendPeriodReconciliationItems(
+    items,
+    period,
+    context.periodReconciliation
+  )
 
   if (!latestSnapshot) {
     items.push(
@@ -546,6 +701,18 @@ function buildCloseChecklistMetrics(
     revenueDomainPresent: hasDashboardDomain(dashboardRows, "revenue"),
     snapshotAgeDays: latest ? daysBetween(latest.createdAt, nowIso) : null,
     compareDriftDetected,
+    bankReconciliationCompleted: input.periodReconciliation?.applies
+      ? input.periodReconciliation.bank.completed
+      : null,
+    cashReconciliationCompleted: input.periodReconciliation?.applies
+      ? input.periodReconciliation.cash.completed
+      : null,
+    bankUnresolvedVarianceCount: input.periodReconciliation?.applies
+      ? input.periodReconciliation.bank.unresolvedVarianceCount
+      : null,
+    cashUnresolvedVarianceCount: input.periodReconciliation?.applies
+      ? input.periodReconciliation.cash.unresolvedVarianceCount
+      : null,
   }
 }
 
@@ -583,6 +750,7 @@ export function buildCloseChecklist(
       issueSummary,
       dashboardRows,
       closingEntry: input.closingEntry ?? null,
+      periodReconciliation: input.periodReconciliation ?? null,
       nowIso,
       staleSnapshotThresholdDays,
       metrics: {

@@ -122,6 +122,8 @@ model Branch {
   invoiceVouchers          InvoiceVoucher[]
   accountingPeriods        AccountingPeriod[]
   reconciliationSnapshots  ReconciliationSnapshot[]
+  bankReconciliations      BankReconciliation[]
+  cashReconciliations      CashReconciliation[]
   salesTargets             BranchSalesTarget[]
   workTimeEntries          WorkTimeEntry[]
 }
@@ -687,6 +689,12 @@ enum GlAccountType {
   EXPENSE
 }
 
+enum GlAccountReconciliationRole {
+  NONE
+  BANK
+  CASH
+}
+
 enum VoucherStatus {
   DRAFT
   POSTED
@@ -759,15 +767,16 @@ enum InvoiceVoucherStatus {
 }
 
 model GlAccount {
-  id          String         @id @default(uuid())
-  code        String         @unique
-  name        String
-  accountType GlAccountType
-  isActive    Boolean        @default(true)
-  deleted     Boolean        @default(false)
-  parentId    String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                  String                      @id @default(uuid())
+  code                String                      @unique
+  name                String
+  accountType         GlAccountType
+  reconciliationRole  GlAccountReconciliationRole @default(NONE)
+  isActive            Boolean                     @default(true)
+  deleted             Boolean                     @default(false)
+  parentId            String?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
 
   parent            GlAccount?         @relation("GlAccountHierarchy", fields: [parentId], references: [id])
   children          GlAccount[]        @relation("GlAccountHierarchy")
@@ -781,6 +790,8 @@ model GlAccount {
   revenueVoucherReceiveTo   RevenueVoucher[]     @relation("RevenueVoucherReceiveTo")
   revenueVoucherLines       RevenueVoucherLine[]
   invoiceVoucherLines       InvoiceVoucherLine[]
+  bankReconciliations       BankReconciliation[]
+  cashReconciliations       CashReconciliation[]
 }
 
 model LegalEntity {
@@ -799,6 +810,8 @@ model LegalEntity {
   accountingPeriods    AccountingPeriod[]
   stockDocuments       StockDocument[]
   taxPolicies          TaxPolicy[]
+  bankReconciliations  BankReconciliation[]
+  cashReconciliations  CashReconciliation[]
 }
 
 /// Effective-dated VAT/tax rate policy for finance and POS snapshotting.
@@ -1366,6 +1379,13 @@ model InvoiceVoucherLine {
   @@index([invoiceVoucherId])
 }
 
+enum PeriodReconciliationStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  LOCKED
+}
+
 enum ReconciliationSnapshotKind {
   MANUAL
 }
@@ -1405,6 +1425,90 @@ model ReconciliationSnapshot {
 
   @@index([branchId, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
+}
+
+/// Period bank reconciliation worksheet — primary evidence for close readiness (Phase 23C).
+model BankReconciliation {
+  id              String @id @default(uuid())
+  legalEntityCode String
+  periodKey       String
+  branchId        String?
+  glAccountId     String
+
+  glBalance            Decimal @db.Decimal(18, 2)
+  bankStatementBalance Decimal @db.Decimal(18, 2)
+  outstandingDeposits  Decimal @default(0) @db.Decimal(18, 2)
+  outstandingPayments  Decimal @default(0) @db.Decimal(18, 2)
+  bankCharges          Decimal @default(0) @db.Decimal(18, 2)
+  interest             Decimal @default(0) @db.Decimal(18, 2)
+  adjustments          Decimal @default(0) @db.Decimal(18, 2)
+  reconciledBalance    Decimal @db.Decimal(18, 2)
+  variance             Decimal @db.Decimal(18, 2)
+
+  note         String? @db.Text
+  evidenceNote String? @db.Text
+
+  status PeriodReconciliationStatus @default(DRAFT)
+
+  submittedAt        DateTime?
+  submittedByStaffId String?
+  confirmedAt        DateTime?
+  confirmedByStaffId String?
+  lockedAt           DateTime?
+  lockedByStaffId    String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdByStaffId String
+  updatedByStaffId String?
+
+  legalEntity LegalEntity @relation(fields: [legalEntityCode], references: [code])
+  branch      Branch?     @relation(fields: [branchId], references: [id])
+  glAccount   GlAccount   @relation(fields: [glAccountId], references: [id])
+
+  @@unique([legalEntityCode, periodKey, glAccountId])
+  @@index([legalEntityCode, periodKey])
+  @@index([periodKey])
+  @@index([branchId, periodKey])
+}
+
+/// Period cash reconciliation worksheet — branch-scoped cash count evidence (Phase 23C).
+model CashReconciliation {
+  id              String @id @default(uuid())
+  legalEntityCode String
+  periodKey       String
+  branchId        String
+  glAccountId     String
+
+  expectedCash      Decimal @db.Decimal(18, 2)
+  actualCountedCash Decimal @db.Decimal(18, 2)
+  variance          Decimal @db.Decimal(18, 2)
+
+  note         String? @db.Text
+  evidenceNote String? @db.Text
+
+  status PeriodReconciliationStatus @default(DRAFT)
+
+  submittedAt        DateTime?
+  submittedByStaffId String?
+  confirmedAt        DateTime?
+  confirmedByStaffId String?
+  lockedAt           DateTime?
+  lockedByStaffId    String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdByStaffId String
+  updatedByStaffId String?
+
+  legalEntity LegalEntity @relation(fields: [legalEntityCode], references: [code])
+  branch      Branch      @relation(fields: [branchId], references: [id])
+  glAccount   GlAccount   @relation(fields: [glAccountId], references: [id])
+
+  @@unique([legalEntityCode, periodKey, branchId, glAccountId])
+  @@index([legalEntityCode, periodKey])
+  @@index([periodKey])
+  @@index([branchId, periodKey])
 }
 
 enum LegacySalesImportBatchStatus {

@@ -18,6 +18,19 @@ describe("manual-journal-entry-list-filter", () => {
     })
   })
 
+  it("maps compact period key to month date range", () => {
+    expect(
+      resolveManualJournalListDateRange({
+        periodKey: "202606",
+        dateFrom: "",
+        dateTo: "",
+      })
+    ).toEqual({
+      dateFrom: "2026-06-01",
+      dateTo: "2026-06-30",
+    })
+  })
+
   it("prefers advanced from/to over period key", () => {
     expect(
       resolveManualJournalListDateRange({

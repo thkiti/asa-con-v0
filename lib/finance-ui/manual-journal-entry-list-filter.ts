@@ -3,6 +3,7 @@ import type {
   ManualJournalEntryTypeCode,
 } from "@/lib/finance-ui/manual-journal-entry-display"
 import type { ManualJournalEntryListFilterInput } from "@/lib/finance-ui/manual-journal-entries"
+import { periodKeyToDateRange, resolveAccountingPeriodKeyFilter } from "@/lib/finance/period-key"
 
 export type ManualJournalEntryPostingStateFilter = "all" | "posted" | "unposted"
 
@@ -44,18 +45,15 @@ export function resolveManualJournalListDateRange(input: {
     }
   }
 
-  const period = input.periodKey.trim()
-  const match = /^(\d{4})-(\d{2})$/.exec(period)
-  if (!match) return {}
+  const period = resolveAccountingPeriodKeyFilter(input.periodKey)
+  if (!period) return {}
 
-  const year = Number(match[1])
-  const month = Number(match[2])
-  if (month < 1 || month > 12) return {}
+  const range = periodKeyToDateRange(period)
+  if (!range) return {}
 
-  const lastDay = new Date(year, month, 0).getDate()
   return {
-    dateFrom: `${match[1]}-${match[2]}-01`,
-    dateTo: `${match[1]}-${match[2]}-${String(lastDay).padStart(2, "0")}`,
+    dateFrom: range.from,
+    dateTo: range.to,
   }
 }
 

@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import {
   createReconciliationSnapshot,
   fetchReconciliationDashboard,
@@ -239,14 +241,10 @@ export function ReconciliationPage({
           </label>
           <label className="flex flex-col gap-1 text-sm text-zinc-600">
             Period key
-            <input
-              type="text"
+            <AccountingPeriodInput
               value={filter.periodKey ?? ""}
-              onChange={(event) =>
-                setFilter({ ...filter, periodKey: event.target.value })
-              }
+              onChange={(value) => setFilter({ ...filter, periodKey: value })}
               className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
-              placeholder="YYYY-MM"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm text-zinc-600">

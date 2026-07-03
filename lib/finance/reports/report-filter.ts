@@ -1,6 +1,7 @@
 import { ReportError } from "@/lib/reporting/report-errors"
 import { normalizeDateRange, type NormalizedDateRange } from "@/lib/reporting/date-range"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { normalizeAccountingPeriodKey } from "@/lib/finance/period-key"
 import type { GeneralLedgerFilter } from "./general-ledger-types"
 import type { BalanceSheetFilter } from "./balance-sheet-types"
 import type { ProfitLossFilter } from "./profit-loss-types"
@@ -39,9 +40,17 @@ function parseFinanceReportScope(
   options?: ScopeParseOptions
 ): FinanceReportScope {
   const branchId = params.get("branchId")?.trim() || undefined
-  const periodKey = params.get("periodKey")?.trim() || undefined
+  let periodKey = params.get("periodKey")?.trim() || undefined
   const from = params.get("from")?.trim() || undefined
   const to = params.get("to")?.trim() || undefined
+
+  if (periodKey) {
+    const normalized = normalizeAccountingPeriodKey(periodKey)
+    if (!normalized) {
+      throw new ReportError("periodKey must be YYYY-MM", "INVALID_FILTER")
+    }
+    periodKey = normalized
+  }
 
   if (options?.requireBranchId && !branchId) {
     throw new ReportError("branchId is required", "EMPTY_FILTER")
@@ -65,9 +74,6 @@ function parseFinanceReportScope(
   }
 
   if (hasPeriod) {
-    if (!PERIOD_KEY_PATTERN.test(periodKey!)) {
-      throw new ReportError("periodKey must be YYYY-MM", "INVALID_FILTER")
-    }
     return { legalEntityCode, branchId, periodKey }
   }
 
@@ -80,10 +86,11 @@ function parseFinanceReportScope(
 }
 
 export function periodKeyToReportDateRange(periodKey: string): ResolvedReportDateRange {
-  if (!PERIOD_KEY_PATTERN.test(periodKey)) {
+  const normalized = normalizeAccountingPeriodKey(periodKey)
+  if (!normalized) {
     throw new ReportError("periodKey must be YYYY-MM", "INVALID_FILTER")
   }
-  const [yearStr, monthStr] = periodKey.split("-")
+  const [yearStr, monthStr] = normalized.split("-")
   const year = Number(yearStr)
   const month = Number(monthStr)
   if (!year || month < 1 || month > 12) {

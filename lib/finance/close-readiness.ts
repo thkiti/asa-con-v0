@@ -14,12 +14,20 @@ import { FinancePostingError } from "./posting-errors"
 import { findSnapshotsForPeriod } from "./reconciliation-snapshot"
 import type { ReconciliationSnapshotPayloadV1 } from "./reconciliation-snapshot-types"
 import type { BranchLookupPrisma } from "./resolve-branch-id"
+import { loadPeriodReconciliationReadinessSummary } from "./period-reconciliation-readiness"
 
 export type CloseReadinessPrisma = CloseReadinessChecklistPrisma
 
 export type CloseReadinessChecklistPrisma = Pick<
   PrismaClient,
-  "reconciliationSnapshot" | "glAccount" | "journalEntryLine" | "accountingPeriod" | "voucher" | "journalEntry"
+  | "reconciliationSnapshot"
+  | "glAccount"
+  | "journalEntryLine"
+  | "accountingPeriod"
+  | "voucher"
+  | "journalEntry"
+  | "bankReconciliation"
+  | "cashReconciliation"
 > &
   BranchLookupPrisma
 
@@ -97,6 +105,12 @@ export async function buildCloseReadinessWithSnapshotsForPeriod(
 
   const closingEntry = await loadClosingEntryChecklistContext(prisma, period)
 
+  const periodReconciliation = await loadPeriodReconciliationReadinessSummary(prisma, {
+    legalEntityCode: resolvePeriodEntityCode(period),
+    periodKey: period.periodKey,
+    branchId: period.branchId,
+  })
+
   const checklist = buildCloseChecklist({
     period: {
       id: period.id,
@@ -110,6 +124,7 @@ export async function buildCloseReadinessWithSnapshotsForPeriod(
     priorSnapshot: snapshots.prior,
     snapshotPayload: snapshots.latest?.payload ?? null,
     closingEntry,
+    periodReconciliation,
   })
 
   return {

@@ -3,6 +3,7 @@ import type {
   ReconciliationSnapshotHeader,
   ReconciliationSnapshotPayloadV1,
 } from "./reconciliation-snapshot-types"
+import type { PeriodReconciliationReadinessSummary } from "./period-reconciliation-readiness"
 
 export type CloseReadinessStatus = "READY" | "WARNING" | "BLOCKED"
 
@@ -19,6 +20,8 @@ export type CloseChecklistItemRef = {
   periodKey?: string
   branchId?: string
   compareSnapshotId?: string
+  bankReconciliationId?: string
+  cashReconciliationId?: string
 }
 
 export type CloseChecklistItem = {
@@ -67,6 +70,10 @@ export type CloseChecklistMetrics = {
   revenueDomainPresent: boolean
   snapshotAgeDays: number | null
   compareDriftDetected: boolean
+  bankReconciliationCompleted: boolean | null
+  cashReconciliationCompleted: boolean | null
+  bankUnresolvedVarianceCount: number | null
+  cashUnresolvedVarianceCount: number | null
 }
 
 export type CloseChecklistClosingEntryContext = {
@@ -83,6 +90,7 @@ export type CloseChecklistInput = {
   priorSnapshot?: ReconciliationSnapshotHeader | null
   snapshotPayload?: ReconciliationSnapshotPayloadV1 | null
   closingEntry?: CloseChecklistClosingEntryContext | null
+  periodReconciliation?: PeriodReconciliationReadinessSummary | null
   now?: string
   staleSnapshotThresholdDays?: number
 }

@@ -1,6 +1,8 @@
 "use client"
 
 import { useCallback, useState } from "react"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import {
   downloadCashFlowCsv,
   fetchCashFlow,
@@ -80,7 +82,8 @@ export function CashFlowPage() {
 
   const buildFilter = useCallback((): CashFlowFilter => {
     if (filterMode === "period") {
-      return { periodKey: periodKey.trim() }
+      const normalized = resolveAccountingPeriodKeyFilter(periodKey)
+      return normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }
     }
     return { from: from.trim(), to: to.trim() }
   }, [filterMode, from, periodKey, to])
@@ -157,11 +160,10 @@ export function CashFlowPage() {
           {filterMode === "period" ? (
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-zinc-600">Period key</span>
-              <input
+              <AccountingPeriodInput
                 className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
-                placeholder="2026-05"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
+                onChange={setPeriodKey}
               />
             </label>
           ) : (

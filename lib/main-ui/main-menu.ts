@@ -70,7 +70,7 @@ const SECTION_META: Record<
   finance: {
     label: "FINANCE",
     description:
-      "Daily Work, Dashboard, Accounting Periods, and Audit — see /finance for the F0.2 menu",
+      "Daily Work, Dashboard, Month-End Closing, and Audit — see /finance for the F0.2 menu",
   },
   operations: {
     label: "OPERATIONS",

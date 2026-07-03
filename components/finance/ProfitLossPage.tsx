@@ -27,6 +27,8 @@ import {
   financeTotalValue,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 
 type FilterMode = "period" | "dateRange"
@@ -106,7 +108,11 @@ export function ProfitLossPage() {
       base.branchId = branchId.trim()
     }
     if (filterMode === "period") {
-      return { ...base, periodKey: periodKey.trim() }
+      const normalized = resolveAccountingPeriodKeyFilter(periodKey)
+      return {
+        ...base,
+        ...(normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }),
+      }
     }
     return { ...base, from: from.trim(), to: to.trim() }
   }, [branchId, filterMode, from, periodKey, to])
@@ -173,12 +179,11 @@ export function ProfitLossPage() {
               <label htmlFor="pl-period-key" className="finance-filter-label">
                 Period key
               </label>
-              <input
+              <AccountingPeriodInput
                 id="pl-period-key"
                 className="finance-filter-control finance-filter-control--mono"
-                placeholder="2026-05"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
+                onChange={setPeriodKey}
               />
             </div>
           ) : (

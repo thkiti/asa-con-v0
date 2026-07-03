@@ -13,6 +13,8 @@ import {
   formatFinanceReportPeriodLabel,
 } from "@/lib/finance-ui/finance-report-display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import {
   financeAccount,
   financeDiffBalanced,
@@ -52,7 +54,8 @@ export function TrialBalancePage() {
       hideZeroBalances,
     }
     if (filterMode === "period") {
-      return { ...base, periodKey: periodKey.trim() }
+      const normalized = resolveAccountingPeriodKeyFilter(periodKey)
+      return { ...base, ...(normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }) }
     }
     return { ...base, from: from.trim(), to: to.trim() }
   }, [filterMode, from, hideZeroBalances, periodKey, to])
@@ -106,12 +109,11 @@ export function TrialBalancePage() {
               <label htmlFor="tb-period-key" className="finance-filter-label">
                 Period key
               </label>
-              <input
+              <AccountingPeriodInput
                 id="tb-period-key"
                 className="finance-filter-control finance-filter-control--mono"
-                placeholder="2026-05"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
+                onChange={setPeriodKey}
               />
             </div>
           ) : (

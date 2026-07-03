@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, type Dispatch, type SetStateAction } from "react"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
 import {
   voucherInquiryFilterInput,
   voucherInquiryFilterMore,
@@ -70,17 +71,16 @@ export function DocumentInquiryMoreFilter({
     <div ref={rootRef} className={voucherInquiryFilterPeriodGroup}>
       <label className={voucherInquiryFilterPeriod}>
         <span className={themeLabel}>Period</span>
-        <input
+        <AccountingPeriodInput
           className={voucherInquiryFilterInput}
           value={periodKey}
-          onChange={(event) => onPeriodKeyChange(event.target.value)}
+          onChange={onPeriodKeyChange}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault()
               onPeriodKeyEnter?.()
             }
           }}
-          placeholder="2026-06"
           data-testid={periodTestId}
         />
       </label>

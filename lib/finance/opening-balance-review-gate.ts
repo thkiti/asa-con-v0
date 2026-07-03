@@ -29,6 +29,10 @@ export function openingBalanceReviewToCloseChecklist(
       revenueDomainPresent: false,
       snapshotAgeDays: null,
       compareDriftDetected: false,
+      bankReconciliationCompleted: null,
+      cashReconciliationCompleted: null,
+      bankUnresolvedVarianceCount: null,
+      cashUnresolvedVarianceCount: null,
     },
     period: review.period,
   }

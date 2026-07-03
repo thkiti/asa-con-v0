@@ -73,6 +73,17 @@ jest.mock("@/generated/prisma/client", () => {
       REVENUE: "REVENUE",
       EXPENSE: "EXPENSE",
     },
+    GlAccountReconciliationRole: {
+      NONE: "NONE",
+      BANK: "BANK",
+      CASH: "CASH",
+    },
+    PeriodReconciliationStatus: {
+      DRAFT: "DRAFT",
+      SUBMITTED: "SUBMITTED",
+      CONFIRMED: "CONFIRMED",
+      LOCKED: "LOCKED",
+    },
     VoucherStatus: {
       DRAFT: "DRAFT",
       POSTED: "POSTED",

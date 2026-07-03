@@ -9,6 +9,8 @@ import {
 import { formatAmount } from "@/lib/finance-ui/format"
 import type { ChangesInEquityResult, ChangesInEquityRowKey } from "@/lib/finance-ui/types"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import {
   financeAccountName,
   financeNumber,
@@ -57,7 +59,8 @@ export function ChangesInEquityPage() {
 
   const buildFilter = useCallback((): ChangesInEquityFilter => {
     if (filterMode === "period") {
-      return { periodKey: periodKey.trim() }
+      const normalized = resolveAccountingPeriodKeyFilter(periodKey)
+      return normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }
     }
     return { from: from.trim(), to: to.trim() }
   }, [filterMode, from, periodKey, to])
@@ -127,11 +130,10 @@ export function ChangesInEquityPage() {
           {filterMode === "period" ? (
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-zinc-600">Period key</span>
-              <input
+              <AccountingPeriodInput
                 className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
-                placeholder="2026-05"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
+                onChange={setPeriodKey}
               />
             </label>
           ) : (

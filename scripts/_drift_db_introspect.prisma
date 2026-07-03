@@ -1,0 +1,1350 @@
+﻿node.exe : Loaded Prisma config from prisma.config.ts.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Loaded Prisma c...isma.config.ts.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Branch {
+  id                      String                   @id @default(uuid())
+  code                    String                   @unique
+  name                    String
+  type                    BranchType               @default(SH)
+  isActive                Boolean                  @default(true)
+  deleted                 Boolean                  @default(false)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  address                 String?
+  phone                   String?
+  /// HO999 = company tax ID; SH* = POS machine / approval ID (see receipt print rules).
+  taxId                   String?
+  accountingPeriods       AccountingPeriod[]
+  salesTargets            BranchSalesTarget[]
+  collectorReports        CollectorReport[]
+  invoiceVouchers         InvoiceVoucher[]
+  manualJournalEntries    ManualJournalEntry[]
+  paymentVouchers         PaymentVoucher[]
+  pettyCashVouchers       PettyCashVoucher[]
+  reconciliationSnapshots ReconciliationSnapshot[]
+  refunds                 Refund[]
+  revenueVouchers         RevenueVoucher[]
+  sales                   Sale[]
+  staffs                  Staff[]
+  stocks                  Stock[]
+  stockDocuments          StockDocument[]
+  stockLayers             StockLayer[]
+  stockTransactions       StockTransaction[]
+  vouchers                Voucher[]
+  workTimeEntries         WorkTimeEntry[]
+}
+
+/// HO monthly sales target per shop branch โ€” daily split uses weekPattern Mon..Sun weights.
+model BranchSalesTarget {
+  id           String   @id @default(uuid())
+  branchId     String
+  year         Int
+  month        Int
+  monthlyTotal Decimal  @db.Decimal(18, 2)
+  weekPattern  Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  branch       Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, year, month])
+  @@index([branchId, year, month])
+}
+
+/// POS staff daily clock-in/out โ€” one row per branch + staff + Bangkok calendar date.
+model WorkTimeEntry {
+  id         String    @id @default(uuid())
+  branchId   String
+  /// Staff login code (Staff.staffId), same as Sale.staffId.
+  staffId    String
+  /// Bangkok calendar date YYYY-MM-DD.
+  workDate   String
+  clockInAt  DateTime?
+  clockOutAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  branch     Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, staffId, workDate])
+  @@index([branchId, staffId, workDate])
+}
+
+model Staff {
+  id                             String                   @id @default(cuid())
+  staffId                        String                   @unique
+  password                       String
+  name                           String
+  role                           Role
+  branchId                       String
+  deleted                        Boolean                  @default(false)
+  createdAt                      DateTime                 @default(now())
+  updatedAt                      DateTime                 @updatedAt
+  posCanCollect                  Boolean                  @default(false)
+  /// เธฅเนเธญเธเธญเธดเธ POS เธ—เธตเนเธชเธฒเธเธฒเธฃเนเธฒเธเธญเธทเนเธเนเธ”เน (เธเธเธฑเธเธเธฒเธเนเธ—เธ)
+  allowAnyBranchLogin            Boolean                  @default(false)
+  reconciliationSnapshotsCreated ReconciliationSnapshot[]
+  branch                         Branch                   @relation(fields: [branchId], references: [id])
+}
+
+model Product {
+  id                 String              @id @default(uuid())
+  groupCode          Int
+  typeCode           Int
+  runningCode        Int
+  code               String              @unique
+  name               String
+  productType        ProductType         @default(TRACKED)
+  deleted            Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  referenceStocks    ReferenceStock[]
+  saleItems          SaleItem[]
+  sellingPrices      SellingPrice[]
+  stocks             Stock[]
+  stockDocumentLines StockDocumentLine[]
+  stockLayers        StockLayer[]
+  stockTransactions  StockTransaction[]
+
+  @@unique([groupCode, typeCode, runningCode])
+}
+
+model PricingPolicy {
+  id            String       @id @default(uuid())
+  marketType    MarketType
+  pricingClass  PricingClass
+  markupPercent Decimal      @db.Decimal(5, 4)
+  roundingMode  RoundingMode
+  threshold     Decimal?     @db.Decimal(18, 2)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([marketType, pricingClass, effectiveTo])
+  @@index([marketType, pricingClass, effectiveFrom])
+}
+
+model SellingPrice {
+  id            String    @id @default(uuid())
+  productId     String
+  price         Decimal   @db.Decimal(18, 2)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime  @default(now())
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, effectiveTo])
+  @@index([productId, effectiveFrom])
+}
+
+model ReferenceStock {
+  id           String   @id @default(uuid())
+  hookGroup    String
+  hookNo       Int
+  supplierCode String
+  productCode  String
+  productGroup String?
+  productId    String
+  deleted      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  product      Product  @relation(fields: [productId], references: [id])
+
+  @@unique([productId, hookGroup, hookNo])
+}
+
+model Stock {
+  id        String   @id @default(uuid())
+  branchId  String
+  productId String
+  qty       Int      @default(0)
+  avgCost   Decimal  @default(0) @db.Decimal(18, 6)
+  updatedAt DateTime @updatedAt
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([branchId, productId])
+}
+
+model StockLayer {
+  id        String   @id @default(uuid())
+  branchId  String
+  productId String
+  qty       Int
+  qtyRemain Int
+  unitCost  Decimal  @db.Decimal(18, 6)
+  refType   String?
+  refId     String?
+  createdAt DateTime @default(now())
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model StockTransaction {
+  id          String         @id @default(uuid())
+  branchId    String
+  productId   String
+  date        DateTime
+  qtyIn       Int            @default(0)
+  qtyOut      Int            @default(0)
+  unitCost    Decimal        @db.Decimal(18, 6)
+  beforeQty   Int
+  afterQty    Int
+  beforeValue Decimal        @db.Decimal(18, 6)
+  afterValue  Decimal        @db.Decimal(18, 6)
+  refType     String
+  refId       String
+  refLineId   String
+  documentId  String?
+  createdAt   DateTime       @default(now())
+  branch      Branch         @relation(fields: [branchId], references: [id])
+  document    StockDocument? @relation(fields: [documentId], references: [id])
+  product     Product        @relation(fields: [productId], references: [id])
+}
+
+model StockDocument {
+  id                 String              @id @default(uuid())
+  refNo              String              @unique
+  docType            DocType
+  status             DocStatus           @default(DRAFT)
+  date               DateTime
+  branchId           String
+  periodMonth        String?
+  fromLocId          String?
+  toLocId            String?
+  submittedAt        DateTime?
+  confirmedAt        DateTime?
+  postedAt           DateTime?
+  createdByStaffId   String?
+  confirmedByStaffId String?
+  postedByStaffId    String?
+  createdAt          DateTime            @default(now())
+  cancelReason       String?
+  cancelledAt        DateTime?
+  cancelledByStaffId String?
+  legalEntityCode    String
+  branch             Branch              @relation(fields: [branchId], references: [id])
+  legalEntity        LegalEntity         @relation(fields: [legalEntityCode], references: [code])
+  lines              StockDocumentLine[]
+  transactions       StockTransaction[]
+
+  @@index([legalEntityCode, date])
+  @@index([legalEntityCode, docType, status])
+}
+
+model StockDocumentLine {
+  id                 String        @id @default(uuid())
+  documentId         String
+  productId          String
+  qty                Int
+  endingQty          Int?
+  reviewPostingDelta Int?
+  document           StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product            Product       @relation(fields: [productId], references: [id])
+}
+
+model DocumentCounter {
+  id      String @id @default(uuid())
+  docType String
+  shopId  String
+  period  String
+  running Int    @default(0)
+
+  @@unique([docType, shopId, period])
+}
+
+model Sale {
+  id                   String               @id @default(uuid())
+  branchId             String
+  staffId              String?
+  total                Decimal              @db.Decimal(18, 2)
+  status               SaleStatus           @default(COMPLETED)
+  createdAt            DateTime             @default(now())
+  /// Net of VAT at checkout โ€” snapshotted from effective tax policy.
+  netAmount            Decimal?             @db.Decimal(18, 2)
+  /// GL output VAT account used at checkout posting.
+  outputVatAccountCode String?
+  /// Tax policy code, e.g. VAT_OUTPUT_STANDARD.
+  taxCode              String?
+  /// Output VAT amount at checkout โ€” snapshotted for stable receipt/finance history.
+  vatAmount            Decimal?             @db.Decimal(18, 2)
+  /// Tax rate in basis points (700 = 7.00%) applied at checkout.
+  vatRateBps           Int?
+  legacySaleReference  LegacySaleReference?
+  payment              Payment?
+  paymentEvidence      PaymentEvidence?
+  receipt              Receipt?
+  refunds              Refund[]
+  branch               Branch               @relation(fields: [branchId], references: [id])
+  items                SaleItem[]
+}
+
+model SaleItem {
+  id                  String            @id @default(uuid())
+  saleId              String
+  productId           String
+  productType         ProductType
+  qty                 Int
+  unitPrice           Decimal           @db.Decimal(18, 2)
+  lineTotal           Decimal           @db.Decimal(18, 2)
+  ledgerSkippedReason LedgerSkipReason?
+  createdAt           DateTime          @default(now())
+  product             Product           @relation(fields: [productId], references: [id])
+  sale                Sale              @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model Payment {
+  id              String           @id @default(uuid())
+  saleId          String           @unique
+  method          PaymentMethod
+  amount          Decimal          @db.Decimal(18, 2)
+  change          Decimal          @default(0) @db.Decimal(18, 2)
+  createdAt       DateTime         @default(now())
+  sale            Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  paymentEvidence PaymentEvidence?
+}
+
+/// Central vault file row โ€” bytes metadata and storage location.
+model DocumentArchive {
+  id              String                @id @default(uuid())
+  /// Legacy pilot โ€” receipt attach upsert; mirrored in DocumentArchiveLink from Phase 4.
+  documentType    DocumentArchiveType
+  documentId      String
+  documentNo      String
+  legalEntityId   String?
+  branchId        String?
+  /// Legacy storage paths โ€” dual column with storagePath/storageUrl until Phase 4 bridge.
+  pdfPath         String?
+  pdfBlobUrl      String?
+  snapshotJson    Json?
+  snapshotVersion Int
+  status          DocumentArchiveStatus @default(PENDING)
+  generatedAt     DateTime?
+  errorMessage    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  receipt         Receipt?
+
+  @@unique([documentType, documentId])
+  @@index([status])
+  @@index([branchId, documentType, createdAt])
+  @@index([documentType, documentNo])
+}
+
+model Receipt {
+  id                String           @id @default(uuid())
+  saleId            String           @unique
+  branchId          String
+  receiptNo         String
+  issuedAt          DateTime         @default(now())
+  documentArchiveId String?          @unique
+  pdfBlobUrl        String?
+  pdfGeneratedAt    DateTime?
+  pdfPath           String?
+  paymentEvidence   PaymentEvidence?
+  documentArchive   DocumentArchive? @relation(fields: [documentArchiveId], references: [id])
+  sale              Sale             @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  refundsAsOriginal Refund[]         @relation("OriginalReceipt")
+
+  @@unique([branchId, receiptNo])
+}
+
+/// Bank-transfer slip evidence โ€” keyed by receiptNo.
+model PaymentEvidence {
+  id           String                @id @default(uuid())
+  branchId     String
+  receiptNo    String
+  receiptId    String                @unique
+  saleId       String                @unique
+  paymentId    String                @unique
+  status       PaymentEvidenceStatus @default(PENDING)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  blobPathname String?
+  blobUrl      String?
+  byteSize     Int?
+  mimeType     String                @default("image/jpeg")
+  uploadError  String?
+  uploadedAt   DateTime?
+  payment      Payment               @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  receipt      Receipt               @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  sale         Sale                  @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, receiptNo])
+  @@index([branchId, status])
+}
+
+model Refund {
+  id                String     @id @default(uuid())
+  kind              RefundKind
+  saleId            String?
+  branchId          String
+  staffId           String?
+  originalReceiptId String?
+  amount            Decimal    @db.Decimal(18, 2)
+  reason            String?
+  createdAt         DateTime   @default(now())
+  reasonCode        String?
+  refundNo          String     @unique
+  branch            Branch     @relation(fields: [branchId], references: [id])
+  originalReceipt   Receipt?   @relation("OriginalReceipt", fields: [originalReceiptId], references: [id])
+  sale              Sale?      @relation(fields: [saleId], references: [id])
+
+  @@index([saleId])
+  @@index([branchId, createdAt])
+  @@index([kind])
+}
+
+/// POS collector ticket โ€” persisted COL-{branch}-{YYYYMM}-{seq} report snapshot.
+model CollectorReport {
+  id            String            @id @default(uuid())
+  collectNo     String            @unique
+  branchId      String
+  staffId       String
+  reportJson    Json
+  createdAt     DateTime          @default(now())
+  branch        Branch            @relation(fields: [branchId], references: [id])
+  payInEvidence PosPayInEvidence?
+
+  @@index([branchId, createdAt])
+}
+
+/// Bank PAY-IN slip evidence for PSV-BANK-DEP โ€” keyed by collector report.
+model PosPayInEvidence {
+  id                   String                @id @default(uuid())
+  collectorReportId    String                @unique
+  collectNo            String
+  branchId             String
+  status               PaymentEvidenceStatus @default(PENDING)
+  blobPathname         String?
+  blobUrl              String?
+  mimeType             String                @default("image/jpeg")
+  byteSize             Int?
+  originalFilename     String?
+  uploadedAt           DateTime?
+  uploadedByStaffId    String?
+  bankDepositDate      DateTime?
+  bankAccountCode      String                @default("1021")
+  bankDepositVoucherId String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  collectorReport      CollectorReport       @relation(fields: [collectorReportId], references: [id], onDelete: Cascade)
+
+  @@index([branchId, status])
+  @@index([collectNo])
+}
+
+/// Singleton receipt layout/footer (id = "default").
+/// P2B drop deferred โ€” keep until ThermalDocumentLayout backfill is verified in DB.
+model ReceiptPrintSettings {
+  id                      String   @id @default("default")
+  companyDisplayName      String?
+  footerLine1             String?
+  footerLine2             String?
+  footerLine3             String?
+  footerLine4             String?
+  footerLine5             String?
+  showAbbreviatedTaxTitle Boolean  @default(true)
+  showVatIncludedMessage  Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+}
+
+/// Thermal 80mm layout โ€” one row per document type.
+model ThermalDocumentLayout {
+  documentType            ThermalDocumentType @id
+  headerLine1             String?
+  headerLine2             String?
+  headerLine3             String?
+  footerLine1             String?
+  footerLine2             String?
+  footerLine3             String?
+  footerLine4             String?
+  footerLine5             String?
+  showAbbreviatedTaxTitle Boolean             @default(true)
+  showVatIncludedMessage  Boolean             @default(true)
+  updatedAt               DateTime            @updatedAt
+  footerBlockBold         Boolean             @default(true)
+  footerBlockText         String?
+  footerFontSize          String              @default("12")
+  headerBlockBold         Boolean             @default(true)
+  headerBlockText         String?
+  headerFontSize          String              @default("12")
+  subHeaderBlockBold      Boolean             @default(false)
+  subHeaderBlockText      String?
+  subHeaderFontSize       String              @default("12")
+  infoBlockBold           Boolean             @default(true)
+  infoBlockFontSize       String              @default("14")
+}
+
+model GlAccount {
+  id                        String                   @id @default(uuid())
+  code                      String                   @unique
+  name                      String
+  accountType               GlAccountType
+  isActive                  Boolean                  @default(true)
+  deleted                   Boolean                  @default(false)
+  parentId                  String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  parent                    GlAccount?               @relation("GlAccountHierarchy", fields: [parentId], references: [id])
+  children                  GlAccount[]              @relation("GlAccountHierarchy")
+  invoiceVoucherLines       InvoiceVoucherLine[]
+  journalEntryLines         JournalEntryLine[]
+  manualJournalEntryLines   ManualJournalEntryLine[]
+  paymentVoucherPayFrom     PaymentVoucher[]         @relation("PaymentVoucherPayFrom")
+  paymentVoucherLines       PaymentVoucherLine[]
+  pettyCashVoucherPettyCash PettyCashVoucher[]       @relation("PettyCashVoucherPettyCash")
+  pettyCashVoucherLines     PettyCashVoucherLine[]
+  revenueVoucherReceiveTo   RevenueVoucher[]         @relation("RevenueVoucherReceiveTo")
+  revenueVoucherLines       RevenueVoucherLine[]
+  voucherLines              VoucherLine[]
+}
+
+model LegalEntity {
+  code                 String               @id
+  name                 String
+  address              String?
+  taxId                String?
+  accountingPeriods    AccountingPeriod[]
+  invoiceVouchers      InvoiceVoucher[]
+  journalEntries       JournalEntry[]
+  manualJournalEntries ManualJournalEntry[]
+  paymentVouchers      PaymentVoucher[]
+  pettyCashVouchers    PettyCashVoucher[]
+  revenueVouchers      RevenueVoucher[]
+  stockDocuments       StockDocument[]
+  taxPolicies          TaxPolicy[]
+  vouchers             Voucher[]
+}
+
+/// Effective-dated VAT/tax rate policy for finance and POS snapshotting.
+model TaxPolicy {
+  id                   String      @id @default(uuid())
+  legalEntityCode      String
+  taxCode              String
+  /// Rate in basis points โ€” 700 = 7.00%.
+  rateBps              Int
+  inclusive            Boolean     @default(true)
+  outputVatAccountCode String
+  effectiveFrom        DateTime    @db.Date
+  effectiveTo          DateTime?   @db.Date
+  isActive             Boolean     @default(true)
+  description          String?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  legalEntity          LegalEntity @relation(fields: [legalEntityCode], references: [code])
+
+  @@index([legalEntityCode, taxCode, isActive])
+  @@index([legalEntityCode, taxCode, effectiveFrom])
+}
+
+model AccountingPeriod {
+  id              String                           @id @default(uuid())
+  periodKey       String
+  branchId        String
+  status          AccountingPeriodStatus           @default(OPEN)
+  openedAt        DateTime                         @default(now())
+  closedAt        DateTime?
+  legalEntityCode String
+  branch          Branch                           @relation(fields: [branchId], references: [id])
+  legalEntity     LegalEntity                      @relation(fields: [legalEntityCode], references: [code])
+  closeEvidence   AccountingPeriodCloseEvidence[]
+  reopenEvidence  AccountingPeriodReopenEvidence[]
+  reopenRequests  AccountingPeriodReopenRequest[]
+  journalEntries  JournalEntry[]
+  vouchers        Voucher[]
+
+  @@unique([legalEntityCode, periodKey])
+  @@index([branchId])
+}
+
+/// Immutable HARD-close audit record (Phase 20D/21A). Append-only โ€” one row per successful HARD close.
+model AccountingPeriodCloseEvidence {
+  id                       String           @id @default(uuid())
+  periodId                 String
+  branchId                 String
+  periodKey                String
+  closeMode                String
+  closedAt                 DateTime
+  closedByStaffId          String
+  closedByName             String
+  closedByRole             String
+  readinessStatus          String
+  gatePolicyKey            String           @default("default")
+  reconciliationSnapshotId String?
+  priorSnapshotId          String?
+  payloadVersion           Int              @default(1)
+  payload                  Json
+  createdAt                DateTime         @default(now())
+  period                   AccountingPeriod @relation(fields: [periodId], references: [id])
+
+  @@index([periodId, closedAt(sort: Desc)])
+  @@index([branchId, periodKey])
+  @@index([closedAt(sort: Desc)])
+}
+
+/// Immutable reopen audit record (Phase 21A). Actor fields are point-in-time snapshots โ€” no Staff FK.
+model AccountingPeriodReopenEvidence {
+  id                String           @id @default(uuid())
+  periodId          String
+  branchId          String
+  periodKey         String
+  fromStatus        String
+  toStatus          String
+  reopenedAt        DateTime
+  reopenedByStaffId String
+  reopenedByName    String
+  reopenedByRole    String
+  reason            String
+  closeEvidenceId   String?
+  payloadVersion    Int              @default(1)
+  payload           Json
+  createdAt         DateTime         @default(now())
+  period            AccountingPeriod @relation(fields: [periodId], references: [id])
+
+  @@index([periodId, reopenedAt(sort: Desc)])
+  @@index([branchId, periodKey])
+}
+
+/// Reopen approval workflow request (Phase 21B). Mutable until terminal status; execution creates reopen evidence.
+model AccountingPeriodReopenRequest {
+  id                 String                              @id @default(uuid())
+  requestNo          String                              @unique
+  periodId           String
+  branchId           String
+  periodKey          String
+  fromStatus         String
+  toStatus           String
+  reason             String
+  status             AccountingPeriodReopenRequestStatus @default(PENDING)
+  requestedAt        DateTime
+  requestedByStaffId String
+  requestedByName    String
+  requestedByRole    String
+  approvedAt         DateTime?
+  approvedByStaffId  String?
+  approvedByName     String?
+  approvedByRole     String?
+  approvalNote       String?
+  rejectedAt         DateTime?
+  rejectedByStaffId  String?
+  rejectedByName     String?
+  rejectedByRole     String?
+  rejectionNote      String?
+  cancelledAt        DateTime?
+  cancelledByStaffId String?
+  cancelledByName    String?
+  cancelledByRole    String?
+  executedAt         DateTime?
+  reopenEvidenceId   String?
+  closeEvidenceId    String?
+  policyKey          String                              @default("default")
+  payloadVersion     Int                                 @default(1)
+  payload            Json
+  createdAt          DateTime                            @default(now())
+  period             AccountingPeriod                    @relation(fields: [periodId], references: [id])
+
+  @@index([periodId, status])
+  @@index([periodId, requestedAt(sort: Desc)])
+  @@index([branchId, periodKey])
+}
+
+model Voucher {
+  id                       String              @id @default(uuid())
+  voucherNo                String              @unique
+  date                     DateTime
+  status                   VoucherStatus       @default(DRAFT)
+  branchId                 String
+  periodId                 String
+  refType                  String
+  refId                    String
+  refNo                    String?
+  description              String?
+  postedAt                 DateTime?
+  createdAt                DateTime            @default(now())
+  legalEntityCode          String
+  invoiceVoucherPosted     InvoiceVoucher?
+  journalEntry             JournalEntry?
+  manualJournalEntryPosted ManualJournalEntry?
+  paymentVoucherPosted     PaymentVoucher?
+  pettyCashVoucherPosted   PettyCashVoucher?
+  revenueVoucherPosted     RevenueVoucher?
+  branch                   Branch              @relation(fields: [branchId], references: [id])
+  legalEntity              LegalEntity         @relation(fields: [legalEntityCode], references: [code])
+  period                   AccountingPeriod    @relation(fields: [periodId], references: [id])
+  lines                    VoucherLine[]
+
+  @@unique([refType, refId])
+  @@index([branchId, date])
+  @@index([legalEntityCode, date])
+  @@index([legalEntityCode, branchId, date])
+}
+
+model VoucherLine {
+  /// Staging / trace layer tied to the voucher; not the immutable GL.
+  id          String    @id @default(uuid())
+  voucherId   String
+  lineNo      Int
+  glAccountId String
+  debit       Decimal   @default(0) @db.Decimal(18, 2)
+  credit      Decimal   @default(0) @db.Decimal(18, 2)
+  memo        String?
+  glAccount   GlAccount @relation(fields: [glAccountId], references: [id])
+  voucher     Voucher   @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  @@index([voucherId])
+}
+
+model JournalEntry {
+  id                         String              @id @default(uuid())
+  voucherId                  String              @unique
+  date                       DateTime
+  branchId                   String
+  periodId                   String
+  postedAt                   DateTime            @default(now())
+  createdAt                  DateTime            @default(now())
+  /// Set on reversal journals only โ€” points to the original posted journal.
+  reversalOfJournalEntryId   String?             @unique
+  legalEntityCode            String
+  invoiceVoucherPosted       InvoiceVoucher?     @relation("InvoiceVoucherPosted")
+  legalEntity                LegalEntity         @relation(fields: [legalEntityCode], references: [code])
+  period                     AccountingPeriod    @relation(fields: [periodId], references: [id])
+  reverses                   JournalEntry?       @relation("JournalReversal", fields: [reversalOfJournalEntryId], references: [id])
+  reversedBy                 JournalEntry?       @relation("JournalReversal")
+  voucher                    Voucher             @relation(fields: [voucherId], references: [id])
+  lines                      JournalEntryLine[]
+  manualJournalEntryPosted   ManualJournalEntry? @relation("ManualJournalPosted")
+  manualJournalEntryReversal ManualJournalEntry? @relation("ManualJournalReversal")
+  paymentVoucherPosted       PaymentVoucher?     @relation("PaymentVoucherPosted")
+  pettyCashVoucherPosted     PettyCashVoucher?   @relation("PettyCashVoucherPosted")
+  revenueVoucherPosted       RevenueVoucher?     @relation("RevenueVoucherPosted")
+
+  @@index([branchId, periodId, date])
+  @@index([date])
+  @@index([legalEntityCode, periodId, date])
+  @@index([legalEntityCode, date])
+}
+
+model JournalEntryLine {
+  /// Immutable general-ledger line (posted journal).
+  id             String       @id @default(uuid())
+  journalEntryId String
+  lineNo         Int
+  glAccountId    String
+  debit          Decimal      @default(0) @db.Decimal(18, 2)
+  credit         Decimal      @default(0) @db.Decimal(18, 2)
+  memo           String?
+  glAccount      GlAccount    @relation(fields: [glAccountId], references: [id])
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+
+  @@index([journalEntryId])
+}
+
+/// Finance operational document โ€” workflow layer before GL post (Phase 17A).
+/// Document numbers: see docs/99_ASA_HANDBOOK.md Finance Vocabulary.
+model ManualJournalEntry {
+  id                     String                   @id @default(uuid())
+  entryNo                String                   @unique
+  entryType              ManualJournalEntryType
+  status                 ManualJournalEntryStatus @default(DRAFT)
+  branchId               String
+  legalEntityCode        String
+  entryDate              DateTime
+  description            String?
+  refNo                  String?
+  createdByStaffId       String
+  submittedAt            DateTime?
+  submittedByStaffId     String?
+  confirmedAt            DateTime?
+  confirmedByStaffId     String?
+  postedAt               DateTime?
+  postedByStaffId        String?
+  cancelledAt            DateTime?
+  cancelledByStaffId     String?
+  cancelReason           String?
+  postedVoucherId        String?                  @unique
+  postedJournalEntryId   String?                  @unique
+  reversalJournalEntryId String?                  @unique
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  /// Immutable PDF snapshot pathname (filesystem relative path or Blob pathname). Set once on POST.
+  pdfPath                String?
+  pdfGeneratedAt         DateTime?
+  pdfBlobUrl             String?
+  branch                 Branch                   @relation(fields: [branchId], references: [id])
+  legalEntity            LegalEntity              @relation(fields: [legalEntityCode], references: [code])
+  postedJournalEntry     JournalEntry?            @relation("ManualJournalPosted", fields: [postedJournalEntryId], references: [id])
+  postedVoucher          Voucher?                 @relation(fields: [postedVoucherId], references: [id])
+  reversalJournalEntry   JournalEntry?            @relation("ManualJournalReversal", fields: [reversalJournalEntryId], references: [id])
+  lines                  ManualJournalEntryLine[]
+
+  @@index([branchId, entryDate])
+  @@index([legalEntityCode, entryDate])
+  @@index([legalEntityCode, entryType, status])
+  @@index([status, entryDate])
+}
+
+model ManualJournalEntryLine {
+  id                   String             @id @default(uuid())
+  manualJournalEntryId String
+  lineNo               Int
+  glAccountId          String
+  debit                Decimal            @default(0) @db.Decimal(18, 2)
+  credit               Decimal            @default(0) @db.Decimal(18, 2)
+  memo                 String?
+  glAccount            GlAccount          @relation(fields: [glAccountId], references: [id])
+  manualJournalEntry   ManualJournalEntry @relation(fields: [manualJournalEntryId], references: [id], onDelete: Cascade)
+
+  @@unique([manualJournalEntryId, lineNo])
+  @@index([manualJournalEntryId])
+}
+
+/// Payment Voucher โ€” outbound disbursement operational document (Phase F1C).
+/// Document numbers: PAV-YYnnnn โ€” see docs/99_ASA_HANDBOOK.md and FINANCE_PAY_DOCUMENT_DESIGN.md.
+model PaymentVoucher {
+  id                   String               @id @default(uuid())
+  entryNo              String               @unique
+  status               PaymentVoucherStatus @default(DRAFT)
+  branchId             String
+  legalEntityCode      String
+  entryDate            DateTime
+  payFromAccountId     String
+  payeeName            String
+  refNo                String?
+  chequeNo             String?
+  description          String?
+  totalAmount          Decimal              @default(0) @db.Decimal(18, 2)
+  createdByStaffId     String
+  submittedAt          DateTime?
+  submittedByStaffId   String?
+  confirmedAt          DateTime?
+  confirmedByStaffId   String?
+  postedAt             DateTime?
+  postedByStaffId      String?
+  cancelledAt          DateTime?
+  cancelledByStaffId   String?
+  cancelReason         String?
+  postedVoucherId      String?              @unique
+  postedJournalEntryId String?              @unique
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  branch               Branch               @relation(fields: [branchId], references: [id])
+  legalEntity          LegalEntity          @relation(fields: [legalEntityCode], references: [code])
+  payFromAccount       GlAccount            @relation("PaymentVoucherPayFrom", fields: [payFromAccountId], references: [id])
+  postedJournalEntry   JournalEntry?        @relation("PaymentVoucherPosted", fields: [postedJournalEntryId], references: [id])
+  postedVoucher        Voucher?             @relation(fields: [postedVoucherId], references: [id])
+  lines                PaymentVoucherLine[]
+
+  @@index([branchId, entryDate])
+  @@index([legalEntityCode, entryDate])
+  @@index([legalEntityCode, status])
+  @@index([status, entryDate])
+}
+
+model PaymentVoucherLine {
+  id               String         @id @default(uuid())
+  paymentVoucherId String
+  lineNo           Int
+  glAccountId      String
+  debit            Decimal        @default(0) @db.Decimal(18, 2)
+  credit           Decimal        @default(0) @db.Decimal(18, 2)
+  memo             String?
+  glAccount        GlAccount      @relation(fields: [glAccountId], references: [id])
+  paymentVoucher   PaymentVoucher @relation(fields: [paymentVoucherId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentVoucherId, lineNo])
+  @@index([paymentVoucherId])
+}
+
+/// Petty Cash Voucher โ€” petty-cash disbursement operational document.
+/// Document numbers: PCV-YYnnnn โ€” see docs/99_ASA_HANDBOOK.md.
+model PettyCashVoucher {
+  id                   String                 @id @default(uuid())
+  entryNo              String                 @unique
+  status               PettyCashVoucherStatus @default(DRAFT)
+  branchId             String
+  legalEntityCode      String
+  entryDate            DateTime
+  pettyCashAccountId   String
+  payeeName            String
+  refNo                String?
+  description          String?
+  totalAmount          Decimal                @default(0) @db.Decimal(18, 2)
+  createdByStaffId     String
+  submittedAt          DateTime?
+  submittedByStaffId   String?
+  confirmedAt          DateTime?
+  confirmedByStaffId   String?
+  postedAt             DateTime?
+  postedByStaffId      String?
+  cancelledAt          DateTime?
+  cancelledByStaffId   String?
+  cancelReason         String?
+  postedVoucherId      String?                @unique
+  postedJournalEntryId String?                @unique
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  branch               Branch                 @relation(fields: [branchId], references: [id])
+  legalEntity          LegalEntity            @relation(fields: [legalEntityCode], references: [code])
+  pettyCashAccount     GlAccount              @relation("PettyCashVoucherPettyCash", fields: [pettyCashAccountId], references: [id])
+  postedJournalEntry   JournalEntry?          @relation("PettyCashVoucherPosted", fields: [postedJournalEntryId], references: [id])
+  postedVoucher        Voucher?               @relation(fields: [postedVoucherId], references: [id])
+  lines                PettyCashVoucherLine[]
+
+  @@index([branchId, entryDate])
+  @@index([legalEntityCode, entryDate])
+  @@index([legalEntityCode, status])
+  @@index([status, entryDate])
+}
+
+model PettyCashVoucherLine {
+  id                 String           @id @default(uuid())
+  pettyCashVoucherId String
+  lineNo             Int
+  glAccountId        String
+  debit              Decimal          @default(0) @db.Decimal(18, 2)
+  credit             Decimal          @default(0) @db.Decimal(18, 2)
+  memo               String?
+  glAccount          GlAccount        @relation(fields: [glAccountId], references: [id])
+  pettyCashVoucher   PettyCashVoucher @relation(fields: [pettyCashVoucherId], references: [id], onDelete: Cascade)
+
+  @@unique([pettyCashVoucherId, lineNo])
+  @@index([pettyCashVoucherId])
+}
+
+/// Revenue Voucher โ€” incoming money operational document.
+/// Document numbers: REV-YYnnnn โ€” see docs/FINANCE_DOCUMENT_IDENTITY_STANDARD.md.
+model RevenueVoucher {
+  id                   String               @id @default(uuid())
+  entryNo              String               @unique
+  status               RevenueVoucherStatus @default(DRAFT)
+  branchId             String
+  legalEntityCode      String
+  entryDate            DateTime
+  receiveToAccountId   String
+  receivedFromName     String
+  refNo                String?
+  receiptNo            String?
+  description          String?
+  totalAmount          Decimal              @default(0) @db.Decimal(18, 2)
+  createdByStaffId     String
+  submittedAt          DateTime?
+  submittedByStaffId   String?
+  confirmedAt          DateTime?
+  confirmedByStaffId   String?
+  postedAt             DateTime?
+  postedByStaffId      String?
+  cancelledAt          DateTime?
+  cancelledByStaffId   String?
+  cancelReason         String?
+  postedVoucherId      String?              @unique
+  postedJournalEntryId String?              @unique
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  branch               Branch               @relation(fields: [branchId], references: [id])
+  legalEntity          LegalEntity          @relation(fields: [legalEntityCode], references: [code])
+  postedJournalEntry   JournalEntry?        @relation("RevenueVoucherPosted", fields: [postedJournalEntryId], references: [id])
+  postedVoucher        Voucher?             @relation(fields: [postedVoucherId], references: [id])
+  receiveToAccount     GlAccount            @relation("RevenueVoucherReceiveTo", fields: [receiveToAccountId], references: [id])
+  lines                RevenueVoucherLine[]
+
+  @@index([branchId, entryDate])
+  @@index([legalEntityCode, entryDate])
+  @@index([legalEntityCode, status])
+  @@index([status, entryDate])
+}
+
+model RevenueVoucherLine {
+  id               String         @id @default(uuid())
+  revenueVoucherId String
+  lineNo           Int
+  glAccountId      String
+  debit            Decimal        @default(0) @db.Decimal(18, 2)
+  credit           Decimal        @default(0) @db.Decimal(18, 2)
+  memo             String?
+  glAccount        GlAccount      @relation(fields: [glAccountId], references: [id])
+  revenueVoucher   RevenueVoucher @relation(fields: [revenueVoucherId], references: [id], onDelete: Cascade)
+
+  @@unique([revenueVoucherId, lineNo])
+  @@index([revenueVoucherId])
+}
+
+/// Finance Invoice (INV) โ€” billing document for receivables before payment.
+/// Document numbers: INV-YYnnnn โ€” see docs/FINANCE_DOCUMENT_IDENTITY_STANDARD.md.
+/// Not a POS sales invoice; journal lines define Dr receivable / Cr revenue accounts.
+model InvoiceVoucher {
+  id                   String               @id @default(uuid())
+  entryNo              String               @unique
+  status               InvoiceVoucherStatus @default(DRAFT)
+  branchId             String
+  legalEntityCode      String
+  invoiceDate          DateTime
+  dueDate              DateTime?
+  customerName         String
+  refNo                String?
+  description          String?
+  totalAmount          Decimal              @default(0) @db.Decimal(18, 2)
+  createdByStaffId     String
+  submittedAt          DateTime?
+  submittedByStaffId   String?
+  confirmedAt          DateTime?
+  confirmedByStaffId   String?
+  postedAt             DateTime?
+  postedByStaffId      String?
+  cancelledAt          DateTime?
+  cancelledByStaffId   String?
+  cancelReason         String?
+  postedVoucherId      String?              @unique
+  postedJournalEntryId String?              @unique
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  branch               Branch               @relation(fields: [branchId], references: [id])
+  legalEntity          LegalEntity          @relation(fields: [legalEntityCode], references: [code])
+  postedJournalEntry   JournalEntry?        @relation("InvoiceVoucherPosted", fields: [postedJournalEntryId], references: [id])
+  postedVoucher        Voucher?             @relation(fields: [postedVoucherId], references: [id])
+  lines                InvoiceVoucherLine[]
+
+  @@index([branchId, invoiceDate])
+  @@index([legalEntityCode, invoiceDate])
+  @@index([legalEntityCode, status])
+  @@index([status, invoiceDate])
+}
+
+model InvoiceVoucherLine {
+  id               String         @id @default(uuid())
+  invoiceVoucherId String
+  lineNo           Int
+  glAccountId      String
+  debit            Decimal        @default(0) @db.Decimal(18, 2)
+  credit           Decimal        @default(0) @db.Decimal(18, 2)
+  memo             String?
+  glAccount        GlAccount      @relation(fields: [glAccountId], references: [id])
+  invoiceVoucher   InvoiceVoucher @relation(fields: [invoiceVoucherId], references: [id], onDelete: Cascade)
+
+  @@unique([invoiceVoucherId, lineNo])
+  @@index([invoiceVoucherId])
+}
+
+model ReconciliationSnapshot {
+  id                    String                     @id @default(uuid())
+  kind                  ReconciliationSnapshotKind @default(MANUAL)
+  branchId              String?
+  fromDate              DateTime?
+  toDate                DateTime?
+  periodKey             String?
+  label                 String?
+  note                  String?
+  checkedSales          Int
+  checkedStockDocuments Int
+  issueCount            Int
+  dashboardRowCount     Int
+  matchedCount          Int
+  varianceCount         Int
+  totalVarianceAmount   Decimal                    @db.Decimal(18, 2)
+  payloadVersion        Int                        @default(1)
+  inventoryResult       Json
+  salesResult           Json
+  dashboardRows         Json
+  issuesPayload         Json
+  createdAt             DateTime                   @default(now())
+  createdByStaffId      String
+  branch                Branch?                    @relation(fields: [branchId], references: [id])
+  createdBy             Staff                      @relation(fields: [createdByStaffId], references: [id])
+
+  @@index([branchId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// Batch header for legacy SAE.dbf sales staging / convert runs.
+model LegacySalesImportBatch {
+  id                   String                       @id @default(uuid())
+  sourceFileName       String
+  year                 Int
+  startedAt            DateTime                     @default(now())
+  finishedAt           DateTime?
+  status               LegacySalesImportBatchStatus @default(STAGING)
+  totalRows            Int                          @default(0)
+  acceptedRows         Int                          @default(0)
+  skippedOldRows       Int                          @default(0)
+  invalidRows          Int                          @default(0)
+  importedTransactions Int                          @default(0)
+  importedLines        Int                          @default(0)
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  legacySaleRefs       LegacySaleReference[]
+  rows                 LegacySalesImportRow[]
+
+  @@index([sourceFileName, year])
+  @@index([startedAt(sort: Desc)])
+}
+
+/// One SAE.dbf line staged before validation and convert.
+model LegacySalesImportRow {
+  id                     String                     @id @default(uuid())
+  sourceFileName         String
+  sourceRowNo            Int
+  legacyTransNo          String
+  legacyDate             String
+  legacyTime             String
+  legacyBranchId         String
+  legacyStaffId          String?
+  legacyProductCode      String
+  qty                    Int
+  amount                 Decimal                    @db.Decimal(18, 2)
+  normalizedSaleDateTime DateTime?
+  importBatchId          String
+  status                 LegacySalesImportRowStatus @default(PENDING)
+  errorCode              String?
+  errorMessage           String?
+  mappedBranchId         String?
+  mappedStaffId          String?
+  mappedProductId        String?
+  createdSaleId          String?
+  createdReceiptId       String?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  importBatch            LegacySalesImportBatch     @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceFileName, sourceRowNo])
+  @@index([importBatchId, status])
+  @@index([importBatchId, legacyTransNo])
+  @@index([mappedBranchId, legacyDate, legacyTransNo])
+}
+
+/// Auditable link from imported Sale back to legacy S_TRANS (not used as receipt no).
+model LegacySaleReference {
+  id             String                 @id @default(uuid())
+  saleId         String                 @unique
+  importBatchId  String
+  sourceFileName String
+  legacyTransNo  String
+  legacyBranchId String
+  legacySaleDate String
+  legacySaleTime String?
+  createdAt      DateTime               @default(now())
+  importBatch    LegacySalesImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  sale           Sale                   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceFileName, legacyBranchId, legacySaleDate, legacyTransNo])
+  @@index([importBatchId])
+}
+
+enum Role {
+  HO_FINANCE
+  HO_ADMIN
+  HO_OPERATIONS
+  SH_STAFF
+}
+
+enum BranchType {
+  HO
+  SH
+}
+
+enum ProductType {
+  TRACKED
+  CONSUMABLE
+}
+
+enum DocType {
+  PURCHASE
+  TRANSFER_OUT
+  TRANSFER_IN
+  ADJUSTMENT
+  PERFORMANCE
+}
+
+enum DocStatus {
+  DRAFT
+  SUBMITTED
+  SHIPPED
+  CONFIRMED
+  RECEIVED
+  POSTED
+  TRANSFERRED
+  CANCELLED
+}
+
+enum SaleStatus {
+  COMPLETED
+}
+
+enum RefundKind {
+  SALE_LINKED
+  GOODWILL
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  QR
+  TRANSFER
+  OTHER
+  BANK_TRANSFER
+}
+
+enum PaymentEvidenceStatus {
+  PENDING
+  UPLOADED
+  MISSING
+}
+
+enum LedgerSkipReason {
+  CONSUMABLE
+}
+
+enum MarketType {
+  SERVICES
+  OUTSIDERS
+}
+
+enum PricingClass {
+  MATERIAL
+  MACHINERY
+  CONSUMABLE
+}
+
+enum RoundingMode {
+  NONE
+  CENT_01
+  CENT_05
+  BAHT_1
+  BAHT_10
+  BAHT_100
+}
+
+/// Vault file lifecycle โ€” ACTIVE replaces legacy pilot READY.
+enum DocumentArchiveStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+/// Legacy receipt-pilot upsert key โ€” prefer DocumentArchiveLink.documentKind in new code.
+enum DocumentArchiveType {
+  RECEIPT
+}
+
+enum ThermalDocumentType {
+  RECEIPT
+  REFUND
+  COLLECTOR
+  REPAIR_TICKET
+  READ_Z
+}
+
+enum GlAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum VoucherStatus {
+  DRAFT
+  POSTED
+  VOIDED
+}
+
+enum AccountingPeriodStatus {
+  /// Posting allowed
+  OPEN
+  /// Posting blocked; soft close (reopen workflow deferred)
+  SOFT_CLOSED
+  /// Posting blocked; hard close / locked
+  HARD_CLOSED
+}
+
+enum AccountingPeriodReopenRequestStatus {
+  PENDING
+  REJECTED
+  CANCELLED
+  EXECUTED
+}
+
+enum ManualJournalEntryType {
+  MANUAL
+  OPENING_BALANCE
+  ADJUSTMENT
+  RECLASS
+  ACCRUAL
+  AUDITOR_ADJUSTMENT
+}
+
+enum ManualJournalEntryStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  POSTED
+  CANCELLED
+}
+
+enum PaymentVoucherStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  POSTED
+  CANCELLED
+}
+
+enum PettyCashVoucherStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  POSTED
+  CANCELLED
+}
+
+enum RevenueVoucherStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  POSTED
+  CANCELLED
+}
+
+enum InvoiceVoucherStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  POSTED
+  CANCELLED
+}
+
+enum ReconciliationSnapshotKind {
+  MANUAL
+}
+
+enum LegacySalesImportBatchStatus {
+  STAGING
+  VALIDATED
+  CONVERTING
+  COMPLETED
+  FAILED
+}
+
+enum LegacySalesImportRowStatus {
+  PENDING
+  VALID
+  INVALID
+  IMPORTED
+  SKIPPED
+}
+
+

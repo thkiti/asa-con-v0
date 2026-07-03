@@ -2,6 +2,7 @@ import type {
   CloseChecklistIssueSummary,
   CloseChecklistPeriodInput,
 } from "./close-checklist-types"
+import type { PeriodReconciliationReadinessSummary } from "./period-reconciliation-readiness"
 import type {
   ReconciliationSnapshotHeader,
   SnapshotDashboardRow,
@@ -16,6 +17,7 @@ export type CloseBlockerEvaluationContext = {
   issueSummary: CloseChecklistIssueSummary
   dashboardRows: SnapshotDashboardRow[]
   closingEntry: CloseChecklistClosingEntryContext | null
+  periodReconciliation: PeriodReconciliationReadinessSummary | null
   nowIso: string
   staleSnapshotThresholdDays: number
   metrics: {
@@ -61,6 +63,18 @@ export type CloseBlockerRuleId =
   | "closing-entry-present"
   | "closing-entry-not-required"
   | "closing-entry-stale"
+  | "bank-reconciliation-missing"
+  | "bank-reconciliation-incomplete"
+  | "bank-reconciliation-not-configured"
+  | "bank-reconciliation-variance"
+  | "bank-reconciliation-evidence-missing"
+  | "bank-reconciliation-complete"
+  | "cash-reconciliation-missing"
+  | "cash-reconciliation-incomplete"
+  | "cash-reconciliation-not-configured"
+  | "cash-reconciliation-variance"
+  | "cash-reconciliation-evidence-missing"
+  | "cash-reconciliation-complete"
 
 export type CloseBlockerRuleDefinition = {
   id: CloseBlockerRuleId
@@ -73,6 +87,10 @@ export const CLOSE_BLOCKER_RULES: CloseBlockerRuleDefinition[] = [
   { id: "reconciliation-missing-gl-issues", group: "reconciliation", severity: "BLOCKED", order: 10 },
   { id: "reconciliation-missing-source-issues", group: "reconciliation", severity: "BLOCKED", order: 11 },
   { id: "reconciliation-no-snapshot", group: "reconciliation", severity: "BLOCKED", order: 12 },
+  { id: "bank-reconciliation-missing", group: "reconciliation", severity: "BLOCKED", order: 13 },
+  { id: "bank-reconciliation-incomplete", group: "reconciliation", severity: "BLOCKED", order: 14 },
+  { id: "cash-reconciliation-missing", group: "reconciliation", severity: "BLOCKED", order: 15 },
+  { id: "cash-reconciliation-incomplete", group: "reconciliation", severity: "BLOCKED", order: 16 },
   { id: "snapshot-missing", group: "snapshot_evidence", severity: "BLOCKED", order: 20 },
   { id: "snapshot-branch-mismatch", group: "snapshot_evidence", severity: "BLOCKED", order: 21 },
   { id: "snapshot-period-mismatch", group: "snapshot_evidence", severity: "BLOCKED", order: 22 },
@@ -86,15 +104,23 @@ export const CLOSE_BLOCKER_RULES: CloseBlockerRuleDefinition[] = [
   { id: "posting-lock-soft-closed", group: "posting_lock", severity: "WARNING", order: 30 },
   { id: "snapshot-stale", group: "snapshot_evidence", severity: "WARNING", order: 31 },
   { id: "snapshot-compare-drift", group: "snapshot_evidence", severity: "WARNING", order: 32 },
-  { id: "reconciliation-dashboard-variance", group: "reconciliation", severity: "WARNING", order: 33 },
-  { id: "reconciliation-issue-variance", group: "reconciliation", severity: "WARNING", order: 34 },
+  { id: "bank-reconciliation-variance", group: "reconciliation", severity: "WARNING", order: 33 },
+  { id: "bank-reconciliation-evidence-missing", group: "reconciliation", severity: "WARNING", order: 34 },
+  { id: "bank-reconciliation-not-configured", group: "reconciliation", severity: "WARNING", order: 34 },
+  { id: "cash-reconciliation-variance", group: "reconciliation", severity: "WARNING", order: 35 },
+  { id: "cash-reconciliation-evidence-missing", group: "reconciliation", severity: "WARNING", order: 36 },
+  { id: "cash-reconciliation-not-configured", group: "reconciliation", severity: "WARNING", order: 36 },
+  { id: "reconciliation-dashboard-variance", group: "reconciliation", severity: "WARNING", order: 37 },
+  { id: "reconciliation-issue-variance", group: "reconciliation", severity: "WARNING", order: 38 },
   { id: "audit-evidence-unavailable", group: "audit_evidence", severity: "WARNING", order: 35 },
   { id: "audit-evidence-export-not-recorded", group: "audit_evidence", severity: "WARNING", order: 36 },
   { id: "posting-lock-hard-closed", group: "posting_lock", severity: "INFO", order: 40 },
   { id: "posting-lock-open", group: "posting_lock", severity: "PASS", order: 50 },
   { id: "snapshot-present", group: "snapshot_evidence", severity: "PASS", order: 51 },
   { id: "reconciliation-clean", group: "reconciliation", severity: "PASS", order: 52 },
-  { id: "audit-evidence-export-ready", group: "audit_evidence", severity: "PASS", order: 53 },
+  { id: "bank-reconciliation-complete", group: "reconciliation", severity: "PASS", order: 53 },
+  { id: "cash-reconciliation-complete", group: "reconciliation", severity: "PASS", order: 54 },
+  { id: "audit-evidence-export-ready", group: "audit_evidence", severity: "PASS", order: 55 },
 ]
 
 const RULE_BY_ID = new Map(

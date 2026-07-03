@@ -108,6 +108,6 @@ describe("CollectorPickupSettlementFilterBar", () => {
   it("wires Period Enter to Apply via DocumentInquiryMoreFilter", () => {
     const html = renderBar()
     expect(html).toContain('data-testid="collector-pickup-filter-period"')
-    expect(html).toContain('placeholder="2026-06"')
+    expect(html).toContain('placeholder="202601"')
   })
 })
