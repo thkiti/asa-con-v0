@@ -11,8 +11,23 @@ import {
   APP_PAGE_MAX_WIDTH_PX,
 } from "./page-container"
 
-/** Finance admin/list pages — same centered container as `/main` (max-w-5xl / 1024px). */
-export const financeAdminPageClass = mainMenuPageClass
+/**
+ * Canonical Finance page shell — outer `<main>` (max-w-5xl + horizontal padding).
+ * Matches Finance hub and all Finance admin routes.
+ */
+export const financePageShellClass = appPageShellClass
+
+/**
+ * Canonical Finance content column — single inner wrapper, full width of the shell
+ * content area (976px at the reference viewport). No nested max-width.
+ */
+export const financePageContentClass = `${appPageContainerClass} finance-page-content`
+
+/** Spacing-only block below header/intro; must not introduce a second width constraint. */
+export const financePageBodyClass = "finance-page-body w-full max-w-full"
+
+/** @deprecated Use {@link financePageShellClass} */
+export const financeAdminPageClass = financePageShellClass
 
 /**
  * Finance document pages (MJV, OPB, journal lists using FinanceDocumentContainer).
@@ -32,20 +47,20 @@ export const financeAdminBackLinkClass = mainMenuBackLinkClass
 /** Entity-context page titles on finance admin routes. */
 export const financeAdminPageTitleClass = `mt-4 text-xl font-semibold ${themePageTitle}`
 
-export const financeAdminIntroClass = `mt-2 w-full text-sm ${themeMuted}`
+export const financeAdminIntroClass = `mt-2 w-full max-w-full text-sm ${themeMuted}`
 
 /** Tighter intro spacing for settlement workflow pages. */
 export const financeAdminIntroSettlementClass = `mt-2 w-full max-w-full text-sm leading-snug ${themeMuted}`
 
-/** Default content block below heading — full inner width of admin page. */
-export const financeAdminContentClass = "mt-6 w-full"
+/** @deprecated Use {@link financePageBodyClass} */
+export const financeAdminContentClass = `${financePageBodyClass} mt-6`
 
 /** Settlement pages — less gap between intro and filter/table. */
-export const financeAdminContentSettlementClass = "mt-4 w-full"
+export const financeAdminContentSettlementClass = `${financePageBodyClass} mt-4`
 
 /**
  * Narrow centered work panel for compact settlement workflows.
- * Sits inside financeAdminPageClass; table/filter share this width.
+ * Opt-in only — do not use on standard Finance list/detail pages.
  */
 export const financeWorkPanelClass = "finance-work-panel mx-auto mt-6 w-full max-w-xl"
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { MainMenuHubPage } from "@/components/main/MainMenuHubPage"
+import { FinanceHubPageBody } from "@/components/finance/FinanceHubPageBody"
+import { FinancePageShell } from "@/components/finance/FinancePageShell"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
 import {
   FINANCE_MENU_HOME_DESCRIPTION,
@@ -14,14 +15,16 @@ type FinanceMenuViewProps = {
 
 export function FinanceMenuView({ user }: FinanceMenuViewProps) {
   return (
-    <MainMenuHubPage
-      user={user}
-      title="Finance"
-      description={FINANCE_MENU_HOME_DESCRIPTION}
-      backHref="/main"
-      backLabel="← Back to Main Menu"
-      gridAriaLabel="Finance sections"
-      items={toMainMenuCardItems(getFinanceMenuHomeSections(user.role))}
-    />
+    <FinancePageShell testId="finance-hub-page">
+      <FinanceHubPageBody
+        user={user}
+        title="Finance"
+        description={FINANCE_MENU_HOME_DESCRIPTION}
+        backHref="/main"
+        backLabel="← Back to Main Menu"
+        gridAriaLabel="Finance sections"
+        items={toMainMenuCardItems(getFinanceMenuHomeSections(user.role))}
+      />
+    </FinancePageShell>
   )
 }

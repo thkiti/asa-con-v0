@@ -17,8 +17,8 @@ export type CreateVoucherWithLinesInput = {
 }
 
 /**
- * Allocates voucher numbers via period voucher count + 1.
- * Concurrency: two posters in the same transaction epoch can collide on voucherNo;
+ * Allocates voucher numbers as max existing `V-{periodKey}-#####` + 1.
+ * Concurrency: two posters in the same transaction epoch can still collide on voucherNo;
  * the unique index on voucherNo plus DUPLICATE_VOUCHER_NO handling is the safety net.
  *
  * TODO: replace with VoucherCounter table, DB sequence, or transactional allocator.
@@ -27,13 +27,23 @@ export async function allocateVoucherNo(
   tx: Prisma.TransactionClient,
   periodKey: string
 ): Promise<string> {
-  const count = await tx.voucher.count({
-    where: {
-      period: { periodKey },
-    },
+  const prefix = `V-${periodKey}-`
+  const latest = await tx.voucher.findFirst({
+    where: { voucherNo: { startsWith: prefix } },
+    select: { voucherNo: true },
+    orderBy: { voucherNo: "desc" },
   })
-  const seq = count + 1
-  return `V-${periodKey}-${String(seq).padStart(5, "0")}`
+
+  let seq = 1
+  if (latest) {
+    const suffix = latest.voucherNo.slice(prefix.length)
+    const parsed = Number.parseInt(suffix, 10)
+    if (Number.isFinite(parsed)) {
+      seq = parsed + 1
+    }
+  }
+
+  return `${prefix}${String(seq).padStart(5, "0")}`
 }
 
 export async function createVoucherWithLines(

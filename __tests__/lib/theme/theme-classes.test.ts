@@ -23,6 +23,7 @@ describe("theme semantic classes", () => {
     expect(themeBannerSuccess).toContain("theme-banner-success")
     expect(themeBannerError).toContain("theme-banner-error")
     expect(themeAdminTable).toContain("theme-admin-table")
+    expect(themeAdminTable).toContain("w-full")
     expect(themeLinkPrimary).toContain("link-primary")
     expect(themeTextPrimary).toBe("text-primary")
     expect(themeMuted).toBe("text-muted")

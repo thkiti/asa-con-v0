@@ -1,14 +1,5 @@
 import Link from "next/link"
-import type { PeriodAction } from "@/lib/finance-ui/period-fetchers"
-import {
-  buildCloseEvidenceHistoryPath,
-  buildCloseEvidencePath,
-} from "@/lib/finance-ui/close-evidence"
-import { buildReopenEvidencePath } from "@/lib/finance-ui/reopen-evidence"
-import { buildReopenRequestsPath } from "@/lib/finance-ui/reopen-requests"
-import type { ReopenRequestDetail } from "@/lib/finance-ui/reopen-requests"
-import { buildCloseReadinessPath } from "@/lib/finance-ui/close-readiness"
-import { buildPeriodAuditTimelinePath } from "@/lib/finance-ui/period-audit-timeline"
+import { buildPeriodReviewPath } from "@/lib/finance-ui/period-review"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import {
   themeAdminTable,
@@ -20,7 +11,6 @@ import {
   themeAdminTableRow,
   themeLinkPrimary,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { PeriodAdminActions } from "./PeriodAdminActions"
 import { PeriodStatusBadge } from "./PeriodStatusBadge"
 
 function formatDate(value: string | null): string {
@@ -32,57 +22,40 @@ function formatDate(value: string | null): string {
 
 type PeriodTableProps = {
   periods: AccountingPeriodRow[]
-  showControls?: boolean
-  onPeriodAction?: (
-    period: AccountingPeriodRow,
-    action: PeriodAction,
-    options?: { reason?: string }
-  ) => Promise<void>
-  onReopenRequest?: (period: AccountingPeriodRow, reason: string) => Promise<void>
-  pendingReopenRequests?: Record<string, ReopenRequestDetail>
-  sessionRole?: string
-  actionsDisabled?: boolean
-  pendingPeriodId?: string | null
+  className?: string
 }
 
-export function PeriodTable({
-  periods,
-  showControls = false,
-  onPeriodAction,
-  onReopenRequest,
-  pendingReopenRequests = {},
-  sessionRole,
-  actionsDisabled = false,
-  pendingPeriodId = null,
-}: PeriodTableProps) {
+export function PeriodTable({ periods, className = "mt-4" }: PeriodTableProps) {
   return (
-    <div className="mt-4 overflow-x-auto">
+    <div className={`w-full overflow-x-auto ${className}`.trim()}>
       <table className={themeAdminTable}>
         <thead>
           <tr className={themeAdminTableHead}>
             <th className={themeAdminTableHeadCell}>Period</th>
-            <th className={themeAdminTableHeadCell}>Entity</th>
             <th className={themeAdminTableHeadCell}>Status</th>
             <th className={themeAdminTableHeadCell}>Opened</th>
             <th className={themeAdminTableHeadCell}>Closed</th>
-            <th className={themeAdminTableHeadCell}>Close review</th>
-            {showControls ? (
-              <th className={themeAdminTableHeadCell}>Actions</th>
-            ) : null}
+            <th className={themeAdminTableHeadCell}>Action</th>
           </tr>
         </thead>
         <tbody>
           {periods.length === 0 ? (
             <tr>
-              <td colSpan={showControls ? 7 : 6} className={themeAdminTableEmpty}>
+              <td colSpan={5} className={themeAdminTableEmpty}>
                 No accounting periods
               </td>
             </tr>
           ) : (
             periods.map((period) => (
               <tr key={period.id} className={themeAdminTableRow}>
-                <td className={`${themeAdminTableCell} font-medium`}>{period.periodKey}</td>
-                <td className={themeAdminTableCell}>{period.legalEntityCode}</td>
+                <td className={`${themeAdminTableCell} font-medium`}>
+                  <Link
+                    href={buildPeriodReviewPath(period.id)}
+                    className={themeLinkPrimary}
+                  >
+                    {period.periodKey}
+                  </Link>
+                </td>
                 <td className={themeAdminTableCell}>
                   <PeriodStatusBadge status={period.status} />
                 </td>
@@ -93,74 +66,13 @@ export function PeriodTable({
                   {formatDate(period.closedAt)}
                 </td>
                 <td className={themeAdminTableCell}>
-                  <span className="flex flex-wrap items-center gap-3">
-                    <Link
-                      href={buildCloseReadinessPath(period.id)}
-                      className={`text-sm font-medium ${themeLinkPrimary}`}
-                    >
-                      Review
-                    </Link>
-                    {period.status === "HARD_CLOSED" ? (
-                      <>
-                        <Link
-                          href={buildCloseEvidencePath(period.id)}
-                          className={`text-sm font-medium ${themeLinkPrimary}`}
-                        >
-                          Close evidence
-                        </Link>
-                        <Link
-                          href={buildCloseEvidenceHistoryPath(period.id)}
-                          className={`text-sm font-medium ${themeLinkPrimary}`}
-                        >
-                          Close history
-                        </Link>
-                      </>
-                    ) : null}
-                    <Link
-                      href={buildPeriodAuditTimelinePath(period.id)}
-                      className={`text-sm font-medium ${themeLinkPrimary}`}
-                    >
-                      Audit timeline
-                    </Link>
-                    <Link
-                      href={buildReopenEvidencePath(period.id)}
-                      className={`text-sm font-medium ${themeLinkPrimary}`}
-                    >
-                      Reopen history
-                    </Link>
-                    {period.status === "HARD_CLOSED" ? (
-                      <Link
-                        href={buildReopenRequestsPath(period.id)}
-                        className={`text-sm font-medium ${themeLinkPrimary}`}
-                      >
-                        Reopen requests
-                      </Link>
-                    ) : null}
-                  </span>
+                  <Link
+                    href={buildPeriodReviewPath(period.id)}
+                    className={`text-sm font-medium ${themeLinkPrimary}`}
+                  >
+                    Review
+                  </Link>
                 </td>
-                {showControls ? (
-                  <td className={themeAdminTableCell}>
-                    <PeriodAdminActions
-                      period={period}
-                      sessionRole={sessionRole}
-                      pendingReopenRequest={pendingReopenRequests[period.id] ?? null}
-                      disabled={actionsDisabled}
-                      submitting={
-                        Boolean(pendingPeriodId) && pendingPeriodId === period.id
-                      }
-                      onAction={(action, options) =>
-                        onPeriodAction
-                          ? onPeriodAction(period, action, options)
-                          : Promise.resolve()
-                      }
-                      onReopenRequest={
-                        onReopenRequest
-                          ? (reason) => onReopenRequest(period, reason)
-                          : undefined
-                      }
-                    />
-                  </td>
-                ) : null}
               </tr>
             ))
           )}

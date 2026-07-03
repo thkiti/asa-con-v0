@@ -10,7 +10,62 @@ Related: [11_FINANCE_POSTING_ARCHITECTURE.md](./11_FINANCE_POSTING_ARCHITECTURE.
 
 Accounting periods gate when finance vouchers may be posted. Each legal entity has one row per `periodKey` (`YYYY-MM`). Posting orchestrators (POS checkout, stock document post) join the caller's outer transaction and call finance posting; finance refuses writes when the period is not `OPEN`.
 
-Period **creation** and **close/reopen** are admin workflows — not side effects of posting.
+Period **close/reopen** are admin workflows. Under normal operation, periods are **not** created manually in the Finance UI — the next period opens automatically after a successful hard close (see §2.1).
+
+---
+
+## 2.1 Automatic period advance (hard close)
+
+When a period transitions to `HARD_CLOSED`, the system automatically ensures the **next calendar month** exists as `OPEN` for the same legal entity:
+
+| Next period state | Behavior |
+|-------------------|----------|
+| Missing | Create `OPEN` row (e.g. `2026-01` hard closed → `2026-02` opened) |
+| Already `OPEN` | No change (idempotent) |
+| `SOFT_CLOSED` or `HARD_CLOSED` | Hard close succeeds; response includes `hardCloseAdvance.outcome: "warning"` — next period is **not** overwritten |
+
+Month rollover: `2026-12` → `2027-01`.
+
+Implementation: [`lib/finance/period-key.ts`](../lib/finance/period-key.ts) (`advancePeriodKey`), [`lib/finance/period-setup.ts`](../lib/finance/period-setup.ts) (`advanceNextAccountingPeriodAfterHardClose`), called from [`lib/finance/period-close.ts`](../lib/finance/period-close.ts).
+
+---
+
+## 2.2 Manual period creation
+
+ASA-CON does **not** expose manual accounting period creation in normal Finance operation. Periods are created automatically after hard close.
+
+Manual creation (`POST /api/finance/periods`) remains available for **bootstrap, repair, migration, or emergency admin** use only. It is:
+
+- Hidden from the Finance UI by default
+- Gated by server env `FINANCE_MANUAL_PERIOD_CREATION_ENABLED=true` (default: unset / false)
+- When enabled, the admin list page shows a labeled create section
+
+Normal Finance users perform **close**, **request reopen**, **approve reopen**, and **reopen** according to the existing approval flow — not arbitrary period creation.
+
+UAT cleanup (optional): [`scripts/cleanup-uat-accounting-periods.ts`](../scripts/cleanup-uat-accounting-periods.ts) with `FINANCE_PERIOD_UAT_CLEANUP_ENABLED=true`.
+
+---
+
+## 2.3 Opening Balance Review (bootstrap period)
+
+The bootstrap opening balance month (currently **`2025-12`**, see [`lib/finance/opening-balance-period.ts`](../lib/finance/opening-balance-period.ts)) is **not** a normal monthly close cycle. It is the one-time period that holds imported opening balances before live operations begin.
+
+| Workflow | Period | Review page | Lock action |
+|----------|--------|-------------|-------------|
+| **Opening Balance Review** | Bootstrap month (`2025-12`) | `/finance/periods/[id]/opening-balance-review` | **Lock Opening Period** → `HARD_CLOSE` + auto-open next month |
+| **Close Readiness** | All live months (`2026-01` onward) | `/finance/periods/[id]/close-readiness` | Monthly close checklist, snapshots, reconciliation, closing entry |
+
+Opening Balance Review intentionally **does not** show monthly close readiness items (reconciliation evidence, frozen snapshots, posting-lock checklist, audit export checklist, blocker summary, or close readiness score).
+
+Checklist (bootstrap only):
+
+- Opening Balance journal exists and is **POSTED**
+- Trial Balance balanced; journal debit = credit
+- Chart of Accounts available; accounting period exists
+
+`/finance/periods/[id]/close-readiness` **redirects** to Opening Balance Review when the period key matches the bootstrap opening balance period.
+
+Implementation: [`lib/finance/opening-balance-review.ts`](../lib/finance/opening-balance-review.ts), [`components/finance/OpeningBalanceReviewPage.tsx`](../components/finance/OpeningBalanceReviewPage.tsx). Hard close for the bootstrap period uses the opening balance review gate instead of monthly close readiness ([`lib/finance/period-close.ts`](../lib/finance/period-close.ts)).
 
 ---
 
@@ -23,6 +78,7 @@ stateDiagram-v2
   SOFT_CLOSED --> OPEN: PATCH REOPEN\n(no active closing entry)
   OPEN --> HARD_CLOSED: PATCH HARD_CLOSE
   SOFT_CLOSED --> HARD_CLOSED: PATCH HARD_CLOSE
+  HARD_CLOSED --> OPEN: auto advanceNextAccountingPeriodAfterHardClose\n(next YYYY-MM, same entity)
   HARD_CLOSED --> SOFT_CLOSED: PATCH REOPEN or\napproved reopen request (21A/21B)
 ```
 
@@ -94,7 +150,8 @@ sequenceDiagram
 | Posting only when `OPEN` | `assertPostingPeriodOpen` in [`lib/finance/posting-period.ts`](../lib/finance/posting-period.ts) |
 | `SOFT_CLOSED` / `HARD_CLOSED` block posting | Same check; no override path in posting kernel today |
 | No auto-bootstrap during posting | `posting.ts` does **not** call `bootstrapPeriodIfMissing` |
-| Admin creates periods | `POST /api/finance/periods` → `bootstrapPeriodIfMissing` |
+| Normal period creation | Automatic after successful `HARD_CLOSE`; not via posting |
+| Manual period create (admin) | `POST /api/finance/periods` when `FINANCE_MANUAL_PERIOD_CREATION_ENABLED=true` |
 | Finance joins operational tx only | Callers pass `{ tx }`; finance never opens `$transaction` |
 | No nested `prisma.$transaction` | Finance kernel and posting hooks use caller's tx exclusively |
 
@@ -108,8 +165,10 @@ Feature flag: `FINANCE_POSTING_ENABLED=true` (server env). When false, operation
 
 | Route | Component | Roles (page) |
 |-------|-----------|--------------|
-| `/finance/periods` | `PeriodAdminPage` | `HO_FINANCE`, `HO_ADMIN` (via middleware RBAC) |
-| `/finance/periods/[id]/close-readiness` | `CloseReadinessPage` | Same — read-only close checklist (Phase 20B) |
+| `/finance/periods` | `PeriodAdminPage` | `HO_FINANCE`, `HO_ADMIN` — list/filter only; actions on review page |
+| `/finance/periods/[id]/review` | `PeriodReviewPage` | Central hub: audit links + close/reopen actions |
+| `/finance/periods/[id]/opening-balance-review` | `OpeningBalanceReviewPage` | Bootstrap opening balance review — **not** monthly close readiness |
+| `/finance/periods/[id]/close-readiness` | `CloseReadinessPage` | Read-only monthly close checklist (Phase 20B); redirects for bootstrap period |
 | `/finance/periods/[id]/closing-entry` | `ClosingEntryPage` | Preview/post period closing entry (16H) — link from close readiness |
 | `/finance/periods/[id]/close-evidence` | `CloseEvidencePage` | Immutable HARD-close evidence (Phase 20D) — `HARD_CLOSED` only; browser CSV export + audit print (Phase 20E) |
 
@@ -120,9 +179,10 @@ Fetchers in [`lib/finance-ui/period-fetchers.ts`](../lib/finance-ui/period-fetch
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | `GET` | `/api/finance/periods` | None (public list/filter) | List periods |
-| `POST` | `/api/finance/periods` | Period admin | Create/open period (`bootstrapPeriodIfMissing`) |
-| `PATCH` | `/api/finance/periods` | Period admin | `SOFT_CLOSE`, `HARD_CLOSE`, `REOPEN` |
-| `GET` | `/api/finance/periods/[id]/close-readiness` | None (public JSON) | Read-only close checklist for period (Phase 20B) |
+| `POST` | `/api/finance/periods` | Period admin + `FINANCE_MANUAL_PERIOD_CREATION_ENABLED` | Manual create/open (`bootstrapPeriodIfMissing`) |
+| `PATCH` | `/api/finance/periods` | Period admin | `SOFT_CLOSE`, `HARD_CLOSE`, `REOPEN`; `HARD_CLOSE` response may include `hardCloseAdvance` |
+| `GET` | `/api/finance/periods/[id]/close-readiness` | None (public JSON) | Read-only monthly close checklist (Phase 20B) |
+| `GET` | `/api/finance/periods/[id]/opening-balance-review` | None (public JSON) | Bootstrap opening balance review checklist |
 | `GET` | `/api/finance/periods/[id]/closing-entry/preview` | None (public JSON) | Closing entry simulation + `canPost` (16H) |
 | `POST` | `/api/finance/periods/[id]/closing-entry` | Period admin | Post period closing entry (16H) |
 | `GET` | `/api/finance/periods/[id]/close-evidence` | None (public JSON) | Immutable HARD-close evidence (Phase 20D) |

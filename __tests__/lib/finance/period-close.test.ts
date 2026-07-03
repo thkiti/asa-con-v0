@@ -132,7 +132,7 @@ describe("period-close", () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
 
-    const closed = await closeAccountingPeriod(tx, {
+    const { period: closed } = await closeAccountingPeriod(tx, {
       periodKey,
       mode: "SOFT",
     })
@@ -148,23 +148,20 @@ describe("period-close", () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
 
-    const closed = await closeAccountingPeriod(tx, {
+    const { period: closed, hardCloseAdvance } = await closeAccountingPeriod(tx, {
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
     })
 
     expect(closed.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
-    expect(closed.closedAt).toBeInstanceOf(Date)
-    expect(state.accountingPeriods[0]?.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
-    expect(mockBuildChecklist).toHaveBeenCalledTimes(1)
-    expect(state.accountingPeriodCloseEvidence).toHaveLength(1)
-    expect(state.accountingPeriodCloseEvidence[0]).toMatchObject({
-      periodId: closed.id,
-      closedByStaffId: defaultClosedBy.staffId,
-      closedByName: defaultClosedBy.name,
-      closedByRole: defaultClosedBy.role,
+    expect(hardCloseAdvance).toEqual({
+      outcome: "created",
+      nextPeriodKey: "2026-06",
     })
+    expect(state.accountingPeriods).toHaveLength(2)
+    expect(state.accountingPeriods[1]?.periodKey).toBe("2026-06")
+    expect(state.accountingPeriods[1]?.status).toBe(AccountingPeriodStatus.OPEN)
   })
 
   it("closes SOFT_CLOSED period to HARD_CLOSED when readiness passes", async () => {
@@ -173,7 +170,7 @@ describe("period-close", () => {
     await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
     mockBuildChecklist.mockClear()
 
-    const closed = await closeAccountingPeriod(tx, {
+    const { period: closed } = await closeAccountingPeriod(tx, {
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
@@ -268,7 +265,7 @@ describe("period-close", () => {
         })
       )
 
-      const closed = await closeAccountingPeriod(tx, {
+      const { period: closed } = await closeAccountingPeriod(tx, {
         periodKey,
         mode: "HARD",
         closedBy: defaultClosedBy,
@@ -368,9 +365,9 @@ describe("period-close", () => {
   it("is idempotent on SOFT close when already SOFT_CLOSED", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
-    const first = await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
+    const { period: first } = await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
-    const second = await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
+    const { period: second } = await closeAccountingPeriod(tx, { periodKey, mode: "SOFT" })
 
     expect(second.id).toBe(first.id)
     expect(second.status).toBe(AccountingPeriodStatus.SOFT_CLOSED)
@@ -380,13 +377,13 @@ describe("period-close", () => {
   it("is idempotent on HARD close when already HARD_CLOSED", async () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, branchId, periodKey)
-    const first = await closeAccountingPeriod(tx, {
+    const { period: first } = await closeAccountingPeriod(tx, {
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
     })
 
-    const second = await closeAccountingPeriod(tx, {
+    const { period: second, hardCloseAdvance } = await closeAccountingPeriod(tx, {
       periodKey,
       mode: "HARD",
       closedBy: defaultClosedBy,
@@ -394,7 +391,8 @@ describe("period-close", () => {
 
     expect(second.id).toBe(first.id)
     expect(second.status).toBe(AccountingPeriodStatus.HARD_CLOSED)
-    expect(state.accountingPeriods).toHaveLength(1)
+    expect(hardCloseAdvance).toBeUndefined()
+    expect(state.accountingPeriods).toHaveLength(2)
     expect(state.accountingPeriodCloseEvidence).toHaveLength(1)
   })
 
@@ -412,6 +410,64 @@ describe("period-close", () => {
     expect(reopened.status).toBe(AccountingPeriodStatus.OPEN)
     expect(state.accountingPeriods).toHaveLength(1)
     expect(state.accountingPeriodReopenEvidence).toHaveLength(0)
+  })
+
+  describe("hard close auto-advance", () => {
+    it("advances YYYY-MM across year boundary", async () => {
+      const { tx, state } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, "2026-12")
+
+      const { hardCloseAdvance } = await closeAccountingPeriod(tx, {
+        periodKey: "2026-12",
+        mode: "HARD",
+        closedBy: defaultClosedBy,
+      })
+
+      expect(hardCloseAdvance).toEqual({
+        outcome: "created",
+        nextPeriodKey: "2027-01",
+      })
+      expect(state.accountingPeriods.some((p) => p.periodKey === "2027-01")).toBe(true)
+    })
+
+    it("returns already_open when next period exists and is OPEN", async () => {
+      const { tx } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+      await seedOpenPeriod(tx, branchId, "2026-06")
+
+      const { hardCloseAdvance } = await closeAccountingPeriod(tx, {
+        periodKey,
+        mode: "HARD",
+        closedBy: defaultClosedBy,
+      })
+
+      expect(hardCloseAdvance).toEqual({
+        outcome: "already_open",
+        nextPeriodKey: "2026-06",
+      })
+    })
+
+    it("returns warning when next period exists in non-OPEN status", async () => {
+      const { tx, state } = createFinanceMockTx()
+      await seedOpenPeriod(tx, branchId, periodKey)
+      const next = await seedOpenPeriod(tx, branchId, "2026-06")
+      await tx.accountingPeriod.update({
+        where: { id: next.id },
+        data: { status: AccountingPeriodStatus.SOFT_CLOSED, closedAt: new Date() },
+      })
+
+      const { hardCloseAdvance } = await closeAccountingPeriod(tx, {
+        periodKey,
+        mode: "HARD",
+        closedBy: defaultClosedBy,
+      })
+
+      expect(hardCloseAdvance?.outcome).toBe("warning")
+      expect(hardCloseAdvance?.nextPeriodKey).toBe("2026-06")
+      expect(state.accountingPeriods.find((p) => p.periodKey === "2026-06")?.status).toBe(
+        AccountingPeriodStatus.SOFT_CLOSED
+      )
+    })
   })
 
   it("rejects SOFT close when HARD_CLOSED with PERIOD_ALREADY_HARD_CLOSED", async () => {

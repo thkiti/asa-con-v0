@@ -32,16 +32,21 @@ const hoFinance: SessionUserApi = {
 }
 
 describe("FinanceMenuView", () => {
-  it("renders three F0.2 finance hub cards", () => {
+  it("renders four F0.2 finance hub cards", () => {
     const html = renderToStaticMarkup(<FinanceMenuView user={hoFinance} />)
     expect(html).toContain('data-testid="main-menu-page"')
     expect(html).toContain(mainMenuGridClass)
     expect(html).toContain('href="/finance/daily-work"')
     expect(html).toContain('href="/finance/dashboard"')
+    expect(html).toContain('href="/finance/periods"')
     expect(html).toContain('href="/finance/audit"')
     expect(html).toContain("Daily Work")
     expect(html).toContain("Dashboard")
+    expect(html).toContain("Accounting Periods")
     expect(html).toContain("Audit")
+    expect(html).toContain(
+      "Manage accounting periods, month-end closing, closing entries, reopen workflow and audit timeline."
+    )
     expect(html).not.toContain("Transactions")
     expect(html).not.toContain("Ledger")
     expect(html).not.toContain('href="/finance/transactions"')
@@ -194,7 +199,18 @@ describe("FinanceMenuHubView", () => {
     )
     expect(html).toContain('href="/finance/accounts"')
     expect(html).toContain('href="/finance/accounts/import"')
+    expect(html).not.toContain('href="/finance/periods"')
+  })
+
+  it("renders accounting periods hub linking to period admin", () => {
+    const hub = getFinanceMenuHub("HO_FINANCE", "accounting-periods")
+    expect(hub?.label).toBe("Accounting Periods")
+    expect(hub?.href).toBe("/finance/periods")
+    const html = renderToStaticMarkup(
+      <FinanceMenuHubView user={hoFinance} hub={hub!} />
+    )
     expect(html).toContain('href="/finance/periods"')
+    expect(html).toContain("Month-end closing entry")
   })
 })
 
@@ -217,6 +233,7 @@ describe("finance-menu config", () => {
     expect(rev?.href).toBe("/finance/revenue-vouchers")
     expect(keys).toContain("petty-cash")
     expect(keys).toContain("trial-balance")
+    expect(keys).toContain("accounting-periods")
     expect(keys).toContain("voucher-lookup")
     const voucherLookup = items.find((item) => item.key === "voucher-lookup")
     expect(voucherLookup?.status).toBe("available")
@@ -231,7 +248,7 @@ describe("finance-menu config", () => {
   })
 
   it("returns home sections for HO_FINANCE", () => {
-    expect(getFinanceMenuHomeSections("HO_FINANCE")).toHaveLength(3)
+    expect(getFinanceMenuHomeSections("HO_FINANCE")).toHaveLength(4)
     expect(getFinanceMenuHomeSections("HO_OPERATIONS")).toHaveLength(0)
   })
 

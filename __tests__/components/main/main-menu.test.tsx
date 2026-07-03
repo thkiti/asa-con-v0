@@ -124,7 +124,7 @@ describe("MainMenuSectionView system", () => {
     expect(html).toContain('href="/finance/system"')
     expect(html).toContain("Import Accounting Data")
     expect(html).toContain(
-      "Chart of accounts, accounting periods, and finance setup imports"
+      "Chart of accounts and finance setup imports"
     )
     const accountingItem = section!.items.find((item) => item.key === "import-accounting")
     expect(accountingItem?.status).toBe("available")

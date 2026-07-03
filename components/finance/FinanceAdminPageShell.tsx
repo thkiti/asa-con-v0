@@ -1,11 +1,10 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
+import { FinancePageShell } from "./FinancePageShell"
 import {
-  appPageContainerClass,
   financeAdminBackLinkClass,
   financeAdminContentClass,
   financeAdminIntroClass,
-  financeAdminPageClass,
   financeWorkPanelClass,
 } from "@/lib/main-ui/finance-page-layout"
 
@@ -31,19 +30,19 @@ export function FinanceAdminPageShell({
   introClassName = financeAdminIntroClass,
   contentClassName,
 }: FinanceAdminPageShellProps) {
-  const contentClass =
+  const bodyClass =
     contentClassName ?? (workPanel ? financeWorkPanelClass : financeAdminContentClass)
 
   return (
-    <main className={financeAdminPageClass} data-testid="finance-admin-page">
-      <div className={appPageContainerClass} data-testid="app-page-container">
-        <Link href={backHref} className={financeAdminBackLinkClass}>
-          {backLabel}
-        </Link>
-        {heading}
-        {intro ? <p className={introClassName}>{intro}</p> : null}
-        <div className={contentClass}>{children}</div>
+    <FinancePageShell testId="finance-admin-page">
+      <Link href={backHref} className={financeAdminBackLinkClass}>
+        {backLabel}
+      </Link>
+      {heading}
+      {intro ? <p className={introClassName}>{intro}</p> : null}
+      <div className={bodyClass} data-testid="finance-page-body">
+        {children}
       </div>
-    </main>
+    </FinancePageShell>
   )
 }

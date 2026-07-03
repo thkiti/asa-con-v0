@@ -121,7 +121,7 @@ export const themeBannerWarning =
 
 export const themeMeta = "text-xs text-muted"
 
-export const themeAdminTable = "theme-admin-table min-w-full border-collapse text-sm"
+export const themeAdminTable = "theme-admin-table w-full border-collapse text-sm"
 
 export const themeAdminTableHead =
   "border-b border-border text-left text-muted"

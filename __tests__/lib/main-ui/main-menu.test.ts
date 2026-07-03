@@ -106,7 +106,7 @@ describe("getMainMenuSectionDetail", () => {
     expect(findItem("HO_ADMIN", "retained-earnings")).toBeUndefined()
     expect(findItem("HO_ADMIN", "chart-of-accounts-import")).toBeUndefined()
     expect(findItem("HO_ADMIN", "reconciliation-dashboard")).toBeUndefined()
-    expect(findItem("HO_ADMIN", "accounting-periods")).toBeUndefined()
+    expect(findItem("HO_ADMIN", "accounting-periods")?.href).toBe("/finance/periods")
     expect(findItem("HO_ADMIN", "opening-balance")).toBeUndefined()
   })
 
@@ -167,9 +167,7 @@ describe("getMainMenuSectionDetail", () => {
       expect(item?.status).toBe("available")
       expect(item?.label).toBe("Import Accounting Data")
       expect(item?.href).toBe("/finance/system")
-      expect(item?.hint).toBe(
-        "Chart of accounts, accounting periods, and finance setup imports"
-      )
+      expect(item?.hint).toBe("Chart of accounts and finance setup imports")
     }
   })
 

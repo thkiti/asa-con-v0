@@ -68,8 +68,8 @@ export function CloseChecklistPanel({ readiness }: CloseChecklistPanelProps) {
   const priorSnapshotId = readiness.priorSnapshotRef?.id
 
   return (
-    <div className="space-y-6">
-      <section className="rounded border border-zinc-200 bg-white p-4">
+    <div className="w-full space-y-6">
+      <section className="w-full rounded border border-zinc-200 bg-white p-4">
         <h2 className="text-sm font-medium text-zinc-900">Blocker summary</h2>
         <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -146,7 +146,7 @@ export function CloseChecklistPanel({ readiness }: CloseChecklistPanelProps) {
       </section>
 
       {groups.map(({ group, items }) => (
-        <section key={group} className="space-y-3">
+        <section key={group} className="w-full space-y-3">
           <h2 className="text-sm font-medium text-zinc-900">
             {formatCloseChecklistGroupLabel(group)}
           </h2>

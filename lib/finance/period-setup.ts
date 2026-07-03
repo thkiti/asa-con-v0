@@ -3,6 +3,7 @@ import { AccountingPeriodStatus } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { HO_BRANCH_CODE } from "@/lib/legal-entity/constants"
 import { FinancePostingError } from "./posting-errors"
+import { advancePeriodKey } from "./period-key"
 import { accountingPeriodUniqueWhere, resolvePeriodLegalEntityCode } from "./period-lookup"
 
 async function resolveBootstrapBranchId(
@@ -61,4 +62,50 @@ export async function bootstrapPeriodIfMissing(
   }
 
   return period
+}
+
+export type AdvanceNextPeriodOutcome =
+  | { outcome: "created"; nextPeriodKey: string }
+  | { outcome: "already_open"; nextPeriodKey: string }
+  | { outcome: "warning"; nextPeriodKey: string; message: string }
+
+/**
+ * After a successful HARD close, ensure the next calendar period exists and is OPEN.
+ * Does not overwrite non-OPEN next periods — returns a warning instead.
+ */
+export async function advanceNextAccountingPeriodAfterHardClose(
+  tx: Prisma.TransactionClient,
+  input: {
+    closedPeriodKey: string
+    legalEntityCode?: DocumentEntityCode | null
+    branchId?: string | null
+  }
+): Promise<AdvanceNextPeriodOutcome> {
+  const legalEntityCode = resolvePeriodLegalEntityCode(input.legalEntityCode)
+  const nextPeriodKey = advancePeriodKey(input.closedPeriodKey)
+
+  const existing = await tx.accountingPeriod.findUnique({
+    where: accountingPeriodUniqueWhere({ periodKey: nextPeriodKey, legalEntityCode }),
+  })
+
+  if (!existing) {
+    await bootstrapPeriodIfMissing(tx, {
+      periodKey: nextPeriodKey,
+      legalEntityCode,
+      branchId: input.branchId,
+    })
+    return { outcome: "created", nextPeriodKey }
+  }
+
+  if (existing.status === AccountingPeriodStatus.OPEN) {
+    return { outcome: "already_open", nextPeriodKey }
+  }
+
+  return {
+    outcome: "warning",
+    nextPeriodKey,
+    message:
+      `Next accounting period ${nextPeriodKey} already exists with status ${existing.status}. ` +
+      "It was not modified automatically after hard close.",
+  }
 }

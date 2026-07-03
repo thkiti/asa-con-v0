@@ -26,7 +26,7 @@ export function CloseReadinessEvidenceActions({
   const quickLinks = buildCloseReadinessQuickLinks(readiness)
 
   return (
-    <section className="rounded border border-zinc-200 bg-white p-4">
+    <section className="w-full rounded border border-zinc-200 bg-white p-4">
       <h2 className="text-sm font-medium text-zinc-900">
         Evidence and traceability
       </h2>

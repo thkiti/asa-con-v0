@@ -9,6 +9,16 @@ import { createReopenEvidence } from "./reopen-evidence"
 import type { ReopenEvidenceApprovalSnapshot } from "./reopen-evidence-types"
 import { getActiveClosingEntry } from "./closing-entry-status"
 import { FinancePostingError } from "./posting-errors"
+import {
+  assertOpeningBalanceReviewReady,
+  openingBalanceReviewToCloseChecklist,
+} from "./opening-balance-review-gate"
+import { buildOpeningBalanceReviewForPeriod } from "./opening-balance-review"
+import { isOpeningBalancePeriodKey } from "./opening-balance-period"
+import {
+  advanceNextAccountingPeriodAfterHardClose,
+  type AdvanceNextPeriodOutcome,
+} from "./period-setup"
 import { accountingPeriodUniqueWhere, resolvePeriodLegalEntityCode } from "./period-lookup"
 
 type PeriodCloseInput = {
@@ -16,6 +26,13 @@ type PeriodCloseInput = {
   legalEntityCode?: DocumentEntityCode | null
   mode: "SOFT" | "HARD"
   closedBy?: PeriodCloseActorInput
+}
+
+export type PeriodCloseResult = {
+  period: NonNullable<
+    Awaited<ReturnType<Prisma.TransactionClient["accountingPeriod"]["findUnique"]>>
+  >
+  hardCloseAdvance?: AdvanceNextPeriodOutcome
 }
 
 type PeriodReopenInput = {
@@ -83,7 +100,7 @@ function requireReopenReason(reason: string | undefined): string {
 export async function closeAccountingPeriod(
   tx: Prisma.TransactionClient,
   input: PeriodCloseInput
-): Promise<NonNullable<Awaited<ReturnType<typeof tx.accountingPeriod.findUnique>>>> {
+): Promise<PeriodCloseResult> {
   const period = await findAccountingPeriod(tx, input)
 
   if (input.mode === "SOFT") {
@@ -95,29 +112,48 @@ export async function closeAccountingPeriod(
     }
 
     if (period.status === AccountingPeriodStatus.SOFT_CLOSED) {
-      return period
+      return { period }
     }
 
-    return tx.accountingPeriod.update({
+    const updated = await tx.accountingPeriod.update({
       where: { id: period.id },
       data: {
         status: AccountingPeriodStatus.SOFT_CLOSED,
         closedAt: new Date(),
       },
     })
+    return { period: updated }
   }
 
   if (period.status === AccountingPeriodStatus.HARD_CLOSED) {
-    return period
+    return { period }
   }
 
   const statusBefore = period.status
-  const { checklist, priorSnapshotRef, snapshotPayload } =
-    await buildCloseReadinessWithSnapshotsForPeriod(tx, period)
-  const policy = getHardCloseGatePolicy()
-  assertCloseReadiness(checklist, policy)
+
+  let checklist
+  let priorSnapshotRef: Awaited<
+    ReturnType<typeof buildCloseReadinessWithSnapshotsForPeriod>
+  >["priorSnapshotRef"] = null
+  let snapshotPayload: Awaited<
+    ReturnType<typeof buildCloseReadinessWithSnapshotsForPeriod>
+  >["snapshotPayload"] = null
+
+  if (isOpeningBalancePeriodKey(period.periodKey)) {
+    const review = await buildOpeningBalanceReviewForPeriod(tx, period.id)
+    assertOpeningBalanceReviewReady(review)
+    checklist = openingBalanceReviewToCloseChecklist(review)
+  } else {
+    const readiness = await buildCloseReadinessWithSnapshotsForPeriod(tx, period)
+    checklist = readiness.checklist
+    priorSnapshotRef = readiness.priorSnapshotRef
+    snapshotPayload = readiness.snapshotPayload
+    const policy = getHardCloseGatePolicy()
+    assertCloseReadiness(checklist, policy)
+  }
 
   const closedAt = new Date()
+  const policy = getHardCloseGatePolicy()
   const updated = await tx.accountingPeriod.update({
     where: { id: period.id },
     data: {
@@ -142,7 +178,15 @@ export async function closeAccountingPeriod(
     snapshotPayload,
   })
 
-  return updated
+  const hardCloseAdvance = await advanceNextAccountingPeriodAfterHardClose(tx, {
+    closedPeriodKey: updated.periodKey,
+    legalEntityCode: resolvePeriodLegalEntityCode(
+      updated.legalEntityCode as DocumentEntityCode
+    ),
+    branchId: updated.branchId,
+  })
+
+  return { period: updated, hardCloseAdvance }
 }
 
 export async function reopenAccountingPeriod(

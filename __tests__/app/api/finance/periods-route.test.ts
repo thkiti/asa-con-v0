@@ -10,6 +10,7 @@ import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { CloseGateError } from "@/lib/finance/close-gate-errors"
 import { getSession } from "@/lib/auth"
 import { GET, PATCH, POST } from "@/app/api/finance/periods/route"
+import { isFinanceManualPeriodCreationEnabled } from "@/lib/finance/config"
 import { prisma } from "@/lib/shared/prisma"
 
 jest.mock("@/lib/auth", () => ({
@@ -30,6 +31,10 @@ jest.mock("@/lib/finance/period-setup", () => ({
 jest.mock("@/lib/finance/period-close", () => ({
   closeAccountingPeriod: jest.fn(),
   reopenAccountingPeriod: jest.fn(),
+}))
+
+jest.mock("@/lib/finance/config", () => ({
+  isFinanceManualPeriodCreationEnabled: jest.fn(),
 }))
 
 const mockStaffFindFirst = jest.fn()
@@ -66,6 +71,10 @@ const mockReopen = reopenAccountingPeriod as jest.MockedFunction<
 const mockTransaction = prisma.$transaction as jest.Mock
 const mockFindUnique = prisma.accountingPeriod.findUnique as jest.Mock
 const mockGetSession = getSession as jest.MockedFunction<typeof getSession>
+const mockManualPeriodCreationEnabled =
+  isFinanceManualPeriodCreationEnabled as jest.MockedFunction<
+    typeof isFinanceManualPeriodCreationEnabled
+  >
 
 const authorizedSession = {
   sessionId: "sess-1",
@@ -200,7 +209,24 @@ describe("POST finance/periods", () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockGetSession.mockResolvedValue(authorizedSession)
+    mockManualPeriodCreationEnabled.mockReturnValue(true)
     mockTransaction.mockImplementation(async (fn) => fn(prisma))
+  })
+
+  it("returns 403 when manual period creation is disabled", async () => {
+    mockManualPeriodCreationEnabled.mockReturnValue(false)
+
+    const req = new NextRequest("http://localhost/api/finance/periods", {
+      method: "POST",
+      body: JSON.stringify({ periodKey: "2026-05" }),
+    })
+    const res = await POST(req)
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toMatchObject({
+      code: "MANUAL_PERIOD_CREATION_DISABLED",
+    })
+    expect(mockTransaction).not.toHaveBeenCalled()
   })
 
   it("returns 401 when session is missing", async () => {
@@ -381,9 +407,10 @@ describe("PATCH finance/periods", () => {
   })
 
   it("HARD_CLOSE updates period status", async () => {
-    mockClose.mockResolvedValue(
-      periodRow({ status: AccountingPeriodStatus.HARD_CLOSED, closedAt })
-    )
+    mockClose.mockResolvedValue({
+      period: periodRow({ status: AccountingPeriodStatus.HARD_CLOSED, closedAt }),
+      hardCloseAdvance: { outcome: "created", nextPeriodKey: "2026-06" },
+    })
     mockFindUnique.mockResolvedValue(
       periodRow({ status: AccountingPeriodStatus.HARD_CLOSED, closedAt })
     )
@@ -398,6 +425,12 @@ describe("PATCH finance/periods", () => {
     const res = await PATCH(req)
 
     expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toMatchObject({
+      period: expect.objectContaining({
+        status: AccountingPeriodStatus.HARD_CLOSED,
+      }),
+      hardCloseAdvance: { outcome: "created", nextPeriodKey: "2026-06" },
+    })
     expect(mockClose).toHaveBeenCalledWith(prisma, {
       periodKey: "2026-05",
       legalEntityCode: "AS",

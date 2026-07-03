@@ -70,7 +70,7 @@ const SECTION_META: Record<
   finance: {
     label: "FINANCE",
     description:
-      "Daily Work, Dashboard, and Audit — see /finance for the F0.2 menu",
+      "Daily Work, Dashboard, Accounting Periods, and Audit — see /finance for the F0.2 menu",
   },
   operations: {
     label: "OPERATIONS",
@@ -272,7 +272,7 @@ function buildSectionItems(
             "import-accounting",
             "Import Accounting Data",
             "/finance/system",
-            "Chart of accounts, accounting periods, and finance setup imports"
+            "Chart of accounts and finance setup imports"
           )
         )
       }

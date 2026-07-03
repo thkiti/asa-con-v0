@@ -77,6 +77,11 @@ export type PeriodAction = "SOFT_CLOSE" | "HARD_CLOSE" | "REOPEN"
 
 export type AccountingPeriodMutationResult = {
   period: AccountingPeriodRow
+  hardCloseAdvance?: {
+    outcome: "created" | "already_open" | "warning"
+    nextPeriodKey: string
+    message?: string
+  }
 }
 
 export type { ReconciliationIssuesFilter } from "./reconciliation-issues"

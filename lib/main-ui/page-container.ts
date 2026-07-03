@@ -9,7 +9,7 @@ export const APP_PAGE_CONTENT_WIDTH_PX = 976
  * Centered page shell — max width and horizontal padding.
  * Used on `<main>` for hub menus, finance admin pages, and feature shells.
  */
-export const appPageShellClass = `mx-auto max-w-5xl p-6 ${themePage}`
+export const appPageShellClass = `mx-auto w-full max-w-5xl p-6 ${themePage}`
 
 /**
  * Inner content column inside the shell.

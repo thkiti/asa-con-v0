@@ -6,6 +6,7 @@ import type { Role } from "@/lib/shared"
  *
  * Document layer (Daily Work): MJV, PAV, INV, REV, Petty Cash
  * Reporting layer (Dashboard): GL, TB, P&L, BS
+ * Period layer (Accounting Periods): month-end close, closing entry, reopen, timeline
  * Audit layer (Audit): Voucher Lookup, Document Trace, Attachments
  *
  * No separate Ledger, Transactions, JV, APV, ACC, or Receivables groups.
@@ -13,7 +14,11 @@ import type { Role } from "@/lib/shared"
  */
 
 /** Primary F0.2 finance navigation hubs (locked). */
-export type FinanceMenuHubKey = "daily-work" | "dashboard" | "audit"
+export type FinanceMenuHubKey =
+  | "daily-work"
+  | "dashboard"
+  | "accounting-periods"
+  | "audit"
 
 /** Legacy hub routes kept for bookmarks — not on the F0.2 home menu. */
 export type FinanceMenuLegacyHubKey =
@@ -55,6 +60,7 @@ export type FinanceMenuHub = {
 const FINANCE_MENU_HUB_ORDER: readonly FinanceMenuHubKey[] = [
   "daily-work",
   "dashboard",
+  "accounting-periods",
   "audit",
 ] as const
 
@@ -162,6 +168,20 @@ function buildPrimaryFinanceMenuHubs(): Record<
         ),
       ],
     },
+    "accounting-periods": {
+      label: "Accounting Periods",
+      description:
+        "Manage accounting periods, month-end closing, closing entries, reopen workflow and audit timeline.",
+      href: "/finance/periods",
+      items: [
+        done(
+          "accounting-periods",
+          "Accounting Periods",
+          "/finance/periods",
+          "Month-end closing entry, soft and hard close, reopen, timeline, and audit export"
+        ),
+      ],
+    },
     audit: {
       label: "Audit",
       description:
@@ -200,7 +220,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
 function buildLegacySystemHub(): Omit<FinanceMenuHub, "key"> {
   return {
     label: "System",
-    description: "Chart of accounts, imports, and accounting periods",
+    description: "Chart of accounts and imports",
     href: hubHref("system"),
     items: [
       {
@@ -215,13 +235,6 @@ function buildLegacySystemHub(): Omit<FinanceMenuHub, "key"> {
         label: "Import Chart of Accounts",
         href: "/finance/accounts/import",
         hint: "CSV preview and apply for GL account updates",
-        status: "available",
-      },
-      {
-        key: "accounting-periods",
-        label: "Accounting Periods",
-        href: "/finance/periods",
-        hint: "Period lifecycle, close evidence, and reopen workflow",
         status: "available",
       },
     ],
@@ -321,4 +334,4 @@ export function getAllFinanceMenuItems(role: Role): FinanceMenuItem[] {
 }
 
 export const FINANCE_MENU_HOME_DESCRIPTION =
-  "Daily Work — create and process finance documents. Dashboard — view GL and financial statements. Audit — trace and verify (coming soon)."
+  "Daily Work — create and process finance documents. Dashboard — view GL and financial statements. Accounting Periods — month-end close and audit timeline. Audit — trace and verify documents."

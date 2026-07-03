@@ -47,14 +47,15 @@ Core decision: one application, one database, two legal entities — not duplica
 34. [34_FINANCE_CORE_16G_RETAINED_EARNINGS.md](./34_FINANCE_CORE_16G_RETAINED_EARNINGS.md) — Finance Core 16G retained earnings bridge (account 301)
 35. [35_FINANCE_CORE_16H_CLOSING_ENTRY.md](./35_FINANCE_CORE_16H_CLOSING_ENTRY.md) — Finance Core 16H period closing entry (P&amp;L → RE account 301)
 36. [36_FINANCE_CORE_16I_CHANGES_IN_EQUITY.md](./36_FINANCE_CORE_16I_CHANGES_IN_EQUITY.md) — Finance Core 16I statement of changes in equity (read-only)
-37. [37_FINANCE_CORE_16J_GENERAL_LEDGER.md](./37_FINANCE_CORE_16J_GENERAL_LEDGER.md) — Finance Core 16J general ledger account drill-down (read-only)
-38. [38_FINANCE_CORE_16K_CASH_FLOW.md](./38_FINANCE_CORE_16K_CASH_FLOW.md) — Finance Core 16K indirect cash flow statement (read-only)
-39. [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md) — Finance Core 17B manual opening balance operations
-40. [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) — **primary finance direction** (Finance Core status, document families, future work)
-41. [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) — finance document presentation identity (Level 1 / Level 2)
-42. [FINANCE_PRESENTATION_CONTRACT.md](./FINANCE_PRESENTATION_CONTRACT.md) — **project rule** — screen / print / archived PDF must share one presentation model; PDFKit bridge policy
-43. [FINANCE_MJV_PRINT_ARCHITECTURE.md](./FINANCE_MJV_PRINT_ARCHITECTURE.md) — F1A MJV browser print foundation (layout, font, pagination)
-44. [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — business architecture decisions; **Finance Vocabulary** (document codes and numbering)
+37. [ASAD_MONTH_END_CLOSING_WORKFLOW.md](./ASAD_MONTH_END_CLOSING_WORKFLOW.md) — **ASAD month-end close** — verified 16H sequence (AD / 2026-01); do not use MJV for normal close
+38. [37_FINANCE_CORE_16J_GENERAL_LEDGER.md](./37_FINANCE_CORE_16J_GENERAL_LEDGER.md) — Finance Core 16J general ledger account drill-down (read-only)
+39. [38_FINANCE_CORE_16K_CASH_FLOW.md](./38_FINANCE_CORE_16K_CASH_FLOW.md) — Finance Core 16K indirect cash flow statement (read-only)
+40. [39_FINANCE_CORE_17B_OPENING_BALANCE.md](./39_FINANCE_CORE_17B_OPENING_BALANCE.md) — Finance Core 17B manual opening balance operations
+41. [FINANCE_TRANSACTION_UNIVERSE.md](./FINANCE_TRANSACTION_UNIVERSE.md) — **primary finance direction** (Finance Core status, document families, future work)
+42. [FINANCE_DOCUMENT_IDENTITY_STANDARD.md](./FINANCE_DOCUMENT_IDENTITY_STANDARD.md) — finance document presentation identity (Level 1 / Level 2)
+43. [FINANCE_PRESENTATION_CONTRACT.md](./FINANCE_PRESENTATION_CONTRACT.md) — **project rule** — screen / print / archived PDF must share one presentation model; PDFKit bridge policy
+44. [FINANCE_MJV_PRINT_ARCHITECTURE.md](./FINANCE_MJV_PRINT_ARCHITECTURE.md) — F1A MJV browser print foundation (layout, font, pagination)
+45. [99_ASA_HANDBOOK.md](./99_ASA_HANDBOOK.md) — business architecture decisions; **Finance Vocabulary** (document codes and numbering)
 31. [reference/ASA_CON_LESSONS.md](./reference/ASA_CON_LESSONS.md) — what to learn from the old repo
 32. [POS_COMPLETION_ROADMAP.md](./POS_COMPLETION_ROADMAP.md) — **POS Complete gate (P1–P4)** + thermal 80mm scope (memory doc)
 33. [RECEIPT_SETUP.md](./RECEIPT_SETUP.md) — current receipt layout / tax ID rules (pre-unify)

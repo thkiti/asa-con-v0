@@ -69,47 +69,39 @@ export function PeriodAuditTimelinePage({ periodId }: PeriodAuditTimelinePagePro
         </>
       ) : null}
 
-      <Link
-        href="/finance/periods"
-        className="no-print text-sm text-zinc-600 hover:text-zinc-900"
-      >
-        &larr; Accounting periods
-      </Link>
       {showCloseEvidence ? (
-        <Link
-          href={buildCloseEvidencePath(periodId)}
-          className="no-print ml-4 text-sm text-zinc-600 hover:text-zinc-900"
-        >
-          Close evidence
-        </Link>
+        <p className="no-print mb-4">
+          <Link
+            href={buildCloseEvidencePath(periodId)}
+            className="text-sm text-zinc-600 hover:text-zinc-900"
+          >
+            Close evidence
+          </Link>
+        </p>
       ) : null}
-      <p className="no-print mt-2 text-sm text-zinc-600">
-        Read-only chronological view of period lifecycle, close evidence, reopen workflow,
-        and reopen execution.
-      </p>
 
       {loading ? (
-        <p className="no-print mt-6 text-zinc-600">Loading audit timeline...</p>
+        <p className="no-print text-zinc-600">Loading audit timeline...</p>
       ) : null}
 
       {error ? (
-        <p className="no-print mt-6 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="no-print rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
         </p>
       ) : null}
 
       {!loading && !error && exportBundle ? (
-        <div className="no-print mt-6">
+        <div className="no-print">
           <PeriodAuditExportActionBar bundle={exportBundle} />
         </div>
       ) : null}
 
       {!loading && !error && data && data.timeline.length === 0 ? (
-        <p className="no-print mt-6 text-sm text-zinc-600">No audit events for this period.</p>
+        <p className="no-print text-sm text-zinc-600">No audit events for this period.</p>
       ) : null}
 
       {!loading && !error && data && data.timeline.length > 0 ? (
-        <div className="no-print mt-6">
+        <div className="no-print">
           <p className="mb-4 text-sm text-zinc-600">
             Period {data.period.periodKey} - {data.period.status}
           </p>

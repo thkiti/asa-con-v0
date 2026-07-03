@@ -14,6 +14,7 @@ import {
 import {
   closeAccountingPeriod,
   reopenAccountingPeriod,
+  type PeriodCloseResult,
 } from "@/lib/finance/period-close"
 import { assertDirectReopenAllowed } from "@/lib/finance/reopen-request"
 import {
@@ -22,6 +23,7 @@ import {
   type AccountingPeriodListRow,
 } from "@/lib/finance/period-list"
 import { bootstrapPeriodIfMissing } from "@/lib/finance/period-setup"
+import { isFinanceManualPeriodCreationEnabled } from "@/lib/finance/config"
 import { accountingPeriodUniqueWhere } from "@/lib/finance/period-lookup"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { prisma } from "@/lib/shared/prisma"
@@ -133,6 +135,17 @@ export async function POST(req: NextRequest) {
     requirePeriodAdminActor(session)
     const legalEntityCode = resolveSessionLegalEntityCode(session!)
 
+    if (!isFinanceManualPeriodCreationEnabled()) {
+      return NextResponse.json(
+        {
+          error:
+            "Manual accounting period creation is disabled. Periods are opened automatically after hard close.",
+          code: "MANUAL_PERIOD_CREATION_DISABLED",
+        },
+        { status: 403 }
+      )
+    }
+
     await prisma.$transaction(async (tx) => {
       await bootstrapPeriodIfMissing(tx, { periodKey, legalEntityCode })
     })
@@ -213,6 +226,8 @@ export async function PATCH(req: NextRequest) {
 
     const reason = String(body.reason ?? "").trim()
 
+    let hardCloseAdvance: PeriodCloseResult["hardCloseAdvance"]
+
     await prisma.$transaction(async (tx) => {
       if (action === "SOFT_CLOSE") {
         await closeAccountingPeriod(tx, {
@@ -221,12 +236,13 @@ export async function PATCH(req: NextRequest) {
           mode: "SOFT",
         })
       } else if (action === "HARD_CLOSE") {
-        await closeAccountingPeriod(tx, {
+        const result = await closeAccountingPeriod(tx, {
           periodKey,
           legalEntityCode,
           mode: "HARD",
           closedBy: periodActor!,
         })
+        hardCloseAdvance = result.hardCloseAdvance
       } else {
         const existing = await tx.accountingPeriod.findUnique({
           where: accountingPeriodUniqueWhere({ periodKey, legalEntityCode }),
@@ -248,7 +264,10 @@ export async function PATCH(req: NextRequest) {
       throw new Error(`Accounting period ${periodKey} not found after update`)
     }
 
-    return NextResponse.json({ period })
+    return NextResponse.json({
+      period,
+      ...(hardCloseAdvance ? { hardCloseAdvance } : {}),
+    })
   } catch (err: unknown) {
     if (err instanceof PeriodAdminAuthError) {
       return NextResponse.json(

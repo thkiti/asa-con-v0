@@ -25,15 +25,28 @@ jest.mock("@/lib/finance-ui/period-fetchers", () => ({
 }))
 
 describe("PeriodAdminPage", () => {
-  it("renders filters, create form, and loading state markup", () => {
+  it("renders filters without create form by default", () => {
     const html = renderToStaticMarkup(<PeriodAdminPage />)
-    expect(html).toContain("Filters")
+    expect(html).not.toContain("Filters")
     expect(html).not.toContain(">Branch<")
     expect(html).toContain("Status")
-    expect(html).toContain("Period key")
+    expect(html).toContain("Period")
+    expect(html).not.toContain("Period key")
     expect(html).toContain("Refresh")
-    expect(html).toContain("Create / open period")
-    expect(html).toContain("CREATE / OPEN PERIOD")
+    expect(html).toContain("voucher-inquiry-filter-control")
+    expect(html).toContain("Select status")
+    expect(html).toContain("Select period")
+    expect(html).not.toContain('value="ALL"')
+    expect(html).not.toContain("Create / open period")
+    expect(html).not.toContain("CREATE / OPEN PERIOD")
     expect(html).toContain("Loading periods")
+  })
+
+  it("shows manual create section when feature flag prop is enabled", () => {
+    const html = renderToStaticMarkup(
+      <PeriodAdminPage manualPeriodCreationEnabled />
+    )
+    expect(html).toContain("Create / open period (admin only)")
+    expect(html).toContain("CREATE / OPEN PERIOD")
   })
 })

@@ -1,7 +1,7 @@
-import Link from "next/link"
-import { financeAdminPageClass } from "@/lib/main-ui/finance-page-layout"
+import { FinanceAdminPageShell } from "@/components/finance/FinanceAdminPageShell"
 import { ReopenEvidencePage } from "@/components/finance/ReopenEvidencePage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
+import { financeAdminPageTitleClass } from "@/lib/main-ui/finance-page-layout"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -11,20 +11,18 @@ export default async function FinancePeriodReopenEvidencePage({ params }: PagePr
   const { id } = await params
 
   return (
-    <main className={financeAdminPageClass}>
-      <Link
-        href="/finance/periods"
-        className="text-sm text-zinc-600 hover:text-zinc-900"
-      >
-        ← Accounting periods
-      </Link>
-      <EntityContextPageHeading title="Reopen evidence" className="mt-4 text-xl font-semibold" />
-      <p className="mt-2 text-sm text-zinc-600">
-        Audited reopen events with actor snapshot, reason, and status transition.
-      </p>
-      <div className="mt-6">
-        <ReopenEvidencePage periodId={id} />
-      </div>
-    </main>
+    <FinanceAdminPageShell
+      backHref="/finance/periods"
+      backLabel="← Accounting periods"
+      heading={
+        <EntityContextPageHeading
+          title="Reopen history"
+          className={financeAdminPageTitleClass}
+        />
+      }
+      intro="Audited reopen events with actor snapshot, reason, and status transition."
+    >
+      <ReopenEvidencePage periodId={id} />
+    </FinanceAdminPageShell>
   )
 }

@@ -61,8 +61,8 @@ export function CloseReadinessPage({ periodId }: CloseReadinessPageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded border border-zinc-200 bg-zinc-50 p-4">
+    <div className="w-full space-y-6">
+      <section className="w-full rounded border border-zinc-200 bg-zinc-50 p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-zinc-500">

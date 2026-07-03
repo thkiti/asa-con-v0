@@ -1160,6 +1160,54 @@ span.finance-account .finance-account-name-part {
   max-width: 100%;
 }
 
+/* Finance hub + admin — one content column; no nested fixed 976px grid inside w-full shell. */
+.finance-page-content .hub-menu-grid,
+.finance-page-content [data-testid="main-menu-grid"] {
+  width: 100%;
+  max-width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.finance-page-content .hub-menu-card,
+.finance-page-content [data-testid="main-menu-card"] {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.finance-page-content .hub-menu-card-title-slot,
+.finance-page-content .hub-menu-card-hint-slot {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.finance-page-body {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Finance admin — one column owner; children stretch full width (no shrink-to-fit). */
+.finance-page-body > *,
+.finance-page-body section {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.finance-page-content .theme-admin-table,
+.finance-page-content table.theme-admin-table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.finance-page-body .overflow-x-auto {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
 /* Hub menu card grid — fixed Main Menu dimensions; content cannot resize cards. */
 .hub-menu-grid,
 [data-testid="main-menu-grid"] {

@@ -29,7 +29,7 @@ describe("PeriodTable", () => {
   it("renders period rows with status badges", () => {
     const html = renderToStaticMarkup(<PeriodTable periods={samplePeriods} />)
     expect(html).toContain("2026-05")
-    expect(html).toContain("AS")
+    expect(html).not.toContain(">AS<")
     expect(html).toContain("Open")
     expect(html).toContain("Hard closed")
     expect(html).toContain("bg-green-100")
@@ -41,28 +41,13 @@ describe("PeriodTable", () => {
     expect(html).toContain("No accounting periods")
   })
 
-  it("shows Close evidence and history links for HARD_CLOSED periods", () => {
+  it("links period key and action to the review page", () => {
     const html = renderToStaticMarkup(<PeriodTable periods={samplePeriods} />)
+    expect(html).toContain("/finance/periods/period-1/review")
+    expect(html).toContain("/finance/periods/period-2/review")
     expect(html).toContain("Review")
-    expect(html).toContain("Close evidence")
-    expect(html).toContain("Close history")
-    expect(html).toContain("Reopen history")
-    expect(html).toContain("/finance/periods/period-2/close-evidence")
-    expect(html).toContain("/finance/periods/period-2/close-evidence/history")
-    expect(html).toContain("/finance/periods/period-2/reopen-evidence")
-    expect(html).toContain("/finance/periods/period-2/reopen-requests")
-    expect(html).toContain("/finance/periods/period-1/timeline")
-    expect(html).toContain("/finance/periods/period-2/timeline")
-    expect(html).toContain("Audit timeline")
-    expect(html).not.toContain("/finance/periods/period-1/close-evidence")
-  })
-
-  it("shows REQUEST REOPEN for hard-closed rows when controls enabled", () => {
-    const html = renderToStaticMarkup(
-      <PeriodTable periods={samplePeriods} showControls sessionRole="HO_ADMIN" />
-    )
-    expect(html).toContain("REQUEST REOPEN")
-    expect(html).toContain("SOFT CLOSE")
-    expect(html).not.toContain("Update status")
+    expect(html).not.toContain("Close evidence")
+    expect(html).not.toContain("Audit timeline")
+    expect(html).not.toContain("SOFT CLOSE")
   })
 })
