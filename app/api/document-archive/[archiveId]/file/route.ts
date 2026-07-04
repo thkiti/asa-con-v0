@@ -21,7 +21,7 @@ type Context = {
 
 export async function GET(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const { archiveId } = await context.params
 
     const row = await loadActiveArchiveById(prisma, archiveId, legalEntityCode)

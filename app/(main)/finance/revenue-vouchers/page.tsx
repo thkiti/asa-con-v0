@@ -7,9 +7,20 @@ import {
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { RevenueVoucherListPage } from "@/components/finance/RevenueVoucherListPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
+import { parseDocumentEntityCode } from "@/lib/legal-entity"
+import { getSession } from "@/lib/auth"
 import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
-export default function RevenueVouchersPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function RevenueVouchersPage({ searchParams }: PageProps) {
+  const params = await searchParams
+  const session = await getSession()
+  const legalEntityCode =
+    parseDocumentEntityCode(params.legalEntityCode) ?? session?.documentEntityCode ?? null
+
   return (
     <main className={financeDocumentPageClass}>
       <FinanceDocumentContainer>
@@ -18,6 +29,7 @@ export default function RevenueVouchersPage() {
         </Link>
         <EntityContextPageHeading
           title="RECEIVABLE VOUCHERS"
+          legalEntityCode={legalEntityCode}
           className="mt-4 text-xl font-semibold"
         />
         <p className={financeAdminIntroClass}>

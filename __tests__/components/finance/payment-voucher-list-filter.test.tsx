@@ -8,6 +8,12 @@ import { PaymentVoucherListPage } from "@/components/finance/PaymentVoucherListP
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  usePathname: () => "/finance/vouchers",
+  useSearchParams: () => new URLSearchParams("legalEntityCode=AS"),
+}))
+
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
 }))
 
 const mockFetchPaymentVouchers = jest.fn().mockResolvedValue({
@@ -249,6 +255,7 @@ describe("PaymentVoucherListPage inquiry filters", () => {
 
     expect(mockFetchPaymentVouchers.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchPaymentVouchers).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({
         dateFrom: "2026-06-01",
         dateTo: "2026-06-30",
@@ -290,6 +297,7 @@ describe("PaymentVoucherListPage inquiry filters", () => {
 
     expect(mockFetchPaymentVouchers.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchPaymentVouchers).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({ search: "PAV-260001" })
     )
   })

@@ -7,9 +7,20 @@ import {
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
 import { InvoiceVoucherListPage } from "@/components/finance/InvoiceVoucherListPage"
 import { EntityContextPageHeading } from "@/components/main/EntityContextPageHeading"
+import { parseDocumentEntityCode } from "@/lib/legal-entity"
+import { getSession } from "@/lib/auth"
 import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
-export default function InvoiceVouchersPage() {
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
+
+export default async function InvoiceVouchersPage({ searchParams }: PageProps) {
+  const params = await searchParams
+  const session = await getSession()
+  const legalEntityCode =
+    parseDocumentEntityCode(params.legalEntityCode) ?? session?.documentEntityCode ?? null
+
   return (
     <main className={financeDocumentPageClass}>
       <FinanceDocumentContainer>
@@ -18,6 +29,7 @@ export default function InvoiceVouchersPage() {
         </Link>
         <EntityContextPageHeading
           title="INVOICES"
+          legalEntityCode={legalEntityCode}
           className="mt-4 text-xl font-semibold"
         />
         <p className={financeAdminIntroClass}>

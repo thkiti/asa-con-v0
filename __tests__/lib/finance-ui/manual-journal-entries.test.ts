@@ -23,8 +23,7 @@ describe("manual-journal-entries UI fetchers", () => {
     })
 
     await expect(
-      fetchManualJournalEntries({
-        legalEntityCode: "AS",
+      fetchManualJournalEntries("AS", {
         status: "DRAFT",
         entryType: "MANUAL",
         dateFrom: "2026-06-01",
@@ -33,7 +32,8 @@ describe("manual-journal-entries UI fetchers", () => {
     ).resolves.toEqual(dto)
 
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries?legalEntityCode=AS&status=DRAFT&entryType=MANUAL&dateFrom=2026-06-01&dateTo=2026-06-30"
+      "/api/finance/manual-journal-entries?legalEntityCode=AS&status=DRAFT&entryType=MANUAL&dateFrom=2026-06-01&dateTo=2026-06-30",
+      undefined
     )
   })
 
@@ -44,13 +44,14 @@ describe("manual-journal-entries UI fetchers", () => {
       json: async () => ({ entry }),
     })
 
-    await expect(fetchManualJournalEntry("entry-1")).resolves.toEqual(entry)
+    await expect(fetchManualJournalEntry("AS", "entry-1")).resolves.toEqual(entry)
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries/entry-1"
+      "/api/finance/manual-journal-entries/entry-1?legalEntityCode=AS",
+      undefined
     )
   })
 
-  it("createManualJournalEntryDraft POSTs payload", async () => {
+  it("createManualJournalEntryDraft POSTs payload with request scope", async () => {
     const entry = { id: "entry-1" }
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -65,9 +66,9 @@ describe("manual-journal-entries UI fetchers", () => {
       lines: [{ accountCode: "1100", debit: "100", credit: "0" }],
     }
 
-    await expect(createManualJournalEntryDraft(payload)).resolves.toEqual(entry)
+    await expect(createManualJournalEntryDraft("AS", payload)).resolves.toEqual(entry)
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries",
+      "/api/finance/manual-journal-entries?legalEntityCode=AS",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify(payload),
@@ -86,9 +87,11 @@ describe("manual-journal-entries UI fetchers", () => {
       lines: [{ accountCode: "1100", debit: "50", credit: "0" }],
     }
 
-    await expect(updateManualJournalEntryDraft("entry-1", payload)).resolves.toEqual(entry)
+    await expect(updateManualJournalEntryDraft("AS", "entry-1", payload)).resolves.toEqual(
+      entry
+    )
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries/entry-1",
+      "/api/finance/manual-journal-entries/entry-1?legalEntityCode=AS",
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify(payload),
@@ -98,44 +101,44 @@ describe("manual-journal-entries UI fetchers", () => {
 
   it("deleteDraftManualJournalEntry DELETEs", async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({ ok: true })
-    await deleteDraftManualJournalEntry("entry-1")
+    await deleteDraftManualJournalEntry("AS", "entry-1")
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries/entry-1",
+      "/api/finance/manual-journal-entries/entry-1?legalEntityCode=AS",
       { method: "DELETE" }
     )
   })
 
-  it("workflow POST helpers call correct paths", async () => {
+  it("workflow POST helpers call correct scoped paths", async () => {
     const entry = { id: "entry-1", pdfPath: "manual-journal/entry-1.pdf" }
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({ entry, pdfStatus: "ready" }),
     })
 
-    await submitManualJournalEntry("entry-1")
+    await submitManualJournalEntry("AS", "entry-1")
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries/entry-1/submit",
+      "/api/finance/manual-journal-entries/entry-1/submit?legalEntityCode=AS",
       { method: "POST" }
     )
 
-    await expect(postManualJournalEntry("entry-1")).resolves.toEqual({
+    await expect(postManualJournalEntry("AS", "entry-1")).resolves.toEqual({
       entry,
       pdfStatus: "ready",
     })
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries/entry-1/post",
+      "/api/finance/manual-journal-entries/entry-1/post?legalEntityCode=AS",
       { method: "POST" }
     )
 
-    await retryManualJournalEntryPdf("entry-1")
+    await retryManualJournalEntryPdf("AS", "entry-1")
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries/entry-1/pdf/retry",
+      "/api/finance/manual-journal-entries/entry-1/pdf/retry?legalEntityCode=AS",
       { method: "POST" }
     )
 
-    await cancelManualJournalEntry("entry-1", { cancelReason: "test" })
+    await cancelManualJournalEntry("AS", "entry-1", { cancelReason: "test" })
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/finance/manual-journal-entries/entry-1/cancel",
+      "/api/finance/manual-journal-entries/entry-1/cancel?legalEntityCode=AS",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ cancelReason: "test" }),
@@ -150,7 +153,7 @@ describe("manual-journal-entries UI fetchers", () => {
       json: async () => ({ error: "cannot submit", code: "INVALID_TRANSITION" }),
     })
 
-    await expect(fetchManualJournalEntry("entry-1")).rejects.toThrow(
+    await expect(fetchManualJournalEntry("AS", "entry-1")).rejects.toThrow(
       "cannot submit (INVALID_TRANSITION)"
     )
   })

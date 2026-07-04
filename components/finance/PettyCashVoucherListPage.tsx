@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { PettyCashVoucherStatusBadge } from "@/components/finance/PettyCashVoucherStatusBadge"
 import { formatAmount, formatFinanceListDate } from "@/lib/finance-ui/format"
+import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
   formatPettyCashVoucherDocumentNo,
   PETTY_CASH_VOUCHER_STATUSES,
@@ -50,6 +52,7 @@ import { themeLabel, themeLinkMuted, themeTextSecondary } from "@/lib/theme/them
 const ALL = ""
 
 export function PettyCashVoucherListPage() {
+  const legalEntityCode = useFinanceLegalEntityScope()
   const [draft, setDraft] = useState<PettyCashVoucherListUiFilter>(
     defaultPettyCashVoucherListUiFilter
   )
@@ -70,7 +73,10 @@ export function PettyCashVoucherListPage() {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchPettyCashVouchers(toPettyCashVoucherListFilter(applied))
+      const result = await fetchPettyCashVouchers(
+        legalEntityCode,
+        toPettyCashVoucherListFilter(applied)
+      )
       setEntries(result.entries)
       setTotal(result.total)
     } catch (err) {
@@ -78,7 +84,7 @@ export function PettyCashVoucherListPage() {
     } finally {
       setLoading(false)
     }
-  }, [applied])
+  }, [applied, legalEntityCode])
 
   useEffect(() => {
     void load()
@@ -104,7 +110,7 @@ export function PettyCashVoucherListPage() {
     setDeletingId(row.id)
     setError(null)
     try {
-      await deleteDraftPettyCashVoucher(row.id)
+      await deleteDraftPettyCashVoucher(legalEntityCode, row.id)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed")
@@ -117,7 +123,10 @@ export function PettyCashVoucherListPage() {
     <div className="space-y-4" data-testid="petty-cash-voucher-list">
       <div className={manualJournalEntryListActionRow} data-testid="petty-cash-voucher-actions">
         <Link
-          href="/finance/petty-cash-vouchers/new"
+          href={appendFinanceLegalEntityToPath(
+            "/finance/petty-cash-vouchers/new",
+            legalEntityCode
+          )}
           className={manualJournalEntryListActionPrimary}
           data-testid="new-petty-cash-voucher"
         >
@@ -254,7 +263,10 @@ export function PettyCashVoucherListPage() {
                   <tr key={row.id}>
                     <td className={manualJournalEntryListTdDocNo}>
                       <Link
-                        href={`/finance/petty-cash-vouchers/${row.id}`}
+                        href={appendFinanceLegalEntityToPath(
+                          `/finance/petty-cash-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                         className={`${themeLinkMuted} font-mono text-xs`}
                         data-testid={`entry-link-${row.id}`}
                       >
@@ -274,7 +286,10 @@ export function PettyCashVoucherListPage() {
                     <td className={financeMemo}>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <Link
-                          href={`/finance/petty-cash-vouchers/${row.id}`}
+                          href={appendFinanceLegalEntityToPath(
+                          `/finance/petty-cash-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                           className="underline"
                           data-testid={`action-open-${row.id}`}
                         >
@@ -283,7 +298,10 @@ export function PettyCashVoucherListPage() {
                         {row.status === "DRAFT" ? (
                           <>
                             <Link
-                              href={`/finance/petty-cash-vouchers/${row.id}`}
+                              href={appendFinanceLegalEntityToPath(
+                          `/finance/petty-cash-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                               className="underline"
                               data-testid={`action-edit-${row.id}`}
                             >
@@ -302,7 +320,10 @@ export function PettyCashVoucherListPage() {
                         ) : null}
                         {row.status === "POSTED" ? (
                           <Link
-                            href={`/finance/petty-cash-vouchers/${row.id}`}
+                            href={appendFinanceLegalEntityToPath(
+                          `/finance/petty-cash-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                             className="underline"
                             data-testid={`action-view-${row.id}`}
                           >

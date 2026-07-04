@@ -8,6 +8,12 @@ import { RevenueVoucherListPage } from "@/components/finance/RevenueVoucherListP
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  usePathname: () => "/finance/vouchers",
+  useSearchParams: () => new URLSearchParams("legalEntityCode=AS"),
+}))
+
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
 }))
 
 const mockFetchRevenueVouchers = jest.fn().mockResolvedValue({
@@ -249,6 +255,7 @@ describe("RevenueVoucherListPage inquiry filters", () => {
 
     expect(mockFetchRevenueVouchers.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchRevenueVouchers).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({
         dateFrom: "2026-06-01",
         dateTo: "2026-06-30",
@@ -290,6 +297,7 @@ describe("RevenueVoucherListPage inquiry filters", () => {
 
     expect(mockFetchRevenueVouchers.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchRevenueVouchers).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({ search: "REV-260001" })
     )
   })

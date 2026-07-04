@@ -14,7 +14,7 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
 
     const params = req.nextUrl.searchParams
     const documentKind = parseDocumentKind(params.get("documentKind"))

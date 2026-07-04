@@ -9,6 +9,7 @@ import {
   LEGACY_PDF_SNAPSHOT_REPLACE_HELPER,
 } from "@/lib/finance-ui/finance-legacy-pdf-snapshot"
 import { openLegacyArchivedPdf } from "@/lib/finance-ui/finance-legacy-pdf-open"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import {
   financeLegacyPdfSnapshotActions,
   financeLegacyPdfSnapshotPanel,
@@ -17,6 +18,7 @@ import {
 import { themeBtnSecondary, themeInlineError, themeTextSecondary } from "@/lib/theme/theme-classes"
 
 type FinanceLegacyPdfSnapshotPanelProps = {
+  legalEntityCode: DocumentEntityCode
   entryId: string
   entryNo: string
   pdfSnapshotReady: boolean
@@ -62,6 +64,7 @@ function RegenerateArchivedPdfButton({
 
 /** Archived PDF snapshot — View (optional Download) plus admin replace/regenerate/delete. */
 export function FinanceLegacyPdfSnapshotPanel({
+  legalEntityCode,
   entryId,
   entryNo,
   pdfSnapshotReady,
@@ -85,6 +88,7 @@ export function FinanceLegacyPdfSnapshotPanel({
       setAccessError(null)
       try {
         const ok = await openLegacyArchivedPdf({
+          legalEntityCode,
           entryId,
           entryNo,
           disposition,
@@ -95,7 +99,7 @@ export function FinanceLegacyPdfSnapshotPanel({
         setAccessError(LEGACY_PDF_SNAPSHOT_ACCESS_ERROR)
       }
     },
-    [disabled, entryId, entryNo, pdfCacheKey]
+    [disabled, entryId, entryNo, legalEntityCode, pdfCacheKey]
   )
 
   return (

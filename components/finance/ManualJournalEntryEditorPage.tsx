@@ -62,6 +62,8 @@ import {
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeInput } from "@/lib/theme/theme-classes"
 import { buildFinanceVoucherPrintModelFromManualJournalEntry } from "@/lib/finance-ui/finance-voucher-print"
+import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 
 type LineField = "account" | "debit" | "credit" | "memo"
 
@@ -198,6 +200,7 @@ export function ManualJournalEntryEditorPage({
 }: ManualJournalEntryEditorPageProps) {
   const router = useRouter()
   const currentReturnPath = useFinanceCurrentReturnPath()
+  const legalEntityScope = useFinanceLegalEntityScope()
   const resolvedEntryType: ManualJournalEntryTypeCode = openingBalanceMode
     ? "OPENING_BALANCE"
     : initialEntryType
@@ -213,9 +216,9 @@ export function ManualJournalEntryEditorPage({
 
   const [entry, setEntry] = useState<ManualJournalEntryRead | null>(seed.entry)
   const [branchId, setBranchId] = useState(seed.branchId)
-  const [legalEntityCode, setLegalEntityCode] = useState<DocumentEntityCode>(
-    seed.legalEntityCode
-  )
+  const activeLegalEntityCode: DocumentEntityCode =
+    (entry?.legalEntityCode as DocumentEntityCode | undefined) ?? legalEntityScope
+  const scopedListHref = appendFinanceLegalEntityToPath(listHref, activeLegalEntityCode)
   const [entryDate, setEntryDate] = useState(seed.entryDate)
   const [entryType, setEntryType] = useState<ManualJournalEntryTypeCode>(seed.entryType)
   const [description, setDescription] = useState(seed.description)
@@ -259,7 +262,6 @@ export function ManualJournalEntryEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
-      setLegalEntityCode(session.documentEntityCode)
       setSessionRole(session.role)
       if (mode === "create") {
         setBranchId(session.branchId)
@@ -284,13 +286,13 @@ export function ManualJournalEntryEditorPage({
 
     setLoading(true)
     setError(null)
-    void fetchManualJournalEntry(entryId)
+    void fetchManualJournalEntry(activeLegalEntityCode, entryId)
       .then(applyEntry)
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Failed to load entry")
       })
       .finally(() => setLoading(false))
-  }, [mode, entryId, applyEntry, initialEntry])
+  }, [mode, entryId, applyEntry, initialEntry, activeLegalEntityCode])
 
   function updateLine(key: string, patch: Partial<LineRow>) {
     setLines((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)))
@@ -411,9 +413,9 @@ export function ManualJournalEntryEditorPage({
     setBusyAction("save")
     try {
       if (mode === "create" || !entry) {
-        const created = await createManualJournalEntryDraft({
+        const created = await createManualJournalEntryDraft(activeLegalEntityCode, {
           branchId: branchId.trim(),
-          legalEntityCode,
+          legalEntityCode: activeLegalEntityCode,
           entryDate,
           entryType: openingBalanceMode ? "OPENING_BALANCE" : entryType,
           description: description.trim() || null,
@@ -422,11 +424,16 @@ export function ManualJournalEntryEditorPage({
         })
         applyEntry(created)
         setStatusMessage("Draft created.")
-        router.replace(`${listHref}/${created.id}`)
+        router.replace(
+          appendFinanceLegalEntityToPath(
+            `${listHref}/${created.id}`,
+            created.legalEntityCode as DocumentEntityCode
+          )
+        )
         return created
       }
 
-      const updated = await updateManualJournalEntryDraft(entry.id, {
+      const updated = await updateManualJournalEntryDraft(activeLegalEntityCode, entry.id, {
         entryDate,
         description: description.trim() || null,
         refNo: refNo.trim() || null,
@@ -473,12 +480,16 @@ export function ManualJournalEntryEditorPage({
       current = await handleSave()
       if (!current) return
     }
-    await runWorkflow("Submit", () => submitManualJournalEntry(current!.id))
+    await runWorkflow("Submit", () =>
+      submitManualJournalEntry(activeLegalEntityCode, current!.id)
+    )
   }
 
   async function handleConfirm() {
     if (!entry) return
-    await runWorkflow("Confirm", () => confirmManualJournalEntry(entry.id))
+    await runWorkflow("Confirm", () =>
+      confirmManualJournalEntry(activeLegalEntityCode, entry.id)
+    )
   }
 
   async function handlePost() {
@@ -492,7 +503,7 @@ export function ManualJournalEntryEditorPage({
     setPdfError(null)
     setBusyAction("Post")
     try {
-      const result = await postManualJournalEntry(entry.id)
+      const result = await postManualJournalEntry(activeLegalEntityCode, entry.id)
       applyEntry(result.entry)
       if (result.pdfStatus === "ready") {
         setStatusMessage("Post completed. PDF snapshot is ready.")
@@ -518,7 +529,7 @@ export function ManualJournalEntryEditorPage({
     const hadArchive = entry.pdfSnapshotReady
     const beforePdfGeneratedAt = entry.pdfGeneratedAt
     try {
-      const result = await retryManualJournalEntryPdf(entry.id)
+      const result = await retryManualJournalEntryPdf(activeLegalEntityCode, entry.id)
       applyEntry(result.entry)
       const verificationError = verifyArchivedPdfRegenerationResult({
         hadArchive,
@@ -551,7 +562,7 @@ export function ManualJournalEntryEditorPage({
     setPdfError(null)
     setBusyAction("Delete PDF")
     try {
-      const result = await deleteManualJournalEntryArchivedPdf(entry.id)
+      const result = await deleteManualJournalEntryArchivedPdf(activeLegalEntityCode, entry.id)
       applyEntry(result.entry)
       setStatusMessage("Archived PDF deleted.")
     } catch (err) {
@@ -566,7 +577,7 @@ export function ManualJournalEntryEditorPage({
   async function handleCancel() {
     if (!entry) return
     await runWorkflow("Cancel", () =>
-      cancelManualJournalEntry(entry.id, {
+      cancelManualJournalEntry(activeLegalEntityCode, entry.id, {
         cancelReason: cancelReason.trim() || null,
       })
     )
@@ -577,8 +588,8 @@ export function ManualJournalEntryEditorPage({
     setBusyAction("delete")
     setError(null)
     try {
-      await deleteDraftManualJournalEntry(entry.id)
-      router.push(listHref)
+      await deleteDraftManualJournalEntry(activeLegalEntityCode, entry.id)
+      router.push(scopedListHref)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed")
       setBusyAction(null)
@@ -622,10 +633,10 @@ export function ManualJournalEntryEditorPage({
           <FinanceVoucherPostedPrintView
             model={voucherPrintModel}
             entryType={entry.entryType}
-            legalEntityCode={legalEntityCode}
+            legalEntityCode={activeLegalEntityCode}
             entryDate={entryDate}
             description={description}
-            listHref={listHref}
+            listHref={scopedListHref}
             listBackLabel={
               openingBalanceMode ? "Opening balance" : "Journal entries"
             }
@@ -1039,7 +1050,7 @@ export function ManualJournalEntryEditorPage({
           entryId={entry.id}
           postedJournalEntryId={entry.postedJournalEntryId}
           headerContext={{
-            legalEntityCode,
+            legalEntityCode: activeLegalEntityCode,
             entryType: entry.entryType,
             documentNo,
             entryDate,

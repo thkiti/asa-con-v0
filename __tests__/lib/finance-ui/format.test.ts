@@ -1,5 +1,6 @@
 import {
   formatAmount,
+  formatBankCashCheckDayMonth,
   formatJournalLineSideAmount,
   formatVarianceLabel,
   getVarianceTone,
@@ -51,5 +52,17 @@ describe("formatVarianceLabel", () => {
     expect(formatVarianceLabel("0")).toMatch(/0\.00/)
     expect(formatVarianceLabel("5")).toMatch(/^\+/)
     expect(formatVarianceLabel("-5")).toMatch(/^-/)
+  })
+})
+
+describe("formatBankCashCheckDayMonth", () => {
+  it("formats ISO dates as DD.MM without year", () => {
+    expect(formatBankCashCheckDayMonth("2026-01-05")).toBe("05.01")
+    expect(formatBankCashCheckDayMonth("2026-01-15T00:00:00.000Z")).toBe("15.01")
+    expect(formatBankCashCheckDayMonth("2026-01-30")).toBe("30.01")
+  })
+
+  it("returns em dash for empty values", () => {
+    expect(formatBankCashCheckDayMonth(null)).toBe("—")
   })
 })

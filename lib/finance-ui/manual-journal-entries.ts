@@ -5,6 +5,11 @@ import type {
   ManualJournalEntryListItem,
 } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read-types"
 import type { ManualJournalSaveLineInput } from "@/lib/finance/manual-journal-entry/manual-journal-entry-types"
+import {
+  appendFinanceLegalEntityToApiUrl,
+  financeScopedFetch,
+} from "@/lib/finance-ui/finance-entity-scope"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 
 export type {
   ManualJournalEntryListFilter,
@@ -77,26 +82,35 @@ function buildListQuery(filter: ManualJournalEntryListFilterInput = {}): string 
 const BASE = "/api/finance/manual-journal-entries"
 
 export async function fetchManualJournalEntries(
+  legalEntityCode: DocumentEntityCode,
   filter: ManualJournalEntryListFilterInput = {}
 ): Promise<ManualJournalEntryListResult> {
-  const res = await fetch(`${BASE}${buildListQuery(filter)}`)
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}${buildListQuery({ ...filter, legalEntityCode })}`
+  )
   if (!res.ok) throw new Error(await parseError(res))
   return res.json() as Promise<ManualJournalEntryListResult>
 }
 
 export async function fetchManualJournalEntry(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<ManualJournalEntryRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}`)
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}`
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: ManualJournalEntryRead }
   return body.entry
 }
 
 export async function createManualJournalEntryDraft(
+  legalEntityCode: DocumentEntityCode,
   payload: CreateManualJournalEntryDraftPayload
 ): Promise<ManualJournalEntryRead> {
-  const res = await fetch(BASE, {
+  const res = await financeScopedFetch(legalEntityCode, BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -107,72 +121,96 @@ export async function createManualJournalEntryDraft(
 }
 
 export async function updateManualJournalEntryDraft(
+  legalEntityCode: DocumentEntityCode,
   entryId: string,
   payload: UpdateManualJournalEntryDraftPayload
 ): Promise<ManualJournalEntryRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: ManualJournalEntryRead }
   return body.entry
 }
 
-export async function deleteDraftManualJournalEntry(entryId: string): Promise<void> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}`, {
-    method: "DELETE",
-  })
+export async function deleteDraftManualJournalEntry(
+  legalEntityCode: DocumentEntityCode,
+  entryId: string
+): Promise<void> {
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}`,
+    { method: "DELETE" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
 }
 
 export async function submitManualJournalEntry(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<ManualJournalEntryRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/submit`, {
-    method: "POST",
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/submit`,
+    { method: "POST" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: ManualJournalEntryRead }
   return body.entry
 }
 
 export async function confirmManualJournalEntry(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<ManualJournalEntryRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/confirm`, {
-    method: "POST",
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/confirm`,
+    { method: "POST" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: ManualJournalEntryRead }
   return body.entry
 }
 
 export async function cancelManualJournalEntry(
+  legalEntityCode: DocumentEntityCode,
   entryId: string,
   payload: CancelManualJournalEntryPayload = {}
 ): Promise<ManualJournalEntryRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/cancel`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/cancel`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: ManualJournalEntryRead }
   return body.entry
 }
 
 export async function postManualJournalEntry(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<{
   entry: ManualJournalEntryRead
   pdfStatus: "ready" | "pending"
   pdfError?: string
 }> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/post`, {
-    method: "POST",
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/post`,
+    { method: "POST" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as {
     entry: ManualJournalEntryRead
@@ -189,13 +227,15 @@ export async function postManualJournalEntry(
 }
 
 export async function retryManualJournalEntryPdf(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<{
   entry: ManualJournalEntryRead
   pdfStatus: "ready" | "pending"
   pdfError?: string
 }> {
-  const res = await fetch(
+  const res = await financeScopedFetch(
+    legalEntityCode,
     `${BASE}/${encodeURIComponent(entryId)}/pdf/retry`,
     { method: "POST" }
   )
@@ -215,17 +255,21 @@ export async function retryManualJournalEntryPdf(
 }
 
 export async function deleteManualJournalEntryArchivedPdf(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<{ entry: ManualJournalEntryRead }> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/pdf`, {
-    method: "DELETE",
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/pdf`,
+    { method: "DELETE" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: ManualJournalEntryRead }
   return { entry: body.entry }
 }
 
 export function buildManualJournalEntryPdfUrl(
+  legalEntityCode: DocumentEntityCode,
   entryId: string,
   disposition: "inline" | "attachment" = "inline",
   cacheKey?: string | null
@@ -233,5 +277,8 @@ export function buildManualJournalEntryPdfUrl(
   const params = new URLSearchParams({ disposition })
   const version = String(cacheKey ?? "").trim()
   if (version) params.set("v", version)
-  return `${BASE}/${encodeURIComponent(entryId)}/pdf?${params.toString()}`
+  return appendFinanceLegalEntityToApiUrl(
+    `${BASE}/${encodeURIComponent(entryId)}/pdf?${params.toString()}`,
+    legalEntityCode
+  )
 }

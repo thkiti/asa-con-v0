@@ -15,6 +15,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
   it("shows dark-theme panel and regenerate action when archive is missing and allowed", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
+        legalEntityCode="AS"
         entryId="entry-1"
         entryNo="MJV-260001"
         pdfSnapshotReady={false}
@@ -39,6 +40,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
   it("shows read-only missing message without regenerate for finance users", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
+        legalEntityCode="AS"
         entryId="entry-1"
         entryNo="MJV-260001"
         pdfSnapshotReady={false}
@@ -54,6 +56,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
   it("shows archived PDF actions when snapshot is ready", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
+        legalEntityCode="AS"
         entryId="entry-1"
         entryNo="MJV-260001"
         pdfSnapshotReady={true}
@@ -74,6 +77,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
   it("shows replace and delete actions for admin when snapshot already exists", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
+        legalEntityCode="AS"
         entryId="entry-1"
         entryNo="MJV-260001"
         pdfSnapshotReady={true}
@@ -96,6 +100,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
   it("hides replace action for finance users when snapshot already exists", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
+        legalEntityCode="AS"
         entryId="entry-1"
         entryNo="MJV-260001"
         pdfSnapshotReady={true}
@@ -113,6 +118,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
   it("hides download when showDownloadButton is false", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
+        legalEntityCode="AS"
         entryId="entry-1"
         entryNo="MJV-260001"
         pdfSnapshotReady={true}
@@ -128,6 +134,7 @@ describe("FinanceLegacyPdfSnapshotPanel", () => {
   it("uses full container width classes on archive panel", () => {
     const html = renderToStaticMarkup(
       <FinanceLegacyPdfSnapshotPanel
+        legalEntityCode="AS"
         entryId="entry-1"
         entryNo="MJV-260001"
         pdfSnapshotReady={true}

@@ -23,6 +23,8 @@ import type {
   SessionDisplay,
 } from "./types"
 import type { PeriodAction } from "./types"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { financeScopedFetch } from "./finance-entity-scope"
 
 export type { PeriodAction }
 
@@ -84,6 +86,18 @@ export function fetchAccountingPeriods(
 ): Promise<PeriodListResult> {
   const query = buildPeriodQuery(filter)
   return fetch(`/api/finance/periods${query}`).then(async (res) => {
+    if (!res.ok) await throwFetchError(res)
+    return res.json() as Promise<PeriodListResult>
+  })
+}
+
+/** Entity-scoped period list for finance period filter dropdowns. */
+export function fetchAccountingPeriodsForEntity(
+  legalEntityCode: DocumentEntityCode
+): Promise<PeriodListResult> {
+  return financeScopedFetch(legalEntityCode, "/api/finance/periods", {
+    cache: "no-store",
+  }).then(async (res) => {
     if (!res.ok) await throwFetchError(res)
     return res.json() as Promise<PeriodListResult>
   })

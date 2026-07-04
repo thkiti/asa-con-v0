@@ -11,6 +11,7 @@ import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
 import { formatFinanceBranchLabel } from "@/lib/finance-ui/finance-branch-display"
 import { financePostedDocumentScreenProps } from "@/lib/finance-ui/finance-posted-document-layout"
+import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
 import { formatAmount } from "@/lib/finance-ui/format"
 import { fetchGlAccounts } from "@/lib/finance-ui/gl-accounts"
@@ -41,6 +42,7 @@ import {
   type PettyCashVoucherRead,
 } from "@/lib/finance-ui/petty-cash-vouchers"
 import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import { useFinanceVoucherAutoprint } from "@/lib/finance-ui/use-finance-voucher-autoprint"
 import {
   financeAccount,
@@ -200,6 +202,7 @@ export function PettyCashVoucherEditorPage({
 }: PettyCashVoucherEditorPageProps) {
   const router = useRouter()
   const currentReturnPath = useFinanceCurrentReturnPath()
+  const legalEntityScope = useFinanceLegalEntityScope()
   const listHref = "/finance/petty-cash-vouchers"
   const seed = editorSeed(initialEntry)
 
@@ -210,9 +213,6 @@ export function PettyCashVoucherEditorPage({
 
   const [entry, setEntry] = useState<PettyCashVoucherRead | null>(seed.entry)
   const [branchId, setBranchId] = useState(seed.branchId)
-  const [legalEntityCode, setLegalEntityCode] = useState<DocumentEntityCode>(
-    seed.legalEntityCode
-  )
   const [entryDate, setEntryDate] = useState(seed.entryDate)
   const [pettyCashAccountId, setPettyCashAccountId] = useState(seed.pettyCashAccountId)
   const [pettyCashAccountCode, setPettyCashAccountCode] = useState(seed.pettyCashAccountCode)
@@ -230,6 +230,9 @@ export function PettyCashVoucherEditorPage({
 
   const status: PettyCashVoucherStatusCode | "NEW" =
     entry?.status ?? (mode === "create" ? "NEW" : "DRAFT")
+  const activeLegalEntityCode: DocumentEntityCode =
+    (entry?.legalEntityCode as DocumentEntityCode | undefined) ?? legalEntityScope
+  const scopedListHref = appendFinanceLegalEntityToPath(listHref, activeLegalEntityCode)
 
   const isDraft = status === "DRAFT" || status === "NEW"
   const isSubmitted = status === "SUBMITTED"
@@ -275,7 +278,6 @@ export function PettyCashVoucherEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
-      setLegalEntityCode(session.documentEntityCode)
       setSessionRole(session.role)
       if (mode === "create") {
         setBranchId(session.branchId)
@@ -318,13 +320,13 @@ export function PettyCashVoucherEditorPage({
 
     setLoading(true)
     setError(null)
-    void fetchPettyCashVoucher(entryId)
+    void fetchPettyCashVoucher(activeLegalEntityCode, entryId)
       .then(applyEntry)
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Failed to load petty cash voucher")
       })
       .finally(() => setLoading(false))
-  }, [mode, entryId, applyEntry])
+  }, [mode, entryId, applyEntry, activeLegalEntityCode])
 
   function updateLine(key: string, patch: Partial<LineRow>) {
     setLines((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)))
@@ -458,9 +460,9 @@ export function PettyCashVoucherEditorPage({
     setBusyAction("save")
     try {
       if (mode === "create" || !entry) {
-        const created = await createPettyCashVoucherDraft({
+        const created = await createPettyCashVoucherDraft(activeLegalEntityCode, {
           branchId: branchId.trim(),
-          legalEntityCode,
+          legalEntityCode: activeLegalEntityCode,
           entryDate,
           pettyCashAccountId: pettyCashAccountId.trim(),
           payeeName: payeeName.trim(),
@@ -470,11 +472,16 @@ export function PettyCashVoucherEditorPage({
         })
         applyEntry(created)
         setStatusMessage("Draft created.")
-        router.replace(`${listHref}/${created.id}`)
+        router.replace(
+          appendFinanceLegalEntityToPath(
+            `${listHref}/${created.id}`,
+            created.legalEntityCode as DocumentEntityCode
+          )
+        )
         return created
       }
 
-      const updated = await updatePettyCashVoucherDraft(entry.id, {
+      const updated = await updatePettyCashVoucherDraft(activeLegalEntityCode, entry.id, {
         entryDate,
         payeeName: payeeName.trim(),
         description: description.trim() || null,
@@ -524,12 +531,12 @@ export function PettyCashVoucherEditorPage({
       current = await handleSave()
       if (!current) return
     }
-    await runWorkflow("Submit", () => submitPettyCashVoucher(current!.id))
+    await runWorkflow("Submit", () => submitPettyCashVoucher(activeLegalEntityCode, current!.id))
   }
 
   async function handleConfirm() {
     if (!entry) return
-    await runWorkflow("Confirm", () => confirmPettyCashVoucher(entry.id))
+    await runWorkflow("Confirm", () => confirmPettyCashVoucher(activeLegalEntityCode, entry.id))
   }
 
   async function handlePost() {
@@ -538,13 +545,13 @@ export function PettyCashVoucherEditorPage({
       setError("Petty cash voucher must be balanced with at least two lines before post.")
       return
     }
-    await runWorkflow("Post", () => postPettyCashVoucher(entry.id))
+    await runWorkflow("Post", () => postPettyCashVoucher(activeLegalEntityCode, entry.id))
   }
 
   async function handleCancel() {
     if (!entry) return
     await runWorkflow("Cancel", () =>
-      cancelPettyCashVoucher(entry.id, {
+      cancelPettyCashVoucher(activeLegalEntityCode, entry.id, {
         cancelReason: cancelReason.trim() || null,
       })
     )
@@ -555,8 +562,8 @@ export function PettyCashVoucherEditorPage({
     setBusyAction("delete")
     setError(null)
     try {
-      await deleteDraftPettyCashVoucher(entry.id)
-      router.push(listHref)
+      await deleteDraftPettyCashVoucher(activeLegalEntityCode, entry.id)
+      router.push(scopedListHref)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed")
       setBusyAction(null)
@@ -595,10 +602,10 @@ export function PettyCashVoucherEditorPage({
           <FinanceVoucherPostedPrintView
             model={voucherPrintModel}
             entryType={PETTY_CASH_VOUCHER_ENTRY_TYPE}
-            legalEntityCode={legalEntityCode}
+            legalEntityCode={activeLegalEntityCode}
             entryDate={entryDate}
             description={description}
-            listHref={listHref}
+            listHref={scopedListHref}
             listBackLabel="Petty cash vouchers"
             postedJournalHref={postedJournalHref}
             disabled={busyAction !== null}
@@ -607,7 +614,7 @@ export function PettyCashVoucherEditorPage({
               documentKind: "PCV",
               documentId: entry.id,
               documentNo: documentNo,
-              legalEntityCode,
+              legalEntityCode: activeLegalEntityCode,
               branchId: entry.branchId,
               workflowStatus: entry.status,
             }}
@@ -618,7 +625,7 @@ export function PettyCashVoucherEditorPage({
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <FinanceDocumentCanonicalHeader
-              legalEntityCode={legalEntityCode}
+              legalEntityCode={activeLegalEntityCode}
               entryType={PETTY_CASH_VOUCHER_ENTRY_TYPE}
               documentNo={documentNo}
               entryDate={entryDate}

@@ -25,7 +25,7 @@ function safePdfFileName(entryNo: string, entryId: string): string {
 
 export async function GET(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const { id } = await context.params
 
     const entry = await prisma.manualJournalEntry.findFirst({
@@ -83,9 +83,9 @@ export async function GET(req: NextRequest, context: Context) {
   }
 }
 
-export async function DELETE(_req: NextRequest, context: Context) {
+export async function DELETE(req: NextRequest, context: Context) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
     if (actor.role !== "HO_ADMIN") {
       throw new PeriodAdminAuthError(
         "Deleting an archived PDF requires HO_ADMIN",

@@ -18,6 +18,10 @@ jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
   useFinanceCurrentReturnPath: () => "/finance/manual-journal-entries/entry-1",
 }))
 
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
+}))
+
 jest.mock("@/lib/finance-ui/manual-journal-entries", () => ({
   fetchManualJournalEntries: jest.fn().mockResolvedValue({
     entries: [

@@ -7,6 +7,7 @@ import {
   uploadDocumentArchivePdf,
 } from "@/lib/document-archive-ui/client"
 import { buildDocumentArchiveByDocumentDownloadPath } from "@/lib/document-archive-ui/paths"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import { themeInlineError } from "@/lib/theme/theme-classes"
 
 const actionButtonClass =
@@ -58,7 +59,7 @@ export function DocumentArchiveVaultActions({
 
   useEffect(() => {
     let cancelled = false
-    void fetchDocumentArchivePdfStatus({
+    void fetchDocumentArchivePdfStatus(legalEntityCode as DocumentEntityCode, {
       documentKind,
       documentId,
       documentNo,
@@ -94,13 +95,13 @@ export function DocumentArchiveVaultActions({
       setUploading(true)
       setError(null)
       try {
-        await uploadDocumentArchivePdf({
+        await uploadDocumentArchivePdf(legalEntityCode as DocumentEntityCode, {
           file,
           legalEntityCode,
           branchId,
           links: [{ documentKind, documentId, documentNo }],
         })
-        const status = await fetchDocumentArchivePdfStatus({
+        const status = await fetchDocumentArchivePdfStatus(legalEntityCode as DocumentEntityCode, {
           documentKind,
           documentId,
           documentNo,

@@ -792,6 +792,7 @@ model GlAccount {
   invoiceVoucherLines       InvoiceVoucherLine[]
   bankReconciliations       BankReconciliation[]
   cashReconciliations       CashReconciliation[]
+  bankAccounts              BankAccount[]
 }
 
 model LegalEntity {
@@ -812,6 +813,8 @@ model LegalEntity {
   taxPolicies          TaxPolicy[]
   bankReconciliations  BankReconciliation[]
   cashReconciliations  CashReconciliation[]
+  bankAccounts         BankAccount[]
+  bankStatements       BankStatement[]
 }
 
 /// Effective-dated VAT/tax rate policy for finance and POS snapshotting.
@@ -1427,6 +1430,28 @@ model ReconciliationSnapshot {
   @@index([createdAt(sort: Desc)])
 }
 
+/// Bank account master — external bank identity mapped to a GL bank account (REC-3a).
+model BankAccount {
+  id              String @id @default(uuid())
+  legalEntityCode String
+  bankName        String
+  accountNumber   String
+  accountName     String
+  currencyCode    String @default("THB")
+  glAccountId     String
+  isActive        Boolean @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  legalEntity LegalEntity @relation(fields: [legalEntityCode], references: [code])
+  glAccount   GlAccount   @relation(fields: [glAccountId], references: [id])
+  bankStatements BankStatement[]
+
+  @@unique([legalEntityCode, accountNumber])
+  @@index([legalEntityCode, isActive])
+  @@index([glAccountId])
+}
+
 /// Period bank reconciliation worksheet — primary evidence for close readiness (Phase 23C).
 model BankReconciliation {
   id              String @id @default(uuid())
@@ -1470,6 +1495,59 @@ model BankReconciliation {
   @@index([legalEntityCode, periodKey])
   @@index([periodKey])
   @@index([branchId, periodKey])
+}
+
+enum BankStatementStatus {
+  NEW
+  DRAFT
+  READY
+}
+
+/// Bank statement register — external bank statement as received (REC-3b register).
+model BankStatement {
+  id              String              @id @default(uuid())
+  legalEntityCode String
+  bankAccountId   String
+  periodKey       String
+  statementNo     String
+  statementDate   DateTime            @db.Date
+  openingBalance  Decimal             @db.Decimal(18, 2)
+  closingBalance  Decimal             @db.Decimal(18, 2)
+  status          BankStatementStatus @default(NEW)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  createdByStaffId String?
+  updatedByStaffId String?
+
+  legalEntity LegalEntity         @relation(fields: [legalEntityCode], references: [code])
+  bankAccount BankAccount         @relation(fields: [bankAccountId], references: [id])
+  lines       BankStatementLine[]
+
+  @@unique([legalEntityCode, statementNo])
+  @@unique([legalEntityCode, bankAccountId, periodKey])
+  @@index([legalEntityCode, periodKey])
+  @@index([legalEntityCode, bankAccountId, periodKey])
+  @@index([legalEntityCode, status])
+}
+
+/// Bank statement line — one movement on the external statement.
+model BankStatementLine {
+  id               String   @id @default(uuid())
+  bankStatementId  String
+  lineNo           Int
+  transactionDate  DateTime @db.Date
+  description      String
+  chequeNumber     String?
+  depositAmount    Decimal? @db.Decimal(18, 2)
+  withdrawalAmount Decimal? @db.Decimal(18, 2)
+  runningBalance   Decimal  @db.Decimal(18, 2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  bankStatement BankStatement @relation(fields: [bankStatementId], references: [id], onDelete: Cascade)
+
+  @@unique([bankStatementId, lineNo])
+  @@index([bankStatementId])
 }
 
 /// Period cash reconciliation worksheet — branch-scoped cash count evidence (Phase 23C).

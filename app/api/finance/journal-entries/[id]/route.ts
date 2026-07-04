@@ -10,9 +10,9 @@ type Context = {
   params: Promise<{ id: string }>
 }
 
-export async function GET(_req: NextRequest, context: Context) {
+export async function GET(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const { id } = await context.params
     const journal = await getJournalInquiryById(prisma, id, legalEntityCode)
     return NextResponse.json({ journal })

@@ -12,6 +12,8 @@ import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-dis
 import { formatFinanceBranchLabel } from "@/lib/finance-ui/finance-branch-display"
 import { financePostedDocumentScreenProps } from "@/lib/finance-ui/finance-posted-document-layout"
 import { buildFinanceVoucherPrintModelFromPaymentVoucher } from "@/lib/finance-ui/finance-voucher-print"
+import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
 import { formatAmount } from "@/lib/finance-ui/format"
 import { formatThaiBahtAmountInWords } from "@/lib/finance-ui/format-thai-baht-words"
@@ -203,6 +205,7 @@ export function PaymentVoucherEditorPage({
 }: PaymentVoucherEditorPageProps) {
   const router = useRouter()
   const currentReturnPath = useFinanceCurrentReturnPath()
+  const legalEntityScope = useFinanceLegalEntityScope()
   const listHref = "/finance/payment-vouchers"
   const seed = editorSeed(initialEntry)
 
@@ -213,9 +216,9 @@ export function PaymentVoucherEditorPage({
 
   const [entry, setEntry] = useState<PaymentVoucherRead | null>(seed.entry)
   const [branchId, setBranchId] = useState(seed.branchId)
-  const [legalEntityCode, setLegalEntityCode] = useState<DocumentEntityCode>(
-    seed.legalEntityCode
-  )
+  const activeLegalEntityCode: DocumentEntityCode =
+    (entry?.legalEntityCode as DocumentEntityCode | undefined) ?? legalEntityScope
+  const scopedListHref = appendFinanceLegalEntityToPath(listHref, activeLegalEntityCode)
   const [entryDate, setEntryDate] = useState(seed.entryDate)
   const [payFromAccountId, setPayFromAccountId] = useState(seed.payFromAccountId)
   const [payFromAccountCode, setPayFromAccountCode] = useState(seed.payFromAccountCode)
@@ -272,7 +275,6 @@ export function PaymentVoucherEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
-      setLegalEntityCode(session.documentEntityCode)
       setSessionRole(session.role)
       if (mode === "create") {
         setBranchId(session.branchId)
@@ -308,13 +310,13 @@ export function PaymentVoucherEditorPage({
 
     setLoading(true)
     setError(null)
-    void fetchPaymentVoucher(entryId)
+    void fetchPaymentVoucher(activeLegalEntityCode, entryId)
       .then(applyEntry)
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Failed to load payment voucher")
       })
       .finally(() => setLoading(false))
-  }, [mode, entryId, applyEntry])
+  }, [mode, entryId, applyEntry, activeLegalEntityCode])
 
   function updateLine(key: string, patch: Partial<LineRow>) {
     setLines((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)))
@@ -462,9 +464,9 @@ export function PaymentVoucherEditorPage({
     setBusyAction("save")
     try {
       if (mode === "create" || !entry) {
-        const created = await createPaymentVoucherDraft({
+        const created = await createPaymentVoucherDraft(activeLegalEntityCode, {
           branchId: branchId.trim(),
-          legalEntityCode,
+          legalEntityCode: activeLegalEntityCode,
           entryDate,
           payFromAccountId: payFromAccountId.trim(),
           payeeName: payeeName.trim(),
@@ -475,11 +477,16 @@ export function PaymentVoucherEditorPage({
         })
         applyEntry(created)
         setStatusMessage("Draft created.")
-        router.replace(`${listHref}/${created.id}`)
+        router.replace(
+          appendFinanceLegalEntityToPath(
+            `${listHref}/${created.id}`,
+            created.legalEntityCode as DocumentEntityCode
+          )
+        )
         return created
       }
 
-      const updated = await updatePaymentVoucherDraft(entry.id, {
+      const updated = await updatePaymentVoucherDraft(activeLegalEntityCode, entry.id, {
         entryDate,
         payFromAccountId: payFromAccountId.trim(),
         payeeName: payeeName.trim(),
@@ -531,12 +538,16 @@ export function PaymentVoucherEditorPage({
       current = await handleSave()
       if (!current) return
     }
-    await runWorkflow("Submit", () => submitPaymentVoucher(current!.id))
+    await runWorkflow("Submit", () =>
+      submitPaymentVoucher(activeLegalEntityCode, current!.id)
+    )
   }
 
   async function handleConfirm() {
     if (!entry) return
-    await runWorkflow("Confirm", () => confirmPaymentVoucher(entry.id))
+    await runWorkflow("Confirm", () =>
+      confirmPaymentVoucher(activeLegalEntityCode, entry.id)
+    )
   }
 
   async function handlePost() {
@@ -545,13 +556,13 @@ export function PaymentVoucherEditorPage({
       setError("Payment voucher must be balanced with at least two lines before post.")
       return
     }
-    await runWorkflow("Post", () => postPaymentVoucher(entry.id))
+    await runWorkflow("Post", () => postPaymentVoucher(activeLegalEntityCode, entry.id))
   }
 
   async function handleCancel() {
     if (!entry) return
     await runWorkflow("Cancel", () =>
-      cancelPaymentVoucher(entry.id, {
+      cancelPaymentVoucher(activeLegalEntityCode, entry.id, {
         cancelReason: cancelReason.trim() || null,
       })
     )
@@ -562,8 +573,8 @@ export function PaymentVoucherEditorPage({
     setBusyAction("delete")
     setError(null)
     try {
-      await deleteDraftPaymentVoucher(entry.id)
-      router.push(listHref)
+      await deleteDraftPaymentVoucher(activeLegalEntityCode, entry.id)
+      router.push(scopedListHref)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed")
       setBusyAction(null)
@@ -603,10 +614,10 @@ export function PaymentVoucherEditorPage({
           <FinanceVoucherPostedPrintView
             model={voucherPrintModel}
             entryType={PAYMENT_VOUCHER_ENTRY_TYPE}
-            legalEntityCode={legalEntityCode}
+            legalEntityCode={activeLegalEntityCode}
             entryDate={entryDate}
             description={description}
-            listHref={listHref}
+            listHref={scopedListHref}
             listBackLabel="Payment vouchers"
             postedJournalHref={postedJournalHref}
             disabled={busyAction !== null}
@@ -615,7 +626,7 @@ export function PaymentVoucherEditorPage({
               documentKind: "PAV",
               documentId: entry.id,
               documentNo: documentNo,
-              legalEntityCode,
+              legalEntityCode: activeLegalEntityCode,
               branchId: entry.branchId,
               workflowStatus: entry.status,
             }}
@@ -626,7 +637,7 @@ export function PaymentVoucherEditorPage({
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <FinanceDocumentCanonicalHeader
-              legalEntityCode={legalEntityCode}
+              legalEntityCode={activeLegalEntityCode}
               entryType={PAYMENT_VOUCHER_ENTRY_TYPE}
               documentNo={documentNo}
               entryDate={entryDate}

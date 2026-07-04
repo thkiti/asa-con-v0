@@ -1,20 +1,43 @@
 import { getSession, requirePeriodAdminActor } from "@/lib/auth"
-import { resolveFinanceSessionLegalEntityCode } from "@/lib/finance/finance-session"
+import {
+  readFinanceRequestLegalEntityCode,
+  resolveFinanceRequestLegalEntityCode,
+} from "@/lib/finance/finance-request-scope"
 import {
   withSessionLegalEntityFilter,
   type EntityScopedIdWhere,
 } from "@/lib/finance/voucher-entity-scope"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { ReportError } from "@/lib/reporting/report-errors"
 
 type FinanceVoucherActor = ReturnType<typeof requirePeriodAdminActor>
 
-export async function requireFinanceVoucherScope(): Promise<{
+/** Route handlers may receive standard Request or NextRequest. */
+export type FinanceVoucherScopeRequest = Pick<Request, "headers" | "url">
+
+function resolveScopeFromRequest(req?: FinanceVoucherScopeRequest): unknown {
+  if (!req) return null
+  return readFinanceRequestLegalEntityCode({
+    searchParams: new URL(req.url).searchParams,
+    headers: req.headers,
+  })
+}
+
+export async function requireFinanceVoucherScope(
+  req?: FinanceVoucherScopeRequest
+): Promise<{
   actor: FinanceVoucherActor
   legalEntityCode: DocumentEntityCode
 }> {
   const session = await getSession()
   const actor = requirePeriodAdminActor(session)
-  const legalEntityCode = resolveFinanceSessionLegalEntityCode(session)
+  if (!session) {
+    throw new ReportError("Session legal entity is required", "UNAUTHORIZED")
+  }
+  const legalEntityCode = resolveFinanceRequestLegalEntityCode(
+    session,
+    resolveScopeFromRequest(req)
+  )
   return { actor, legalEntityCode }
 }
 

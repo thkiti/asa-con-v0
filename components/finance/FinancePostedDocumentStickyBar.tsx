@@ -9,6 +9,7 @@ import {
   financePostedDocumentStickyBar,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeLinkMuted } from "@/lib/theme/theme-classes"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 
 type FinancePostedDocumentStickyBarProps = {
   documentNo: string
@@ -67,6 +68,7 @@ export function FinancePostedDocumentStickyBar({
         >
           {archiveReady && archiveEntryId && archiveEntryNo ? (
             <FinanceViewArchivedPdfButton
+              legalEntityCode={legalEntityCode as DocumentEntityCode}
               entryId={archiveEntryId}
               entryNo={archiveEntryNo}
               pdfCacheKey={pdfCacheKey}

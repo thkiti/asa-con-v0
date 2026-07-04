@@ -8,6 +8,12 @@ import { ManualJournalEntryListPage } from "@/components/finance/ManualJournalEn
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  usePathname: () => "/finance/manual-journal-entries",
+  useSearchParams: () => new URLSearchParams("legalEntityCode=AS"),
+}))
+
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
 }))
 
 const mockFetchManualJournalEntries = jest.fn().mockResolvedValue({
@@ -214,6 +220,7 @@ describe("ManualJournalEntryListPage more filter", () => {
 
     expect(mockFetchManualJournalEntries.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchManualJournalEntries).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({
         dateFrom: "2026-06-01",
         dateTo: "2026-06-30",
@@ -255,6 +262,7 @@ describe("ManualJournalEntryListPage more filter", () => {
 
     expect(mockFetchManualJournalEntries.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchManualJournalEntries).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({ entryNo: "MJV-260001" })
     )
   })

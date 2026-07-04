@@ -3,9 +3,11 @@
 import { useCallback, useState } from "react"
 import { LEGACY_PDF_SNAPSHOT_ACCESS_ERROR } from "@/lib/finance-ui/finance-legacy-pdf-snapshot"
 import { openLegacyArchivedPdf } from "@/lib/finance-ui/finance-legacy-pdf-open"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { themeBtnSecondary, themeInlineError } from "@/lib/theme/theme-classes"
 
 type FinanceViewArchivedPdfButtonProps = {
+  legalEntityCode: DocumentEntityCode
   entryId: string
   entryNo: string
   pdfCacheKey?: string | null
@@ -16,6 +18,7 @@ type FinanceViewArchivedPdfButtonProps = {
 
 /** Primary action — open archived PDF in the browser viewer. */
 export function FinanceViewArchivedPdfButton({
+  legalEntityCode,
   entryId,
   entryNo,
   pdfCacheKey = null,
@@ -29,6 +32,7 @@ export function FinanceViewArchivedPdfButton({
     setAccessError(null)
     try {
       const ok = await openLegacyArchivedPdf({
+        legalEntityCode,
         entryId,
         entryNo,
         disposition: "inline",
@@ -38,7 +42,7 @@ export function FinanceViewArchivedPdfButton({
     } catch {
       setAccessError(LEGACY_PDF_SNAPSHOT_ACCESS_ERROR)
     }
-  }, [disabled, entryId, entryNo, pdfCacheKey])
+  }, [disabled, entryId, entryNo, legalEntityCode, pdfCacheKey])
 
   const button = (
     <button

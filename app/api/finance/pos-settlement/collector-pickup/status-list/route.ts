@@ -14,7 +14,7 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
 
     if (legalEntityCode !== DEFAULT_DOCUMENT_ENTITY_CODE) {
       throw new PosSettlementError(

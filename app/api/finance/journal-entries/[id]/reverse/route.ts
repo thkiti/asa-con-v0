@@ -14,7 +14,7 @@ type Context = {
 
 export async function POST(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const { id } = await context.params
     const body = (await req.json().catch(() => ({}))) as {
       reversalDate?: unknown

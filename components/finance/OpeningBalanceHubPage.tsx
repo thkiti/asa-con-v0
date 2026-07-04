@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react"
 import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
 import { formatDateTime } from "@/lib/finance-ui/format"
 import { formatManualJournalEntryDocumentNo } from "@/lib/finance-ui/manual-journal-entry-display"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
   fetchOpeningBalanceEntries,
   type OpeningBalanceListFilterInput,
@@ -56,6 +57,7 @@ function toListFilter(filter: FilterState): OpeningBalanceListFilterInput {
 const OPB_STATUSES = ["DRAFT", "SUBMITTED", "CONFIRMED", "POSTED", "CANCELLED"] as const
 
 export function OpeningBalanceHubPage() {
+  const scopeLegalEntityCode = useFinanceLegalEntityScope()
   const [filter, setFilter] = useState<FilterState>(defaultFilter)
   const [entries, setEntries] = useState<ManualJournalEntryListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -66,7 +68,15 @@ export function OpeningBalanceHubPage() {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchOpeningBalanceEntries(toListFilter(filter))
+      const listEntity = (
+        filter.legalEntityCode
+          ? filter.legalEntityCode
+          : scopeLegalEntityCode
+      ) as DocumentEntityCode
+      const result = await fetchOpeningBalanceEntries(
+        listEntity,
+        toListFilter(filter)
+      )
       setEntries(result.entries)
       setTotal(result.total)
     } catch (err) {
@@ -74,7 +84,7 @@ export function OpeningBalanceHubPage() {
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [filter, scopeLegalEntityCode])
 
   useEffect(() => {
     void load()

@@ -19,7 +19,7 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const filter = applyFinanceVoucherListScope(
       parseInvoiceVoucherListQuery(req.nextUrl.searchParams),
       legalEntityCode
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
     const body = (await req.json()) as Record<string, unknown>
 
     const branchId = String(body.branchId ?? "").trim()

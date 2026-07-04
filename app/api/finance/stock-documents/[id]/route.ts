@@ -9,9 +9,9 @@ import { prisma } from "@/lib/shared/prisma"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
-export async function GET(_req: NextRequest, context: RouteContext) {
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const { id } = await context.params
     const detail = await getStockDocumentInquiryDetail(
       prisma,

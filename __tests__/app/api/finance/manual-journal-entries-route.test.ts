@@ -85,7 +85,17 @@ const mockPost = postManualJournalEntry as jest.Mock
 const mockAttachPdf = attachManualJournalEntryPdfFromSnapshot as jest.Mock
 
 const actor = { staffId: "staff-1", name: "Admin", role: "HO_FINANCE" }
-const sessionAs = { documentEntityCode: "AS" as const }
+const sessionAs = {
+  documentEntityCode: "AS" as const,
+  role: "HO_FINANCE" as const,
+  branchCode: "HO999",
+  sessionId: "sess-1",
+  userId: "user-1",
+  staffId: "staff-1",
+  name: "Finance",
+  branchId: "branch-1",
+  branchName: "HO",
+}
 
 const sampleEntry = {
   id: "entry-1",
@@ -409,7 +419,7 @@ describe("manual journal entries API routes", () => {
   })
 
   describe("legal entity isolation", () => {
-    it("list scopes to session entity even when query requests AD", async () => {
+    it("list uses request entity when query param is explicit", async () => {
       mockList.mockResolvedValue({ entries: [], total: 0 })
       const req = new NextRequest(
         "http://localhost/api/finance/manual-journal-entries?legalEntityCode=AD"
@@ -418,11 +428,11 @@ describe("manual journal entries API routes", () => {
       expect(res.status).toBe(200)
       expect(mockList).toHaveBeenCalledWith(
         prisma,
-        expect.objectContaining({ legalEntityCode: "AS" })
+        expect.objectContaining({ legalEntityCode: "AD" })
       )
     })
 
-    it("detail returns 404 for cross-entity voucher id", async () => {
+    it("detail scopes by request entity for cross-entity lookup", async () => {
       mockGet.mockRejectedValue(
         new ManualJournalEntryError(
           "Manual journal entry not found",
@@ -431,7 +441,9 @@ describe("manual journal entries API routes", () => {
         )
       )
       const res = await detailRoute(
-        new NextRequest("http://localhost/api/finance/manual-journal-entries/entry-ad"),
+        new NextRequest(
+          "http://localhost/api/finance/manual-journal-entries/entry-ad?legalEntityCode=AS"
+        ),
         { params: Promise.resolve({ id: "entry-ad" }) }
       )
       expect(res.status).toBe(404)

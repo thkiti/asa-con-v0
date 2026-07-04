@@ -1,4 +1,6 @@
 import type { DocumentArchiveKind, DocumentKind } from "@/generated/prisma/client"
+import { financeScopedFetch } from "@/lib/finance-ui/finance-entity-scope"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import { buildDocumentArchiveStatusPath } from "./paths"
 
 export type DocumentArchiveUploadLink = {
@@ -17,14 +19,18 @@ export type DocumentArchiveUploadInput = {
   links: DocumentArchiveUploadLink[]
 }
 
-export async function fetchDocumentArchivePdfStatus(input: {
-  documentKind: DocumentKind
-  documentId: string
-  documentNo?: string
-  workflowStatus?: string
-  archiveKind?: DocumentArchiveKind
-}): Promise<boolean | null> {
-  const res = await fetch(
+export async function fetchDocumentArchivePdfStatus(
+  legalEntityCode: DocumentEntityCode,
+  input: {
+    documentKind: DocumentKind
+    documentId: string
+    documentNo?: string
+    workflowStatus?: string
+    archiveKind?: DocumentArchiveKind
+  }
+): Promise<boolean | null> {
+  const res = await financeScopedFetch(
+    legalEntityCode,
     buildDocumentArchiveStatusPath({
       documentKind: input.documentKind,
       documentId: input.documentId,
@@ -42,6 +48,7 @@ export async function fetchDocumentArchivePdfStatus(input: {
 }
 
 export async function uploadDocumentArchivePdf(
+  legalEntityCode: DocumentEntityCode,
   input: DocumentArchiveUploadInput
 ): Promise<void> {
   const form = new FormData()
@@ -68,7 +75,7 @@ export async function uploadDocumentArchivePdf(
     )
   )
 
-  const res = await fetch("/api/document-archive", {
+  const res = await financeScopedFetch(legalEntityCode, "/api/document-archive", {
     method: "POST",
     body: form,
   })

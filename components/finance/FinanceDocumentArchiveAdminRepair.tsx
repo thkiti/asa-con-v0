@@ -13,6 +13,7 @@ import {
   themeLinkMuted,
   themeTextSecondary,
 } from "@/lib/theme/theme-classes"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 
 type FinanceDocumentArchiveAdminRepairProps = DocumentArchiveVaultConfig & {
   disabled?: boolean
@@ -54,13 +55,13 @@ export function FinanceDocumentArchiveAdminRepair({
       setUploading(true)
       setError(null)
       try {
-        await uploadDocumentArchivePdf({
+        await uploadDocumentArchivePdf(legalEntityCode as DocumentEntityCode, {
           file,
           legalEntityCode,
           branchId,
           links: [{ documentKind, documentId, documentNo }],
         })
-        const status = await fetchDocumentArchivePdfStatus({
+        const status = await fetchDocumentArchivePdfStatus(legalEntityCode as DocumentEntityCode, {
           documentKind,
           documentId,
           documentNo,

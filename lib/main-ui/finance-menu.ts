@@ -31,7 +31,7 @@ export type FinanceMenuAnyHubKey = FinanceMenuHubKey | FinanceMenuLegacyHubKey
 
 export type FinanceMenuItemStatus = "available" | "planned"
 
-export type FinanceMenuItemBadge = "Done" | "Coming Soon"
+export type FinanceMenuItemBadge = "Done" | "Active" | "Next" | "Coming Soon"
 
 export type FinanceMenuItem = {
   key: string
@@ -71,6 +71,24 @@ function done(
   hint?: string
 ): FinanceMenuItem {
   return { key, label, href, hint, status: "available", badge: "Done" }
+}
+
+function active(
+  key: string,
+  label: string,
+  href: string,
+  hint?: string
+): FinanceMenuItem {
+  return { key, label, href, hint, status: "available", badge: "Active" }
+}
+
+function next(
+  key: string,
+  label: string,
+  href: string,
+  hint?: string
+): FinanceMenuItem {
+  return { key, label, href, hint, status: "available", badge: "Next" }
 }
 
 function comingSoon(key: string, label: string, hint?: string): FinanceMenuItem {
@@ -171,7 +189,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
     "accounting-periods": {
       label: "Month-End Closing",
       description:
-        "Reconciliation, close readiness, accounting period management, and month-end closing workflow.",
+        "Reconcile bank and cash, then review close readiness and manage accounting periods.",
       href: "/finance/accounting-periods",
       items: [],
       itemGroups: [
@@ -185,11 +203,17 @@ function buildPrimaryFinanceMenuHubs(): Record<
               "/finance/reconciliation",
               "Read-only operational vs GL comparison"
             ),
-            done(
+            active(
+              "bank-cash-journal",
+              "Bank Cash Check",
+              "/finance/bank-cash",
+              "Compare GL bank movements with paper bank statement amounts side-by-side"
+            ),
+            next(
               "bank-reconciliation",
               "Bank Reconciliation",
               "/finance/reconciliation/bank",
-              "Period bank worksheet for configured bank GL accounts"
+              "Final reconciliation worksheet, variance review, and lock"
             ),
             done(
               "cash-reconciliation",
@@ -253,6 +277,13 @@ function buildLegacySystemHub(): Omit<FinanceMenuHub, "key"> {
         label: "Chart of Accounts",
         href: "/finance/accounts",
         hint: "Browse, export, and import GL accounts",
+        status: "available",
+      },
+      {
+        key: "bank-accounts",
+        label: "Bank Accounts",
+        href: "/finance/bank-accounts",
+        hint: "External bank accounts mapped to GL bank accounts",
         status: "available",
       },
       {
@@ -359,4 +390,4 @@ export function getAllFinanceMenuItems(role: Role): FinanceMenuItem[] {
 }
 
 export const FINANCE_MENU_HOME_DESCRIPTION =
-  "Daily Work — create and process finance documents. Dashboard — view GL and financial statements. Month-End Closing — reconciliation, close readiness, and period administration. Audit — trace and verify documents."
+  "Daily Work — create and process finance documents. Dashboard — view GL and financial statements. Month-End Closing — bank and cash reconciliation, close readiness, and period administration. Audit — trace and verify documents."

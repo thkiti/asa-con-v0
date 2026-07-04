@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 
 import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
@@ -6,9 +6,9 @@ import { listPosSettlementShopBranches } from "@/lib/finance/pos-settlement/sett
 import { prisma } from "@/lib/shared/prisma"
 import { PeriodAdminAuthError } from "@/lib/auth"
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await requireFinanceVoucherScope()
+    await requireFinanceVoucherScope(req)
     const items = await listPosSettlementShopBranches(prisma)
     return NextResponse.json({ items })
   } catch (err: unknown) {

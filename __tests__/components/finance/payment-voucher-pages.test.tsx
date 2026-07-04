@@ -18,6 +18,10 @@ jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
   useFinanceCurrentReturnPath: () => "/finance/payment-vouchers/pav-1",
 }))
 
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
+}))
+
 jest.mock("@/lib/finance-ui/payment-vouchers", () => ({
   fetchPaymentVouchers: jest.fn().mockResolvedValue({
     entries: [

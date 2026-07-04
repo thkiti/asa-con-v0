@@ -60,6 +60,21 @@ export function formatGeneralLedgerDate(value: string | null | undefined): strin
   return `${day}.${month}.${year}`
 }
 
+/** Bank Cash Check journal rows — DD.MM (year from selected period). */
+export function formatBankCashCheckDayMonth(value: string | null | undefined): string {
+  if (!value) return "—"
+  const iso = value.trim()
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  if (match) {
+    return `${match[3]}.${match[2]}`
+  }
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  const day = String(date.getUTCDate()).padStart(2, "0")
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+  return `${day}.${month}`
+}
+
 export function getVarianceTone(
   variance: string
 ): "zero" | "positive" | "negative" {

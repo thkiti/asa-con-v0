@@ -45,7 +45,7 @@ describe("FinanceMenuView", () => {
     expect(html).toContain("Month-End Closing")
     expect(html).toContain("Audit")
     expect(html).toContain(
-      "Reconciliation, close readiness, accounting period management, and month-end closing workflow."
+      "Reconcile bank and cash, then review close readiness and manage accounting periods."
     )
     expect(html).not.toContain("Transactions")
     expect(html).not.toContain("Ledger")
@@ -202,23 +202,51 @@ describe("FinanceMenuHubView", () => {
     expect(html).not.toContain('href="/finance/periods"')
   })
 
-  it("renders month-end closing hub with reconciliation and close links", () => {
+  it("renders month-end closing hub with REC-3 bank workflow", () => {
     const hub = getFinanceMenuHub("HO_FINANCE", "accounting-periods")
     expect(hub?.label).toBe("Month-End Closing")
     expect(hub?.href).toBe("/finance/accounting-periods")
     expect(hub?.itemGroups?.[0]?.label).toBe("Reconciliation / Close")
+
+    const items = hub?.itemGroups?.[0]?.items ?? []
+    expect(items.map((item) => item.key)).toEqual([
+      "operational-reconciliation",
+      "bank-cash-journal",
+      "bank-reconciliation",
+      "cash-reconciliation",
+      "close-readiness",
+    ])
+
+    const bankCashCheck = items.find((item) => item.key === "bank-cash-journal")
+    expect(bankCashCheck?.label).toBe("Bank Cash Check")
+    expect(bankCashCheck?.badge).toBe("Active")
+    expect(bankCashCheck?.hint).toBe(
+      "Compare GL bank movements with paper bank statement amounts side-by-side"
+    )
+
+    const bankReconciliation = items.find((item) => item.key === "bank-reconciliation")
+    expect(bankReconciliation?.badge).toBe("Next")
+    expect(bankReconciliation?.hint).toBe(
+      "Final reconciliation worksheet, variance review, and lock"
+    )
 
     const html = renderToStaticMarkup(
       <FinanceMenuHubView user={hoFinance} hub={hub!} />
     )
     expect(html).toContain("ASAS • MONTH-END CLOSING")
     expect(html).toContain('href="/finance/reconciliation"')
+    expect(html).toContain('href="/finance/bank-cash"')
     expect(html).toContain('href="/finance/reconciliation/bank"')
     expect(html).toContain('href="/finance/reconciliation/cash"')
     expect(html).toContain("Operational Reconciliation")
+    expect(html).toContain("Bank Cash Check")
     expect(html).toContain("Bank Reconciliation")
     expect(html).toContain("Cash Reconciliation")
     expect(html).toContain("Close Readiness")
+    expect(html).toContain("Active")
+    expect(html).toContain("Next")
+    expect(html).not.toContain("Bank Statements")
+    expect(html).not.toContain('href="/finance/bank-statements"')
     expect(html).not.toContain("Accounting Periods")
     expect(html).not.toContain("Period Management")
     expect(html).toContain(
@@ -228,7 +256,13 @@ describe("FinanceMenuHubView", () => {
     const cardTitles = [
       ...html.matchAll(/data-testid="main-menu-card-title"[^>]*>([^<]+)</g),
     ].map((match) => match[1])
-    expect(cardTitles).toHaveLength(4)
+    expect(cardTitles).toHaveLength(5)
+    expect(cardTitles.indexOf("Bank Cash Check")).toBeLessThan(
+      cardTitles.indexOf("Bank Reconciliation")
+    )
+    expect(cardTitles.indexOf("Bank Reconciliation")).toBeLessThan(
+      cardTitles.indexOf("Close Readiness")
+    )
   })
 })
 
@@ -257,6 +291,8 @@ describe("finance-menu config", () => {
     expect(closeReadiness?.href).toBe("/finance/periods")
     expect(keys).not.toContain("period-management")
     expect(keys).toContain("bank-reconciliation")
+    expect(keys).toContain("bank-cash-journal")
+    expect(keys).not.toContain("bank-statements")
     expect(keys).toContain("cash-reconciliation")
     expect(keys).toContain("operational-reconciliation")
     expect(keys).toContain("voucher-lookup")

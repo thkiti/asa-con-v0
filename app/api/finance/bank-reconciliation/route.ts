@@ -35,7 +35,7 @@ function parseStatus(value: string | null): PeriodReconciliationStatus | undefin
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const params = req.nextUrl.searchParams
 
     const result = await listBankReconciliations(
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
     const body = (await req.json()) as Record<string, unknown>
 
     const periodKey = String(body.periodKey ?? "").trim()

@@ -8,7 +8,7 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const query = req.nextUrl.searchParams.get("query") ?? ""
 
     const result = await traceFinanceDocument(prisma, {

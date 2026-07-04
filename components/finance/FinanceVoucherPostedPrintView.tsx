@@ -16,6 +16,7 @@ import { FinanceVoucherPrintFontProbe } from "@/components/finance/FinanceVouche
 import { FinanceVoucherPrintSheet } from "@/components/finance/FinanceVoucherPrintSheet"
 import { fetchDocumentArchivePdfStatus } from "@/lib/document-archive-ui/client"
 import { financeVoucherLocalFont } from "@/lib/finance-ui/finance-voucher-local-font"
+import type { DocumentEntityCode } from "@/lib/legal-entity"
 import type { FinanceVoucherPrintModel } from "@/lib/finance-ui/finance-voucher-print"
 import {
   financeDocumentContainer,
@@ -98,7 +99,7 @@ export function FinanceVoucherPostedPrintView({
 
   const refreshVaultPdfStatus = useCallback(() => {
     if (!archiveVault) return
-    void fetchDocumentArchivePdfStatus({
+    void fetchDocumentArchivePdfStatus(legalEntityCode as DocumentEntityCode, {
       documentKind: archiveVault.documentKind,
       documentId: archiveVault.documentId,
       documentNo: archiveVault.documentNo,
@@ -108,7 +109,7 @@ export function FinanceVoucherPostedPrintView({
       .catch(() => {
         // Keep server-provided initial state when status fetch is unavailable.
       })
-  }, [archiveVault])
+  }, [archiveVault, legalEntityCode])
 
   useEffect(() => {
     setVaultPdfAvailable(archiveVault?.initialPdfAvailable ?? null)
@@ -169,6 +170,7 @@ export function FinanceVoucherPostedPrintView({
                 ) : null
               ) : (
                 <FinanceLegacyPdfSnapshotPanel
+                  legalEntityCode={legalEntityCode as DocumentEntityCode}
                   entryId={archive.entryId}
                   entryNo={archive.entryNo}
                   pdfSnapshotReady={false}
@@ -218,6 +220,7 @@ export function FinanceVoucherPostedPrintView({
           </div>
           {showArchivePanel && archive ? (
             <FinanceLegacyPdfSnapshotPanel
+              legalEntityCode={legalEntityCode as DocumentEntityCode}
               entryId={archive.entryId}
               entryNo={archive.entryNo}
               pdfSnapshotReady={archive.pdfSnapshotReady}

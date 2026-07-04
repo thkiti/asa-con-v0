@@ -1,3 +1,7 @@
+import {
+  financeScopedFetch,
+} from "@/lib/finance-ui/finance-entity-scope"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import type {
   InvoiceVoucherListFilter,
   InvoiceVoucherListResult,
@@ -78,26 +82,35 @@ function buildListQuery(filter: InvoiceVoucherListFilterInput = {}): string {
 const BASE = "/api/finance/invoice-vouchers"
 
 export async function fetchInvoiceVouchers(
+  legalEntityCode: DocumentEntityCode,
   filter: InvoiceVoucherListFilterInput = {}
 ): Promise<InvoiceVoucherListResult> {
-  const res = await fetch(`${BASE}${buildListQuery(filter)}`)
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}${buildListQuery({ ...filter, legalEntityCode })}`
+  )
   if (!res.ok) throw new Error(await parseError(res))
   return res.json() as Promise<InvoiceVoucherListResult>
 }
 
 export async function fetchInvoiceVoucher(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<InvoiceVoucherRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}`)
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}`
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: InvoiceVoucherRead }
   return body.entry
 }
 
 export async function createInvoiceVoucherDraft(
+  legalEntityCode: DocumentEntityCode,
   payload: CreateInvoiceVoucherDraftPayload
 ): Promise<InvoiceVoucherRead> {
-  const res = await fetch(BASE, {
+  const res = await financeScopedFetch(legalEntityCode, BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -108,68 +121,89 @@ export async function createInvoiceVoucherDraft(
 }
 
 export async function updateInvoiceVoucherDraft(
+  legalEntityCode: DocumentEntityCode,
   entryId: string,
   payload: UpdateInvoiceVoucherDraftPayload
 ): Promise<InvoiceVoucherRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: InvoiceVoucherRead }
   return body.entry
 }
 
-export async function deleteDraftInvoiceVoucher(entryId: string): Promise<void> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}`, {
-    method: "DELETE",
-  })
+export async function deleteDraftInvoiceVoucher(legalEntityCode: DocumentEntityCode, entryId: string): Promise<void> {
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}`,
+    { method: "DELETE" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
 }
 
 export async function submitInvoiceVoucher(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<InvoiceVoucherRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/submit`, {
-    method: "POST",
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/submit`,
+    { method: "POST" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: InvoiceVoucherRead }
   return body.entry
 }
 
 export async function confirmInvoiceVoucher(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<InvoiceVoucherRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/confirm`, {
-    method: "POST",
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/confirm`,
+    { method: "POST" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: InvoiceVoucherRead }
   return body.entry
 }
 
 export async function cancelInvoiceVoucher(
+  legalEntityCode: DocumentEntityCode,
   entryId: string,
   payload: CancelInvoiceVoucherPayload = {}
 ): Promise<InvoiceVoucherRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/cancel`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/cancel`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: InvoiceVoucherRead }
   return body.entry
 }
 
 export async function postInvoiceVoucher(
+  legalEntityCode: DocumentEntityCode,
   entryId: string
 ): Promise<InvoiceVoucherRead> {
-  const res = await fetch(`${BASE}/${encodeURIComponent(entryId)}/post`, {
-    method: "POST",
-  })
+  const res = await financeScopedFetch(
+    legalEntityCode,
+    `${BASE}/${encodeURIComponent(entryId)}/post`,
+    { method: "POST" }
+  )
   if (!res.ok) throw new Error(await parseError(res))
   const body = (await res.json()) as { entry: InvoiceVoucherRead }
   return body.entry

@@ -1851,6 +1851,32 @@ span.finance-account .finance-account-name-part {
   width: 7.5rem;
 }
 
+/* Bank Cash Check — compact period key + wide bank account picker */
+.bank-cash-check-filter-bar {
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.bank-cash-check-filter-bar .bank-cash-check-filter-period {
+  width: 9.5rem;
+  flex: 0 0 9.5rem;
+  min-width: 9.5rem;
+}
+
+.bank-cash-check-filter-bar .bank-cash-check-filter-bank-account {
+  width: 25rem;
+  flex: 0 0 25rem;
+  min-width: 25rem;
+  margin-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.bank-cash-check-filter-bar .bank-cash-check-filter-period .finance-filter-control,
+.bank-cash-check-filter-bar .bank-cash-check-filter-bank-account select {
+  width: 100%;
+  max-width: 100%;
+}
+
 .finance-filter-field--date {
   width: 140px;
 }

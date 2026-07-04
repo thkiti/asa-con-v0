@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { VoucherInquiryPdfIndicator } from "@/components/finance/VoucherInquiryPdfIndicator"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
   financeMemo,
   financeTable,
@@ -164,6 +165,7 @@ export function VoucherInquiryResultsTable({
 }
 
 export function VoucherInquiryListPage() {
+  const legalEntityCode = useFinanceLegalEntityScope()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -207,7 +209,7 @@ export function VoucherInquiryListPage() {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchFinanceDocuments(filter)
+      const result = await fetchFinanceDocuments(legalEntityCode, filter)
       setDocuments(result.documents)
       setTotal(result.total)
     } catch (err) {

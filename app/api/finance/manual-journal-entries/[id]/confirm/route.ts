@@ -11,9 +11,9 @@ type Context = {
   params: Promise<{ id: string }>
 }
 
-export async function POST(_req: NextRequest, context: Context) {
+export async function POST(req: NextRequest, context: Context) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
     const { id } = await context.params
     await confirmManualJournalEntry({
       entryId: id,

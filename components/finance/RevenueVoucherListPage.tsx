@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { RevenueVoucherStatusBadge } from "@/components/finance/RevenueVoucherStatusBadge"
 import { formatAmount, formatFinanceListDate } from "@/lib/finance-ui/format"
+import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
   formatRevenueVoucherDocumentNo,
   REVENUE_VOUCHER_STATUSES,
@@ -50,6 +52,7 @@ import { themeLabel, themeLinkMuted, themeTextSecondary } from "@/lib/theme/them
 const ALL = ""
 
 export function RevenueVoucherListPage() {
+  const legalEntityCode = useFinanceLegalEntityScope()
   const [draft, setDraft] = useState<RevenueVoucherListUiFilter>(
     defaultRevenueVoucherListUiFilter
   )
@@ -70,7 +73,10 @@ export function RevenueVoucherListPage() {
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchRevenueVouchers(toRevenueVoucherListFilter(applied))
+      const result = await fetchRevenueVouchers(
+        legalEntityCode,
+        toRevenueVoucherListFilter(applied)
+      )
       setEntries(result.entries)
       setTotal(result.total)
     } catch (err) {
@@ -78,7 +84,7 @@ export function RevenueVoucherListPage() {
     } finally {
       setLoading(false)
     }
-  }, [applied])
+  }, [applied, legalEntityCode])
 
   useEffect(() => {
     void load()
@@ -104,7 +110,7 @@ export function RevenueVoucherListPage() {
     setDeletingId(row.id)
     setError(null)
     try {
-      await deleteDraftRevenueVoucher(row.id)
+      await deleteDraftRevenueVoucher(legalEntityCode, row.id)
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed")
@@ -117,7 +123,10 @@ export function RevenueVoucherListPage() {
     <div className="space-y-4" data-testid="revenue-voucher-list">
       <div className={manualJournalEntryListActionRow} data-testid="revenue-voucher-actions">
         <Link
-          href="/finance/revenue-vouchers/new"
+          href={appendFinanceLegalEntityToPath(
+            "/finance/revenue-vouchers/new",
+            legalEntityCode
+          )}
           className={manualJournalEntryListActionPrimary}
           data-testid="new-revenue-voucher"
         >
@@ -254,7 +263,10 @@ export function RevenueVoucherListPage() {
                   <tr key={row.id}>
                     <td className={manualJournalEntryListTdDocNo}>
                       <Link
-                        href={`/finance/revenue-vouchers/${row.id}`}
+                        href={appendFinanceLegalEntityToPath(
+                          `/finance/revenue-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                         className={`${themeLinkMuted} font-mono text-xs`}
                         data-testid={`entry-link-${row.id}`}
                       >
@@ -274,7 +286,10 @@ export function RevenueVoucherListPage() {
                     <td className={financeMemo}>
                       <div className="flex flex-wrap gap-2 text-xs">
                         <Link
-                          href={`/finance/revenue-vouchers/${row.id}`}
+                          href={appendFinanceLegalEntityToPath(
+                          `/finance/revenue-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                           className="underline"
                           data-testid={`action-open-${row.id}`}
                         >
@@ -283,7 +298,10 @@ export function RevenueVoucherListPage() {
                         {row.status === "DRAFT" ? (
                           <>
                             <Link
-                              href={`/finance/revenue-vouchers/${row.id}`}
+                              href={appendFinanceLegalEntityToPath(
+                          `/finance/revenue-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                               className="underline"
                               data-testid={`action-edit-${row.id}`}
                             >
@@ -302,7 +320,10 @@ export function RevenueVoucherListPage() {
                         ) : null}
                         {row.status === "POSTED" ? (
                           <Link
-                            href={`/finance/revenue-vouchers/${row.id}`}
+                            href={appendFinanceLegalEntityToPath(
+                          `/finance/revenue-vouchers/${row.id}`,
+                          legalEntityCode
+                        )}
                             className="underline"
                             data-testid={`action-view-${row.id}`}
                           >

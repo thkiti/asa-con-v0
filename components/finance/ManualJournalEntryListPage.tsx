@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
+import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
   formatManualJournalEntryDocumentNo,
   formatManualJournalEntryTypeLabel,
@@ -54,6 +56,7 @@ import { themeLabel, themeLinkMuted, themeTextSecondary } from "@/lib/theme/them
 const ALL = ""
 
 export function ManualJournalEntryListPage() {
+  const legalEntityCode = useFinanceLegalEntityScope()
   const [draft, setDraft] = useState<ManualJournalEntryListUiFilter>(
     defaultManualJournalEntryListUiFilter
   )
@@ -74,6 +77,7 @@ export function ManualJournalEntryListPage() {
     setError(null)
     try {
       const result = await fetchManualJournalEntries(
+        legalEntityCode,
         toManualJournalEntryListFilter(applied)
       )
       setEntries(result.entries)
@@ -83,7 +87,7 @@ export function ManualJournalEntryListPage() {
     } finally {
       setLoading(false)
     }
-  }, [applied])
+  }, [applied, legalEntityCode])
 
   useEffect(() => {
     void load()
@@ -105,7 +109,10 @@ export function ManualJournalEntryListPage() {
     <div className="space-y-4" data-testid="manual-journal-entry-list">
       <div className={manualJournalEntryListActionRow} data-testid="manual-journal-entry-actions">
         <Link
-          href="/finance/manual-journal-entries/new"
+          href={appendFinanceLegalEntityToPath(
+            "/finance/manual-journal-entries/new",
+            legalEntityCode
+          )}
           className={manualJournalEntryListActionPrimary}
           data-testid="new-manual-journal-entry"
         >
@@ -263,7 +270,10 @@ export function ManualJournalEntryListPage() {
                   <tr key={row.id}>
                     <td className={manualJournalEntryListTdDocNo}>
                       <Link
-                        href={`/finance/manual-journal-entries/${row.id}`}
+                        href={appendFinanceLegalEntityToPath(
+                          `/finance/manual-journal-entries/${row.id}`,
+                          legalEntityCode
+                        )}
                         className={`${themeLinkMuted} font-mono text-xs`}
                         data-testid={`entry-link-${row.id}`}
                       >

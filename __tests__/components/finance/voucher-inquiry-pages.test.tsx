@@ -25,8 +25,12 @@ jest.mock("next/navigation", () => ({
   usePathname: () => "/finance/vouchers",
   useSearchParams: () =>
     new URLSearchParams(
-      "periodKey=2026-06&from=2026-06-01&to=2026-06-30&refType=MJV&postingState=all"
+      "legalEntityCode=AS&periodKey=2026-06&from=2026-06-01&to=2026-06-30&refType=MJV&postingState=all"
     ),
+}))
+
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
 }))
 
 jest.mock("@/lib/finance-ui/voucher-inquiry", () => {

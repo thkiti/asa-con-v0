@@ -18,6 +18,10 @@ jest.mock("@/lib/finance-ui/use-finance-current-return-path", () => ({
   useFinanceCurrentReturnPath: () => "/finance/petty-cash-vouchers/pcv-1",
 }))
 
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
+}))
+
 jest.mock("@/lib/finance-ui/manual-journal-entry-session", () => ({
   fetchManualJournalSessionContext: jest.fn().mockResolvedValue({
     staffId: "staff-1",

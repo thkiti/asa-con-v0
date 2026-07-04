@@ -21,6 +21,10 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => searchParams,
 }))
 
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
+}))
+
 jest.mock("@/lib/finance-ui/voucher-inquiry", () => {
   const actual = jest.requireActual("@/lib/finance-ui/voucher-inquiry")
   return {

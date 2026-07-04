@@ -1,3 +1,4 @@
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import type { ManualJournalEntryListFilterInput } from "@/lib/finance-ui/manual-journal-entries"
 import { fetchManualJournalEntries } from "@/lib/finance-ui/manual-journal-entries"
 import type { ManualJournalEntryListResult } from "@/lib/finance/manual-journal-entry/manual-journal-entry-read-types"
@@ -22,9 +23,10 @@ async function parseError(res: Response): Promise<string> {
 }
 
 export async function fetchOpeningBalanceEntries(
+  legalEntityCode: DocumentEntityCode,
   filter: OpeningBalanceListFilterInput = {}
 ): Promise<ManualJournalEntryListResult> {
-  return fetchManualJournalEntries({
+  return fetchManualJournalEntries(legalEntityCode, {
     ...filter,
     entryType: "OPENING_BALANCE",
   })

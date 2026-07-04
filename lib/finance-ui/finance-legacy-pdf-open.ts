@@ -1,13 +1,15 @@
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { buildManualJournalEntryPdfUrl } from "@/lib/finance-ui/manual-journal-entries"
 
 /** Fetch archived PDF bytes when the snapshot is readable. */
 export async function fetchLegacyArchivedPdfBlob(
+  legalEntityCode: DocumentEntityCode,
   entryId: string,
   disposition: "inline" | "attachment",
   cacheKey?: string | null
 ): Promise<Blob | null> {
   const res = await fetch(
-    buildManualJournalEntryPdfUrl(entryId, disposition, cacheKey)
+    buildManualJournalEntryPdfUrl(legalEntityCode, entryId, disposition, cacheKey)
   )
   if (!res.ok) return null
   const contentType = res.headers.get("content-type") ?? ""
@@ -18,6 +20,7 @@ export async function fetchLegacyArchivedPdfBlob(
 /** Open archived PDF inline in a new tab, or trigger download. */
 export async function openLegacyArchivedPdf(
   input: {
+    legalEntityCode: DocumentEntityCode
     entryId: string
     entryNo: string
     disposition: "inline" | "attachment"
@@ -25,6 +28,7 @@ export async function openLegacyArchivedPdf(
   }
 ): Promise<boolean> {
   const blob = await fetchLegacyArchivedPdfBlob(
+    input.legalEntityCode,
     input.entryId,
     input.disposition,
     input.cacheKey

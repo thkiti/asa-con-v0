@@ -114,6 +114,7 @@ describe("DocumentArchiveVaultActions", () => {
     })
 
     expect(mockUpload).toHaveBeenCalledWith(
+      "AS",
       expect.objectContaining({
         legalEntityCode: "AS",
         branchId: "branch-1",

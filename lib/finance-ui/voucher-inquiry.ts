@@ -2,6 +2,8 @@ import type {
   FinanceDocumentInquiryResult,
   FinanceVoucherInquiryFilter,
 } from "@/lib/finance-ui/types"
+import { financeScopedFetch } from "@/lib/finance-ui/finance-entity-scope"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 
 export const FINANCE_VOUCHER_INQUIRY_PATH = "/finance/vouchers"
 
@@ -103,10 +105,11 @@ function buildVoucherInquiryQuery(filter: FinanceVoucherInquiryFilter): string {
 }
 
 export async function fetchFinanceDocuments(
+  legalEntityCode: DocumentEntityCode,
   filter: FinanceVoucherInquiryFilter
 ): Promise<FinanceDocumentInquiryResult> {
   const query = buildVoucherInquiryQuery(filter)
-  const res = await fetch(`/api/finance/vouchers${query}`)
+  const res = await financeScopedFetch(legalEntityCode, `/api/finance/vouchers${query}`)
   if (!res.ok) {
     let message = res.statusText || "Request failed"
     try {

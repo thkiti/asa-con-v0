@@ -11,6 +11,7 @@ import { MjvLineAccountInput } from "@/components/finance/MjvLineAccountInput"
 import { formatFinanceDocumentDate } from "@/lib/finance-ui/finance-document-display"
 import { formatFinanceBranchLabel } from "@/lib/finance-ui/finance-branch-display"
 import { financePostedDocumentScreenProps } from "@/lib/finance-ui/finance-posted-document-layout"
+import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
 import { buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
 import { formatAmount } from "@/lib/finance-ui/format"
 import { formatThaiBahtAmountInWords } from "@/lib/finance-ui/format-thai-baht-words"
@@ -37,6 +38,7 @@ import {
 } from "@/lib/finance-ui/invoice-vouchers"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import { useFinanceCurrentReturnPath } from "@/lib/finance-ui/use-finance-current-return-path"
+import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
   financeAccount,
   financeAuditLine,
@@ -189,6 +191,7 @@ export function InvoiceVoucherEditorPage({
 }: InvoiceVoucherEditorPageProps) {
   const router = useRouter()
   const currentReturnPath = useFinanceCurrentReturnPath()
+  const legalEntityScope = useFinanceLegalEntityScope()
   const listHref = "/finance/invoice-vouchers"
   const seed = editorSeed(initialEntry)
 
@@ -199,9 +202,6 @@ export function InvoiceVoucherEditorPage({
 
   const [entry, setEntry] = useState<InvoiceVoucherRead | null>(seed.entry)
   const [branchId, setBranchId] = useState(seed.branchId)
-  const [legalEntityCode, setLegalEntityCode] = useState<DocumentEntityCode>(
-    seed.legalEntityCode
-  )
   const [invoiceDate, setInvoiceDate] = useState(seed.invoiceDate)
   const [dueDate, setDueDate] = useState(seed.dueDate)
   const [customerName, setCustomerName] = useState(seed.customerName)
@@ -218,6 +218,9 @@ export function InvoiceVoucherEditorPage({
 
   const status: InvoiceVoucherStatusCode | "NEW" =
     entry?.status ?? (mode === "create" ? "NEW" : "DRAFT")
+  const activeLegalEntityCode: DocumentEntityCode =
+    (entry?.legalEntityCode as DocumentEntityCode | undefined) ?? legalEntityScope
+  const scopedListHref = appendFinanceLegalEntityToPath(listHref, activeLegalEntityCode)
 
   const isDraft = status === "DRAFT" || status === "NEW"
   const isSubmitted = status === "SUBMITTED"
@@ -250,7 +253,6 @@ export function InvoiceVoucherEditorPage({
   useEffect(() => {
     void fetchManualJournalSessionContext().then((session) => {
       if (!session) return
-      setLegalEntityCode(session.documentEntityCode)
       if (mode === "create") {
         setBranchId(session.branchId)
       }
@@ -273,13 +275,13 @@ export function InvoiceVoucherEditorPage({
 
     setLoading(true)
     setError(null)
-    void fetchInvoiceVoucher(entryId)
+    void fetchInvoiceVoucher(activeLegalEntityCode, entryId)
       .then(applyEntry)
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Failed to load invoice voucher")
       })
       .finally(() => setLoading(false))
-  }, [mode, entryId, applyEntry])
+  }, [mode, entryId, applyEntry, activeLegalEntityCode])
 
   function updateLine(key: string, patch: Partial<LineRow>) {
     setLines((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)))
@@ -404,9 +406,9 @@ export function InvoiceVoucherEditorPage({
     setBusyAction("save")
     try {
       if (mode === "create" || !entry) {
-        const created = await createInvoiceVoucherDraft({
+        const created = await createInvoiceVoucherDraft(activeLegalEntityCode, {
           branchId: branchId.trim(),
-          legalEntityCode,
+          legalEntityCode: activeLegalEntityCode,
           invoiceDate,
           dueDate: dueDate.trim() || null,
           customerName: customerName.trim(),
@@ -416,11 +418,16 @@ export function InvoiceVoucherEditorPage({
         })
         applyEntry(created)
         setStatusMessage("Draft created.")
-        router.replace(`${listHref}/${created.id}`)
+        router.replace(
+          appendFinanceLegalEntityToPath(
+            `${listHref}/${created.id}`,
+            created.legalEntityCode as DocumentEntityCode
+          )
+        )
         return created
       }
 
-      const updated = await updateInvoiceVoucherDraft(entry.id, {
+      const updated = await updateInvoiceVoucherDraft(activeLegalEntityCode, entry.id, {
         invoiceDate,
         dueDate: dueDate.trim() || null,
         customerName: customerName.trim(),
@@ -471,12 +478,12 @@ export function InvoiceVoucherEditorPage({
       current = await handleSave()
       if (!current) return
     }
-    await runWorkflow("Submit", () => submitInvoiceVoucher(current!.id))
+    await runWorkflow("Submit", () => submitInvoiceVoucher(activeLegalEntityCode, current!.id))
   }
 
   async function handleConfirm() {
     if (!entry) return
-    await runWorkflow("Confirm", () => confirmInvoiceVoucher(entry.id))
+    await runWorkflow("Confirm", () => confirmInvoiceVoucher(activeLegalEntityCode, entry.id))
   }
 
   async function handlePost() {
@@ -485,13 +492,13 @@ export function InvoiceVoucherEditorPage({
       setError("Invoice voucher must be balanced with at least two lines before post.")
       return
     }
-    await runWorkflow("Post", () => postInvoiceVoucher(entry.id))
+    await runWorkflow("Post", () => postInvoiceVoucher(activeLegalEntityCode, entry.id))
   }
 
   async function handleCancel() {
     if (!entry) return
     await runWorkflow("Cancel", () =>
-      cancelInvoiceVoucher(entry.id, {
+      cancelInvoiceVoucher(activeLegalEntityCode, entry.id, {
         cancelReason: cancelReason.trim() || null,
       })
     )
@@ -502,8 +509,8 @@ export function InvoiceVoucherEditorPage({
     setBusyAction("delete")
     setError(null)
     try {
-      await deleteDraftInvoiceVoucher(entry.id)
-      router.push(listHref)
+      await deleteDraftInvoiceVoucher(activeLegalEntityCode, entry.id)
+      router.push(scopedListHref)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed")
       setBusyAction(null)
@@ -542,10 +549,10 @@ export function InvoiceVoucherEditorPage({
           <FinanceVoucherPostedPrintView
             model={voucherPrintModel}
             entryType={INVOICE_VOUCHER_ENTRY_TYPE}
-            legalEntityCode={legalEntityCode}
+            legalEntityCode={activeLegalEntityCode}
             entryDate={invoiceDate}
             description={description}
-            listHref={listHref}
+            listHref={scopedListHref}
             listBackLabel="Invoice vouchers"
             postedJournalHref={postedJournalHref}
             disabled={busyAction !== null}
@@ -561,7 +568,7 @@ export function InvoiceVoucherEditorPage({
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <FinanceDocumentCanonicalHeader
-              legalEntityCode={legalEntityCode}
+              legalEntityCode={activeLegalEntityCode}
               entryType={INVOICE_VOUCHER_ENTRY_TYPE}
               documentNo={documentNo}
               entryDate={invoiceDate}

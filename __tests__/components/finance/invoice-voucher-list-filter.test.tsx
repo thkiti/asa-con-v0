@@ -8,6 +8,12 @@ import { InvoiceVoucherListPage } from "@/components/finance/InvoiceVoucherListP
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
+  usePathname: () => "/finance/vouchers",
+  useSearchParams: () => new URLSearchParams("legalEntityCode=AS"),
+}))
+
+jest.mock("@/lib/finance-ui/use-finance-legal-entity-scope", () => ({
+  useFinanceLegalEntityScope: () => "AS",
 }))
 
 const mockFetchInvoiceVouchers = jest.fn().mockResolvedValue({
@@ -250,6 +256,7 @@ describe("InvoiceVoucherListPage inquiry filters", () => {
 
     expect(mockFetchInvoiceVouchers.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchInvoiceVouchers).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({
         dateFrom: "2026-06-01",
         dateTo: "2026-06-30",
@@ -291,6 +298,7 @@ describe("InvoiceVoucherListPage inquiry filters", () => {
 
     expect(mockFetchInvoiceVouchers.mock.calls.length).toBeGreaterThan(callsBefore)
     expect(mockFetchInvoiceVouchers).toHaveBeenLastCalledWith(
+      "AS",
       expect.objectContaining({ search: "INV-260001" })
     )
   })

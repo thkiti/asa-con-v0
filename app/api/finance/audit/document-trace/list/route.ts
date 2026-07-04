@@ -25,7 +25,7 @@ function parseDocType(raw: string | null): DocumentTraceDocType | null {
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope()
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
     const params = req.nextUrl.searchParams
     const docType = parseDocType(params.get("docType"))
 
