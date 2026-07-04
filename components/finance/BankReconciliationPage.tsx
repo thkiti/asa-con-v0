@@ -3,12 +3,17 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { BankCashCheckReconciliationEvidencePanel } from "@/components/finance/bank-cash/BankCashCheckReconciliationEvidencePanel"
 import { FinanceDashboardBackLink } from "@/components/finance/FinanceDashboardBackLink"
 import { PeriodReconciliationFilterBar } from "@/components/finance/PeriodReconciliationFilterBar"
 import { PeriodReconciliationStatusBadge } from "@/components/finance/PeriodReconciliationStatusBadge"
 import type { BankReconciliationRow } from "@/lib/finance/bank-reconciliation"
+import type { BankCashCheckReconciliationEvidence } from "@/lib/finance/bank-cash-check"
 import type { ReconciliationAccountRef } from "@/lib/finance/period-reconciliation-accounts"
 import { formatReconciliationAccountLabel } from "@/lib/finance/reconciliation-account-config"
+import {
+  fetchBankCashCheckReconciliationEvidence,
+} from "@/lib/finance-ui/bank-cash-check-reconciliation-evidence"
 import {
   fetchBankReconciliationList,
   patchBankReconciliation,
@@ -86,6 +91,10 @@ export function BankReconciliationPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [worksheetDraft, setWorksheetDraft] =
     useState<WorksheetDraft>(emptyWorksheetDraft)
+  const [evidence, setEvidence] = useState<BankCashCheckReconciliationEvidence | null>(
+    null
+  )
+  const [evidenceLoading, setEvidenceLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -105,6 +114,27 @@ export function BankReconciliationPage() {
     () => items.find((item) => item.id === selectedId) ?? null,
     [items, selectedId]
   )
+
+  const loadEvidence = useCallback(async (filter: PeriodReconciliationUiFilter) => {
+    const query = toPeriodReconciliationListQuery(filter)
+    if (!query.glAccountId || !query.periodKey) {
+      setEvidence(null)
+      return
+    }
+
+    setEvidenceLoading(true)
+    try {
+      const result = await fetchBankCashCheckReconciliationEvidence({
+        periodKey: query.periodKey,
+        glAccountId: query.glAccountId,
+      })
+      setEvidence(result.evidence)
+    } catch {
+      setEvidence(null)
+    } finally {
+      setEvidenceLoading(false)
+    }
+  }, [])
 
   const load = useCallback(async (filter: PeriodReconciliationUiFilter) => {
     const query = toPeriodReconciliationListQuery(filter)
@@ -131,7 +161,8 @@ export function BankReconciliationPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+    await loadEvidence(filter)
+  }, [loadEvidence])
 
   useEffect(() => {
     const fromUrl = parsePeriodReconciliationUiFilterFromSearchParams(searchParams)
@@ -165,6 +196,7 @@ export function BankReconciliationPage() {
     setItems([])
     setSelectedId(null)
     setWorksheetDraft(emptyWorksheetDraft)
+    setEvidence(null)
     setError(null)
   }
 
@@ -233,8 +265,8 @@ export function BankReconciliationPage() {
       <div>
         <h1 className="text-xl font-semibold text-zinc-900">Bank Reconciliation</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Period bank worksheet for configured bank GL accounts. Close Readiness reads
-          confirmed status only.
+          Period bank worksheet for configured bank GL accounts. Close Readiness accepts
+          confirmed worksheets or a completed Bank Cash Check with zero variance.
         </p>
       </div>
 
@@ -269,6 +301,13 @@ export function BankReconciliationPage() {
           {error}
         </p>
       ) : null}
+
+      <BankCashCheckReconciliationEvidencePanel
+        evidence={evidence}
+        loading={evidenceLoading}
+        periodKey={filterApplied.periodKey}
+        bankAccountId={evidence?.bankAccountId ?? null}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
         <section className="space-y-3">

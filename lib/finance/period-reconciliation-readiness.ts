@@ -1,5 +1,9 @@
 import type { PrismaClient } from "@/generated/prisma/client"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import {
+  loadBankCashCheckReconciliationEvidenceForAccounts,
+  type BankCashCheckReconciliationEvidence,
+} from "./bank-cash-check"
 import { toMoney, ZERO } from "./decimal"
 import { isOpeningBalancePeriodKey } from "./opening-balance-period"
 import {
@@ -25,6 +29,8 @@ export type PeriodReconciliationReadinessGroup = {
   required: boolean
   configuredAccounts: ReconciliationAccountRef[]
   records: PeriodReconciliationRecordSummary[]
+  bankCashCheckEvidence: BankCashCheckReconciliationEvidence[]
+  completedViaBankCashCheckAccountCodes: string[]
   completed: boolean
   missingWorksheetAccountCodes: string[]
   incompleteWorksheetAccountCodes: string[]
@@ -40,7 +46,14 @@ export type PeriodReconciliationReadinessSummary = {
 
 export type PeriodReconciliationReadinessPrisma = Pick<
   PrismaClient,
-  "bankReconciliation" | "cashReconciliation" | "glAccount"
+  | "bankReconciliation"
+  | "cashReconciliation"
+  | "glAccount"
+  | "bankAccount"
+  | "bankStatement"
+  | "bankStatementLine"
+  | "journalEntryLine"
+  | "accountingPeriod"
 >
 
 function hasUnresolvedVariance(variance: string): boolean {
@@ -60,38 +73,54 @@ function findRecordForAccount(
 
 function assessConfiguredAccountReadiness(
   configuredAccounts: ReconciliationAccountRef[],
-  records: PeriodReconciliationRecordSummary[]
+  records: PeriodReconciliationRecordSummary[],
+  bankCashCheckEvidence: BankCashCheckReconciliationEvidence[]
 ): Pick<
   PeriodReconciliationReadinessGroup,
   | "completed"
+  | "completedViaBankCashCheckAccountCodes"
   | "missingWorksheetAccountCodes"
   | "incompleteWorksheetAccountCodes"
   | "unresolvedVarianceCount"
   | "missingEvidenceCount"
 > {
+  const evidenceByCode = new Map(
+    bankCashCheckEvidence.map((evidence) => [evidence.glAccountCode, evidence])
+  )
   const missingWorksheetAccountCodes: string[] = []
   const incompleteWorksheetAccountCodes: string[] = []
+  const completedViaBankCashCheckAccountCodes: string[] = []
   let unresolvedVarianceCount = 0
   let missingEvidenceCount = 0
   let completeCount = 0
 
   for (const account of configuredAccounts) {
     const record = findRecordForAccount(records, account.code)
-    if (!record) {
+    const evidence = evidenceByCode.get(account.code)
+    const worksheetComplete = Boolean(record && isPeriodReconciliationComplete(record.status))
+    const cashCheckComplete = evidence?.complete === true
+
+    if (cashCheckComplete) {
+      completedViaBankCashCheckAccountCodes.push(account.code)
+    }
+
+    if (!record && !evidence?.statementId) {
       missingWorksheetAccountCodes.push(account.code)
       continue
     }
 
-    if (isPeriodReconciliationComplete(record.status)) {
+    if (worksheetComplete || cashCheckComplete) {
       completeCount += 1
     } else {
       incompleteWorksheetAccountCodes.push(account.code)
     }
 
-    if (hasUnresolvedVariance(record.variance)) {
+    const variance = record?.variance ?? evidence?.variance ?? "0.00"
+    if (hasUnresolvedVariance(variance)) {
       unresolvedVarianceCount += 1
     }
-    if (!hasEvidence(record.evidenceNote)) {
+
+    if (!hasEvidence(record?.evidenceNote ?? null) && !cashCheckComplete) {
       missingEvidenceCount += 1
     }
   }
@@ -101,6 +130,7 @@ function assessConfiguredAccountReadiness(
       configuredAccounts.length > 0 &&
       completeCount === configuredAccounts.length &&
       missingWorksheetAccountCodes.length === 0,
+    completedViaBankCashCheckAccountCodes,
     missingWorksheetAccountCodes,
     incompleteWorksheetAccountCodes,
     unresolvedVarianceCount,
@@ -128,6 +158,8 @@ export async function loadPeriodReconciliationReadinessSummary(
     required: false,
     configuredAccounts: [],
     records: [],
+    bankCashCheckEvidence: [],
+    completedViaBankCashCheckAccountCodes: [],
     completed: true,
     missingWorksheetAccountCodes: [],
     incompleteWorksheetAccountCodes: [],
@@ -186,6 +218,15 @@ export async function loadPeriodReconciliationReadinessSummary(
     branchId: row.branchId,
   }))
 
+  const bankCashCheckEvidence = await loadBankCashCheckReconciliationEvidenceForAccounts(
+    prisma,
+    {
+      legalEntityCode: input.legalEntityCode,
+      periodKey: input.periodKey,
+      accounts: configuredBankAccounts,
+    }
+  )
+
   const bankScopedRecords = filterRecordsForConfiguredAccounts(
     bankRecords,
     configuredBankAccounts
@@ -197,11 +238,13 @@ export async function loadPeriodReconciliationReadinessSummary(
 
   const bankAssessment = assessConfiguredAccountReadiness(
     configuredBankAccounts,
-    bankScopedRecords
+    bankScopedRecords,
+    bankCashCheckEvidence
   )
   const cashAssessment = assessConfiguredAccountReadiness(
     configuredCashAccounts,
-    cashScopedRecords
+    cashScopedRecords,
+    []
   )
 
   return {
@@ -210,13 +253,16 @@ export async function loadPeriodReconciliationReadinessSummary(
       required: configuredBankAccounts.length > 0,
       configuredAccounts: configuredBankAccounts,
       records: bankScopedRecords,
+      bankCashCheckEvidence,
       ...bankAssessment,
     },
     cash: {
       required: Boolean(branchId) && configuredCashAccounts.length > 0,
       configuredAccounts: configuredCashAccounts,
       records: cashScopedRecords,
+      bankCashCheckEvidence: [],
       completed: branchId ? cashAssessment.completed : true,
+      completedViaBankCashCheckAccountCodes: [],
       missingWorksheetAccountCodes: branchId
         ? cashAssessment.missingWorksheetAccountCodes
         : [],

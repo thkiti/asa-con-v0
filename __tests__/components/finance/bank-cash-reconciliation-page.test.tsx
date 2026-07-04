@@ -27,6 +27,11 @@ jest.mock("@/lib/finance-ui/bank-reconciliation", () => ({
   saveBankReconciliationDraft: jest.fn(),
 }))
 
+jest.mock("@/lib/finance-ui/bank-cash-check-reconciliation-evidence", () => ({
+  fetchBankCashCheckReconciliationEvidence: jest.fn(),
+  formatBankCashCheckReconciliationStatusLabel: (status: string) => status,
+}))
+
 jest.mock("@/lib/finance-ui/cash-reconciliation", () => ({
   fetchCashReconciliationList: jest.fn(),
   patchCashReconciliation: jest.fn(),

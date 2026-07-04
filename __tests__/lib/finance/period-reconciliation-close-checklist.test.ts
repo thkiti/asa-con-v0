@@ -28,6 +28,8 @@ const periodReconciliationBlocked: PeriodReconciliationReadinessSummary = {
     required: true,
     configuredAccounts: [configuredBankAccount],
     records: [],
+    bankCashCheckEvidence: [],
+    completedViaBankCashCheckAccountCodes: [],
     completed: false,
     missingWorksheetAccountCodes: ["1021001"],
     incompleteWorksheetAccountCodes: [],
@@ -38,6 +40,8 @@ const periodReconciliationBlocked: PeriodReconciliationReadinessSummary = {
     required: true,
     configuredAccounts: [configuredCashAccount],
     records: [],
+    bankCashCheckEvidence: [],
+    completedViaBankCashCheckAccountCodes: [],
     completed: false,
     missingWorksheetAccountCodes: ["1001"],
     incompleteWorksheetAccountCodes: [],
@@ -73,6 +77,8 @@ describe("buildCloseChecklist period reconciliation", () => {
           required: false,
           configuredAccounts: [],
           records: [],
+          bankCashCheckEvidence: [],
+          completedViaBankCashCheckAccountCodes: [],
           completed: true,
           missingWorksheetAccountCodes: [],
           incompleteWorksheetAccountCodes: [],
@@ -83,6 +89,8 @@ describe("buildCloseChecklist period reconciliation", () => {
           required: false,
           configuredAccounts: [],
           records: [],
+          bankCashCheckEvidence: [],
+          completedViaBankCashCheckAccountCodes: [],
           completed: true,
           missingWorksheetAccountCodes: [],
           incompleteWorksheetAccountCodes: [],
@@ -103,6 +111,39 @@ describe("buildCloseChecklist period reconciliation", () => {
     ).toBe(false)
   })
 
+  it("passes bank reconciliation when Bank Cash Check evidence is complete for 2026-01", () => {
+    const checklist = buildCloseChecklist({
+      period: basePeriod,
+      latestSnapshot: null,
+      periodReconciliation: {
+        applies: true,
+        bank: {
+          required: true,
+          configuredAccounts: [configuredBankAccount],
+          records: [],
+          bankCashCheckEvidence: [],
+          completedViaBankCashCheckAccountCodes: ["1021001"],
+          completed: true,
+          missingWorksheetAccountCodes: [],
+          incompleteWorksheetAccountCodes: [],
+          unresolvedVarianceCount: 0,
+          missingEvidenceCount: 0,
+        },
+        cash: periodReconciliationBlocked.cash,
+      },
+    })
+
+    expect(checklist.items.some((item) => item.id === "bank-reconciliation-complete")).toBe(
+      true
+    )
+    expect(checklist.items.some((item) => item.id === "bank-reconciliation-missing")).toBe(
+      false
+    )
+    expect(
+      checklist.items.find((item) => item.id === "bank-reconciliation-complete")?.detail
+    ).toContain("Bank Cash Check")
+  })
+
   it("skips bank/cash rules for opening balance period summary", () => {
     const checklist = buildCloseChecklist({
       period: { ...basePeriod, periodKey: "2025-12" },
@@ -113,6 +154,8 @@ describe("buildCloseChecklist period reconciliation", () => {
           required: false,
           configuredAccounts: [],
           records: [],
+          bankCashCheckEvidence: [],
+          completedViaBankCashCheckAccountCodes: [],
           completed: true,
           missingWorksheetAccountCodes: [],
           incompleteWorksheetAccountCodes: [],
@@ -123,6 +166,8 @@ describe("buildCloseChecklist period reconciliation", () => {
           required: false,
           configuredAccounts: [],
           records: [],
+          bankCashCheckEvidence: [],
+          completedViaBankCashCheckAccountCodes: [],
           completed: true,
           missingWorksheetAccountCodes: [],
           incompleteWorksheetAccountCodes: [],

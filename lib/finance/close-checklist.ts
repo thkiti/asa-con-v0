@@ -285,11 +285,14 @@ function appendPeriodReconciliationItems(
         )
       )
     } else {
+      const cashCheckCodes = summary.bank.completedViaBankCashCheckAccountCodes
       items.push(
         makeChecklistItem(
           "bank-reconciliation-complete",
           "Bank reconciliation confirmed",
-          `${summary.bank.configuredAccounts.length} configured bank account worksheet(s) confirmed for this period.`,
+          cashCheckCodes.length > 0
+            ? `${cashCheckCodes.length} configured bank account(s) reconciled via Bank Cash Check (${cashCheckCodes.join(", ")}).`
+            : `${summary.bank.configuredAccounts.length} configured bank account worksheet(s) confirmed for this period.`,
           refs
         )
       )

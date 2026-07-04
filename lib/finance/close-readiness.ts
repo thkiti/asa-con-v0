@@ -28,6 +28,9 @@ export type CloseReadinessChecklistPrisma = Pick<
   | "journalEntry"
   | "bankReconciliation"
   | "cashReconciliation"
+  | "bankAccount"
+  | "bankStatement"
+  | "bankStatementLine"
 > &
   BranchLookupPrisma
 
