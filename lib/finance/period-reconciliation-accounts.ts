@@ -8,7 +8,10 @@ import {
   type ReconciliationAccountRef,
 } from "./reconciliation-account-config"
 
-export type PeriodReconciliationAccountsPrisma = Pick<PrismaClient, "glAccount">
+export type PeriodReconciliationAccountsPrisma = Pick<
+  PrismaClient,
+  "glAccount" | "bankAccount"
+>
 
 const accountSelect = {
   id: true,
@@ -50,9 +53,40 @@ export { formatReconciliationAccountLabel }
 
 export async function listBankReconciliationAccounts(
   prisma: PeriodReconciliationAccountsPrisma,
-  _legalEntityCode?: DocumentEntityCode
+  legalEntityCode: DocumentEntityCode
 ): Promise<ReconciliationAccountRef[]> {
-  return listReconciliationAccountsByRole(prisma, GlAccountReconciliationRole.BANK)
+  const entity = legalEntityCode.trim()
+  if (!entity) {
+    throw new Error("legalEntityCode is required")
+  }
+
+  const rows = await prisma.bankAccount.findMany({
+    where: {
+      legalEntityCode: entity,
+      isActive: true,
+      glAccount: {
+        deleted: false,
+        isActive: true,
+        reconciliationRole: GlAccountReconciliationRole.BANK,
+      },
+    },
+    select: {
+      glAccount: {
+        select: accountSelect,
+      },
+    },
+    orderBy: { glAccount: { code: "asc" } },
+  })
+
+  const seen = new Set<string>()
+  const accounts: ReconciliationAccountRef[] = []
+  for (const row of rows) {
+    if (seen.has(row.glAccount.id)) continue
+    seen.add(row.glAccount.id)
+    accounts.push(mapAccount(row.glAccount))
+  }
+
+  return accounts
 }
 
 export async function listCashReconciliationAccounts(

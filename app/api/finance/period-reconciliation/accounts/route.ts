@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 
 import { GlAccountReconciliationRole } from "@/generated/prisma/client"
 import { financeErrorResponse } from "@/app/api/finance/shared/finance-api-errors"
+import { requireFinanceVoucherScope } from "@/app/api/finance/shared/voucher-api-scope"
 import {
   listBankReconciliationAccounts,
   listCashReconciliationAccounts,
@@ -26,9 +27,11 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+
     const items =
       role === GlAccountReconciliationRole.BANK
-        ? await listBankReconciliationAccounts(prisma)
+        ? await listBankReconciliationAccounts(prisma, legalEntityCode)
         : await listCashReconciliationAccounts(prisma)
 
     return NextResponse.json({ items })

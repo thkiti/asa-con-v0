@@ -5,6 +5,13 @@ import {
   listCashReconciliationAccounts,
 } from "@/lib/finance/period-reconciliation-accounts"
 
+jest.mock("@/app/api/finance/shared/voucher-api-scope", () => ({
+  requireFinanceVoucherScope: jest.fn(async () => ({
+    actor: { id: "actor-1" },
+    legalEntityCode: "AS",
+  })),
+}))
+
 jest.mock("@/lib/finance/period-reconciliation-accounts", () => ({
   listBankReconciliationAccounts: jest.fn(),
   listCashReconciliationAccounts: jest.fn(),
@@ -26,9 +33,10 @@ describe("GET /api/finance/period-reconciliation/accounts", () => {
     jest.clearAllMocks()
   })
 
-  it("returns bank reconciliation accounts", async () => {
+  it("returns bank reconciliation accounts scoped to the request legal entity", async () => {
     mockListBank.mockResolvedValue([
-      { id: "bank-1", code: "1021001", name: "Bangkok Bank" },
+      { id: "bank-2", code: "1021002", name: "Bangkok Bank Current" },
+      { id: "bank-3", code: "1021003", name: "Bangkok Bank Savings" },
     ])
 
     const response = await GET(
@@ -38,9 +46,10 @@ describe("GET /api/finance/period-reconciliation/accounts", () => {
 
     expect(response.status).toBe(200)
     expect(body.items).toEqual([
-      { id: "bank-1", code: "1021001", name: "Bangkok Bank" },
+      { id: "bank-2", code: "1021002", name: "Bangkok Bank Current" },
+      { id: "bank-3", code: "1021003", name: "Bangkok Bank Savings" },
     ])
-    expect(mockListBank).toHaveBeenCalled()
+    expect(mockListBank).toHaveBeenCalledWith(expect.anything(), "AS")
   })
 
   it("returns cash reconciliation accounts", async () => {
