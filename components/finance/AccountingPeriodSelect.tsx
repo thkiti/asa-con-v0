@@ -24,6 +24,7 @@ type AccountingPeriodSelectProps = Omit<
   showEmptyHint?: boolean
   /** Closed control shows periodKey only; dropdown options keep status labels. */
   selectedLabelMode?: SelectedLabelMode
+  "data-testid"?: string
 }
 
 function findSelectedPeriod(
@@ -164,6 +165,7 @@ export function AccountingPeriodSelect({
   selectedLabelMode = "full",
   disabled,
   className,
+  "data-testid": dataTestId,
   ...rest
 }: AccountingPeriodSelectProps) {
   const isEmpty = !loading && periods.length === 0
@@ -186,7 +188,7 @@ export function AccountingPeriodSelect({
         selectDisabled={selectDisabled}
         className={className}
         id={rest.id}
-        data-testid={rest["data-testid"]}
+        data-testid={dataTestId}
       />
     )
   }
