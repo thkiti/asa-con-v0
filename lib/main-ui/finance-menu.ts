@@ -223,7 +223,7 @@ function buildPrimaryFinanceMenuHubs(): Record<
             ),
             done(
               "close-readiness",
-              "Close Readiness",
+              "Accounting Periods",
               "/finance/periods",
               "Select a period to review close readiness, perform soft/hard close and reopen, view timeline, and export audit evidence."
             ),

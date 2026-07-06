@@ -7,8 +7,8 @@ import { isFinanceManualPeriodCreationEnabled } from "@/lib/finance/config"
 export default function FinancePeriodsPage() {
   return (
     <FinanceAdminPageShell
-      backHref="/finance"
-      backLabel="← Finance"
+      backHref="/finance/accounting-periods"
+      backLabel="← Month-End Closing"
       heading={
         <EntityContextPageHeading
           title="Accounting periods"

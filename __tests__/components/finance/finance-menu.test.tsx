@@ -242,12 +242,11 @@ describe("FinanceMenuHubView", () => {
     expect(html).toContain("Bank Cash Check")
     expect(html).toContain("Bank Reconciliation")
     expect(html).toContain("Cash Reconciliation")
-    expect(html).toContain("Close Readiness")
+    expect(html).toContain("Accounting Periods")
     expect(html).toContain("Active")
     expect(html).toContain("Next")
     expect(html).not.toContain("Bank Statements")
     expect(html).not.toContain('href="/finance/bank-statements"')
-    expect(html).not.toContain("Accounting Periods")
     expect(html).not.toContain("Period Management")
     expect(html).toContain(
       "Select a period to review close readiness, perform soft/hard close and reopen, view timeline, and export audit evidence."
@@ -261,7 +260,7 @@ describe("FinanceMenuHubView", () => {
       cardTitles.indexOf("Bank Reconciliation")
     )
     expect(cardTitles.indexOf("Bank Reconciliation")).toBeLessThan(
-      cardTitles.indexOf("Close Readiness")
+      cardTitles.indexOf("Accounting Periods")
     )
   })
 })
@@ -287,7 +286,7 @@ describe("finance-menu config", () => {
     expect(keys).toContain("trial-balance")
     expect(keys).toContain("close-readiness")
     const closeReadiness = items.find((item) => item.key === "close-readiness")
-    expect(closeReadiness?.label).toBe("Close Readiness")
+    expect(closeReadiness?.label).toBe("Accounting Periods")
     expect(closeReadiness?.href).toBe("/finance/periods")
     expect(keys).not.toContain("period-management")
     expect(keys).toContain("bank-reconciliation")
