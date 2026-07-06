@@ -17,6 +17,13 @@ export {
 export { FinancePostingError } from "./posting-errors"
 export { assertPostingPeriodOpen, formatPeriodKey } from "./posting-period"
 export {
+  FINANCE_DOCUMENT_NUMBER_ALLOCATION_MAX_ATTEMPTS,
+  assertLegalEntityCodeForDocumentAllocation,
+  buildFinanceDocumentNumber,
+  createWithAllocatedEntryNoRetry,
+  formatFinanceDocumentAllocationFailedMessage,
+} from "./document-number-allocation"
+export {
   FINANCE_REF_TYPES,
   type FinanceRefType,
   type JournalLineCodeDraft,

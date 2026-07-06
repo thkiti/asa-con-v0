@@ -1140,7 +1140,7 @@ model ManualJournalEntryLine {
 /// Document numbers: PAV-YYnnnn — see docs/99_ASA_HANDBOOK.md and FINANCE_PAY_DOCUMENT_DESIGN.md.
 model PaymentVoucher {
   id               String               @id @default(uuid())
-  entryNo          String               @unique
+  entryNo          String
   status           PaymentVoucherStatus @default(DRAFT)
   branchId         String
   legalEntityCode  String
@@ -1176,6 +1176,7 @@ model PaymentVoucher {
   postedJournalEntry   JournalEntry? @relation("PaymentVoucherPosted", fields: [postedJournalEntryId], references: [id])
   lines                PaymentVoucherLine[]
 
+  @@unique([legalEntityCode, entryNo])
   @@index([branchId, entryDate])
   @@index([legalEntityCode, entryDate])
   @@index([legalEntityCode, status])
@@ -1202,7 +1203,7 @@ model PaymentVoucherLine {
 /// Document numbers: PCV-YYnnnn — see docs/99_ASA_HANDBOOK.md.
 model PettyCashVoucher {
   id                 String                 @id @default(uuid())
-  entryNo            String                 @unique
+  entryNo            String
   status             PettyCashVoucherStatus @default(DRAFT)
   branchId           String
   legalEntityCode    String
@@ -1237,6 +1238,7 @@ model PettyCashVoucher {
   postedJournalEntry   JournalEntry? @relation("PettyCashVoucherPosted", fields: [postedJournalEntryId], references: [id])
   lines                PettyCashVoucherLine[]
 
+  @@unique([legalEntityCode, entryNo])
   @@index([branchId, entryDate])
   @@index([legalEntityCode, entryDate])
   @@index([legalEntityCode, status])
@@ -1263,7 +1265,7 @@ model PettyCashVoucherLine {
 /// Document numbers: REV-YYnnnn — see docs/FINANCE_DOCUMENT_IDENTITY_STANDARD.md.
 model RevenueVoucher {
   id                 String               @id @default(uuid())
-  entryNo            String               @unique
+  entryNo            String
   status             RevenueVoucherStatus @default(DRAFT)
   branchId           String
   legalEntityCode    String
@@ -1299,6 +1301,7 @@ model RevenueVoucher {
   postedJournalEntry JournalEntry? @relation("RevenueVoucherPosted", fields: [postedJournalEntryId], references: [id])
   lines              RevenueVoucherLine[]
 
+  @@unique([legalEntityCode, entryNo])
   @@index([branchId, entryDate])
   @@index([legalEntityCode, entryDate])
   @@index([legalEntityCode, status])
@@ -1326,7 +1329,7 @@ model RevenueVoucherLine {
 /// Not a POS sales invoice; journal lines define Dr receivable / Cr revenue accounts.
 model InvoiceVoucher {
   id               String               @id @default(uuid())
-  entryNo          String               @unique
+  entryNo          String
   status           InvoiceVoucherStatus @default(DRAFT)
   branchId         String
   legalEntityCode  String
@@ -1360,6 +1363,7 @@ model InvoiceVoucher {
   postedJournalEntry JournalEntry? @relation("InvoiceVoucherPosted", fields: [postedJournalEntryId], references: [id])
   lines              InvoiceVoucherLine[]
 
+  @@unique([legalEntityCode, entryNo])
   @@index([branchId, invoiceDate])
   @@index([legalEntityCode, invoiceDate])
   @@index([legalEntityCode, status])

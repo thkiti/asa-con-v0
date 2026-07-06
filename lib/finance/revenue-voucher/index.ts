@@ -2,7 +2,7 @@ export {
   REVENUE_VOUCHER_DOCUMENT_CODE,
   allocateRevenueVoucherNo,
   buildRevenueVoucherNo,
-  countRevenueVouchersInScope,
+  findMaxRevenueVoucherSequenceInScope,
 } from "./revenue-voucher-allocate-no"
 export {
   RevenueVoucherError,

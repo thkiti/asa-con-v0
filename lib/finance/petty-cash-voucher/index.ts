@@ -2,7 +2,7 @@ export {
   PETTY_CASH_VOUCHER_DOCUMENT_CODE,
   allocatePettyCashVoucherNo,
   buildPettyCashVoucherNo,
-  countPettyCashVouchersInScope,
+  findMaxPettyCashVoucherSequenceInScope,
 } from "./petty-cash-voucher-allocate-no"
 export {
   PettyCashVoucherError,

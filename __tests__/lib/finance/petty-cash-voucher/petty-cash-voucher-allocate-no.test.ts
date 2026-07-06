@@ -1,6 +1,6 @@
 import {
-  buildPettyCashVoucherNo,
   allocatePettyCashVoucherNo,
+  buildPettyCashVoucherNo,
   PETTY_CASH_VOUCHER_DOCUMENT_CODE,
 } from "@/lib/finance/petty-cash-voucher/petty-cash-voucher-allocate-no"
 
@@ -16,7 +16,7 @@ describe("petty-cash-voucher-allocate-no", () => {
   it("allocates next sequence per legal entity and calendar year", async () => {
     const tx = {
       pettyCashVoucher: {
-        count: jest.fn().mockResolvedValue(1),
+        findMany: jest.fn().mockResolvedValue([{ entryNo: "PCV-260001" }]),
       },
     }
 
@@ -26,6 +26,6 @@ describe("petty-cash-voucher-allocate-no", () => {
     })
 
     expect(no).toBe("PCV-260002")
-    expect(tx.pettyCashVoucher.count).toHaveBeenCalled()
+    expect(tx.pettyCashVoucher.findMany).toHaveBeenCalled()
   })
 })

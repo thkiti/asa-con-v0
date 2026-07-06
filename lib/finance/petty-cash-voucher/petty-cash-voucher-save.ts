@@ -1,6 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client"
-import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
 import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
+import {
+  createWithAllocatedEntryNoRetry,
+  formatFinanceDocumentAllocationFailedMessage,
+} from "@/lib/finance/document-number-allocation"
 import { prisma } from "@/lib/shared/prisma"
 import { allocatePettyCashVoucherNo } from "./petty-cash-voucher-allocate-no"
 import {
@@ -88,49 +91,48 @@ export async function createPettyCashVoucherDraft(
     await assertEligiblePettyCashAccount(tx, pettyCashAccountId)
     const lines = await resolvePettyCashVoucherAllocationLines(tx, input.lines)
     const totalAmount = sumPettyCashVoucherDebitTotal(lines)
-    const entryNo = await allocatePettyCashVoucherNo(tx, {
-      legalEntityCode,
-      entryDate,
-    })
 
-    try {
-      return await tx.pettyCashVoucher.create({
-        data: {
-          entryNo,
-          status: "DRAFT",
-          branchId,
+    return createWithAllocatedEntryNoRetry({
+      allocate: () =>
+        allocatePettyCashVoucherNo(tx, {
           legalEntityCode,
           entryDate,
-          pettyCashAccountId,
-          payeeName,
-          description: input.description ?? null,
-          refNo: input.refNo ?? null,
-          totalAmount,
-          createdByStaffId,
-          lines: {
-            create: lines.map((line) => ({
-              lineNo: line.lineNo,
-              glAccountId: line.glAccountId,
-              debit: line.debit,
-              credit: line.credit,
-              memo: line.memo,
-            })),
+        }),
+      create: (entryNo) =>
+        tx.pettyCashVoucher.create({
+          data: {
+            entryNo,
+            status: "DRAFT",
+            branchId,
+            legalEntityCode,
+            entryDate,
+            pettyCashAccountId,
+            payeeName,
+            description: input.description ?? null,
+            refNo: input.refNo ?? null,
+            totalAmount,
+            createdByStaffId,
+            lines: {
+              create: lines.map((line) => ({
+                lineNo: line.lineNo,
+                glAccountId: line.glAccountId,
+                debit: line.debit,
+                credit: line.credit,
+                memo: line.memo,
+              })),
+            },
           },
-        },
-        include: { lines: true },
-      })
-    } catch (err: unknown) {
-      if (
-        err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
-        throw new PettyCashVoucherError(
-          "Petty cash voucher number already exists",
+          include: { lines: true },
+        }),
+      allocationFailedError: () =>
+        new PettyCashVoucherError(
+          formatFinanceDocumentAllocationFailedMessage(
+            legalEntityCode,
+            "petty cash voucher"
+          ),
           PettyCashVoucherErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
-        )
-      }
-      throw err
-    }
+        ),
+    })
   }
 
   if (input.tx) return run(input.tx)

@@ -1,10 +1,8 @@
 import type { Prisma } from "@/generated/prisma/client"
-import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
-import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
+import { createWithAllocatedEntryNoRetry } from "@/lib/finance/document-number-allocation"
 import { prisma } from "@/lib/shared/prisma"
 import {
-  MANUAL_JOURNAL_ENTRY_ALLOCATION_MAX_ATTEMPTS,
   allocateManualJournalEntryNo,
 } from "./manual-journal-entry-allocate-no"
 import {
@@ -80,15 +78,15 @@ export async function createManualJournalEntryDraft(
   const run = async (tx: Prisma.TransactionClient): Promise<ManualJournalEntryWithLines> => {
     const lines = await resolveManualJournalEntryLines(tx, input.lines)
 
-    for (let attempt = 0; attempt < MANUAL_JOURNAL_ENTRY_ALLOCATION_MAX_ATTEMPTS; attempt++) {
-      const entryNo = await allocateManualJournalEntryNo(tx, {
-        legalEntityCode,
-        entryType: input.entryType,
-        entryDate,
-      })
-
-      try {
-        return await tx.manualJournalEntry.create({
+    return createWithAllocatedEntryNoRetry({
+      allocate: () =>
+        allocateManualJournalEntryNo(tx, {
+          legalEntityCode,
+          entryType: input.entryType,
+          entryDate,
+        }),
+      create: (entryNo) =>
+        tx.manualJournalEntry.create({
           data: {
             entryNo,
             entryType: input.entryType,
@@ -110,34 +108,13 @@ export async function createManualJournalEntryDraft(
             },
           },
           include: { lines: true },
-        })
-      } catch (err) {
-        if (
-          err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
-          err.code === "P2002" &&
-          attempt + 1 < MANUAL_JOURNAL_ENTRY_ALLOCATION_MAX_ATTEMPTS
-        ) {
-          continue
-        }
-
-        if (
-          err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
-          err.code === "P2002"
-        ) {
-          throw new ManualJournalEntryError(
-            formatManualJournalEntryAllocationFailedMessage(legalEntityCode),
-            ManualJournalEntryErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
-          )
-        }
-
-        throw err
-      }
-    }
-
-    throw new ManualJournalEntryError(
-      formatManualJournalEntryAllocationFailedMessage(legalEntityCode),
-      ManualJournalEntryErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
-    )
+        }),
+      allocationFailedError: () =>
+        new ManualJournalEntryError(
+          formatManualJournalEntryAllocationFailedMessage(legalEntityCode),
+          ManualJournalEntryErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
+        ),
+    })
   }
 
   if (input.tx) return run(input.tx)

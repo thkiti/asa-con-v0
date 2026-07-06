@@ -1,6 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client"
-import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
 import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
+import {
+  createWithAllocatedEntryNoRetry,
+  formatFinanceDocumentAllocationFailedMessage,
+} from "@/lib/finance/document-number-allocation"
 import { prisma } from "@/lib/shared/prisma"
 import { allocateInvoiceVoucherNo } from "./invoice-voucher-allocate-no"
 import {
@@ -81,49 +84,48 @@ export async function createInvoiceVoucherDraft(
   const run = async (tx: Prisma.TransactionClient): Promise<InvoiceVoucherWithLines> => {
     const lines = await resolveInvoiceVoucherAllocationLines(tx, input.lines)
     const totalAmount = sumInvoiceVoucherDebitTotal(lines)
-    const entryNo = await allocateInvoiceVoucherNo(tx, {
-      legalEntityCode,
-      invoiceDate,
-    })
 
-    try {
-      return await tx.invoiceVoucher.create({
-        data: {
-          entryNo,
-          status: "DRAFT",
-          branchId,
+    return createWithAllocatedEntryNoRetry({
+      allocate: () =>
+        allocateInvoiceVoucherNo(tx, {
           legalEntityCode,
           invoiceDate,
-          dueDate,
-          customerName,
-          description: input.description ?? null,
-          refNo: input.refNo ?? null,
-          totalAmount,
-          createdByStaffId,
-          lines: {
-            create: lines.map((line) => ({
-              lineNo: line.lineNo,
-              glAccountId: line.glAccountId,
-              debit: line.debit,
-              credit: line.credit,
-              memo: line.memo,
-            })),
+        }),
+      create: (entryNo) =>
+        tx.invoiceVoucher.create({
+          data: {
+            entryNo,
+            status: "DRAFT",
+            branchId,
+            legalEntityCode,
+            invoiceDate,
+            dueDate,
+            customerName,
+            description: input.description ?? null,
+            refNo: input.refNo ?? null,
+            totalAmount,
+            createdByStaffId,
+            lines: {
+              create: lines.map((line) => ({
+                lineNo: line.lineNo,
+                glAccountId: line.glAccountId,
+                debit: line.debit,
+                credit: line.credit,
+                memo: line.memo,
+              })),
+            },
           },
-        },
-        include: { lines: true },
-      })
-    } catch (err: unknown) {
-      if (
-        err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
-        throw new InvoiceVoucherError(
-          "Invoice voucher number already exists",
+          include: { lines: true },
+        }),
+      allocationFailedError: () =>
+        new InvoiceVoucherError(
+          formatFinanceDocumentAllocationFailedMessage(
+            legalEntityCode,
+            "invoice voucher"
+          ),
           InvoiceVoucherErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
-        )
-      }
-      throw err
-    }
+        ),
+    })
   }
 
   if (input.tx) return run(input.tx)

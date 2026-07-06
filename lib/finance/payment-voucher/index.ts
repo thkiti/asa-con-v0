@@ -2,7 +2,7 @@ export {
   PAYMENT_VOUCHER_DOCUMENT_CODE,
   allocatePaymentVoucherNo,
   buildPaymentVoucherNo,
-  countPaymentVouchersInScope,
+  findMaxPaymentVoucherSequenceInScope,
 } from "./payment-voucher-allocate-no"
 export {
   PaymentVoucherError,

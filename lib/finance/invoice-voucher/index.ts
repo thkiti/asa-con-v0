@@ -2,7 +2,7 @@ export {
   INVOICE_VOUCHER_DOCUMENT_CODE,
   allocateInvoiceVoucherNo,
   buildInvoiceVoucherNo,
-  countInvoiceVouchersInScope,
+  findMaxInvoiceVoucherSequenceInScope,
 } from "./invoice-voucher-allocate-no"
 export {
   InvoiceVoucherError,

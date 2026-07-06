@@ -1,6 +1,6 @@
 import {
-  buildPaymentVoucherNo,
   allocatePaymentVoucherNo,
+  buildPaymentVoucherNo,
   PAYMENT_VOUCHER_DOCUMENT_CODE,
 } from "@/lib/finance/payment-voucher/payment-voucher-allocate-no"
 
@@ -16,7 +16,7 @@ describe("payment-voucher-allocate-no", () => {
   it("allocates next sequence per legal entity and calendar year", async () => {
     const tx = {
       paymentVoucher: {
-        count: jest.fn().mockResolvedValue(1),
+        findMany: jest.fn().mockResolvedValue([{ entryNo: "PAV-260001" }]),
       },
     }
 
@@ -26,6 +26,26 @@ describe("payment-voucher-allocate-no", () => {
     })
 
     expect(no).toBe("PAV-260002")
-    expect(tx.paymentVoucher.count).toHaveBeenCalled()
+    expect(tx.paymentVoucher.findMany).toHaveBeenCalled()
+  })
+
+  it("allows the same entryNo across different legalEntityCode scopes", async () => {
+    const tx = {
+      paymentVoucher: {
+        findMany: jest.fn(async ({ where }: { where: { legalEntityCode: string } }) => {
+          if (where.legalEntityCode === "AD") {
+            return [{ entryNo: "PAV-260001" }]
+          }
+          return []
+        }),
+      },
+    }
+
+    const no = await allocatePaymentVoucherNo(tx as never, {
+      legalEntityCode: "AS",
+      entryDate,
+    })
+
+    expect(no).toBe("PAV-260001")
   })
 })

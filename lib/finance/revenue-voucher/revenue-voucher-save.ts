@@ -1,6 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client"
-import { Prisma as PrismaNamespace } from "@/generated/prisma/client"
 import { entityScopedIdWhere } from "@/lib/finance/voucher-entity-scope"
+import {
+  createWithAllocatedEntryNoRetry,
+  formatFinanceDocumentAllocationFailedMessage,
+} from "@/lib/finance/document-number-allocation"
 import { prisma } from "@/lib/shared/prisma"
 import { allocateRevenueVoucherNo } from "./revenue-voucher-allocate-no"
 import {
@@ -88,50 +91,49 @@ export async function createRevenueVoucherDraft(
     await assertEligibleReceiveToAccount(tx, receiveToAccountId)
     const lines = await resolveRevenueVoucherAllocationLines(tx, input.lines)
     const totalAmount = sumRevenueVoucherCreditTotal(lines)
-    const entryNo = await allocateRevenueVoucherNo(tx, {
-      legalEntityCode,
-      entryDate,
-    })
 
-    try {
-      return await tx.revenueVoucher.create({
-        data: {
-          entryNo,
-          status: "DRAFT",
-          branchId,
+    return createWithAllocatedEntryNoRetry({
+      allocate: () =>
+        allocateRevenueVoucherNo(tx, {
           legalEntityCode,
           entryDate,
-          receiveToAccountId,
-          receivedFromName,
-          description: input.description ?? null,
-          refNo: input.refNo ?? null,
-          receiptNo: input.receiptNo ?? null,
-          totalAmount,
-          createdByStaffId,
-          lines: {
-            create: lines.map((line) => ({
-              lineNo: line.lineNo,
-              glAccountId: line.glAccountId,
-              debit: line.debit,
-              credit: line.credit,
-              memo: line.memo,
-            })),
+        }),
+      create: (entryNo) =>
+        tx.revenueVoucher.create({
+          data: {
+            entryNo,
+            status: "DRAFT",
+            branchId,
+            legalEntityCode,
+            entryDate,
+            receiveToAccountId,
+            receivedFromName,
+            description: input.description ?? null,
+            refNo: input.refNo ?? null,
+            receiptNo: input.receiptNo ?? null,
+            totalAmount,
+            createdByStaffId,
+            lines: {
+              create: lines.map((line) => ({
+                lineNo: line.lineNo,
+                glAccountId: line.glAccountId,
+                debit: line.debit,
+                credit: line.credit,
+                memo: line.memo,
+              })),
+            },
           },
-        },
-        include: { lines: true },
-      })
-    } catch (err: unknown) {
-      if (
-        err instanceof PrismaNamespace.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
-        throw new RevenueVoucherError(
-          "Revenue voucher number already exists",
+          include: { lines: true },
+        }),
+      allocationFailedError: () =>
+        new RevenueVoucherError(
+          formatFinanceDocumentAllocationFailedMessage(
+            legalEntityCode,
+            "revenue voucher"
+          ),
           RevenueVoucherErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
-        )
-      }
-      throw err
-    }
+        ),
+    })
   }
 
   if (input.tx) return run(input.tx)

@@ -1,6 +1,12 @@
 import type { Prisma } from "@/generated/prisma/client"
-import { utcRangeForBangkokCalendarDay } from "@/lib/pos/bangkokDayBounds"
-import { bangkokCalendarParts } from "@/lib/reporting/bangkok-calendar"
+import {
+  assertLegalEntityCodeForDocumentAllocation,
+  buildFinanceDocumentNumber,
+  financeDocumentNumberPrefix,
+  formatDocumentYearSuffix,
+  maxSequenceFromDocumentNumbers,
+  utcRangeForBangkokCalendarYearFromDocumentDate,
+} from "@/lib/finance/document-number-allocation"
 import {
   InvoiceVoucherError,
   InvoiceVoucherErrorCodes,
@@ -10,54 +16,61 @@ import type { AllocateInvoiceVoucherNoInput } from "./invoice-voucher-types"
 export const INVOICE_VOUCHER_DOCUMENT_CODE = "INV"
 
 export function formatInvoiceVoucherYearSuffix(invoiceDate: Date): string {
-  const year = bangkokCalendarParts(invoiceDate).y
-  return String(year).slice(-2).padStart(2, "0")
-}
-
-function utcRangeForBangkokCalendarYear(year: number): {
-  start: Date
-  endExclusive: Date
-} {
-  const start = utcRangeForBangkokCalendarDay(`${year}-01-01`).start
-  const endExclusive = utcRangeForBangkokCalendarDay(`${year + 1}-01-01`).start
-  return { start, endExclusive }
+  return formatDocumentYearSuffix(invoiceDate)
 }
 
 export function buildInvoiceVoucherNo(invoiceDate: Date, sequence: number): string {
-  if (!Number.isInteger(sequence) || sequence < 1) {
+  try {
+    return buildFinanceDocumentNumber(
+      INVOICE_VOUCHER_DOCUMENT_CODE,
+      invoiceDate,
+      sequence
+    )
+  } catch {
     throw new InvoiceVoucherError(
       "Sequence must be a positive integer",
       InvoiceVoucherErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
     )
   }
-
-  const yy = formatInvoiceVoucherYearSuffix(invoiceDate)
-  const nnnn = String(sequence).padStart(4, "0")
-  return `${INVOICE_VOUCHER_DOCUMENT_CODE}-${yy}${nnnn}`
 }
 
-export async function countInvoiceVouchersInScope(
+export async function findMaxInvoiceVoucherSequenceInScope(
   tx: Pick<Prisma.TransactionClient, "invoiceVoucher">,
   legalEntityCode: string,
   invoiceDate: Date
 ): Promise<number> {
-  const year = bangkokCalendarParts(invoiceDate).y
-  const { start, endExclusive } = utcRangeForBangkokCalendarYear(year)
+  const { start, endExclusive } =
+    utcRangeForBangkokCalendarYearFromDocumentDate(invoiceDate)
+  const prefix = financeDocumentNumberPrefix(
+    INVOICE_VOUCHER_DOCUMENT_CODE,
+    invoiceDate
+  )
 
-  return tx.invoiceVoucher.count({
+  const existing = await tx.invoiceVoucher.findMany({
     where: {
       legalEntityCode,
       invoiceDate: { gte: start, lt: endExclusive },
+      entryNo: { startsWith: prefix },
     },
+    select: { entryNo: true },
   })
+
+  return maxSequenceFromDocumentNumbers(
+    existing.map((row) => row.entryNo),
+    prefix
+  )
 }
 
 export async function allocateInvoiceVoucherNo(
   tx: Pick<Prisma.TransactionClient, "invoiceVoucher">,
   input: AllocateInvoiceVoucherNoInput
 ): Promise<string> {
-  const legalEntityCode = input.legalEntityCode.trim()
-  if (!legalEntityCode) {
+  let legalEntityCode: string
+  try {
+    legalEntityCode = assertLegalEntityCodeForDocumentAllocation(
+      input.legalEntityCode
+    )
+  } catch {
     throw new InvoiceVoucherError(
       "legalEntityCode is required for entry number allocation",
       InvoiceVoucherErrorCodes.DOCUMENT_NUMBER_ALLOCATION_FAILED
@@ -65,12 +78,12 @@ export async function allocateInvoiceVoucherNo(
   }
 
   try {
-    const count = await countInvoiceVouchersInScope(
+    const maxSequence = await findMaxInvoiceVoucherSequenceInScope(
       tx,
       legalEntityCode,
       input.invoiceDate
     )
-    return buildInvoiceVoucherNo(input.invoiceDate, count + 1)
+    return buildInvoiceVoucherNo(input.invoiceDate, maxSequence + 1)
   } catch (err) {
     if (err instanceof InvoiceVoucherError) {
       throw err
