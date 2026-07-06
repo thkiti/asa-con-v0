@@ -32,7 +32,7 @@ export function isBankCashCheckPeriodCompleted(
  */
 export function buildBankCashCheckStatementStatusByPeriod(
   statements: readonly Pick<BankStatementRow, "periodKey" | "status">[]
-): Map<string, BankStatementStatus | undefined> {
+): Map<string, BankStatementStatus> {
   const byPeriod = new Map<string, BankStatementStatus>()
 
   for (const statement of statements) {
