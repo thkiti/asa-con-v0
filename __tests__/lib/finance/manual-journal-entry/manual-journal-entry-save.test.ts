@@ -74,7 +74,6 @@ function createSaveMockTx(initialAccounts: GlAccountRow[]) {
         where: {
           legalEntityCode: string
           entryType: string
-          entryDate: { gte: Date; lt: Date }
           entryNo?: { startsWith: string }
         }
         select: { entryNo: true }
@@ -84,8 +83,6 @@ function createSaveMockTx(initialAccounts: GlAccountRow[]) {
             (entry) =>
               entry.legalEntityCode === where.legalEntityCode &&
               entry.entryType === where.entryType &&
-              entry.entryDate >= where.entryDate.gte &&
-              entry.entryDate < where.entryDate.lt &&
               (!where.entryNo?.startsWith ||
                 entry.entryNo.startsWith(where.entryNo.startsWith))
           )

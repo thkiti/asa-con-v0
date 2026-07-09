@@ -12,7 +12,6 @@ import {
   maxSequenceFromDocumentNumbers,
   parseSequenceFromDocumentNumber,
   utcRangeForBangkokCalendarYear,
-  utcRangeForBangkokCalendarYearFromDocumentDate,
 } from "@/lib/finance/document-number-allocation"
 import {
   ManualJournalEntryError,
@@ -78,8 +77,6 @@ export async function findMaxManualJournalEntrySequenceInScope(
   entryType: ManualJournalEntryType,
   entryDate: Date
 ): Promise<number> {
-  const { start, endExclusive } =
-    utcRangeForBangkokCalendarYearFromDocumentDate(entryDate)
   const prefix = financeDocumentNumberPrefix(
     documentCodeForEntryType(entryType),
     entryDate
@@ -89,7 +86,6 @@ export async function findMaxManualJournalEntrySequenceInScope(
     where: {
       legalEntityCode,
       entryType,
-      entryDate: { gte: start, lt: endExclusive },
       entryNo: { startsWith: prefix },
     },
     select: { entryNo: true },
@@ -120,7 +116,9 @@ export async function countManualJournalEntriesInScope(
 }
 
 /**
- * Allocates the next `<CODE>-<YY><NNNN>` for legalEntityCode + entryType + calendar year.
+ * Allocates the next `<CODE>-<YY><NNNN>` for legalEntityCode + entryType + fiscal-year prefix.
+ * Sequence scope follows entryNo prefix (YY), not entryDate calendar year — opening balance
+ * rows may use a prior-calendar entryDate with a current-fiscal entryNo.
  * Composite unique on (legalEntityCode, entryNo) is the concurrency safety net.
  */
 export async function allocateManualJournalEntryNo(

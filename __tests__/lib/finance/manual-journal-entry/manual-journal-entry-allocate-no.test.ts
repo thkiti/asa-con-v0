@@ -105,7 +105,6 @@ describe("manual-journal-entry-allocate-no", () => {
             where: {
               legalEntityCode: string
               entryType: ManualJournalEntryType
-              entryDate: { gte: Date; lt: Date }
               entryNo?: { startsWith: string }
             }
           }) => {
@@ -114,8 +113,6 @@ describe("manual-journal-entry-allocate-no", () => {
                 (entry) =>
                   entry.legalEntityCode === where.legalEntityCode &&
                   entry.entryType === where.entryType &&
-                  entry.entryDate >= where.entryDate.gte &&
-                  entry.entryDate < where.entryDate.lt &&
                   (!where.entryNo?.startsWith ||
                     entry.entryNo.startsWith(where.entryNo.startsWith))
               )
@@ -125,12 +122,32 @@ describe("manual-journal-entry-allocate-no", () => {
       }
     }
 
-    it("returns next sequence within legalEntityCode + type + year", async () => {
+    it("returns next sequence within legalEntityCode + type + fiscal-year prefix", async () => {
       const tx = createTx([
         {
           legalEntityCode: "AS",
           entryType: "MANUAL",
           entryDate: entryDate,
+          entryNo: "MJV-260001",
+        },
+      ])
+
+      const no = await allocateManualJournalEntryNo(tx as never, {
+        legalEntityCode: "AS",
+        entryType: "MANUAL",
+        entryDate,
+      })
+
+      expect(no).toBe("MJV-260002")
+    })
+
+    it("counts prior-calendar entryDate when entryNo matches fiscal-year prefix", async () => {
+      const openingBalanceDate = new Date("2025-12-31T00:00:00.000Z")
+      const tx = createTx([
+        {
+          legalEntityCode: "AS",
+          entryType: "MANUAL",
+          entryDate: openingBalanceDate,
           entryNo: "MJV-260001",
         },
       ])
@@ -192,6 +209,43 @@ describe("manual-journal-entry-allocate-no", () => {
 
       expect(asas).toBe("MJV-260002")
       expect(asad).toBe("MJV-260002")
+    })
+
+    it("keeps independent MJV-260001/MJV-260002 sequences per legal entity", async () => {
+      const tx = createTx([
+        {
+          legalEntityCode: "AS",
+          entryType: "MANUAL",
+          entryDate: new Date("2025-12-31T00:00:00.000Z"),
+          entryNo: "MJV-260001",
+        },
+        {
+          legalEntityCode: "AD",
+          entryType: "MANUAL",
+          entryDate: entryDate,
+          entryNo: "MJV-260001",
+        },
+        {
+          legalEntityCode: "AD",
+          entryType: "MANUAL",
+          entryDate: entryDate,
+          entryNo: "MJV-260002",
+        },
+      ])
+
+      const asas = await allocateManualJournalEntryNo(tx as never, {
+        legalEntityCode: "AS",
+        entryType: "MANUAL",
+        entryDate,
+      })
+      const asad = await allocateManualJournalEntryNo(tx as never, {
+        legalEntityCode: "AD",
+        entryType: "MANUAL",
+        entryDate,
+      })
+
+      expect(asas).toBe("MJV-260002")
+      expect(asad).toBe("MJV-260003")
     })
 
     it("advances past gaps in the same legal entity sequence", async () => {
