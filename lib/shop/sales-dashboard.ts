@@ -112,9 +112,11 @@ async function loadAmountsByDayForBranches(
 ): Promise<{
   grossByDay: Map<string, Prisma.Decimal>
   vatByDay: Map<string, Prisma.Decimal>
+  saleCount: number
 }> {
   const grossByDay = new Map<string, Prisma.Decimal>()
   const vatByDay = new Map<string, Prisma.Decimal>()
+  let saleCount = 0
   for (const branchId of branchIds) {
     const amounts = await getSalesDashboardAmountsByDayInRange(db, {
       branchId,
@@ -124,8 +126,9 @@ async function loadAmountsByDayForBranches(
     })
     mergeGrossByDateKey(grossByDay, amounts.grossByDay)
     mergeGrossByDateKey(vatByDay, amounts.vatByDay)
+    saleCount += amounts.saleCount
   }
-  return { grossByDay, vatByDay }
+  return { grossByDay, vatByDay, saleCount }
 }
 
 export async function buildSalesDashboardView(
@@ -235,6 +238,7 @@ export async function buildSalesDashboardView(
   let previousYtdByDay: Map<string, Prisma.Decimal> | null = null
   let ytdRefunds = ZERO
   let ytdVat = ZERO
+  let ytdBillCount = 0
   if (yearToDate) {
     const [currentAmounts, previousAmounts, refundsTotal] = await Promise.all([
       loadAmountsByDayForBranches(db, branchIds, year, 1, month),
@@ -248,6 +252,7 @@ export async function buildSalesDashboardView(
       previousAmounts.grossByDay
     )
     ytdRefunds = refundsTotal
+    ytdBillCount = currentAmounts.saleCount
     for (const amount of currentAmounts.vatByDay.values()) {
       ytdVat = ytdVat.plus(amount)
     }
@@ -285,6 +290,7 @@ export async function buildSalesDashboardView(
   let summaryGross = monthGross
   let summaryVat = monthVat
   let summaryRefunds = monthRefunds
+  let summaryBillCount = monthBillCount
   if (yearToDate && currentYtdByDay && previousYtdByDay) {
     const lastDayKey = dayKeys[dayKeys.length - 1]
     if (lastDayKey) {
@@ -294,6 +300,7 @@ export async function buildSalesDashboardView(
     }
     summaryRefunds = ytdRefunds
     summaryVat = ytdVat
+    summaryBillCount = ytdBillCount
   }
 
   return {
@@ -309,7 +316,7 @@ export async function buildSalesDashboardView(
       actualNet: summaryGross.minus(summaryVat).toFixed(2),
       refunds: summaryRefunds.toFixed(2),
       netSales: summaryGross.minus(summaryRefunds).toFixed(2),
-      billCount: monthBillCount,
+      billCount: summaryBillCount,
     },
     previousMonthWeekdayPatterns,
     days,

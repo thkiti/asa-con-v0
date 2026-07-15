@@ -1,6 +1,8 @@
 /**
  * @jest-environment jsdom
  */
+import { act } from "react"
+import { createRoot, type Root } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 import { TargetSalesDashboardPage } from "@/components/shop/TargetSalesDashboardPage"
 import {
@@ -9,6 +11,9 @@ import {
   mainMenuShellContentClass,
 } from "@/lib/main-ui/main-menu-layout"
 import { fetchSalesDashboard } from "@/lib/shop-ui/sales-dashboard-client"
+
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
+  true
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh: jest.fn() }),
@@ -60,6 +65,26 @@ const sampleView = {
     },
   ],
   hasAnyTarget: false,
+}
+
+const ytdView = {
+  ...sampleView,
+  yearToDate: true,
+  monthSummary: {
+    ...sampleView.monthSummary,
+    grossSales: "5000.00",
+    actualVat: "327.10",
+    actualNet: "4672.90",
+    netSales: "4900.00",
+    billCount: 2244,
+  },
+}
+
+function billCountText(container: HTMLElement): string {
+  const box = container.querySelector(
+    '[data-testid="dashboard-summary-bill-count"]'
+  )
+  return box?.textContent ?? ""
 }
 
 describe("TargetSalesDashboardPage", () => {
@@ -120,5 +145,57 @@ describe("TargetSalesDashboardPage", () => {
     expect(filterIndex).toBeGreaterThan(userCardIndex)
     expect(summaryIndex).toBeGreaterThan(filterIndex)
     expect(html).toContain('data-testid="target-sales-dashboard"')
+  })
+
+  it("keeps No. of Bill visible when switching monthly ↔ YEAR TO DATE", async () => {
+    mockedFetch.mockImplementation(async (params) => {
+      if (params.yearToDate) {
+        return { ok: true, view: ytdView }
+      }
+      return { ok: true, view: sampleView }
+    })
+
+    const container = document.createElement("div")
+    document.body.appendChild(container)
+    let root: Root | null = createRoot(container)
+
+    await act(async () => {
+      root!.render(<TargetSalesDashboardPage user={hoAdmin} />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(billCountText(container)).toContain("42")
+
+    const toggle = container.querySelector(
+      '[data-testid="dashboard-ytd-toggle"]'
+    ) as HTMLButtonElement
+    expect(toggle).toBeTruthy()
+
+    await act(async () => {
+      toggle.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(billCountText(container)).toContain("2,244")
+    expect(billCountText(container)).not.toContain("2,244.00")
+
+    await act(async () => {
+      toggle.click()
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(billCountText(container)).toContain("42")
+
+    act(() => {
+      root!.unmount()
+      root = null
+    })
+    container.remove()
   })
 })

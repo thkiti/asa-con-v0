@@ -54,6 +54,8 @@ export type SalesDashboardMetricsDb = Pick<PrismaClient, "sale" | "refund">
 export type SalesDashboardAmountsByDay = {
   grossByDay: Map<string, Prisma.Decimal>
   vatByDay: Map<string, Prisma.Decimal>
+  /** Completed sale count in the inclusive month range. */
+  saleCount: number
 }
 
 function saleVatAmount(sale: { vatAmount?: Prisma.Decimal | null }): Prisma.Decimal {
@@ -136,7 +138,7 @@ export async function getSalesDashboardAmountsByDayInRange(
   const grossByDay = initGrossByDayMap(year, fromMonth, throughMonth)
   const vatByDay = initGrossByDayMap(year, fromMonth, throughMonth)
   accumulateSalesIntoDayMaps(grossByDay, vatByDay, sales)
-  return { grossByDay, vatByDay }
+  return { grossByDay, vatByDay, saleCount: sales.length }
 }
 
 /**

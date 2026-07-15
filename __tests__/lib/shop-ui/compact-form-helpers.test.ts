@@ -66,6 +66,9 @@ describe("formatDashboardMoneyAmount", () => {
     expect(formatDashboardSummaryAmount("34715")).toBe("34,715.00")
     expect(formatDashboardSummaryAmount("0.00")).toBe("0.00")
     expect(formatDashboardBillCount(2244)).toBe("2,244")
+    expect(formatDashboardBillCount(null)).toBe("0")
+    expect(formatDashboardBillCount(undefined)).toBe("0")
+    expect(formatDashboardBillCount(Number.NaN)).toBe("0")
   })
 
   it("formats calendar money with dash only when value is missing", () => {

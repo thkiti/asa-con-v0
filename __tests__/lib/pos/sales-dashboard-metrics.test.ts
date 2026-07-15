@@ -1,5 +1,8 @@
 import { Prisma, SaleStatus } from "@/generated/prisma/client"
-import { getSalesDashboardMetrics } from "@/lib/pos/sales-dashboard-metrics"
+import {
+  getSalesDashboardAmountsByDayInRange,
+  getSalesDashboardMetrics,
+} from "@/lib/pos/sales-dashboard-metrics"
 
 type MockSale = {
   id: string
@@ -303,5 +306,50 @@ describe("getSalesDashboardMetrics", () => {
     expect(result.monthSummary.grossSales).toBe("100.00")
     expect(result.monthSummary.actualVat).toBe("0.00")
     expect(result.monthSummary.actualNet).toBe("100.00")
+  })
+})
+
+describe("getSalesDashboardAmountsByDayInRange", () => {
+  const branchId = "branch-1"
+
+  it("returns saleCount as completed sales within the YTD month range", async () => {
+    const state = {
+      sales: [
+        {
+          id: "jan",
+          branchId,
+          total: new Prisma.Decimal("100.00"),
+          vatAmount: new Prisma.Decimal("6.54"),
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-01-15T10:00:00+07:00"),
+        },
+        {
+          id: "mar",
+          branchId,
+          total: new Prisma.Decimal("50.00"),
+          vatAmount: new Prisma.Decimal("3.27"),
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-03-10T10:00:00+07:00"),
+        },
+        {
+          id: "jul-out",
+          branchId,
+          total: new Prisma.Decimal("80.00"),
+          vatAmount: new Prisma.Decimal("5.23"),
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-07-01T10:00:00+07:00"),
+        },
+      ],
+      refunds: [],
+    }
+
+    const result = await getSalesDashboardAmountsByDayInRange(
+      createMockDb(state),
+      { branchId, year: 2026, fromMonth: 1, throughMonth: 6 }
+    )
+
+    expect(result.saleCount).toBe(2)
+    expect(result.grossByDay.get("2026-01-15")?.toFixed(2)).toBe("100.00")
+    expect(result.grossByDay.get("2026-03-10")?.toFixed(2)).toBe("50.00")
   })
 })

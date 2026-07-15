@@ -162,6 +162,8 @@ export function formatDashboardSummaryAmount(value: string): string {
   return formatDashboardMoneyAmount(value)
 }
 
-export function formatDashboardBillCount(value: number): string {
-  return value.toLocaleString("en-US", { maximumFractionDigits: 0 })
+export function formatDashboardBillCount(value: number | null | undefined): string {
+  const n = Number(value ?? 0)
+  if (!Number.isFinite(n)) return "0"
+  return Math.trunc(n).toLocaleString("en-US", { maximumFractionDigits: 0 })
 }

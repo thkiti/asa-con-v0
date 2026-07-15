@@ -359,10 +359,13 @@ describe("buildSalesDashboardView", () => {
           ["2026-01-15", "6.54"],
           ["2026-06-05", "1.96"],
         ]),
+        // Jan + June completed sales in YTD range (month-only billCount stays 2)
+        saleCount: 5,
       })
       .mockResolvedValueOnce({
         grossByDay: new Map(),
         vatByDay: new Map(),
+        saleCount: 0,
       })
     mockedRefundsInRange.mockResolvedValue(new Prisma.Decimal(0))
 
@@ -382,9 +385,109 @@ describe("buildSalesDashboardView", () => {
     expect(view.monthSummary.actualVat).toBe("8.50")
     expect(view.monthSummary.actualNet).toBe("121.50")
     expect(view.monthSummary.lastMonthSales).toBe("0.00")
-    expect(view.monthSummary.billCount).toBe(2)
+    expect(view.monthSummary.billCount).toBe(5)
     expect(view.days).toHaveLength(30)
     expect(view.days[0]?.dateKey).toBe("2026-06-01")
     expect(view.days[view.days.length - 1]?.dateKey).toBe("2026-06-30")
+  })
+
+  it("sums YTD billCount across company branches as completed sales in range", async () => {
+    mockedTarget.mockResolvedValue({
+      branchId: "b1",
+      year: 2026,
+      month: 6,
+      monthlyTotal: "0",
+      weekPattern: [1, 1, 1, 1, 1, 1, 1],
+      exists: false,
+    })
+
+    function stubMonthMetrics() {
+      mockedMetrics
+        .mockResolvedValueOnce({
+          year: 2026,
+          month: 6,
+          monthSummary: monthSummaryStub({
+            grossSales: "10.00",
+            refunds: "0.00",
+            netSales: "10.00",
+            billCount: 1,
+          }),
+          days: [dayStub("2026-06-05", "10.00")],
+        })
+        .mockResolvedValueOnce({
+          year: 2026,
+          month: 6,
+          monthSummary: monthSummaryStub({
+            grossSales: "20.00",
+            refunds: "0.00",
+            netSales: "20.00",
+            billCount: 2,
+          }),
+          days: [dayStub("2026-06-05", "20.00")],
+        })
+        .mockResolvedValueOnce({
+          year: 2026,
+          month: 5,
+          monthSummary: monthSummaryStub({
+            month: 5,
+            grossSales: "0.00",
+            refunds: "0.00",
+            netSales: "0.00",
+            billCount: 0,
+          }),
+          days: [],
+        })
+        .mockResolvedValueOnce({
+          year: 2026,
+          month: 5,
+          monthSummary: monthSummaryStub({
+            month: 5,
+            grossSales: "0.00",
+            refunds: "0.00",
+            netSales: "0.00",
+            billCount: 0,
+          }),
+          days: [],
+        })
+    }
+
+    stubMonthMetrics()
+    mockedAmountsByDay.mockImplementation(async (_db, input) => {
+      if (input.year !== 2026) {
+        return {
+          grossByDay: new Map(),
+          vatByDay: new Map(),
+          saleCount: 0,
+        }
+      }
+      if (input.branchId === "b1") {
+        return {
+          grossByDay: new Map([["2026-01-02", new Prisma.Decimal("10.00")]]),
+          vatByDay: new Map([["2026-01-02", new Prisma.Decimal("0.00")]]),
+          saleCount: 10,
+        }
+      }
+      return {
+        grossByDay: new Map([["2026-02-02", new Prisma.Decimal("20.00")]]),
+        vatByDay: new Map([["2026-02-02", new Prisma.Decimal("0.00")]]),
+        saleCount: 20,
+      }
+    })
+    mockedRefundsInRange.mockResolvedValue(new Prisma.Decimal(0))
+
+    const ytd = await buildSalesDashboardView({} as never, {
+      year: 2026,
+      month: 6,
+      yearToDate: true,
+    })
+    expect(ytd.monthSummary.billCount).toBe(30)
+
+    stubMonthMetrics()
+    const monthly = await buildSalesDashboardView({} as never, {
+      year: 2026,
+      month: 6,
+      yearToDate: false,
+    })
+    expect(monthly.monthSummary.billCount).toBe(3)
   })
 })

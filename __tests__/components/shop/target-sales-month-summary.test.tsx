@@ -72,4 +72,31 @@ describe("TargetSalesMonthSummary", () => {
     expect(html).toContain("gap-3")
     expect(html).not.toContain("minmax(0,1fr))_auto")
   })
+
+  it("renders monthly No. of Bill as an integer with thousands separator", () => {
+    const html = renderToStaticMarkup(
+      <TargetSalesMonthSummary summary={summary} />
+    )
+    const billBox = html.match(
+      /data-testid="dashboard-summary-bill-count"[\s\S]*?<\/div>/
+    )?.[0]
+    expect(billBox).toContain("2,244")
+    expect(billBox).not.toContain("2,244.00")
+  })
+
+  it("renders YTD No. of Bill without blanking the value", () => {
+    const html = renderToStaticMarkup(
+      <TargetSalesMonthSummary
+        summary={{
+          ...summary,
+          billCount: 12890,
+        }}
+      />
+    )
+    const billBox = html.match(
+      /data-testid="dashboard-summary-bill-count"[\s\S]*?<\/div>/
+    )?.[0]
+    expect(billBox).toContain("12,890")
+    expect(billBox).toMatch(/tabular-nums">12,890</)
+  })
 })
