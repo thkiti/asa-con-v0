@@ -18,7 +18,7 @@ type VerifyBody = {
 
 export async function POST(req: Request) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
 
     if (legalEntityCode !== DEFAULT_DOCUMENT_ENTITY_CODE) {
       throw new PosSettlementError(

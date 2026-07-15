@@ -13,7 +13,7 @@ type Context = {
 
 export async function POST(req: NextRequest, context: Context) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     await confirmManualJournalEntry({
       entryId: id,

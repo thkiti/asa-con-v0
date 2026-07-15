@@ -25,7 +25,7 @@ type Context = {
 
 export async function GET(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { documentKind: documentKindParam, documentId } = await context.params
     const documentKind = parseDocumentKind(documentKindParam)
     const archiveKind = parseDocumentArchiveKind(

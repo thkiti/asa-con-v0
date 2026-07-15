@@ -11,7 +11,7 @@ type RouteContext = { params: Promise<{ id: string }> }
 
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const detail = await getStockDocumentInquiryDetail(
       prisma,

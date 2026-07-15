@@ -96,7 +96,7 @@ async function seedOpenPeriod(
 
 function balancedLines(state: ReturnType<typeof createFinanceMockTx>["state"]) {
   const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
-  const revenue = state.glAccounts.find((a) => a.code === "4000")!
+  const revenue = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.REVENUE)!
   return [
     {
       glAccountId: cash.id,

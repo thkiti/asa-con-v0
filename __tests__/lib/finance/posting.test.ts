@@ -47,7 +47,7 @@ describe("finance posting", () => {
     const { tx, state } = createFinanceMockTx()
     await seedOpenPeriod(tx, "branch-1", new Date("2026-05-15T12:00:00.000Z"))
     const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
-    const revenue = state.glAccounts.find((a) => a.code === "4000")!
+    const revenue = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.REVENUE)!
 
     await postOperationalVoucher({
       tx,
@@ -86,7 +86,7 @@ describe("finance posting", () => {
     }
 
     const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
-    const revenue = state.glAccounts.find((a) => a.code === "4000")!
+    const revenue = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.REVENUE)!
     input.lines = [
       { glAccountId: cash.id, debit: new Prisma.Decimal("20"), credit: new Prisma.Decimal("0") },
       { glAccountId: revenue.id, debit: new Prisma.Decimal("0"), credit: new Prisma.Decimal("20") },
@@ -208,9 +208,10 @@ describe("finance posting", () => {
         { accountCode: DEFAULT_ACCOUNT_CODES.COGS, debit: "30.00", credit: "0.00" },
         { accountCode: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: "0.00", credit: "30.00" },
         { accountCode: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT, debit: "0.00", credit: "7.00" },
-        { accountCode: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0.00", credit: "100.00" },
+        { accountCode: "5001", debit: "0.00", credit: "100.00" },
       ])
     )
+    expect(DEFAULT_ACCOUNT_CODES.REVENUE).toBe("5001")
     expect(
       journalLines.some(
         (line) =>

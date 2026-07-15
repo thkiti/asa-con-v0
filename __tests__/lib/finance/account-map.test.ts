@@ -71,6 +71,19 @@ function assertStage1SaleEconomics(
 }
 
 describe("account-map", () => {
+  it("posts POS Sales Revenue to account 5001", () => {
+    expect(DEFAULT_ACCOUNT_CODES.REVENUE).toBe("5001")
+    const lines = resolveAccountsForPosSale({
+      paymentMethod: PaymentMethod.CASH,
+      total: GROSS_VAT_EXAMPLE,
+      vatEconomics: VAT_7,
+    })
+    const revenueLine = lineByCode(lines, "5001")
+    expect(revenueLine.credit).toEqual(VAT_7.net)
+    expect(revenueLine.debit).toEqual(new Prisma.Decimal(0))
+    expect(lines.some((l) => l.accountCode === "4000")).toBe(false)
+  })
+
   it("maps CASH checkout to Stage 1 net revenue + output VAT", () => {
     const lines = resolveAccountsForPosSale({
       paymentMethod: PaymentMethod.CASH,

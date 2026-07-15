@@ -19,7 +19,7 @@ type Context = {
 
 export async function GET(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const entry = await getManualJournalEntryById(prisma, id, legalEntityCode)
     return NextResponse.json({ entry })
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, context: Context) {
 
 export async function PATCH(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const body = (await req.json()) as Record<string, unknown>
 
@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest, context: Context) {
 
 export async function DELETE(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     await deleteDraftManualJournalEntry({ entryId: id, legalEntityCode })
     return NextResponse.json({ deleted: true })

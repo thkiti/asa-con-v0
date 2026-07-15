@@ -15,7 +15,7 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function POST(req: Request) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const form = await req.formData()
 
     const file = form.get("file")

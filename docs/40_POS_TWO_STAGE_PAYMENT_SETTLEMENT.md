@@ -61,7 +61,7 @@ flowchart LR
 
 **Recognizes:**
 
-- Net sales revenue (`4000`)
+- Net sales revenue (`5001`)
 - Output VAT (`4602` or Sale snapshot `outputVatAccountCode`)
 - COGS / inventory (unchanged — from stock ledger)
 
@@ -94,7 +94,7 @@ Account codes live in `lib/finance/account-map.ts` (`DEFAULT_ACCOUNT_CODES`). Se
 | `1001` | `CASH` | เงินสดในเครื่องเก็บเงิน | 1 / 2 | Cash in drawer — shop custody after CASH sales |
 | `1031` | `CASH_IN_TRANSIT_COLLECTOR` | เงินสดระหว่างทาง | 2 | Cash in transit after collector pickup |
 | `1021` | `BANK` | เงินฝากธนาคาร | 2 | Bank — **never debited in Stage 1** |
-| `4000` | `REVENUE` | Sales revenue (net) | 1 | Net of VAT |
+| `5001` | `REVENUE` | Sales revenue (net) | 1 | Net of VAT |
 | `4602` | `OUTPUT_VAT` | ภาษีมูลค่าเพิ่มค้างจ่าย | 1 | Output VAT payable |
 
 **Note:** `1140` is **not** used. It duplicated legacy account `1031` and was removed from the production mapping.
@@ -114,7 +114,7 @@ Account codes live in `lib/finance/account-map.ts` (`DEFAULT_ACCOUNT_CODES`). Se
 | `1130` | Cash Held by Mall / Mall Receivable | 2 | Mall custody after handover |
 | `5xxx` | Card / bank fee expense | 2 | Settlement fees only |
 
-**Invariant:** Stage 2 journals use **only** clearing/custody/bank/fee accounts — never `4000` or VAT accounts.
+**Invariant:** Stage 2 journals use **only** clearing/custody/bank/fee accounts — never `5001` or VAT accounts.
 
 ---
 
@@ -136,7 +136,7 @@ For gross total `G`, VAT from effective-dated policy or Sale snapshot:
 
 ```
 Dr  tenderAccount(G)          — clearing/custody (gross)
-    Cr  4000  net              — sales revenue
+    Cr  5001  net              — sales revenue
     Cr  4602  vat              — output VAT (or snapshot outputVatAccountCode)
 [+ existing COGS / inventory lines from stock ledger]
 ```
@@ -172,13 +172,13 @@ VAT is **no longer hardcoded** in `lib/finance/pos-sale-vat.ts`.
 Sale:
 ```
 Dr 1001 107.00
-    Cr 4000 100.00
+    Cr 5001 100.00
     Cr 4602   7.00
 ```
 
 Refund 107.00:
 ```
-Dr 4000 100.00
+Dr 5001 100.00
 Dr 4602   7.00
     Cr 1001 107.00
 ```
@@ -560,7 +560,7 @@ Compares:
 | Side | Source |
 |------|--------|
 | Operational | Gross sales **minus** gross refunds |
-| GL | Net revenue (`4000`) **+** output VAT (`4602` or per-sale snapshot codes aggregated) |
+| GL | Net revenue (`5001`) **+** output VAT (`4602` or per-sale snapshot codes aggregated) |
 
 Label: *"POS gross sales (net of refunds) vs GL net revenue + output VAT"*
 
@@ -644,7 +644,7 @@ Each Stage 1 phase keeps **same-transaction** posting in checkout ([13_FINANCE_O
 
 ## 11. Invariants (locked)
 
-1. **Stage 1 owns revenue and VAT** — only checkout/refund hooks credit `4000` / VAT accounts.
+1. **Stage 1 owns revenue and VAT** — only checkout/refund hooks credit `5001` / VAT accounts.
 2. **Stage 2 never touches revenue or VAT** — clearing and bank movement only.
 3. **Bank (`1021`) is never debited in Stage 1** for standard POS checkout.
 4. **READ Z is not a settlement event** — it anchors sales reconciliation, not bank confirmation.

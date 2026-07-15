@@ -36,7 +36,7 @@ const ROWS: SeedRow[] = [
     name: "POS Other Clearing",
     accountType: GlAccountType.ASSET,
   },
-  { code: DEFAULT_ACCOUNT_CODES.REVENUE, name: "Net Sales Revenue", accountType: GlAccountType.REVENUE },
+  { code: DEFAULT_ACCOUNT_CODES.REVENUE, name: "Sales Revenue", accountType: GlAccountType.REVENUE },
   {
     code: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
     name: "Output VAT",

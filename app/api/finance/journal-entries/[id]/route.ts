@@ -12,7 +12,7 @@ type Context = {
 
 export async function GET(req: NextRequest, context: Context) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const journal = await getJournalInquiryById(prisma, id, legalEntityCode)
     return NextResponse.json({ journal })

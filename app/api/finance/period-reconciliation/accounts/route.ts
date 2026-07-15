@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
 
     const items =
       role === GlAccountReconciliationRole.BANK

@@ -45,7 +45,7 @@ export type SalesReconciliationResult = {
   operationalGrossRefunds: string
   /** operationalGrossSales − operationalGrossRefunds. */
   operationalNetGross: string
-  /** Net credit balance on 4000 for the period. */
+  /** Net credit balance on POS sales revenue GL (DEFAULT_ACCOUNT_CODES.REVENUE) for the period. */
   glNetRevenue: string
   /** Net credit balance on output VAT account(s) for the period. */
   glOutputVat: string

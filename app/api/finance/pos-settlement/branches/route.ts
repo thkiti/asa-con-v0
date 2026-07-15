@@ -8,7 +8,7 @@ import { PeriodAdminAuthError } from "@/lib/auth"
 
 export async function GET(req: NextRequest) {
   try {
-    await requireFinanceVoucherScope(req)
+    await requireFinanceVoucherScope()
     const items = await listPosSettlementShopBranches(prisma)
     return NextResponse.json({ items })
   } catch (err: unknown) {

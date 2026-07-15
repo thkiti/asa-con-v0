@@ -18,7 +18,8 @@ export const DEFAULT_ACCOUNT_CODES = {
   POS_OTHER_CLEARING: "1190",
   /** Legacy: 1021 เงินฝากธนาคาร — Stage 1 POS checkout must never debit this. */
   BANK: "1021",
-  REVENUE: "4000",
+  /** Legacy CoA: 5001 รายได้จากการขาย — POS sale / refund net revenue. */
+  REVENUE: "5001",
   OUTPUT_VAT: "4602",
   COGS: "5000",
   AP: "2100",

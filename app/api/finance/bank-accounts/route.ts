@@ -22,7 +22,7 @@ function parseActiveFilter(
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const params = req.nextUrl.searchParams
 
     const result = await listBankAccounts(
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const body = (await req.json()) as Record<string, unknown>
 
     const item = await createBankAccount(prisma, {

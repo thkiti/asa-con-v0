@@ -7,7 +7,7 @@ import { createFinanceMockTx } from "./mock-finance-tx"
 
 function balancedLines(state: ReturnType<typeof createFinanceMockTx>["state"]) {
   const cash = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.CASH)!
-  const revenue = state.glAccounts.find((a) => a.code === "4000")!
+  const revenue = state.glAccounts.find((a) => a.code === DEFAULT_ACCOUNT_CODES.REVENUE)!
   return [
     {
       glAccountId: cash.id,
@@ -38,8 +38,9 @@ describe("finance kernel refinements", () => {
       },
     })
 
-    const countSpy = jest.spyOn(tx.voucher, "count")
-    countSpy.mockResolvedValue(0)
+    // Force allocator to keep proposing V-2026-05-00001 so create hits unique conflict.
+    const findFirstSpy = jest.spyOn(tx.voucher, "findFirst")
+    findFirstSpy.mockResolvedValue(null)
 
     await createVoucherWithLines(tx, {
       branchId: "branch-1",

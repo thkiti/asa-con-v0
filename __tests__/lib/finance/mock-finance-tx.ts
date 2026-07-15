@@ -195,7 +195,7 @@ const DEFAULT_CHART: { code: string; name: string; accountType: GlAccountType }[
     name: "POS Other Clearing",
     accountType: GlAccountType.ASSET,
   },
-  { code: DEFAULT_ACCOUNT_CODES.REVENUE, name: "Net Sales Revenue", accountType: GlAccountType.REVENUE },
+  { code: DEFAULT_ACCOUNT_CODES.REVENUE, name: "Sales Revenue", accountType: GlAccountType.REVENUE },
   {
     code: DEFAULT_ACCOUNT_CODES.OUTPUT_VAT,
     name: "Output VAT",
@@ -718,6 +718,46 @@ export function createFinanceMockTx(branchId = "branch-1") {
           }
         }
         return voucher
+      },
+      findFirst: async ({
+        where,
+        select,
+        orderBy,
+      }: {
+        where?: {
+          voucherNo?: { startsWith?: string }
+          id?: string
+          refType?: string
+          refId?: string
+        }
+        select?: { voucherNo?: boolean }
+        orderBy?: { voucherNo?: "asc" | "desc" }
+      }) => {
+        let rows = [...state.vouchers]
+        if (where?.id) {
+          rows = rows.filter((v) => v.id === where.id)
+        }
+        if (where?.refType) {
+          rows = rows.filter((v) => v.refType === where.refType)
+        }
+        if (where?.refId) {
+          rows = rows.filter((v) => v.refId === where.refId)
+        }
+        if (where?.voucherNo?.startsWith) {
+          const prefix = where.voucherNo.startsWith
+          rows = rows.filter((v) => v.voucherNo.startsWith(prefix))
+        }
+        if (orderBy?.voucherNo === "desc") {
+          rows.sort((a, b) => b.voucherNo.localeCompare(a.voucherNo))
+        } else if (orderBy?.voucherNo === "asc") {
+          rows.sort((a, b) => a.voucherNo.localeCompare(b.voucherNo))
+        }
+        const row = rows[0]
+        if (!row) return null
+        if (select?.voucherNo) {
+          return { voucherNo: row.voucherNo }
+        }
+        return { ...row }
       },
       findMany: async ({
         where,

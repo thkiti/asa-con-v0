@@ -11,7 +11,7 @@ import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const params = req.nextUrl.searchParams
     const periodKey = params.get("periodKey")?.trim() ?? ""
     const bankAccountId = params.get("bankAccountId")?.trim() ?? ""

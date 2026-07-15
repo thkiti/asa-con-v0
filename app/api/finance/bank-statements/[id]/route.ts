@@ -52,7 +52,7 @@ function parseStatus(value: unknown): BankStatementStatus | undefined {
 
 export async function GET(req: NextRequest, context: RouteContext) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
 
     const item = await getBankStatementById(
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
     const body = (await req.json()) as Record<string, unknown>
 
@@ -94,7 +94,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
   try {
-    const { legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { legalEntityCode } = await requireFinanceVoucherScope()
     const { id } = await context.params
 
     await deleteBankStatement(prisma, financeVoucherEntityWhere(id, legalEntityCode))

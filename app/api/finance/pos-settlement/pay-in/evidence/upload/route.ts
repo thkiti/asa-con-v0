@@ -42,7 +42,7 @@ function parseCollectorReportIds(
 
 export async function POST(req: Request) {
   try {
-    const { actor, legalEntityCode } = await requireFinanceVoucherScope(req)
+    const { actor, legalEntityCode } = await requireFinanceVoucherScope()
 
     if (legalEntityCode !== DEFAULT_DOCUMENT_ENTITY_CODE) {
       throw new PosSettlementError(
