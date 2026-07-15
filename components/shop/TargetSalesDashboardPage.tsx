@@ -22,6 +22,8 @@ import { themeMuted } from "@/lib/theme/theme-classes"
 const EMPTY_MONTH_SUMMARY = {
   lastMonthSales: "0.00",
   grossSales: "0.00",
+  actualVat: "0.00",
+  actualNet: "0.00",
   refunds: "0.00",
   netSales: "0.00",
   billCount: 0,

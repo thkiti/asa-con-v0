@@ -8,6 +8,8 @@ import { themeCard, themeMuted } from "@/lib/theme/theme-classes"
 const SUMMARY_BOXES = [
   { key: "last-month", label: "Last Month", field: "lastMonthSales" as const, kind: "amount" as const },
   { key: "this-month", label: "This Month", field: "grossSales" as const, kind: "amount" as const },
+  { key: "actual-vat", label: "VAT", field: "actualVat" as const, kind: "amount" as const },
+  { key: "actual-net", label: "Actual Net", field: "actualNet" as const, kind: "amount" as const },
   { key: "net-sales", label: "Net Sales", field: "netSales" as const, kind: "amount" as const },
   { key: "refund", label: "Refund", field: "refunds" as const, kind: "amount" as const },
   { key: "gross", label: "Gross", field: "grossSales" as const, kind: "amount" as const },
@@ -27,7 +29,7 @@ export function TargetSalesMonthSummary({
 }: TargetSalesMonthSummaryProps) {
   return (
     <section
-      className={`grid w-full grid-cols-2 gap-2 rounded border border-border px-3 py-3 sm:grid-cols-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto] ${themeCard}`}
+      className={`grid w-full grid-cols-2 gap-2 rounded border border-border px-3 py-3 sm:grid-cols-3 xl:grid-cols-[repeat(8,minmax(0,1fr))_auto] ${themeCard}`}
       data-testid="dashboard-month-summary"
     >
       {SUMMARY_BOXES.map((box) => (

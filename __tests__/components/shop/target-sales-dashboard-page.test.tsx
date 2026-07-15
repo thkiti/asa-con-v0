@@ -42,12 +42,23 @@ const sampleView = {
   monthSummary: {
     lastMonthSales: "800.00",
     grossSales: "1000.00",
+    actualVat: "65.42",
+    actualNet: "934.58",
     refunds: "100.00",
     netSales: "900.00",
     billCount: 42,
   },
   previousMonthWeekdayPatterns: ["0.00", "1.10", "1.00", "1.00", "1.00", "1.28", "0.00"],
-  days: [{ dateKey: "2026-06-05", target: null, actualGross: "100.00", lastMonthGross: "50.00" }],
+  days: [
+    {
+      dateKey: "2026-06-05",
+      target: null,
+      actualGross: "100.00",
+      actualVat: "6.54",
+      actualNet: "93.46",
+      lastMonthGross: "50.00",
+    },
+  ],
   hasAnyTarget: false,
 }
 

@@ -5,19 +5,28 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { TargetActualCalendarGrid } from "@/components/shop/TargetActualCalendarGrid"
 import { buildTargetActualCalendarGrid } from "@/lib/shop-ui/sales-dashboard-calendar"
 
+function day(
+  dateKey: string,
+  actualGross: string,
+  lastMonthGross: string | null,
+  actualVat = "0.00"
+) {
+  return {
+    dateKey,
+    target: "500.00" as string | null,
+    actualGross,
+    actualVat,
+    actualNet: (Number(actualGross) - Number(actualVat)).toFixed(2),
+    lastMonthGross,
+  }
+}
+
 describe("TargetActualCalendarGrid", () => {
-  it("renders Sunday-first headers and L/A lines without target labels", () => {
+  it("renders Sunday-first headers and L/A/V lines without target labels", () => {
     const cells = buildTargetActualCalendarGrid({
       year: 2026,
       month: 6,
-      days: [
-        {
-          dateKey: "2026-06-05",
-          target: "500.00",
-          actualGross: "150.00",
-          lastMonthGross: "120.00",
-        },
-      ],
+      days: [day("2026-06-05", "150.00", "120.00", "9.81")],
     })
 
     const html = renderToStaticMarkup(
@@ -34,10 +43,13 @@ describe("TargetActualCalendarGrid", () => {
     expect(html).toContain("(1.28)")
     expect(html).toContain('data-testid="last-month-line-2026-06-05"')
     expect(html).toContain('data-testid="actual-line-2026-06-05"')
+    expect(html).toContain('data-testid="vat-line-2026-06-05"')
     expect(html).toContain(">L<")
     expect(html).toContain(">A<")
+    expect(html).toContain(">V<")
     expect(html).toContain("120")
     expect(html).toContain("150")
+    expect(html).toContain("9.81")
     expect(html).not.toMatch(/>\s*T\s+\d/)
     expect(html).not.toContain(">T 500")
   })
@@ -47,18 +59,8 @@ describe("TargetActualCalendarGrid", () => {
       year: 2026,
       month: 6,
       days: [
-        {
-          dateKey: "2026-06-05",
-          target: "500.00",
-          actualGross: "150.00",
-          lastMonthGross: null,
-        },
-        {
-          dateKey: "2026-06-06",
-          target: "500.00",
-          actualGross: "0.00",
-          lastMonthGross: "80.00",
-        },
+        day("2026-06-05", "150.00", null),
+        day("2026-06-06", "0.00", "80.00"),
       ],
     })
 
@@ -78,18 +80,8 @@ describe("TargetActualCalendarGrid", () => {
       year: 2026,
       month: 6,
       days: [
-        {
-          dateKey: "2026-06-05",
-          target: "500.00",
-          actualGross: "150.00",
-          lastMonthGross: "120.00",
-        },
-        {
-          dateKey: "2026-06-06",
-          target: "500.00",
-          actualGross: "0.00",
-          lastMonthGross: "80.00",
-        },
+        day("2026-06-05", "150.00", "120.00"),
+        day("2026-06-06", "0.00", "80.00"),
       ],
     })
 
@@ -131,6 +123,8 @@ describe("TargetActualCalendarGrid", () => {
           dateKey: "2026-05-01",
           target: null,
           actualGross: "250.00",
+          actualVat: "16.36",
+          actualNet: "233.64",
           lastMonthGross: "175.00",
         },
       ],

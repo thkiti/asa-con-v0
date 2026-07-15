@@ -5,6 +5,7 @@ type MockSale = {
   id: string
   branchId: string
   total: Prisma.Decimal
+  vatAmount: Prisma.Decimal | null
   status: SaleStatus
   createdAt: Date
 }
@@ -68,6 +69,7 @@ describe("getSalesDashboardMetrics", () => {
           id: "sale-1",
           branchId,
           total: new Prisma.Decimal("100.00"),
+          vatAmount: new Prisma.Decimal("6.54"),
           status: SaleStatus.COMPLETED,
           createdAt: new Date("2026-06-05T10:00:00+07:00"),
         },
@@ -75,6 +77,7 @@ describe("getSalesDashboardMetrics", () => {
           id: "sale-2",
           branchId,
           total: new Prisma.Decimal("50.00"),
+          vatAmount: new Prisma.Decimal("3.27"),
           status: SaleStatus.COMPLETED,
           createdAt: new Date("2026-06-05T15:00:00+07:00"),
         },
@@ -98,10 +101,112 @@ describe("getSalesDashboardMetrics", () => {
 
     const day5 = result.days.find((row) => row.dateKey === "2026-06-05")
     expect(day5?.grossSales).toBe("150.00")
+    expect(day5?.vatSales).toBe("9.81")
     expect(result.monthSummary.grossSales).toBe("150.00")
+    expect(result.monthSummary.actualVat).toBe("9.81")
+    expect(result.monthSummary.actualNet).toBe("140.19")
     expect(result.monthSummary.refunds).toBe("100.00")
     expect(result.monthSummary.netSales).toBe("50.00")
     expect(result.monthSummary.billCount).toBe(2)
+  })
+
+  it("sums snapshotted VAT per receipt and keeps Actual = Net + VAT", async () => {
+    const state = {
+      sales: [
+        {
+          id: "sale-a",
+          branchId,
+          total: new Prisma.Decimal("107.00"),
+          vatAmount: new Prisma.Decimal("7.00"),
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-01-10T10:00:00+07:00"),
+        },
+        {
+          id: "sale-b",
+          branchId,
+          // Per-receipt rounding: gross 100.00 → vat 6.54 (not monthly recompute)
+          total: new Prisma.Decimal("100.00"),
+          vatAmount: new Prisma.Decimal("6.54"),
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-01-10T11:00:00+07:00"),
+        },
+        {
+          id: "sale-c",
+          branchId,
+          total: new Prisma.Decimal("50.00"),
+          vatAmount: new Prisma.Decimal("3.27"),
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-01-11T09:00:00+07:00"),
+        },
+      ],
+      refunds: [],
+    }
+
+    const result = await getSalesDashboardMetrics(createMockDb(state), {
+      branchId,
+      year: 2026,
+      month: 1,
+    })
+
+    expect(result.monthSummary.grossSales).toBe("257.00")
+    expect(result.monthSummary.actualVat).toBe("16.81")
+    expect(result.monthSummary.actualNet).toBe("240.19")
+    expect(
+      Number(result.monthSummary.actualNet) + Number(result.monthSummary.actualVat)
+    ).toBeCloseTo(Number(result.monthSummary.grossSales), 2)
+
+    const day10 = result.days.find((row) => row.dateKey === "2026-01-10")
+    expect(day10?.grossSales).toBe("207.00")
+    expect(day10?.vatSales).toBe("13.54")
+  })
+
+  it("queries only COMPLETED sales so non-completed rows cannot enter Actual", async () => {
+    const findMany = jest.fn().mockResolvedValue([])
+    const db = {
+      sale: { findMany },
+      refund: { findMany: jest.fn().mockResolvedValue([]) },
+    }
+
+    await getSalesDashboardMetrics(db as never, {
+      branchId,
+      year: 2026,
+      month: 1,
+    })
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: SaleStatus.COMPLETED,
+        }),
+      })
+    )
+  })
+
+  it("January VAT-inclusive example: Actual = Net + VAT for 5,960 gross", async () => {
+    const state = {
+      sales: [
+        {
+          id: "sale-diff",
+          branchId,
+          total: new Prisma.Decimal("5960.00"),
+          vatAmount: new Prisma.Decimal("389.91"),
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-01-15T10:00:00+07:00"),
+        },
+      ],
+      refunds: [],
+    }
+
+    const result = await getSalesDashboardMetrics(createMockDb(state), {
+      branchId,
+      year: 2026,
+      month: 1,
+    })
+
+    expect(result.monthSummary.grossSales).toBe("5960.00")
+    expect(result.monthSummary.actualVat).toBe("389.91")
+    expect(result.monthSummary.actualNet).toBe("5570.09")
+    expect(result.monthSummary.billCount).toBe(1)
   })
 
   it("counts refunds by refund.createdAt month not original sale month", async () => {
@@ -111,6 +216,7 @@ describe("getSalesDashboardMetrics", () => {
           id: "sale-may",
           branchId,
           total: new Prisma.Decimal("200.00"),
+          vatAmount: new Prisma.Decimal("13.08"),
           status: SaleStatus.COMPLETED,
           createdAt: new Date("2026-05-31T20:00:00+07:00"),
         },
@@ -118,6 +224,7 @@ describe("getSalesDashboardMetrics", () => {
           id: "sale-june",
           branchId,
           total: new Prisma.Decimal("80.00"),
+          vatAmount: new Prisma.Decimal("5.23"),
           status: SaleStatus.COMPLETED,
           createdAt: new Date("2026-06-02T10:00:00+07:00"),
         },
@@ -140,6 +247,7 @@ describe("getSalesDashboardMetrics", () => {
     })
 
     expect(june.monthSummary.grossSales).toBe("80.00")
+    expect(june.monthSummary.actualVat).toBe("5.23")
     expect(june.monthSummary.refunds).toBe("200.00")
     expect(june.monthSummary.netSales).toBe("-120.00")
     expect(june.monthSummary.billCount).toBe(1)
@@ -164,7 +272,36 @@ describe("getSalesDashboardMetrics", () => {
 
     expect(result.days).toHaveLength(30)
     expect(result.days.every((row) => row.grossSales === "0.00")).toBe(true)
+    expect(result.days.every((row) => row.vatSales === "0.00")).toBe(true)
     expect(result.monthSummary.grossSales).toBe("0.00")
+    expect(result.monthSummary.actualVat).toBe("0.00")
+    expect(result.monthSummary.actualNet).toBe("0.00")
     expect(result.monthSummary.billCount).toBe(0)
+  })
+
+  it("treats null vatAmount as zero on that sale", async () => {
+    const state = {
+      sales: [
+        {
+          id: "sale-no-vat",
+          branchId,
+          total: new Prisma.Decimal("100.00"),
+          vatAmount: null,
+          status: SaleStatus.COMPLETED,
+          createdAt: new Date("2026-01-05T10:00:00+07:00"),
+        },
+      ],
+      refunds: [],
+    }
+
+    const result = await getSalesDashboardMetrics(createMockDb(state), {
+      branchId,
+      year: 2026,
+      month: 1,
+    })
+
+    expect(result.monthSummary.grossSales).toBe("100.00")
+    expect(result.monthSummary.actualVat).toBe("0.00")
+    expect(result.monthSummary.actualNet).toBe("100.00")
   })
 })

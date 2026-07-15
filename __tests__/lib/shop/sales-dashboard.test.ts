@@ -1,6 +1,6 @@
 jest.mock("@/lib/pos/sales-dashboard-metrics", () => ({
   getSalesDashboardMetrics: jest.fn(),
-  getSalesDashboardGrossByDayInRange: jest.fn(),
+  getSalesDashboardAmountsByDayInRange: jest.fn(),
   getSalesDashboardRefundsTotalInRange: jest.fn(),
 }))
 
@@ -12,9 +12,11 @@ jest.mock("@/lib/shop/sales-targets", () => ({
 }))
 
 import { Prisma } from "@/generated/prisma/client"
-import { getSalesDashboardMetrics } from "@/lib/pos/sales-dashboard-metrics"
-import { getSalesDashboardGrossByDayInRange } from "@/lib/pos/sales-dashboard-metrics"
-import { getSalesDashboardRefundsTotalInRange } from "@/lib/pos/sales-dashboard-metrics"
+import {
+  getSalesDashboardAmountsByDayInRange,
+  getSalesDashboardMetrics,
+  getSalesDashboardRefundsTotalInRange,
+} from "@/lib/pos/sales-dashboard-metrics"
 import {
   getBranchSalesTarget,
   listActiveShopBranches,
@@ -24,9 +26,10 @@ import { buildSalesDashboardView } from "@/lib/shop/sales-dashboard"
 const mockedMetrics = getSalesDashboardMetrics as jest.MockedFunction<
   typeof getSalesDashboardMetrics
 >
-const mockedGrossByDay = getSalesDashboardGrossByDayInRange as jest.MockedFunction<
-  typeof getSalesDashboardGrossByDayInRange
->
+const mockedAmountsByDay =
+  getSalesDashboardAmountsByDayInRange as jest.MockedFunction<
+    typeof getSalesDashboardAmountsByDayInRange
+  >
 const mockedRefundsInRange =
   getSalesDashboardRefundsTotalInRange as jest.MockedFunction<
     typeof getSalesDashboardRefundsTotalInRange
@@ -37,6 +40,43 @@ const mockedBranches = listActiveShopBranches as jest.MockedFunction<
 const mockedTarget = getBranchSalesTarget as jest.MockedFunction<
   typeof getBranchSalesTarget
 >
+
+function monthSummaryStub(
+  partial: Partial<{
+    year: number
+    month: number
+    grossSales: string
+    actualVat: string
+    actualNet: string
+    refunds: string
+    netSales: string
+    billCount: number
+  }> & {
+    grossSales: string
+    refunds: string
+    netSales: string
+    billCount: number
+  }
+) {
+  const gross = partial.grossSales
+  const vat = partial.actualVat ?? "0.00"
+  return {
+    year: partial.year ?? 2026,
+    month: partial.month ?? 6,
+    grossSales: gross,
+    actualVat: vat,
+    actualNet:
+      partial.actualNet ??
+      (Number(gross) - Number(vat)).toFixed(2),
+    refunds: partial.refunds,
+    netSales: partial.netSales,
+    billCount: partial.billCount,
+  }
+}
+
+function dayStub(dateKey: string, grossSales: string, vatSales = "0.00") {
+  return { dateKey, grossSales, vatSales }
+}
 
 describe("buildSalesDashboardView", () => {
   beforeEach(() => {
@@ -61,46 +101,50 @@ describe("buildSalesDashboardView", () => {
       .mockResolvedValueOnce({
         year: 2026,
         month: 6,
-        monthSummary: {
+        monthSummary: monthSummaryStub({
           grossSales: "100.00",
+          actualVat: "6.54",
           refunds: "10.00",
           netSales: "90.00",
           billCount: 2,
-        },
-        days: [{ dateKey: "2026-06-05", grossSales: "100.00" }],
+        }),
+        days: [dayStub("2026-06-05", "100.00", "6.54")],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 6,
-        monthSummary: {
+        monthSummary: monthSummaryStub({
           grossSales: "50.00",
+          actualVat: "3.27",
           refunds: "5.00",
           netSales: "45.00",
           billCount: 1,
-        },
-        days: [{ dateKey: "2026-06-05", grossSales: "50.00" }],
+        }),
+        days: [dayStub("2026-06-05", "50.00", "3.27")],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 5,
-        monthSummary: {
+        monthSummary: monthSummaryStub({
+          month: 5,
           grossSales: "0.00",
           refunds: "0.00",
           netSales: "0.00",
           billCount: 0,
-        },
-        days: [{ dateKey: "2026-05-01", grossSales: "40.00" }],
+        }),
+        days: [dayStub("2026-05-01", "40.00")],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 5,
-        monthSummary: {
+        monthSummary: monthSummaryStub({
+          month: 5,
           grossSales: "0.00",
           refunds: "0.00",
           netSales: "0.00",
           billCount: 0,
-        },
-        days: [{ dateKey: "2026-05-01", grossSales: "20.00" }],
+        }),
+        days: [dayStub("2026-05-01", "20.00")],
       })
 
     const view = await buildSalesDashboardView({} as never, {
@@ -110,12 +154,16 @@ describe("buildSalesDashboardView", () => {
 
     expect(view.scope).toBe("company")
     expect(view.monthSummary.grossSales).toBe("150.00")
+    expect(view.monthSummary.actualVat).toBe("9.81")
+    expect(view.monthSummary.actualNet).toBe("140.19")
     expect(view.monthSummary.refunds).toBe("15.00")
     expect(view.monthSummary.netSales).toBe("135.00")
     expect(view.monthSummary.lastMonthSales).toBe("60.00")
     expect(view.monthSummary.billCount).toBe(3)
     const day5 = view.days.find((d) => d.dateKey === "2026-06-05")
     expect(day5?.actualGross).toBe("150.00")
+    expect(day5?.actualVat).toBe("9.81")
+    expect(day5?.actualNet).toBe("140.19")
     expect(day5?.lastMonthGross).toBe("60.00")
     expect(day5?.target).toBeNull()
     expect(view.hasAnyTarget).toBe(false)
@@ -138,24 +186,14 @@ describe("buildSalesDashboardView", () => {
       .mockResolvedValueOnce({
         year: 2026,
         month: 6,
-        monthSummary: {
-          grossSales: "0.00",
-          refunds: "0.00",
-          netSales: "0.00",
-          billCount: 0,
-        },
+        monthSummary: monthSummaryStub({ grossSales: "0.00", refunds: "0.00", netSales: "0.00", billCount: 0 }),
         days: [],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 5,
-        monthSummary: {
-          grossSales: "100.00",
-          refunds: "0.00",
-          netSales: "100.00",
-          billCount: 1,
-        },
-        days: [{ dateKey: "2026-05-01", grossSales: "100.00" }],
+        monthSummary: monthSummaryStub({ grossSales: "100.00", refunds: "0.00", netSales: "100.00", billCount: 1 }),
+        days: [dayStub("2026-05-01", "100.00")],
       })
 
     const view = await buildSalesDashboardView({} as never, {
@@ -182,23 +220,13 @@ describe("buildSalesDashboardView", () => {
       .mockResolvedValueOnce({
         year: 2026,
         month: 6,
-        monthSummary: {
-          grossSales: "0.00",
-          refunds: "0.00",
-          netSales: "0.00",
-          billCount: 0,
-        },
+        monthSummary: monthSummaryStub({ grossSales: "0.00", refunds: "0.00", netSales: "0.00", billCount: 0 }),
         days: [],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 5,
-        monthSummary: {
-          grossSales: "0.00",
-          refunds: "0.00",
-          netSales: "0.00",
-          billCount: 0,
-        },
+        monthSummary: monthSummaryStub({ grossSales: "0.00", refunds: "0.00", netSales: "0.00", billCount: 0 }),
         days: [],
       })
 
@@ -227,23 +255,13 @@ describe("buildSalesDashboardView", () => {
       .mockResolvedValueOnce({
         year: 2026,
         month: 6,
-        monthSummary: {
-          grossSales: "0.00",
-          refunds: "0.00",
-          netSales: "0.00",
-          billCount: 0,
-        },
+        monthSummary: monthSummaryStub({ grossSales: "0.00", refunds: "0.00", netSales: "0.00", billCount: 0 }),
         days: [],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 5,
-        monthSummary: {
-          grossSales: "0.00",
-          refunds: "0.00",
-          netSales: "0.00",
-          billCount: 0,
-        },
+        monthSummary: monthSummaryStub({ grossSales: "0.00", refunds: "0.00", netSales: "0.00", billCount: 0 }),
         days: [],
       })
 
@@ -271,24 +289,14 @@ describe("buildSalesDashboardView", () => {
       .mockResolvedValueOnce({
         year: 2026,
         month: 6,
-        monthSummary: {
-          grossSales: "10.00",
-          refunds: "0.00",
-          netSales: "10.00",
-          billCount: 1,
-        },
-        days: [{ dateKey: "2026-06-05", grossSales: "10.00" }],
+        monthSummary: monthSummaryStub({ grossSales: "10.00", refunds: "0.00", netSales: "10.00", billCount: 1 }),
+        days: [dayStub("2026-06-05", "10.00")],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 5,
-        monthSummary: {
-          grossSales: "0.00",
-          refunds: "0.00",
-          netSales: "0.00",
-          billCount: 0,
-        },
-        days: [{ dateKey: "2026-05-01", grossSales: "4.00" }],
+        monthSummary: monthSummaryStub({ grossSales: "0.00", refunds: "0.00", netSales: "0.00", billCount: 0 }),
+        days: [dayStub("2026-05-01", "4.00")],
       })
 
     const view = await buildSalesDashboardView({} as never, {
@@ -299,7 +307,7 @@ describe("buildSalesDashboardView", () => {
     })
 
     expect(view.yearToDate).toBeFalsy()
-    expect(mockedGrossByDay).not.toHaveBeenCalled()
+    expect(mockedAmountsByDay).not.toHaveBeenCalled()
     const day5 = view.days.find((d) => d.dateKey === "2026-06-05")
     expect(day5?.actualGross).toBe("10.00")
   })
@@ -317,37 +325,45 @@ describe("buildSalesDashboardView", () => {
       .mockResolvedValueOnce({
         year: 2026,
         month: 6,
-        monthSummary: {
+        monthSummary: monthSummaryStub({
           grossSales: "30.00",
+          actualVat: "1.96",
           refunds: "0.00",
           netSales: "30.00",
           billCount: 2,
-        },
-        days: [{ dateKey: "2026-06-05", grossSales: "30.00" }],
+        }),
+        days: [dayStub("2026-06-05", "30.00", "1.96")],
       })
       .mockResolvedValueOnce({
         year: 2026,
         month: 5,
-        monthSummary: {
+        monthSummary: monthSummaryStub({
           grossSales: "0.00",
           refunds: "0.00",
           netSales: "0.00",
           billCount: 0,
-        },
-        days: [{ dateKey: "2026-05-01", grossSales: "12.00" }],
+        }),
+        days: [dayStub("2026-05-01", "12.00")],
       })
 
     const makeMap = (entries: [string, string][]) =>
       new Map(entries.map(([key, value]) => [key, new Prisma.Decimal(value)]))
 
-    mockedGrossByDay
-      .mockResolvedValueOnce(
-        makeMap([
+    mockedAmountsByDay
+      .mockResolvedValueOnce({
+        grossByDay: makeMap([
           ["2026-01-15", "100.00"],
           ["2026-06-05", "30.00"],
-        ])
-      )
-      .mockResolvedValueOnce(new Map())
+        ]),
+        vatByDay: makeMap([
+          ["2026-01-15", "6.54"],
+          ["2026-06-05", "1.96"],
+        ]),
+      })
+      .mockResolvedValueOnce({
+        grossByDay: new Map(),
+        vatByDay: new Map(),
+      })
     mockedRefundsInRange.mockResolvedValue(new Prisma.Decimal(0))
 
     const view = await buildSalesDashboardView({} as never, {
@@ -360,8 +376,11 @@ describe("buildSalesDashboardView", () => {
     expect(view.yearToDate).toBe(true)
     const day5 = view.days.find((d) => d.dateKey === "2026-06-05")
     expect(day5?.actualGross).toBe("30.00")
+    expect(day5?.actualVat).toBe("1.96")
     expect(day5?.lastMonthGross).toBe("12.00")
     expect(view.monthSummary.grossSales).toBe("130.00")
+    expect(view.monthSummary.actualVat).toBe("8.50")
+    expect(view.monthSummary.actualNet).toBe("121.50")
     expect(view.monthSummary.lastMonthSales).toBe("0.00")
     expect(view.monthSummary.billCount).toBe(2)
     expect(view.days).toHaveLength(30)

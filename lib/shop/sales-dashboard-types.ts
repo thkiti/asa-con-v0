@@ -6,7 +6,12 @@ export type SalesDashboardMonthSummary = {
   /** Sum of prior-month gross on each comparable calendar-grid day in the view month. */
   lastMonthSales: string
   grossSales: string
+  /** Sum of snapshotted sale.vatAmount for completed Actual sales. */
+  actualVat: string
+  /** grossSales - actualVat (VAT-exclusive; not the same as netSales). */
+  actualNet: string
   refunds: string
+  /** grossSales - refunds (refund-adjusted gross — not VAT-exclusive). */
   netSales: string
   billCount: number
 }
@@ -15,6 +20,10 @@ export type SalesDashboardDayCell = {
   dateKey: string
   target: string | null
   actualGross: string
+  /** Sum of snapshotted sale.vatAmount for the day. */
+  actualVat: string
+  /** actualGross - actualVat for reconciliation (may be unused in UI). */
+  actualNet: string
   /** Previous-month sales on the comparable calendar grid date, or null for "-". */
   lastMonthGross: string | null
 }
@@ -38,6 +47,10 @@ export type SalesDashboardBranchDayRow = {
   code: string
   name: string
   grossSales: string
+  /** Sum of snapshotted sale.vatAmount for the branch on that day. */
+  actualVat: string
+  /** grossSales - actualVat */
+  actualNet: string
   receiptCount: number
 }
 

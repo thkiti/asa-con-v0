@@ -10,26 +10,32 @@ import {
 const summary = {
   lastMonthSales: "60000.00",
   grossSales: "75000.00",
+  actualVat: "4907.00",
+  actualNet: "70093.00",
   refunds: "5000.00",
   netSales: "70000.00",
   billCount: 128,
 }
 
 describe("TargetSalesMonthSummary", () => {
-  it("renders exactly the six dashboard summary labels", () => {
+  it("renders VAT and Actual Net with existing summary labels", () => {
     const html = renderToStaticMarkup(
       <TargetSalesMonthSummary summary={summary} />
     )
 
-    expect(SUMMARY_BOXES).toHaveLength(6)
+    expect(SUMMARY_BOXES).toHaveLength(8)
     expect(html).toContain("Last Month")
     expect(html).toContain("This Month")
+    expect(html).toContain("VAT")
+    expect(html).toContain("Actual Net")
     expect(html).toContain("Net Sales")
     expect(html).toContain("Refund")
     expect(html).toContain("Gross")
     expect(html).toContain("No. of Bill")
     expect(html).toContain("60,000")
     expect(html).toContain("75,000")
+    expect(html).toContain("4,907")
+    expect(html).toContain("70,093")
     expect(html).toContain("128")
   })
 

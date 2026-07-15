@@ -46,13 +46,15 @@ describe("buildPosTargetVsSalesSummary", () => {
         year: 2026,
         month: 6,
         grossSales: "50000.00",
+        actualVat: "3271.03",
+        actualNet: "46728.97",
         refunds: "10000.00",
         netSales: "40000.00",
         billCount: 12,
       },
       days: [
-        { dateKey: "2026-06-05", grossSales: "10000.00" },
-        { dateKey: "2026-06-06", grossSales: "15000.00" },
+        { dateKey: "2026-06-05", grossSales: "10000.00", vatSales: "654.21" },
+        { dateKey: "2026-06-06", grossSales: "15000.00", vatSales: "981.31" },
       ],
     })
 
@@ -92,11 +94,13 @@ describe("buildPosTargetVsSalesSummary", () => {
         year: 2026,
         month: 6,
         grossSales: "1000.00",
+        actualVat: "65.42",
+        actualNet: "934.58",
         refunds: "0.00",
         netSales: "1000.00",
         billCount: 1,
       },
-      days: [{ dateKey: "2026-06-06", grossSales: "1000.00" }],
+      days: [{ dateKey: "2026-06-06", grossSales: "1000.00", vatSales: "65.42" }],
     })
 
     const summary = await buildPosTargetVsSalesSummary(

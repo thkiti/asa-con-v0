@@ -11,6 +11,8 @@ export type TargetActualCalendarCell =
       weekdaySun0: number
       target: string | null
       actualGross: string
+      actualVat: string
+      actualNet: string
       lastMonthGross: string | null
     }
 
@@ -41,6 +43,8 @@ export function buildTargetActualCalendarGrid(input: {
       weekdaySun0: bangkokWeekdaySun0(year, month, dayNum),
       target: row.target,
       actualGross: row.actualGross,
+      actualVat: row.actualVat,
+      actualNet: row.actualNet,
       lastMonthGross: row.lastMonthGross,
     })
   }

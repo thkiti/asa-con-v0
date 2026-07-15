@@ -258,9 +258,16 @@ export function DaySalesSlideInPanel({
                             <span className="font-medium">{row.code}</span>
                             <span className={themeMuted}> · {row.name}</span>
                           </span>
-                          <span className="shrink-0 tabular-nums">
-                            {formatFinancialNumber(row.grossSales)} · {row.receiptCount}{" "}
-                            rcpt
+                          <span className="shrink-0 text-right tabular-nums">
+                            <span className="block">
+                              A {formatFinancialNumber(row.grossSales)}
+                            </span>
+                            <span className={`block text-xs ${themeMuted}`}>
+                              V {formatFinancialNumber(row.actualVat)}
+                            </span>
+                            <span className={`block text-xs ${themeMuted}`}>
+                              {row.receiptCount} rcpt
+                            </span>
                           </span>
                         </button>
                       ) : (

@@ -56,7 +56,7 @@ function CalendarAmountRow({
   testId,
   onClick,
 }: {
-  label: "L" | "A"
+  label: "L" | "A" | "V"
   amount: string
   bold?: boolean
   testId: string
@@ -67,7 +67,9 @@ function CalendarAmountRow({
       ? "font-semibold text-emerald-600"
       : label === "A"
         ? "font-normal text-emerald-500/70"
-        : "font-normal text-muted-foreground"
+        : label === "V"
+          ? "font-normal text-muted-foreground/80"
+          : "font-normal text-muted-foreground"
   }`
 
   return (
@@ -129,6 +131,7 @@ export function TargetActualCalendarGrid({
         const isWeekend = cell.weekdaySun0 === 0 || cell.weekdaySun0 === 6
         const lastMonthDisplay = formatCalendarAmount(cell.lastMonthGross)
         const actualDisplay = formatCalendarAmount(cell.actualGross)
+        const vatDisplay = formatCalendarAmount(cell.actualVat)
         const hasActual =
           actualDisplay !== "-" &&
           Number(String(cell.actualGross).replace(/,/g, "")) > 0
@@ -138,7 +141,7 @@ export function TargetActualCalendarGrid({
             key={cell.key}
             role="gridcell"
             data-testid={`target-actual-cell-${cell.dateKey}`}
-            className="flex min-h-[4.25rem] flex-col justify-between border border-zinc-600/20 bg-card px-1 py-1 sm:min-h-[4.5rem] sm:px-1.5 sm:py-1.5 lg:min-h-[4.75rem]"
+            className="flex min-h-[4.75rem] flex-col justify-between border border-zinc-600/20 bg-card px-1 py-1 sm:min-h-[5rem] sm:px-1.5 sm:py-1.5 lg:min-h-[5.25rem]"
           >
             <span
               className={`text-[11px] tabular-nums leading-none sm:text-xs ${
@@ -161,6 +164,11 @@ export function TargetActualCalendarGrid({
                 bold={hasActual}
                 testId={`actual-line-${cell.dateKey}`}
                 onClick={hasActual ? () => onActualClick(cell.dateKey) : undefined}
+              />
+              <CalendarAmountRow
+                label="V"
+                amount={vatDisplay}
+                testId={`vat-line-${cell.dateKey}`}
               />
             </div>
           </div>

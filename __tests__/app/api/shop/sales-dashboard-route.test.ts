@@ -42,6 +42,8 @@ const sampleView = {
   monthSummary: {
     lastMonthSales: "800.00",
     grossSales: "1000.00",
+    actualVat: "65.42",
+    actualNet: "934.58",
     refunds: "100.00",
     netSales: "900.00",
     billCount: 42,

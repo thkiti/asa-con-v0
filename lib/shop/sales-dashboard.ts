@@ -3,7 +3,7 @@ import { getRefundPreview } from "@/lib/pos/refund"
 import { RefundError } from "@/lib/pos/refund-errors"
 import { resolveReceiptEvidenceStatus } from "@/lib/pos/payment-evidence"
 import {
-  getSalesDashboardGrossByDayInRange,
+  getSalesDashboardAmountsByDayInRange,
   getSalesDashboardMetrics,
   getSalesDashboardRefundsTotalInRange,
 } from "@/lib/pos/sales-dashboard-metrics"
@@ -63,6 +63,16 @@ function sumDecimal(values: { total?: Prisma.Decimal | null }[]): Prisma.Decimal
   return values.reduce((acc, row) => acc.plus(toDec(row.total)), ZERO)
 }
 
+function sumVatDecimal(
+  values: { vatAmount?: Prisma.Decimal | null }[]
+): Prisma.Decimal {
+  return values.reduce(
+    (acc, row) =>
+      row.vatAmount == null ? acc : acc.plus(toDec(row.vatAmount)),
+    ZERO
+  )
+}
+
 async function assertActiveShopBranch(
   db: SalesDashboardDb,
   branchId: string
@@ -93,24 +103,29 @@ async function loadRefundsTotalForBranches(
   return total
 }
 
-async function loadGrossByDayForBranches(
+async function loadAmountsByDayForBranches(
   db: SalesDashboardDb,
   branchIds: string[],
   year: number,
   fromMonth: number,
   throughMonth: number
-): Promise<Map<string, Prisma.Decimal>> {
-  const merged = new Map<string, Prisma.Decimal>()
+): Promise<{
+  grossByDay: Map<string, Prisma.Decimal>
+  vatByDay: Map<string, Prisma.Decimal>
+}> {
+  const grossByDay = new Map<string, Prisma.Decimal>()
+  const vatByDay = new Map<string, Prisma.Decimal>()
   for (const branchId of branchIds) {
-    const byDay = await getSalesDashboardGrossByDayInRange(db, {
+    const amounts = await getSalesDashboardAmountsByDayInRange(db, {
       branchId,
       year,
       fromMonth,
       throughMonth,
     })
-    mergeGrossByDateKey(merged, byDay)
+    mergeGrossByDateKey(grossByDay, amounts.grossByDay)
+    mergeGrossByDateKey(vatByDay, amounts.vatByDay)
   }
-  return merged
+  return { grossByDay, vatByDay }
 }
 
 export async function buildSalesDashboardView(
@@ -159,23 +174,31 @@ export async function buildSalesDashboardView(
   }
 
   const actualByDay = new Map<string, Prisma.Decimal>()
+  const actualVatByDay = new Map<string, Prisma.Decimal>()
   for (const key of dayKeys) {
     actualByDay.set(key, ZERO)
+    actualVatByDay.set(key, ZERO)
   }
 
   let monthGross = ZERO
+  let monthVat = ZERO
   let monthRefunds = ZERO
   let monthBillCount = 0
 
   for (const bid of branchIds) {
     const metrics = await getSalesDashboardMetrics(db, { branchId: bid, year, month })
     monthGross = monthGross.plus(toDec(metrics.monthSummary.grossSales))
+    monthVat = monthVat.plus(toDec(metrics.monthSummary.actualVat))
     monthRefunds = monthRefunds.plus(toDec(metrics.monthSummary.refunds))
     monthBillCount += metrics.monthSummary.billCount
     for (const row of metrics.days) {
       actualByDay.set(
         row.dateKey,
         (actualByDay.get(row.dateKey) ?? ZERO).plus(toDec(row.grossSales))
+      )
+      actualVatByDay.set(
+        row.dateKey,
+        (actualVatByDay.get(row.dateKey) ?? ZERO).plus(toDec(row.vatSales))
       )
     }
   }
@@ -211,19 +234,23 @@ export async function buildSalesDashboardView(
   let currentYtdByDay: Map<string, Prisma.Decimal> | null = null
   let previousYtdByDay: Map<string, Prisma.Decimal> | null = null
   let ytdRefunds = ZERO
+  let ytdVat = ZERO
   if (yearToDate) {
-    const [currentGrossByDay, previousGrossByDay, refundsTotal] = await Promise.all([
-      loadGrossByDayForBranches(db, branchIds, year, 1, month),
-      loadGrossByDayForBranches(db, branchIds, year - 1, 1, month),
+    const [currentAmounts, previousAmounts, refundsTotal] = await Promise.all([
+      loadAmountsByDayForBranches(db, branchIds, year, 1, month),
+      loadAmountsByDayForBranches(db, branchIds, year - 1, 1, month),
       loadRefundsTotalForBranches(db, branchIds, year, 1, month),
     ])
-    currentYtdByDay = buildYtdCumulativeGrossMap(year, month, currentGrossByDay)
+    currentYtdByDay = buildYtdCumulativeGrossMap(year, month, currentAmounts.grossByDay)
     previousYtdByDay = buildYtdCumulativeGrossMap(
       year - 1,
       month,
-      previousGrossByDay
+      previousAmounts.grossByDay
     )
     ytdRefunds = refundsTotal
+    for (const amount of currentAmounts.vatByDay.values()) {
+      ytdVat = ytdVat.plus(amount)
+    }
   }
 
   const days = dayKeys.map((dateKey) => {
@@ -239,18 +266,24 @@ export async function buildSalesDashboardView(
         ? null
         : (lastMonthByDay.get(comparableDateKey) ?? ZERO).toFixed(2)
 
+    const actualGross = actualByDay.get(dateKey) ?? ZERO
+    const actualVat = actualVatByDay.get(dateKey) ?? ZERO
+
     return {
       dateKey,
       target: hasAnyTarget
         ? (targetByDay.get(dateKey) ?? ZERO).toFixed(2)
         : null,
-      actualGross: (actualByDay.get(dateKey) ?? ZERO).toFixed(2),
+      actualGross: actualGross.toFixed(2),
+      actualVat: actualVat.toFixed(2),
+      actualNet: actualGross.minus(actualVat).toFixed(2),
       lastMonthGross,
     }
   })
 
   let summaryLastMonth = lastMonthSalesTotal
   let summaryGross = monthGross
+  let summaryVat = monthVat
   let summaryRefunds = monthRefunds
   if (yearToDate && currentYtdByDay && previousYtdByDay) {
     const lastDayKey = dayKeys[dayKeys.length - 1]
@@ -260,6 +293,7 @@ export async function buildSalesDashboardView(
       summaryGross = ytdGrossThroughMonth(year, month, currentYtdByDay)
     }
     summaryRefunds = ytdRefunds
+    summaryVat = ytdVat
   }
 
   return {
@@ -271,6 +305,8 @@ export async function buildSalesDashboardView(
     monthSummary: {
       lastMonthSales: summaryLastMonth.toFixed(2),
       grossSales: summaryGross.toFixed(2),
+      actualVat: summaryVat.toFixed(2),
+      actualNet: summaryGross.minus(summaryVat).toFixed(2),
       refunds: summaryRefunds.toFixed(2),
       netSales: summaryGross.minus(summaryRefunds).toFixed(2),
       billCount: monthBillCount,
@@ -424,11 +460,15 @@ export async function getSalesDashboardDayDetail(
   const rows = await Promise.all(
     branches.map(async (branch) => {
       const sales = await loadBranchDaySales(db, branch.id, dateKey)
+      const grossSales = sumDecimal(sales)
+      const actualVat = sumVatDecimal(sales)
       return {
         branchId: branch.id,
         code: branch.code,
         name: branch.name,
-        grossSales: sumDecimal(sales).toFixed(2),
+        grossSales: grossSales.toFixed(2),
+        actualVat: actualVat.toFixed(2),
+        actualNet: grossSales.minus(actualVat).toFixed(2),
         receiptCount: sales.length,
       }
     })
