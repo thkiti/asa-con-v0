@@ -1,6 +1,10 @@
 import {
   compactHeaderFieldClass,
   compactHeaderRowGridClass,
+  formatDashboardBillCount,
+  formatDashboardCalendarMoneyAmount,
+  formatDashboardMoneyAmount,
+  formatDashboardSummaryAmount,
   formatFinancialCellValue,
   formatFinancialNumber,
   handleEnterFocusNext,
@@ -22,7 +26,9 @@ describe("compactHeaderFieldClass", () => {
 
 describe("compactHeaderRowGridClass", () => {
   it("keeps Branch Year Month Target on one desktop row", () => {
-    expect(compactHeaderRowGridClass).toContain("sm:grid-cols-[minmax(0,1fr)_4.25rem_3rem_minmax(10rem,14rem)]")
+    expect(compactHeaderRowGridClass).toContain(
+      "sm:grid-cols-[minmax(0,1fr)_4.25rem_3rem_minmax(10rem,14rem)]"
+    )
   })
 })
 
@@ -43,6 +49,31 @@ describe("decimal and financial drafts", () => {
   it("formats calendar cell values", () => {
     expect(formatFinancialCellValue("9230.77")).toBe("9,230.77")
     expect(formatFinancialCellValue("0")).toBe("—")
+  })
+})
+
+describe("formatDashboardMoneyAmount", () => {
+  it("always shows exactly two decimal places with grouping", () => {
+    expect(formatDashboardMoneyAmount(0)).toBe("0.00")
+    expect(formatDashboardMoneyAmount("0")).toBe("0.00")
+    expect(formatDashboardMoneyAmount("34715")).toBe("34,715.00")
+    expect(formatDashboardMoneyAmount("34715.00")).toBe("34,715.00")
+    expect(formatDashboardMoneyAmount("2271.04")).toBe("2,271.04")
+    expect(formatDashboardMoneyAmount("1461796")).toBe("1,461,796.00")
+  })
+
+  it("powers summary money formatter and leaves bill count integer", () => {
+    expect(formatDashboardSummaryAmount("34715")).toBe("34,715.00")
+    expect(formatDashboardSummaryAmount("0.00")).toBe("0.00")
+    expect(formatDashboardBillCount(2244)).toBe("2,244")
+  })
+
+  it("formats calendar money with dash only when value is missing", () => {
+    expect(formatDashboardCalendarMoneyAmount(null)).toBe("-")
+    expect(formatDashboardCalendarMoneyAmount(undefined)).toBe("-")
+    expect(formatDashboardCalendarMoneyAmount("0.00")).toBe("0.00")
+    expect(formatDashboardCalendarMoneyAmount("150.00")).toBe("150.00")
+    expect(formatDashboardCalendarMoneyAmount("9.81")).toBe("9.81")
   })
 })
 

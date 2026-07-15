@@ -6,7 +6,7 @@ import type {
   SalesDashboardReceiptPreview,
 } from "@/lib/shop/sales-dashboard-types"
 import { fetchSalesDashboardDayDetail } from "@/lib/shop-ui/sales-dashboard-client"
-import { formatFinancialNumber } from "@/lib/shop-ui/compact-form-helpers"
+import { formatDashboardMoneyAmount } from "@/lib/shop-ui/compact-form-helpers"
 import { themeBtnSecondary, themeCard, themeMuted } from "@/lib/theme/theme-classes"
 
 type DaySalesSlideInPanelProps = {
@@ -32,15 +32,15 @@ function ReceiptPreviewBody({ preview }: { preview: SalesDashboardReceiptPreview
         </p>
         <p>
           <span className={themeMuted}>Sale total</span>{" "}
-          {formatFinancialNumber(preview.saleTotal)}
+          {formatDashboardMoneyAmount(preview.saleTotal)}
         </p>
         <p>
           <span className={themeMuted}>Refunded</span>{" "}
-          {formatFinancialNumber(preview.refundedTotal)}
+          {formatDashboardMoneyAmount(preview.refundedTotal)}
         </p>
         <p>
           <span className={themeMuted}>Remaining</span>{" "}
-          {formatFinancialNumber(preview.remainingRefundable)}
+          {formatDashboardMoneyAmount(preview.remainingRefundable)}
         </p>
       </div>
 
@@ -59,7 +59,7 @@ function ReceiptPreviewBody({ preview }: { preview: SalesDashboardReceiptPreview
                 <span className={themeMuted}>×{item.qty}</span>
               </span>
               <span className="shrink-0 tabular-nums">
-                {formatFinancialNumber(item.lineTotal)}
+                {formatDashboardMoneyAmount(item.lineTotal)}
               </span>
             </li>
           ))}
@@ -79,7 +79,7 @@ function ReceiptPreviewBody({ preview }: { preview: SalesDashboardReceiptPreview
               >
                 <span>{refund.refundNo}</span>
                 <span className="tabular-nums">
-                  {formatFinancialNumber(refund.amount)}
+                  {formatDashboardMoneyAmount(refund.amount)}
                 </span>
                 <a
                   href={refund.printUrl}
@@ -260,10 +260,10 @@ export function DaySalesSlideInPanel({
                           </span>
                           <span className="shrink-0 text-right tabular-nums">
                             <span className="block">
-                              A {formatFinancialNumber(row.grossSales)}
+                              A {formatDashboardMoneyAmount(row.grossSales)}
                             </span>
                             <span className={`block text-xs ${themeMuted}`}>
-                              V {formatFinancialNumber(row.actualVat)}
+                              V {formatDashboardMoneyAmount(row.actualVat)}
                             </span>
                             <span className={`block text-xs ${themeMuted}`}>
                               {row.receiptCount} rcpt
@@ -312,7 +312,7 @@ export function DaySalesSlideInPanel({
                           <span className={themeMuted}> · {row.time}</span>
                         </span>
                         <span className="shrink-0 tabular-nums">
-                          {formatFinancialNumber(row.total)}
+                          {formatDashboardMoneyAmount(row.total)}
                         </span>
                       </button>
                     </li>

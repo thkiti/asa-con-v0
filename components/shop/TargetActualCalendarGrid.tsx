@@ -1,7 +1,7 @@
 "use client"
 
 import {
-  formatFinancialCellValue,
+  formatDashboardCalendarMoneyAmount,
   SUNDAY_FIRST_WEEKDAY_HEADERS,
 } from "@/lib/shop-ui/compact-form-helpers"
 import type { TargetActualCalendarCell } from "@/lib/shop-ui/sales-dashboard-calendar"
@@ -44,11 +44,6 @@ function WeekdayHeader({
   )
 }
 
-function formatCalendarAmount(value: string | null | undefined): string {
-  const formatted = formatFinancialCellValue(value)
-  return formatted === "—" ? "-" : formatted
-}
-
 function CalendarAmountRow({
   label,
   amount,
@@ -62,7 +57,8 @@ function CalendarAmountRow({
   testId: string
   onClick?: () => void
 }) {
-  const amountClass = `shrink-0 text-right text-xs tabular-nums leading-tight sm:text-sm ${
+  // Slightly smaller than prior text-xs/sm so #,##0.00 fits narrow day cells.
+  const amountClass = `min-w-0 shrink text-right text-[10px] tabular-nums leading-tight tracking-tight sm:text-xs ${
     bold
       ? "font-semibold text-emerald-600"
       : label === "A"
@@ -74,7 +70,7 @@ function CalendarAmountRow({
 
   return (
     <div
-      className="flex w-full items-baseline justify-between gap-2"
+      className="flex w-full items-baseline justify-between gap-1"
       data-testid={testId}
     >
       <span className="w-3 shrink-0 text-[9px] font-medium leading-none text-muted-foreground sm:text-[10px]">
@@ -129,9 +125,11 @@ export function TargetActualCalendarGrid({
         }
 
         const isWeekend = cell.weekdaySun0 === 0 || cell.weekdaySun0 === 6
-        const lastMonthDisplay = formatCalendarAmount(cell.lastMonthGross)
-        const actualDisplay = formatCalendarAmount(cell.actualGross)
-        const vatDisplay = formatCalendarAmount(cell.actualVat)
+        const lastMonthDisplay = formatDashboardCalendarMoneyAmount(
+          cell.lastMonthGross
+        )
+        const actualDisplay = formatDashboardCalendarMoneyAmount(cell.actualGross)
+        const vatDisplay = formatDashboardCalendarMoneyAmount(cell.actualVat)
         const hasActual =
           actualDisplay !== "-" &&
           Number(String(cell.actualGross).replace(/,/g, "")) > 0

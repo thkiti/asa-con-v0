@@ -22,7 +22,7 @@ function day(
 }
 
 describe("TargetActualCalendarGrid", () => {
-  it("renders Sunday-first headers and L/A/V lines without target labels", () => {
+  it("renders Sunday-first headers and L/A/V money with two decimals", () => {
     const cells = buildTargetActualCalendarGrid({
       year: 2026,
       month: 6,
@@ -47,14 +47,15 @@ describe("TargetActualCalendarGrid", () => {
     expect(html).toContain(">L<")
     expect(html).toContain(">A<")
     expect(html).toContain(">V<")
-    expect(html).toContain("120")
-    expect(html).toContain("150")
+    expect(html).toContain("120.00")
+    expect(html).toContain("150.00")
     expect(html).toContain("9.81")
+    expect(html).toContain("tabular-nums")
     expect(html).not.toMatch(/>\s*T\s+\d/)
     expect(html).not.toContain(">T 500")
   })
 
-  it("uses left label and right amount layout with dash for missing values", () => {
+  it("shows 0.00 for zero money and dash only for missing last-month", () => {
     const cells = buildTargetActualCalendarGrid({
       year: 2026,
       month: 6,
@@ -72,7 +73,9 @@ describe("TargetActualCalendarGrid", () => {
     expect(html).toContain('data-testid="last-month-line-2026-06-05"')
     expect(html).toContain(">-<")
     expect(html).toContain('data-testid="last-month-line-2026-06-06"')
-    expect(html).toContain("80")
+    expect(html).toContain("80.00")
+    expect(html).toContain("0.00")
+    expect(html).toContain("150.00")
   })
 
   it("renders actual line as button only when gross is positive", () => {
@@ -114,7 +117,7 @@ describe("TargetActualCalendarGrid", () => {
     expect(html).toContain("(-)")
   })
 
-  it("shows last-month comparable amount when data exists", () => {
+  it("shows last-month comparable amount with two decimals", () => {
     const cells = buildTargetActualCalendarGrid({
       year: 2026,
       month: 5,
@@ -135,6 +138,8 @@ describe("TargetActualCalendarGrid", () => {
     )
 
     expect(html).toContain('data-testid="last-month-line-2026-05-01"')
-    expect(html).toContain("175")
+    expect(html).toContain("175.00")
+    expect(html).toContain("250.00")
+    expect(html).toContain("16.36")
   })
 })

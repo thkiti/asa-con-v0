@@ -14,11 +14,11 @@ const summary = {
   actualNet: "70093.00",
   refunds: "5000.00",
   netSales: "70000.00",
-  billCount: 128,
+  billCount: 2244,
 }
 
 describe("TargetSalesMonthSummary", () => {
-  it("renders VAT and Actual Net with existing summary labels", () => {
+  it("renders money with exactly two decimals and bill count without decimals", () => {
     const html = renderToStaticMarkup(
       <TargetSalesMonthSummary summary={summary} />
     )
@@ -32,11 +32,34 @@ describe("TargetSalesMonthSummary", () => {
     expect(html).toContain("Refund")
     expect(html).toContain("Gross")
     expect(html).toContain("No. of Bill")
-    expect(html).toContain("60,000")
-    expect(html).toContain("75,000")
-    expect(html).toContain("4,907")
-    expect(html).toContain("70,093")
-    expect(html).toContain("128")
+    expect(html).toContain("60,000.00")
+    expect(html).toContain("75,000.00")
+    expect(html).toContain("4,907.00")
+    expect(html).toContain("70,093.00")
+    expect(html).toContain("5,000.00")
+    expect(html).toContain("70,000.00")
+    expect(html).toContain("2,244")
+    expect(html).not.toContain("2,244.00")
+  })
+
+  it("renders zero money as 0.00 and keeps fractional money", () => {
+    const html = renderToStaticMarkup(
+      <TargetSalesMonthSummary
+        summary={{
+          lastMonthSales: "0",
+          grossSales: "2271.04",
+          actualVat: "0.00",
+          actualNet: "2271.04",
+          refunds: "0",
+          netSales: "2271.04",
+          billCount: 3,
+        }}
+      />
+    )
+
+    expect(html).toContain("0.00")
+    expect(html).toContain("2,271.04")
+    expect(html).toContain(">3<")
   })
 
   it("renders YEAR TO DATE toggle immediately after No. of Bill", () => {

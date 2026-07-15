@@ -138,8 +138,28 @@ export const SUNDAY_FIRST_WEEKDAY_HEADERS = [
   "Sat",
 ] as const
 
+/** Sales dashboard money display — always #,##0.00 (en-US grouping). */
+export function formatDashboardMoneyAmount(value: string | number): string {
+  const normalized = String(value).replace(/,/g, "").trim()
+  if (normalized === "" || normalized === ".") return "0.00"
+  const n = Number(normalized)
+  if (!Number.isFinite(n)) return String(value)
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+/** Calendar L/A/V amounts: missing comparable day stays "-", otherwise #,##0.00. */
+export function formatDashboardCalendarMoneyAmount(
+  value: string | null | undefined
+): string {
+  if (value == null || value === "") return "-"
+  return formatDashboardMoneyAmount(value)
+}
+
 export function formatDashboardSummaryAmount(value: string): string {
-  return formatFinancialNumber(value, { maxFractionDigits: 0 })
+  return formatDashboardMoneyAmount(value)
 }
 
 export function formatDashboardBillCount(value: number): string {
