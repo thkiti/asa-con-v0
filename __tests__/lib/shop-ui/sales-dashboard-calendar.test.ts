@@ -1,4 +1,7 @@
-import { buildTargetActualCalendarGrid } from "@/lib/shop-ui/sales-dashboard-calendar"
+import {
+  buildTargetActualCalendarGrid,
+  TARGET_ACTUAL_DASHBOARD_HEADER_GRID,
+} from "@/lib/shop-ui/sales-dashboard-calendar"
 
 function dayRow(
   dateKey: string,
@@ -24,6 +27,16 @@ function dayRow(
       partial.lastMonthGross === undefined ? null : partial.lastMonthGross,
   }
 }
+
+describe("TARGET_ACTUAL_DASHBOARD_HEADER_GRID", () => {
+  it("caps shop width and reserves a trailing YTD column", () => {
+    expect(TARGET_ACTUAL_DASHBOARD_HEADER_GRID).toContain("minmax(16rem,20rem)")
+    expect(TARGET_ACTUAL_DASHBOARD_HEADER_GRID).toContain("4.25rem")
+    expect(TARGET_ACTUAL_DASHBOARD_HEADER_GRID).toContain("3rem")
+    expect(TARGET_ACTUAL_DASHBOARD_HEADER_GRID).toContain("_auto]")
+    expect(TARGET_ACTUAL_DASHBOARD_HEADER_GRID).not.toContain("minmax(0,1fr)_4.25rem")
+  })
+})
 
 describe("buildTargetActualCalendarGrid", () => {
   it("aligns June 2026 with Sunday-first leading pads", () => {

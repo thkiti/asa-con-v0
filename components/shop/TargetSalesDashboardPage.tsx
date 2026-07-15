@@ -125,6 +125,29 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
             onChange={setMonth}
             data-testid="dashboard-month"
           />
+
+          <button
+            type="button"
+            onClick={() => setYearToDate((active) => !active)}
+            data-testid="dashboard-ytd-toggle"
+            aria-pressed={yearToDate}
+            aria-label="Year to date"
+            className={`flex h-9 w-auto min-w-[4.75rem] flex-col items-center justify-center rounded border px-2 text-center transition-colors ${
+              yearToDate
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-muted-foreground hover:bg-muted/40"
+            }`}
+          >
+            <span className="text-[9px] font-semibold uppercase leading-none tracking-wide">
+              Year
+            </span>
+            <span className="text-[9px] font-semibold uppercase leading-none tracking-wide">
+              To
+            </span>
+            <span className="text-[9px] font-semibold uppercase leading-none tracking-wide">
+              Date
+            </span>
+          </button>
         </CompactControlRow>
 
         {error ? (
@@ -135,8 +158,6 @@ export function TargetSalesDashboardPage({ user }: TargetSalesDashboardPageProps
 
         <TargetSalesMonthSummary
           summary={view?.monthSummary ?? EMPTY_MONTH_SUMMARY}
-          yearToDate={yearToDate}
-          onYearToDateChange={setYearToDate}
         />
 
         {loading ? (

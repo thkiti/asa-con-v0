@@ -40,6 +40,7 @@ describe("TargetSalesMonthSummary", () => {
     expect(html).toContain("70,000.00")
     expect(html).toContain("2,244")
     expect(html).not.toContain("2,244.00")
+    expect(html).not.toContain('data-testid="dashboard-ytd-toggle"')
   })
 
   it("renders zero money as 0.00 and keeps fractional money", () => {
@@ -62,21 +63,13 @@ describe("TargetSalesMonthSummary", () => {
     expect(html).toContain(">3<")
   })
 
-  it("renders YEAR TO DATE toggle immediately after No. of Bill", () => {
+  it("uses a breathing full-width summary grid without a trailing YTD slot", () => {
     const html = renderToStaticMarkup(
-      <TargetSalesMonthSummary
-        summary={summary}
-        yearToDate={false}
-        onYearToDateChange={() => {}}
-      />
+      <TargetSalesMonthSummary summary={summary} />
     )
 
-    const billIndex = html.indexOf('data-testid="dashboard-summary-bill-count"')
-    const ytdIndex = html.indexOf('data-testid="dashboard-ytd-toggle"')
-    expect(billIndex).toBeGreaterThan(-1)
-    expect(ytdIndex).toBeGreaterThan(billIndex)
-    expect(html).toContain("Year")
-    expect(html).toContain("To")
-    expect(html).toContain("Date")
+    expect(html).toContain("xl:grid-cols-8")
+    expect(html).toContain("gap-3")
+    expect(html).not.toContain("minmax(0,1fr))_auto")
   })
 })

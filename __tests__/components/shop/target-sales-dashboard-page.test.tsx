@@ -79,13 +79,26 @@ describe("TargetSalesDashboardPage", () => {
     expect(html).not.toContain("Target vs Sales")
   })
 
-  it("renders month dropdown and year-to-date toggle", () => {
+  it("renders month dropdown and year-to-date toggle in the filter row", () => {
     const html = renderToStaticMarkup(
       <TargetSalesDashboardPage user={hoAdmin} />
     )
 
     expect(html).toContain('data-testid="dashboard-month"')
     expect(html).toContain('data-testid="dashboard-ytd-toggle"')
+
+    const scopeIndex = html.indexOf('data-testid="dashboard-scope"')
+    const yearIndex = html.indexOf('data-testid="dashboard-year"')
+    const monthIndex = html.indexOf('data-testid="dashboard-month"')
+    const ytdIndex = html.indexOf('data-testid="dashboard-ytd-toggle"')
+    const summaryIndex = html.indexOf('data-testid="dashboard-month-summary"')
+
+    expect(scopeIndex).toBeGreaterThan(-1)
+    expect(yearIndex).toBeGreaterThan(scopeIndex)
+    expect(monthIndex).toBeGreaterThan(yearIndex)
+    expect(ytdIndex).toBeGreaterThan(monthIndex)
+    expect(summaryIndex).toBeGreaterThan(ytdIndex)
+    expect(html).toContain("minmax(16rem,20rem)")
   })
 
   it("places header, filters, summary, and calendar in one full-width shell container", () => {
