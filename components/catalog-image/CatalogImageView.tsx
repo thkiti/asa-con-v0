@@ -51,6 +51,7 @@ type CatalogImageViewProps = {
   onCropNudge: (direction: "left" | "right" | "up" | "down") => void
   onProductIdInputChange: (value: string) => void
   onAssignSlots: () => void
+  onAssignedSlotProductIdChange: (sourceSlot: number, productId: string) => void
   onConfirmedSave: () => void
   onUploadToCloud: () => void
   onLayoutPreviewLoad: () => void
@@ -91,6 +92,7 @@ export function CatalogImageView({
   onCropNudge,
   onProductIdInputChange,
   onAssignSlots,
+  onAssignedSlotProductIdChange,
   onConfirmedSave,
   onUploadToCloud,
   onLayoutPreviewLoad,
@@ -382,12 +384,25 @@ export function CatalogImageView({
             </p>
             <div className="flex flex-wrap gap-2">
               {assignedSlots.map((slot) => (
-                <span
+                <label
                   key={slot.sourceSlot}
-                  className="rounded border border-border bg-card px-2 py-1 font-mono text-xs text-card-foreground"
+                  className="flex items-center gap-2 rounded border border-border bg-card px-2 py-1 font-mono text-xs text-card-foreground"
                 >
-                  slot {slot.sourceSlot}: {slot.finalFileName}
-                </span>
+                  <span className="shrink-0">slot {slot.sourceSlot}:</span>
+                  <input
+                    type="text"
+                    value={slot.productCode}
+                    aria-label={`Slot ${slot.sourceSlot} Product ID`}
+                    onChange={(event) =>
+                      onAssignedSlotProductIdChange(
+                        slot.sourceSlot,
+                        event.target.value
+                      )
+                    }
+                    className="w-[7.5rem] rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs text-foreground"
+                  />
+                  <span className={themeMuted}>{slot.finalFileName}</span>
+                </label>
               ))}
             </div>
           </div>

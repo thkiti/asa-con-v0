@@ -298,7 +298,7 @@ export function CatalogImageLayoutPreview({
                           className="flex items-center justify-center border border-amber-400/90 bg-amber-500/15 p-1"
                         >
                           <span className="max-w-full truncate rounded bg-zinc-950/90 px-1.5 py-0.5 text-center text-xs font-semibold text-amber-300 ring-1 ring-amber-500/70">
-                            {assigned?.finalFileName ?? index + 1}
+                            {assigned?.productCode || index + 1}
                           </span>
                         </div>
                       )

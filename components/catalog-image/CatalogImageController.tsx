@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { assignCatalogSlotProductCodes } from "@/lib/catalog-image/assign-slot-codes"
+import {
+  hasManualAssignedSlotEdits,
+  resolveAssignedSlotsForSave,
+  updateAssignedSlotProductId,
+  validateAssignedSlotProductIds,
+} from "@/lib/catalog-image/assigned-slot-product-ids"
 import { CatalogImageError } from "@/lib/catalog-image/errors"
 import {
   applyCropRectFieldUpdate,
@@ -286,6 +292,16 @@ export function CatalogImageController() {
       return
     }
 
+    if (
+      assignedSlots.length > 0 &&
+      hasManualAssignedSlotEdits(assignedSlots, trimmed)
+    ) {
+      const confirmed = window.confirm(
+        "One or more slot Product IDs were edited manually. Assign Slot will recalculate all slot IDs. Continue?"
+      )
+      if (!confirmed) return
+    }
+
     const slotCount = Math.max(1, cropSettings.rows) * Math.max(1, cropSettings.columns)
     try {
       const slots = assignCatalogSlotProductCodes(trimmed, slotCount)
@@ -299,7 +315,22 @@ export function CatalogImageController() {
             : "Failed to assign slots"
       setError(message)
     }
-  }, [cropSettings.columns, cropSettings.rows, productIdInput])
+  }, [
+    assignedSlots,
+    cropSettings.columns,
+    cropSettings.rows,
+    productIdInput,
+  ])
+
+  const handleAssignedSlotProductIdChange = useCallback(
+    (sourceSlot: number, productId: string) => {
+      setError(null)
+      setAssignedSlots((prev) =>
+        updateAssignedSlotProductId(prev, sourceSlot, productId)
+      )
+    },
+    []
+  )
 
   const handleConfirmedSave = useCallback(async () => {
     setError(null)
@@ -318,6 +349,22 @@ export function CatalogImageController() {
     }
     if (assignedSlots.length === 0) {
       setError("Assign slots before saving")
+      return
+    }
+
+    const validation = validateAssignedSlotProductIds(assignedSlots)
+    if (!validation.ok) {
+      setError(validation.message)
+      return
+    }
+
+    let resolvedSlots
+    try {
+      resolvedSlots = resolveAssignedSlotsForSave(assignedSlots)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Invalid assigned Product ID"
+      )
       return
     }
 
@@ -342,7 +389,7 @@ export function CatalogImageController() {
       })
 
       const assignedBySlot = new Map(
-        assignedSlots.map((slot) => [slot.sourceSlot, slot] as const)
+        resolvedSlots.map((slot) => [slot.sourceSlot, slot] as const)
       )
       const uploadSlots = croppedSlots
         .filter((slot) => assignedBySlot.has(slot.sourceSlot))
@@ -452,6 +499,7 @@ export function CatalogImageController() {
       onCropNudge={handleCropNudge}
       onProductIdInputChange={setProductIdInput}
       onAssignSlots={handleAssignSlots}
+      onAssignedSlotProductIdChange={handleAssignedSlotProductIdChange}
       onConfirmedSave={handleConfirmedSave}
       onUploadToCloud={handleUploadToCloud}
       onLayoutPreviewLoad={handleLayoutPreviewLoad}
