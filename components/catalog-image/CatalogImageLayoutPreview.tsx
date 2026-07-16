@@ -292,13 +292,25 @@ export function CatalogImageLayoutPreview({
                       const assigned = assignedSlots.find(
                         (slot) => slot.sourceSlot === index + 1
                       )
+                      const isSkipped =
+                        assigned && !String(assigned.productCode ?? "").trim()
                       return (
                         <div
                           key={index}
-                          className="flex items-center justify-center border border-amber-400/90 bg-amber-500/15 p-1"
+                          className={
+                            isSkipped
+                              ? "flex items-center justify-center border border-amber-400/40 bg-amber-500/5 p-1"
+                              : "flex items-center justify-center border border-amber-400/90 bg-amber-500/15 p-1"
+                          }
                         >
-                          <span className="max-w-full truncate rounded bg-zinc-950/90 px-1.5 py-0.5 text-center text-xs font-semibold text-amber-300 ring-1 ring-amber-500/70">
-                            {assigned?.productCode || index + 1}
+                          <span
+                            className={
+                              isSkipped
+                                ? "max-w-full truncate rounded bg-zinc-950/70 px-1.5 py-0.5 text-center text-xs font-medium text-amber-200/60 ring-1 ring-amber-500/30"
+                                : "max-w-full truncate rounded bg-zinc-950/90 px-1.5 py-0.5 text-center text-xs font-semibold text-amber-300 ring-1 ring-amber-500/70"
+                            }
+                          >
+                            {isSkipped ? "SKIP" : assigned?.productCode || index + 1}
                           </span>
                         </div>
                       )

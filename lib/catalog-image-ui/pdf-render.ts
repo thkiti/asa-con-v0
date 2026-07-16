@@ -45,6 +45,7 @@ export type CropCatalogPdfSlotsParams = {
   rows: number
   cropArea?: CropArea | CropTemplate | null
   renderScale?: number
+  onlySourceSlots?: number[]
 }
 
 export type CropCatalogPdfSlotResult = {
@@ -200,8 +201,17 @@ export async function cropCatalogPdfPageSlots(
     rows
   )
 
+  const onlySlots = Array.isArray(params.onlySourceSlots)
+    ? new Set(
+        params.onlySourceSlots
+          .map((n) => Number(n))
+          .filter((n) => Number.isInteger(n) && n >= 1)
+      )
+    : null
+
   const slots: CropCatalogPdfSlotResult[] = []
   for (let index = 0; index < slotRects.length; index += 1) {
+    if (onlySlots && !onlySlots.has(index + 1)) continue
     const rect = slotRects[index]!
     const slotCanvas = extractCanvasRegion(croppedCanvas, rect)
     const blob = await canvasToPngBlob(slotCanvas)

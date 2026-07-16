@@ -401,7 +401,11 @@ export function CatalogImageView({
                     }
                     className="w-[7.5rem] rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs text-foreground"
                   />
-                  <span className={themeMuted}>{slot.finalFileName}</span>
+                  {String(slot.productCode ?? "").trim() ? (
+                    <span className={themeMuted}>{slot.finalFileName}</span>
+                  ) : (
+                    <span className={themeMuted}>skipped</span>
+                  )}
                 </label>
               ))}
             </div>

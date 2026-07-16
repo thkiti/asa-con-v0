@@ -5,7 +5,7 @@ import { normalizeCatalogProductCode } from "./normalize-catalog-code"
 
 /**
  * Resolve an editable slot Product ID to a canonical product code.
- * - Empty → error
+ * - Empty → caller decides (often treated as SKIP)
  * - Exactly 7 digits → treat as already-canonical product code (do not strip checksum)
  * - Otherwise → normalize as a catalog scan / barcode code
  */
@@ -63,7 +63,7 @@ export function updateAssignedSlotProductId(
 
 export type AssignedSlotValidationIssue = {
   sourceSlot: number
-  reason: "empty" | "invalid" | "duplicate"
+  reason: "invalid" | "duplicate"
 }
 
 export type AssignedSlotValidationResult =
@@ -86,13 +86,14 @@ export function validateAssignedSlotProductIds(
 ): AssignedSlotValidationResult {
   const issues: AssignedSlotValidationIssue[] = []
   const resolvedBySlot = new Map<number, string>()
+  let activeCount = 0
 
   for (const slot of slots) {
     const trimmed = String(slot.productCode ?? "").trim()
     if (!trimmed) {
-      issues.push({ sourceSlot: slot.sourceSlot, reason: "empty" })
       continue
     }
+    activeCount += 1
 
     try {
       resolvedBySlot.set(
@@ -101,6 +102,14 @@ export function validateAssignedSlotProductIds(
       )
     } catch {
       issues.push({ sourceSlot: slot.sourceSlot, reason: "invalid" })
+    }
+  }
+
+  if (activeCount === 0) {
+    return {
+      ok: false,
+      issues: [],
+      message: "กรุณากำหนด Product ID อย่างน้อย 1 Slot",
     }
   }
 
@@ -120,20 +129,6 @@ export function validateAssignedSlotProductIds(
 
   if (issues.length === 0) {
     return { ok: true }
-  }
-
-  const emptySlots = issues
-    .filter((issue) => issue.reason === "empty")
-    .map((issue) => issue.sourceSlot)
-  if (emptySlots.length > 0) {
-    return {
-      ok: false,
-      issues,
-      message:
-        emptySlots.length === 1
-          ? `Slot ${emptySlots[0]} has an empty Product ID`
-          : `${formatSlotList(emptySlots)} have empty Product IDs`,
-    }
   }
 
   const invalidSlots = issues
@@ -192,6 +187,12 @@ export function hasManualAssignedSlotEdits(
     if (!expectedSlot || slot.sourceSlot !== expectedSlot.sourceSlot) {
       return true
     }
+
+    const trimmed = String(slot.productCode ?? "").trim()
+    if (!trimmed) {
+      return true
+    }
+
     try {
       const resolved = resolveAssignedSlotProductCode(slot.productCode)
       return resolved !== expectedSlot.productCode
@@ -204,12 +205,14 @@ export function hasManualAssignedSlotEdits(
 export function resolveAssignedSlotsForSave(
   slots: AssignedCatalogSlot[]
 ): AssignedCatalogSlot[] {
-  return slots.map((slot) => {
-    const productCode = resolveAssignedSlotProductCode(slot.productCode)
-    return {
-      sourceSlot: slot.sourceSlot,
-      productCode,
-      finalFileName: `${productCode}.png`,
-    }
-  })
+  return slots
+    .filter((slot) => String(slot.productCode ?? "").trim().length > 0)
+    .map((slot) => {
+      const productCode = resolveAssignedSlotProductCode(slot.productCode)
+      return {
+        sourceSlot: slot.sourceSlot,
+        productCode,
+        finalFileName: `${productCode}.png`,
+      }
+    })
 }

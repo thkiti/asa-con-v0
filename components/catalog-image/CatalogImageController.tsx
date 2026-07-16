@@ -367,6 +367,14 @@ export function CatalogImageController() {
       )
       return
     }
+    if (!resolvedSlots || resolvedSlots.length === 0) {
+      setError("กรุณากำหนด Product ID อย่างน้อย 1 Slot")
+      return
+    }
+
+    const skippedCount = assignedSlots.filter(
+      (slot) => !String(slot.productCode ?? "").trim()
+    ).length
 
     const cropTemplate =
       cropTemplateRef.current ??
@@ -386,6 +394,7 @@ export function CatalogImageController() {
         columns: cropSettings.columns,
         rows: cropSettings.rows,
         cropArea: cropTemplate,
+        onlySourceSlots: resolvedSlots.map((slot) => slot.sourceSlot),
       })
 
       const assignedBySlot = new Map(
@@ -419,7 +428,14 @@ export function CatalogImageController() {
         items: result.items,
       })
 
-      setLastSaveMessage(uxResult.saveMessage)
+      const savedCount = result.items.filter((item) => item.status === "SAVED").length
+      if (skippedCount > 0 && savedCount > 0 && !uxResult.errorMessage) {
+        setLastSaveMessage(
+          `Saved ${savedCount} catalog image${savedCount === 1 ? "" : "s"}. Skipped ${skippedCount} empty slot${skippedCount === 1 ? "" : "s"}.`
+        )
+      } else {
+        setLastSaveMessage(uxResult.saveMessage)
+      }
       setError(uxResult.errorMessage)
 
       if (uxResult.shouldResetPage) {
