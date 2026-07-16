@@ -101,13 +101,25 @@ async function assertBankAccount(
 async function nextStatementNo(
   prisma: BankStatementSavePrisma,
   legalEntityCode: string,
-  periodKey: string,
-  bankAccountId: string
+  periodKey: string
 ): Promise<string> {
-  const count = await prisma.bankStatement.count({
-    where: { legalEntityCode, periodKey, bankAccountId },
+  const rows = await prisma.bankStatement.findMany({
+    where: { legalEntityCode, periodKey },
+    select: { statementNo: true },
   })
-  return `BS-${periodKey}-${String(count + 1).padStart(3, "0")}`
+
+  const pattern = new RegExp(`^BS-${periodKey}-(\\d+)$`)
+  let maxSuffix = 0
+  for (const row of rows) {
+    const match = pattern.exec(row.statementNo)
+    if (!match) continue
+    const suffix = Number.parseInt(match[1]!, 10)
+    if (Number.isFinite(suffix) && suffix > maxSuffix) {
+      maxSuffix = suffix
+    }
+  }
+
+  return `BS-${periodKey}-${String(maxSuffix + 1).padStart(3, "0")}`
 }
 
 async function replaceLines(
@@ -150,7 +162,7 @@ export async function createBankStatement(
 
   const statementNo =
     input.statementNo?.trim() ||
-    (await nextStatementNo(prisma, input.legalEntityCode, periodKey, bankAccountId))
+    (await nextStatementNo(prisma, input.legalEntityCode, periodKey))
 
   const duplicate = await prisma.bankStatement.findUnique({
     where: {
