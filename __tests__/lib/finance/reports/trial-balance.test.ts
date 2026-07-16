@@ -7,7 +7,10 @@ import {
   trialBalanceDifference,
 } from "@/lib/finance/reports/balance-helpers"
 import { parseTrialBalanceFilter } from "@/lib/finance/reports/report-filter"
-import { getTrialBalance } from "@/lib/finance/reports/trial-balance"
+import {
+  compareTrialBalanceAccountCodes,
+  getTrialBalance,
+} from "@/lib/finance/reports/trial-balance"
 import { ReportError } from "@/lib/reporting/report-errors"
 import { createFinanceMockTx } from "../mock-finance-tx"
 
@@ -118,6 +121,19 @@ describe("parseTrialBalanceFilter", () => {
         legalEntityCode
       )
     ).toThrow(ReportError)
+  })
+})
+
+describe("compareTrialBalanceAccountCodes", () => {
+  it("orders numeric business codes ascending", () => {
+    const codes = ["5001", "1000", "1100", "1001", "2000"]
+    expect([...codes].sort(compareTrialBalanceAccountCodes)).toEqual([
+      "1000",
+      "1001",
+      "1100",
+      "2000",
+      "5001",
+    ])
   })
 })
 
@@ -385,17 +401,57 @@ describe("getTrialBalance", () => {
     expect(result.isBalanced).toBe(true)
   })
 
-  it("sorts rows by account type then account code", async () => {
+  it("sorts rows by accountCode ascending (not account type)", async () => {
     const { tx } = createFinanceMockTx(branchId)
     await seedPeriod(tx, branchId, "2026-05")
 
     const result = await getTrialBalance(tx, { legalEntityCode, periodKey: "2026-05" })
-    const types = result.rows.map((row) => row.accountType)
-    const sortedTypes = [...types].sort(
-      (a, b) =>
-        ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"].indexOf(a) -
-        ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"].indexOf(b)
+    const codes = result.rows.map((row) => row.accountCode)
+    const sortedCodes = [...codes].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
     )
-    expect(types).toEqual(sortedTypes)
+    expect(codes).toEqual(sortedCodes)
+
+    // Business sequence: COGS 5000 before REVENUE 5001 even though types differ
+    const cogsIdx = codes.indexOf(DEFAULT_ACCOUNT_CODES.COGS)
+    const revenueIdx = codes.indexOf(DEFAULT_ACCOUNT_CODES.REVENUE)
+    expect(cogsIdx).toBeGreaterThanOrEqual(0)
+    expect(revenueIdx).toBeGreaterThanOrEqual(0)
+    expect(cogsIdx).toBeLessThan(revenueIdx)
+  })
+
+  it("preserves footer totals when rows are reordered by accountCode", async () => {
+    const { tx, state } = createFinanceMockTx(branchId)
+    const period = await seedPeriod(tx, branchId, "2026-05")
+
+    seedJournal(state, {
+      id: "journal-order",
+      branchId,
+      periodId: period.id,
+      date: new Date("2026-05-15T12:00:00.000Z"),
+      lines: [
+        { code: DEFAULT_ACCOUNT_CODES.REVENUE, debit: "0", credit: "700" },
+        { code: DEFAULT_ACCOUNT_CODES.CASH, debit: "400", credit: "0" },
+        { code: DEFAULT_ACCOUNT_CODES.AP, debit: "0", credit: "100" },
+        { code: DEFAULT_ACCOUNT_CODES.INVENTORY, debit: "400", credit: "0" },
+      ],
+    })
+
+    const result = await getTrialBalance(tx, {
+      legalEntityCode,
+      periodKey: "2026-05",
+      hideZeroBalances: true,
+    })
+
+    expect(result.rows.map((row) => row.accountCode)).toEqual([
+      DEFAULT_ACCOUNT_CODES.INVENTORY,
+      DEFAULT_ACCOUNT_CODES.CASH,
+      DEFAULT_ACCOUNT_CODES.AP,
+      DEFAULT_ACCOUNT_CODES.REVENUE,
+    ])
+    expect(result.totalDebits).toBe("800")
+    expect(result.totalCredits).toBe("800")
+    expect(result.difference).toBe("0")
+    expect(result.isBalanced).toBe(true)
   })
 })

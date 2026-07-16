@@ -1,22 +1,20 @@
 import "dotenv/config"
-import { defineConfig, env } from "prisma/config"
+import { defineConfig } from "prisma/config"
+import { resolvePrismaCliDatasourceUrl } from "./lib/shared/env"
 
-/** Prisma 7: DATABASE_URL lives here (not in schema.prisma). */
-function databaseUrl(): string {
-  try {
-    return env("DATABASE_URL")
-  } catch {
-    // Allows `prisma generate` without a live database
-    return "postgresql://127.0.0.1:5432/asa_con_v0?schema=public"
-  }
-}
-
+/**
+ * Prisma 7 CLI datasource (migrate / db push / db execute).
+ * Prefer DIRECT_URL (direct Postgres). Fall back to DATABASE_URL for local convenience.
+ * Placeholder allows `prisma generate` without a live database.
+ *
+ * Runtime Next.js clients use DATABASE_URL via lib/shared/prisma.ts — not this file.
+ */
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: databaseUrl(),
+    url: resolvePrismaCliDatasourceUrl(),
   },
 })

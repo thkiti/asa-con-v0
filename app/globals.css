@@ -762,6 +762,12 @@ span.finance-account .finance-account-code-part {
   color: var(--finance-account-code);
 }
 
+/* Trial Balance — account codes left-aligned for scanability (amounts stay right). */
+.trial-balance-report .finance-account-code,
+.trial-balance-report span.finance-account .finance-account-code-part {
+  text-align: left;
+}
+
 span.finance-account .finance-account-code-input {
   box-sizing: border-box;
   width: var(--finance-account-code-width);

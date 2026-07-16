@@ -1,5 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client"
-import { GlAccountType, type PrismaClient } from "@/generated/prisma/client"
+import type { PrismaClient } from "@/generated/prisma/client"
 import { normalizeDateRange } from "@/lib/reporting/date-range"
 import { addMoney, toMoney, ZERO } from "../decimal"
 import {
@@ -16,12 +16,13 @@ export type TrialBalancePrisma = Pick<
   "glAccount" | "journalEntryLine" | "accountingPeriod"
 >
 
-const ACCOUNT_TYPE_ORDER: Record<GlAccountType, number> = {
-  [GlAccountType.ASSET]: 0,
-  [GlAccountType.LIABILITY]: 1,
-  [GlAccountType.EQUITY]: 2,
-  [GlAccountType.REVENUE]: 3,
-  [GlAccountType.EXPENSE]: 4,
+/**
+ * Business account-code order for Trial Balance rows.
+ * Uses numeric-aware string compare so "1000" < "1001" < "1100" < "5001"
+ * regardless of account type or insertion order.
+ */
+export function compareTrialBalanceAccountCodes(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
 }
 
 async function resolvePeriodId(
@@ -61,12 +62,9 @@ function buildJournalEntryWhere(
 }
 
 function sortTrialBalanceRows(rows: TrialBalanceRow[]): TrialBalanceRow[] {
-  return [...rows].sort((a, b) => {
-    const typeDiff =
-      ACCOUNT_TYPE_ORDER[a.accountType] - ACCOUNT_TYPE_ORDER[b.accountType]
-    if (typeDiff !== 0) return typeDiff
-    return a.accountCode.localeCompare(b.accountCode)
-  })
+  return [...rows].sort((a, b) =>
+    compareTrialBalanceAccountCodes(a.accountCode, b.accountCode)
+  )
 }
 
 function hasZeroActivity(debit: Prisma.Decimal, credit: Prisma.Decimal): boolean {
@@ -98,7 +96,7 @@ export async function getTrialBalance(
 
   const accounts = await prisma.glAccount.findMany({
     where: { deleted: false, isActive: true },
-    orderBy: [{ accountType: "asc" }, { code: "asc" }],
+    orderBy: [{ code: "asc" }],
   })
 
   const journalScope = filter.periodKey
