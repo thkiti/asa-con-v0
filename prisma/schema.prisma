@@ -51,6 +51,7 @@ enum SaleStatus {
 enum RefundKind {
   SALE_LINKED
   GOODWILL
+  LEGACY_HISTORICAL
 }
 
 enum PaymentMethod {
@@ -584,10 +585,32 @@ model Refund {
   sale            Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
   branch          Branch   @relation(fields: [branchId], references: [id])
   originalReceipt Receipt? @relation("OriginalReceipt", fields: [originalReceiptId], references: [id], onDelete: SetNull)
+  legacyReference LegacyRefundReference?
 
   @@index([saleId])
   @@index([branchId, createdAt])
   @@index([kind])
+}
+
+/// Auditable link from imported historical Refund back to SAE.dbf S_TRANS (R*).
+model LegacyRefundReference {
+  id               String   @id @default(uuid())
+  refundId         String   @unique
+  sourceFileName   String
+  legacyTransNo    String
+  legacyBranchId   String
+  legacyRefundDate String
+  legacyRefundTime String?
+  sourceRowCount   Int
+  grossAmount      Decimal  @db.Decimal(18, 2)
+  netAmount        Decimal  @db.Decimal(18, 2)
+  vatAmount        Decimal  @db.Decimal(18, 2)
+  createdAt        DateTime @default(now())
+
+  refund Refund @relation(fields: [refundId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceFileName, legacyBranchId, legacyRefundDate, legacyTransNo])
+  @@index([legacyRefundDate])
 }
 
 /// POS collector ticket — persisted COL-{branch}-{YYYYMM}-{seq} report snapshot.

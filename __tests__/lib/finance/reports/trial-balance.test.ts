@@ -125,7 +125,20 @@ describe("parseTrialBalanceFilter", () => {
 })
 
 describe("compareTrialBalanceAccountCodes", () => {
-  it("orders numeric business codes ascending", () => {
+  it("matches GL Account dropdown lexicographic order for mixed-length codes", () => {
+    const codes = ["1021001", "101", "1", "1001", "1021", "1011", "1000"]
+    expect([...codes].sort(compareTrialBalanceAccountCodes)).toEqual([
+      "1",
+      "1000",
+      "1001",
+      "101",
+      "1011",
+      "1021",
+      "1021001",
+    ])
+  })
+
+  it("orders same-length codes ascending", () => {
     const codes = ["5001", "1000", "1100", "1001", "2000"]
     expect([...codes].sort(compareTrialBalanceAccountCodes)).toEqual([
       "1000",
@@ -407,9 +420,7 @@ describe("getTrialBalance", () => {
 
     const result = await getTrialBalance(tx, { legalEntityCode, periodKey: "2026-05" })
     const codes = result.rows.map((row) => row.accountCode)
-    const sortedCodes = [...codes].sort((a, b) =>
-      a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
-    )
+    const sortedCodes = [...codes].sort(compareTrialBalanceAccountCodes)
     expect(codes).toEqual(sortedCodes)
 
     // Business sequence: COGS 5000 before REVENUE 5001 even though types differ

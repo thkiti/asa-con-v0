@@ -1,5 +1,6 @@
 import type { GlAccountType, Prisma } from "@/generated/prisma/client"
 import type { PrismaClient } from "@/generated/prisma/client"
+import { compareGlAccountCodes } from "@/lib/finance/gl-account-code-order"
 
 export type GlAccountListFilter = {
   accountType?: GlAccountType
@@ -169,7 +170,7 @@ export function buildGlAccountTree(rows: GlAccountListRow[]): GlAccountTreeNode[
   }
 
   const sortNodes = (nodes: GlAccountTreeNode[]) => {
-    nodes.sort((a, b) => a.code.localeCompare(b.code))
+    nodes.sort((a, b) => compareGlAccountCodes(a.code, b.code))
     for (const n of nodes) {
       sortNodes(n.children)
     }

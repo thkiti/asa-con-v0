@@ -59,11 +59,27 @@ function nextId(prefix: string) {
   return `${prefix}-${seq}`
 }
 
+type LegacyRefundRefRow = {
+  id: string
+  refundId: string
+  sourceFileName: string
+  legacyTransNo: string
+  legacyBranchId: string
+  legacyRefundDate: string
+  legacyRefundTime: string | null
+  sourceRowCount: number
+  grossAmount: Prisma.Decimal
+  netAmount: Prisma.Decimal
+  vatAmount: Prisma.Decimal
+  createdAt: Date
+}
+
 export type RefundMockState = MockTxState & {
   sales: SaleRow[]
   payments: PaymentRow[]
   receipts: ReceiptRow[]
   refunds: RefundRow[]
+  legacyRefundReferences: LegacyRefundRefRow[]
 }
 
 const defaultBranchCodes: Record<string, string> = {
@@ -150,6 +166,7 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
     payments: [],
     receipts: [],
     refunds: [],
+    legacyRefundReferences: [],
   }
 
   const tx = {
@@ -184,6 +201,45 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
             ? state.payments.find((p) => p.saleId === sale.id) ?? null
             : undefined
         return { ...sale, receipt, payment }
+      },
+    },
+    legacyRefundReference: {
+      findUnique: async ({
+        where,
+      }: {
+        where: {
+          sourceFileName_legacyBranchId_legacyRefundDate_legacyTransNo?: {
+            sourceFileName: string
+            legacyBranchId: string
+            legacyRefundDate: string
+            legacyTransNo: string
+          }
+        }
+      }) => {
+        const key = where.sourceFileName_legacyBranchId_legacyRefundDate_legacyTransNo
+        if (!key) return null
+        const row = state.legacyRefundReferences.find(
+          (r) =>
+            r.sourceFileName === key.sourceFileName &&
+            r.legacyBranchId === key.legacyBranchId &&
+            r.legacyRefundDate === key.legacyRefundDate &&
+            r.legacyTransNo === key.legacyTransNo
+        )
+        if (!row) return null
+        const refund = state.refunds.find((r) => r.id === row.refundId)
+        return {
+          ...row,
+          refund: refund ? { refundNo: refund.refundNo } : null,
+        }
+      },
+      create: async ({ data }: { data: Omit<LegacyRefundRefRow, "id" | "createdAt"> }) => {
+        const row: LegacyRefundRefRow = {
+          id: nextId("legref"),
+          createdAt: new Date(),
+          ...data,
+        }
+        state.legacyRefundReferences.push(row)
+        return row
       },
     },
     refund: {
@@ -231,12 +287,21 @@ export function createRefundMockTx(initial?: Partial<MockTxState>) {
           amount: Prisma.Decimal
           reasonCode: string | null
           reason: string | null
+          createdAt?: Date
         }
       }) => {
         const row: RefundRow = {
           id: nextId("refund"),
-          createdAt: new Date(),
-          ...data,
+          createdAt: data.createdAt ?? new Date(),
+          refundNo: data.refundNo,
+          kind: data.kind,
+          saleId: data.saleId,
+          branchId: data.branchId,
+          staffId: data.staffId,
+          originalReceiptId: data.originalReceiptId,
+          amount: data.amount,
+          reasonCode: data.reasonCode,
+          reason: data.reason,
         }
         state.refunds.push(row)
         return row

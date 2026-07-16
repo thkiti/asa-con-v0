@@ -65,6 +65,7 @@ jest.mock("@/generated/prisma/client", () => {
     RefundKind: {
       SALE_LINKED: "SALE_LINKED",
       GOODWILL: "GOODWILL",
+      LEGACY_HISTORICAL: "LEGACY_HISTORICAL",
     },
     GlAccountType: {
       ASSET: "ASSET",

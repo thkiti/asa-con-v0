@@ -1,0 +1,29 @@
+import { Prisma } from "@/generated/prisma/client"
+import { LEGACY_SALES_DEFAULT_FILE } from "@/lib/import/legacy-sales/constants"
+import { DEFAULT_ACCOUNT_CODES } from "@/lib/finance/account-map"
+import {
+  DEFAULT_VAT_OUTPUT_STANDARD_RATE_BPS,
+  VAT_OUTPUT_STANDARD_TAX_CODE,
+} from "@/lib/finance/tax-policy/constants"
+
+export const HISTORICAL_POS_REFUND_IMPORT_CONFIRM_TOKEN =
+  "HISTORICAL_POS_REFUND_IMPORT_CONFIRMED"
+
+export const DEFAULT_HISTORICAL_REFUND_FROM = "2026-01-01"
+export const DEFAULT_HISTORICAL_REFUND_BEFORE = "2026-06-01"
+
+export const LEGACY_HISTORICAL_REFUND_REASON_CODE = "LEGACY_HISTORICAL_REFUND"
+export const LEGACY_HISTORICAL_REFUND_REASON =
+  "Legacy historical refund imported from SAE.dbf (money-only; no stock)"
+
+export const HISTORICAL_REFUND_VAT_RATE_BPS = DEFAULT_VAT_OUTPUT_STANDARD_RATE_BPS
+export const HISTORICAL_REFUND_TAX_CODE = VAT_OUTPUT_STANDARD_TAX_CODE
+export const HISTORICAL_REFUND_OUTPUT_VAT_ACCOUNT =
+  DEFAULT_ACCOUNT_CODES.OUTPUT_VAT
+export const HISTORICAL_REFUND_REVENUE_ACCOUNT = DEFAULT_ACCOUNT_CODES.REVENUE
+export const HISTORICAL_REFUND_TENDER_ACCOUNT = DEFAULT_ACCOUNT_CODES.CASH
+
+export const HISTORICAL_REFUND_DEFAULT_SOURCE_FILE = LEGACY_SALES_DEFAULT_FILE
+
+/** Money reconciliation tolerance for gross = net + VAT checks. */
+export const HISTORICAL_REFUND_ROUNDING_TOLERANCE = new Prisma.Decimal("0.02")

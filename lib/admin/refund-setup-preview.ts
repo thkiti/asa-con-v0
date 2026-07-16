@@ -22,7 +22,11 @@ export type RefundSetupPreviewBodyData = {
 }
 
 function formatRefundKindLabel(kind: RefundReceiptPrintContext["kind"]): string {
-  return kind === "SALE_LINKED" ? "SALE LINKED" : "GOODWILL"
+  return kind === "SALE_LINKED"
+    ? "SALE LINKED"
+    : kind === "LEGACY_HISTORICAL"
+      ? "LEGACY HISTORICAL"
+      : "GOODWILL"
 }
 
 function shouldStackLabelValue(label: string, value: string): boolean {

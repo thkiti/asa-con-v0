@@ -1,3 +1,4 @@
+import { compareGlAccountCodes } from "@/lib/finance/gl-account-code-order"
 import type { GlAccountListRow } from "@/lib/finance/gl-account-list"
 
 const THAI_LETTER = /[\u0E00-\u0E7F]/
@@ -51,7 +52,7 @@ export function filterAndSortGlAccountsForInquiry(
 ): GlAccountListRow[] {
   const q = search.trim()
   if (!q) {
-    return [...accounts].sort((a, b) => a.code.localeCompare(b.code))
+    return [...accounts].sort((a, b) => compareGlAccountCodes(a.code, b.code))
   }
 
   return accounts
@@ -64,7 +65,7 @@ export function filterAndSortGlAccountsForInquiry(
     )
     .sort((a, b) => {
       if (a.rank !== b.rank) return a.rank - b.rank
-      return a.account.code.localeCompare(b.account.code)
+      return compareGlAccountCodes(a.account.code, b.account.code)
     })
     .map((row) => row.account)
 }

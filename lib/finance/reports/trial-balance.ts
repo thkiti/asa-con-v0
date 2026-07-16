@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client"
 import type { PrismaClient } from "@/generated/prisma/client"
 import { normalizeDateRange } from "@/lib/reporting/date-range"
+import { compareGlAccountCodes } from "@/lib/finance/gl-account-code-order"
 import { addMoney, toMoney, ZERO } from "../decimal"
 import {
   isTrialBalanceBalanced,
@@ -16,14 +17,8 @@ export type TrialBalancePrisma = Pick<
   "glAccount" | "journalEntryLine" | "accountingPeriod"
 >
 
-/**
- * Business account-code order for Trial Balance rows.
- * Uses numeric-aware string compare so "1000" < "1001" < "1100" < "5001"
- * regardless of account type or insertion order.
- */
-export function compareTrialBalanceAccountCodes(a: string, b: string): number {
-  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
-}
+/** @deprecated Prefer compareGlAccountCodes — kept as TB alias for existing imports/tests. */
+export const compareTrialBalanceAccountCodes = compareGlAccountCodes
 
 async function resolvePeriodId(
   prisma: TrialBalancePrisma,
@@ -62,9 +57,7 @@ function buildJournalEntryWhere(
 }
 
 function sortTrialBalanceRows(rows: TrialBalanceRow[]): TrialBalanceRow[] {
-  return [...rows].sort((a, b) =>
-    compareTrialBalanceAccountCodes(a.accountCode, b.accountCode)
-  )
+  return [...rows].sort((a, b) => compareGlAccountCodes(a.accountCode, b.accountCode))
 }
 
 function hasZeroActivity(debit: Prisma.Decimal, credit: Prisma.Decimal): boolean {

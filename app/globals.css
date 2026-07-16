@@ -762,9 +762,15 @@ span.finance-account .finance-account-code-part {
   color: var(--finance-account-code);
 }
 
-/* Trial Balance — account codes left-aligned for scanability (amounts stay right). */
+/*
+ * Trial Balance uses the GL dropdown account presentation
+ * (FinanceAccountOption → .finance-account-option-code), which is left-aligned.
+ * Keep a scoped fallback if FinanceAccountDisplay appears inside the report.
+ */
+.trial-balance-report .finance-account-option-code,
 .trial-balance-report .finance-account-code,
-.trial-balance-report span.finance-account .finance-account-code-part {
+.trial-balance-report span.finance-account .finance-account-code-part,
+.trial-balance-report .finance-account-display .finance-account-code-part {
   text-align: left;
 }
 
@@ -1855,6 +1861,14 @@ span.finance-account .finance-account-name-part {
 
 .finance-filter-field--period-key {
   width: 7.5rem;
+}
+
+.finance-filter-field--period-year {
+  width: 5.5rem;
+}
+
+.finance-filter-field--period-month {
+  width: 8.5rem;
 }
 
 /* Bank Cash Check — compact period key + wide bank account picker */

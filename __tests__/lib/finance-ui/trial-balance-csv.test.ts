@@ -7,12 +7,36 @@ describe("trialBalanceToCsv", () => {
       filter: { legalEntityCode: "AS", periodKey: "2026-01" },
       rows: [
         {
+          accountCode: "1",
+          accountName: "Assets",
+          accountType: "ASSET",
+          totalDebit: "0",
+          totalCredit: "0",
+          signedBalance: "0",
+        },
+        {
           accountCode: "1000",
           accountName: "Inventory",
           accountType: "ASSET",
           totalDebit: "100",
           totalCredit: "0",
           signedBalance: "100",
+        },
+        {
+          accountCode: "1001",
+          accountName: "Cash",
+          accountType: "ASSET",
+          totalDebit: "50",
+          totalCredit: "0",
+          signedBalance: "50",
+        },
+        {
+          accountCode: "101",
+          accountName: "Reserve",
+          accountType: "EQUITY",
+          totalDebit: "0",
+          totalCredit: "0",
+          signedBalance: "0",
         },
         {
           accountCode: "2100",
@@ -39,10 +63,10 @@ describe("trialBalanceToCsv", () => {
           signedBalance: "80",
         },
       ],
-      totalDebits: "120",
+      totalDebits: "170",
       totalCredits: "120",
-      difference: "0",
-      isBalanced: true,
+      difference: "50",
+      isBalanced: false,
     }
 
     const csv = trialBalanceToCsv(result)
@@ -52,11 +76,14 @@ describe("trialBalanceToCsv", () => {
       .filter((line) => line && !line.startsWith('"TOTAL"') && !line.includes('"Status"'))
 
     expect(bodyLines.map((line) => line.match(/^"([^"]+)"/)?.[1])).toEqual([
+      "1 • Assets",
       "1000 • Inventory",
+      "1001 • Cash",
+      "101 • Reserve",
       "2100 • AP",
       "5000 • COGS",
       "5001 • Sales",
     ])
-    expect(csv).toContain('"120","120","0"')
+    expect(csv).toContain('"170","120","50"')
   })
 })

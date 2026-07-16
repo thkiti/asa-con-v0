@@ -33,6 +33,9 @@ describe("finance visual hierarchy tokens", () => {
     expect(css).toMatch(/\.finance-report-table thead th[\s\S]*background-color: var\(--background\)/)
     expect(css).toMatch(/\.finance-table td\.finance-number[\s\S]*text-align: right/)
     expect(css).toMatch(
+      /\.trial-balance-report \.finance-account-option-code[\s\S]*text-align: left/
+    )
+    expect(css).toMatch(
       /\.trial-balance-report \.finance-account-code[\s\S]*text-align: left/
     )
     expect(css).toMatch(/\.finance-account-separator[\s\S]*opacity: 0\.8/)

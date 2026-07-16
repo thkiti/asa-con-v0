@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import {
   downloadTrialBalanceCsv,
   fetchTrialBalance,
@@ -12,9 +12,15 @@ import {
   FINANCE_REPORT_TITLES,
   formatFinanceReportPeriodLabel,
 } from "@/lib/finance-ui/finance-report-display"
-import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { FinanceAccountOption } from "@/components/finance/FinanceAccountOption"
 import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
+import {
+  buildPeriodKeyFromYearMonth,
+  defaultTrialBalancePeriodParts,
+  formatCompactMonthOptionLabel,
+  trialBalanceYearOptions,
+  TRIAL_BALANCE_MONTH_VALUES,
+} from "@/lib/finance-ui/trial-balance-period"
 import {
   financeAccount,
   financeDiffBalanced,
@@ -35,13 +41,10 @@ import { formatEntityShort } from "@/lib/legal-entity/display"
 type FilterMode = "period" | "dateRange"
 
 export function TrialBalancePage() {
+  const initialPeriod = useMemo(() => defaultTrialBalancePeriodParts(), [])
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [periodKey, setPeriodKey] = useState(() => {
-    const now = new Date()
-    const y = now.getFullYear()
-    const m = String(now.getMonth() + 1).padStart(2, "0")
-    return `${y}-${m}`
-  })
+  const [year, setYear] = useState(initialPeriod.year)
+  const [month, setMonth] = useState(initialPeriod.month)
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const [hideZeroBalances, setHideZeroBalances] = useState(false)
@@ -49,13 +52,19 @@ export function TrialBalancePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const periodKey = buildPeriodKeyFromYearMonth(year, month)
+  const yearOptions = useMemo(() => trialBalanceYearOptions(), [])
+
   const buildFilter = useCallback((): TrialBalanceFilter => {
     const base: TrialBalanceFilter = {
       hideZeroBalances,
     }
     if (filterMode === "period") {
       const normalized = resolveAccountingPeriodKeyFilter(periodKey)
-      return { ...base, ...(normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }) }
+      return {
+        ...base,
+        ...(normalized ? { periodKey: normalized } : { periodKey: periodKey.trim() }),
+      }
     }
     return { ...base, from: from.trim(), to: to.trim() }
   }, [filterMode, from, hideZeroBalances, periodKey, to])
@@ -105,17 +114,46 @@ export function TrialBalancePage() {
           />
 
           {filterMode === "period" ? (
-            <div className="finance-filter-field finance-filter-field--period-key">
-              <label htmlFor="tb-period-key" className="finance-filter-label">
-                Period key
-              </label>
-              <AccountingPeriodInput
-                id="tb-period-key"
-                className="finance-filter-control finance-filter-control--mono"
-                value={periodKey}
-                onChange={setPeriodKey}
-              />
-            </div>
+            <>
+              <div className="finance-filter-field finance-filter-field--period-year">
+                <label htmlFor="tb-period-year" className="finance-filter-label">
+                  Year
+                </label>
+                <select
+                  id="tb-period-year"
+                  className="finance-filter-control finance-filter-select tabular-nums"
+                  value={year}
+                  onChange={(event) => setYear(Number(event.target.value))}
+                  data-testid="trial-balance-year"
+                  aria-label="Year"
+                >
+                  {yearOptions.map((optionYear) => (
+                    <option key={optionYear} value={optionYear}>
+                      {optionYear}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="finance-filter-field finance-filter-field--period-month">
+                <label htmlFor="tb-period-month" className="finance-filter-label">
+                  Month
+                </label>
+                <select
+                  id="tb-period-month"
+                  className="finance-filter-control finance-filter-select"
+                  value={month}
+                  onChange={(event) => setMonth(Number(event.target.value))}
+                  data-testid="trial-balance-month"
+                  aria-label="Month"
+                >
+                  {TRIAL_BALANCE_MONTH_VALUES.map((optionMonth) => (
+                    <option key={optionMonth} value={optionMonth}>
+                      {formatCompactMonthOptionLabel(optionMonth)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           ) : (
             <>
               <div className="finance-filter-field finance-filter-field--date">
@@ -222,9 +260,9 @@ export function TrialBalancePage() {
                 {result.rows.map((row) => (
                   <tr key={row.accountCode}>
                     <td className={financeAccount}>
-                      <FinanceAccountDisplay
-                        accountCode={row.accountCode}
-                        accountName={row.accountName}
+                      <FinanceAccountOption
+                        code={row.accountCode}
+                        name={row.accountName}
                         data-testid={`trial-balance-account-${row.accountCode}`}
                       />
                     </td>
