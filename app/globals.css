@@ -1453,6 +1453,16 @@ span.finance-account .finance-account-name-part {
   flex: 0 0 110px;
 }
 
+.voucher-inquiry-filter-period-year {
+  width: 72px;
+  flex: 0 0 72px;
+}
+
+.voucher-inquiry-filter-period-month {
+  width: 64px;
+  flex: 0 0 64px;
+}
+
 .voucher-inquiry-filter-more {
   width: var(--voucher-inquiry-filter-control-height);
   flex: 0 0 var(--voucher-inquiry-filter-control-height);

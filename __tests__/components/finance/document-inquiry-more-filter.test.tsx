@@ -73,6 +73,29 @@ describe("DocumentInquiryMoreFilter", () => {
     expect(html).not.toContain(voucherInquiryMoreFilterButtonActive)
   })
 
+  it("renders year and month controls in year-month period mode", () => {
+    const html = renderToStaticMarkup(
+      <DocumentInquiryMoreFilter
+        {...baseProps}
+        periodMode="year-month"
+        from=""
+        to=""
+        testIdPrefix="voucher-inquiry"
+      />
+    )
+
+    expect(html).toContain(voucherInquiryFilterPeriodGroup)
+    expect(html).toContain(">Year</span>")
+    expect(html).toContain(">Month</span>")
+    expect(html).toContain('data-testid="voucher-inquiry-filter-period-year"')
+    expect(html).toContain('data-testid="voucher-inquiry-filter-period-month"')
+    expect(html).toContain('value="2026"')
+    expect(html).toContain(">01</option>")
+    expect(html).toContain(">12</option>")
+    expect(html).not.toContain('data-testid="voucher-inquiry-filter-period"')
+    expect(html).toContain('data-testid="voucher-inquiry-more-filter"')
+  })
+
   it("positions the date box below the period group in globals.css", () => {
     const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8")
     const block =

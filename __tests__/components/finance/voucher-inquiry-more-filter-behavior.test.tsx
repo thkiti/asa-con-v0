@@ -125,7 +125,7 @@ describe("VoucherInquiryListPage More filter behavior", () => {
     expect(fromInput.value).toBe("2026-06-01")
   })
 
-  it("closes the date box, clears From/To, and deactivates the dot when Clear is clicked", async () => {
+  it("closes the date box, clears From/To, keeps required period, and deactivates the dot when Clear is clicked", async () => {
     await renderPage()
 
     act(() => {
@@ -139,7 +139,13 @@ describe("VoucherInquiryListPage More filter behavior", () => {
       await Promise.resolve()
     })
 
-    expect(replaceMock).toHaveBeenCalledWith("/finance/vouchers")
+    expect(replaceMock).toHaveBeenCalled()
+    const clearedUrl = String(replaceMock.mock.calls.at(-1)?.[0] ?? "")
+    expect(clearedUrl).toMatch(/\/finance\/vouchers\?/)
+    expect(clearedUrl).toMatch(/periodKey=\d{4}-\d{2}/)
+    expect(clearedUrl).toContain("postingState=all")
+    expect(clearedUrl).not.toContain("from=")
+    expect(clearedUrl).not.toContain("to=")
     expect(panel()).toBeNull()
     expect(moreButton().getAttribute("data-active")).toBe("false")
     expect(moreButton().className).not.toContain(voucherInquiryMoreFilterButtonActive)

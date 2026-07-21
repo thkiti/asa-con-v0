@@ -148,6 +148,12 @@ export const voucherInquiryFilterField =
 export const voucherInquiryFilterPeriod =
   "voucher-inquiry-filter-field voucher-inquiry-filter-period"
 
+export const voucherInquiryFilterPeriodYear =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-period-year"
+
+export const voucherInquiryFilterPeriodMonth =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-period-month"
+
 export const voucherInquiryFilterPeriodGroup =
   "voucher-inquiry-filter-period-group shrink-0"
 

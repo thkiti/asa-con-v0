@@ -45,6 +45,7 @@ import {
   INQUIRY_FILTER_DISMISS_ATTR,
   useInquiryMoreFilterOpen,
 } from "@/lib/finance-ui/inquiry-more-filter-state"
+import { defaultTrialBalancePeriodParts } from "@/lib/finance-ui/trial-balance-period"
 import {
   buildVoucherInquiryReturnPath,
   buildVoucherInquirySearchParams,
@@ -68,9 +69,22 @@ import {
   themeTextSecondary,
 } from "@/lib/theme/theme-classes"
 
+function defaultInquiryPeriodKey(): string {
+  return defaultTrialBalancePeriodParts().periodKey
+}
+
 const emptyFilter = (): FinanceVoucherInquiryFilter => ({
   postingState: "all",
+  periodKey: defaultInquiryPeriodKey(),
 })
+
+function withRequiredPeriod(
+  filter: FinanceVoucherInquiryFilter
+): FinanceVoucherInquiryFilter {
+  const periodKey = filter.periodKey?.trim()
+  if (periodKey) return filter
+  return { ...filter, periodKey: defaultInquiryPeriodKey() }
+}
 
 type VoucherInquiryResultsTableProps = {
   documents: FinanceDocumentInquiryRow[]
@@ -170,11 +184,13 @@ export function VoucherInquiryListPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const appliedFilter = useMemo(
-    () => parseVoucherInquiryFilterFromSearchParams(searchParams),
+    () => withRequiredPeriod(parseVoucherInquiryFilterFromSearchParams(searchParams)),
     [searchParams]
   )
 
-  const [draft, setDraft] = useState<FinanceVoucherInquiryFilter>(appliedFilter)
+  const [draft, setDraft] = useState<FinanceVoucherInquiryFilter>(() =>
+    withRequiredPeriod(appliedFilter)
+  )
   const [inquiryNo, setInquiryNo] = useState(() => resolveVoucherInquiryNoDisplay(appliedFilter))
   const [documents, setDocuments] = useState<FinanceDocumentInquiryRow[]>([])
   const [total, setTotal] = useState(0)
@@ -227,7 +243,7 @@ export function VoucherInquiryListPage() {
 
   const applyFilters = () => {
     setIsMoreFilterOpen(false)
-    const next = applyVoucherInquiryNoToFilter(draft, inquiryNo)
+    const next = applyVoucherInquiryNoToFilter(withRequiredPeriod(draft), inquiryNo)
     const params = buildVoucherInquirySearchParams(next)
     const query = params.toString()
     router.replace(query ? `${pathname}?${query}` : pathname)
@@ -235,9 +251,12 @@ export function VoucherInquiryListPage() {
 
   const clearFilters = () => {
     setIsMoreFilterOpen(false)
-    setDraft(emptyFilter())
+    const cleared = emptyFilter()
+    setDraft(cleared)
     setInquiryNo("")
-    router.replace(pathname)
+    const params = buildVoucherInquirySearchParams(cleared)
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname)
   }
 
   return (
@@ -262,11 +281,15 @@ export function VoucherInquiryListPage() {
           </select>
         </label>
         <DocumentInquiryMoreFilter
-          periodKey={draft.periodKey ?? ""}
+          periodKey={draft.periodKey ?? defaultInquiryPeriodKey()}
           onPeriodKeyChange={(value) =>
-            setDraft((prev) => ({ ...prev, periodKey: value || undefined }))
+            setDraft((prev) => ({
+              ...prev,
+              periodKey: value.trim() || defaultInquiryPeriodKey(),
+            }))
           }
           periodTestId="voucher-inquiry-filter-period"
+          periodMode="year-month"
           from={draft.from ?? ""}
           to={draft.to ?? ""}
           onFromChange={(value) =>
