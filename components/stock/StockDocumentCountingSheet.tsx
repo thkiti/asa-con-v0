@@ -35,6 +35,8 @@ export type StockDocumentCountingSheetProps = {
   staffOperationalPhase?: DeriveBusinessPhaseInput | null
   /** Business phase title shown in staff count mode, e.g. ASAS • CNT */
   staffPhaseTitle?: string | null
+  /** Qty column meaning — CNT uses Physical Count Qty. */
+  qtyColumnLabel?: string
 }
 
 export function StockDocumentCountingSheet({
@@ -47,6 +49,7 @@ export function StockDocumentCountingSheet({
   staffCountBanner = null,
   staffOperationalPhase = null,
   staffPhaseTitle = null,
+  qtyColumnLabel = "Physical Count Qty",
 }: StockDocumentCountingSheetProps) {
   const staffCountMode = staffCountBanner !== null
 
@@ -130,6 +133,7 @@ export function StockDocumentCountingSheet({
                 activeHookGroup={activeHookGroup}
                 readOnly={readOnly}
                 onLineChange={onLineChange}
+                qtyColumnLabel={qtyColumnLabel}
               />
             </div>
             <div className="min-h-0 lg:col-span-1">
@@ -177,6 +181,7 @@ export function StockDocumentCountingSheet({
             activeHookGroup={activeHookGroup}
             readOnly={readOnly}
             onLineChange={onLineChange}
+            qtyColumnLabel={qtyColumnLabel}
           />
         </div>
         <div className="lg:col-span-1">

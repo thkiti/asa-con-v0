@@ -1,23 +1,23 @@
 /** Shared Tailwind classes for compact counting sheet readability. */
 
 export const countingBlockTableClass =
-  "w-full shrink-0 text-left text-xs text-zinc-950"
+  "w-full shrink-0 text-left text-xs text-zinc-900"
 
 export const countingBlockHeadClass =
   "border-b border-zinc-300 bg-zinc-100 text-zinc-900"
 
 /** Sticky within each counting block while scrolling (freeze panes). */
 export const countingBlockHeadCellClass =
-  "sticky top-0 z-[1] bg-zinc-100 px-1 py-0.5 font-semibold whitespace-nowrap shadow-[0_1px_0_0_rgb(212_212_216)]"
+  "sticky top-0 z-[1] bg-zinc-100 px-1 py-0.5 font-semibold whitespace-nowrap text-zinc-900 shadow-[0_1px_0_0_rgb(212_212_216)]"
 
 export const countingCellHookClass =
-  "px-1 py-0.5 whitespace-nowrap tabular-nums font-semibold text-zinc-950"
+  "px-1 py-0.5 whitespace-nowrap tabular-nums font-semibold text-zinc-900"
 
 export const countingCellCodeClass =
-  "px-1 py-0.5 whitespace-nowrap font-medium text-zinc-950"
+  "px-1 py-0.5 whitespace-nowrap font-medium text-zinc-900"
 
 export const countingQtyInputClass =
-  "w-14 rounded border border-zinc-400 bg-white px-1 py-0.5 text-right text-sm font-semibold text-zinc-950 tabular-nums focus:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-400 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-100 disabled:text-zinc-800 disabled:opacity-100"
+  "w-14 rounded border border-zinc-400 bg-white px-1 py-0.5 text-right text-sm font-semibold text-zinc-900 tabular-nums focus:border-zinc-700 focus:outline-none focus:ring-1 focus:ring-zinc-400 disabled:cursor-not-allowed disabled:border-zinc-300 disabled:bg-zinc-100 disabled:text-zinc-800 disabled:opacity-100"
 
 export const countingBlockShellClass =
   "min-w-[9rem] shrink-0 rounded border border-zinc-300 bg-white shadow-sm counting-block-shell"
@@ -26,7 +26,7 @@ export const countingBlockShellShoeClass =
   "min-w-[11rem] max-w-[14rem] shrink-0 rounded border border-zinc-300 bg-white shadow-sm counting-block-shell"
 
 export const countingCellNameClass =
-  "max-w-[6rem] truncate px-1 py-0.5 font-medium text-zinc-950"
+  "max-w-[6rem] truncate px-1 py-0.5 font-medium text-zinc-900"
 
 export const countingShoeScrollClass =
   "max-w-full overflow-x-auto pb-1"
@@ -40,7 +40,7 @@ export const countingSummaryScrollClass =
 export const countingSummaryTotalFooterClass =
   "shrink-0 border-t-2 border-zinc-400 bg-zinc-100"
 
-export const countingSummaryTotalRowClass = "font-bold text-zinc-950"
+export const countingSummaryTotalRowClass = "font-bold text-zinc-900"
 
 export const countingSummaryHeadClass =
   "border-b border-zinc-300 bg-zinc-100 px-3 py-2"
@@ -49,10 +49,10 @@ export const countingSummaryTableHeadClass =
   "border-b border-zinc-300 bg-zinc-100 text-zinc-900"
 
 export const countingSummaryBodyCellClass =
-  "px-2 py-1.5 text-zinc-950 tabular-nums"
+  "px-2 py-1.5 text-zinc-900 tabular-nums"
 
 export const countingSummaryGroupCellClass =
-  "px-2 py-1.5 font-mono text-xs font-medium text-zinc-950"
+  "px-2 py-1.5 font-mono text-xs font-medium text-zinc-900"
 
 /** Staff count mode — secondary 2-row header container (identity + controls). */
 export const stockCountHeaderBoxClass =

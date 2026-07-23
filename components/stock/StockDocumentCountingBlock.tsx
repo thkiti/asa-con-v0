@@ -24,6 +24,8 @@ export type StockDocumentCountingBlockProps = {
   hookGroup?: CountingHookGroup
   readOnly: boolean
   onLineChange: (key: string, patch: Partial<EditorLineRowVM>) => void
+  /** Column header; CNT uses Physical Count meaning. */
+  qtyColumnLabel?: string
 }
 
 function codeDisplay(line: EditorLineRowVM, showHook: boolean, hookGroup?: CountingHookGroup): string {
@@ -36,10 +38,14 @@ function codeDisplay(line: EditorLineRowVM, showHook: boolean, hookGroup?: Count
   return line.displayCode || line.productCode || "—"
 }
 
-function qtyAriaLabel(line: EditorLineRowVM, code: string): string {
+function qtyAriaLabel(
+  line: EditorLineRowVM,
+  code: string,
+  qtyColumnLabel: string
+): string {
   const name = line.productName?.trim()
-  if (name) return `จำนวน ${name} รหัส ${code}`
-  return `จำนวน รหัส ${code}`
+  if (name) return `${qtyColumnLabel} ${name} รหัส ${code}`
+  return `${qtyColumnLabel} รหัส ${code}`
 }
 
 /** Wired to qty input — exported for unit tests without a DOM environment. */
@@ -58,6 +64,7 @@ export function StockDocumentCountingBlock({
   hookGroup,
   readOnly,
   onLineChange,
+  qtyColumnLabel = "จำนวน",
 }: StockDocumentCountingBlockProps) {
   if (rows.length === 0) return null
 
@@ -72,7 +79,9 @@ export function StockDocumentCountingBlock({
           {showProductName ? (
             <th className={countingBlockHeadCellClass}>Name</th>
           ) : null}
-          <th className={`${countingBlockHeadCellClass} text-right`}>จำนวน</th>
+          <th className={`${countingBlockHeadCellClass} text-right`}>
+            {qtyColumnLabel}
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -112,7 +121,7 @@ export function StockDocumentCountingBlock({
                   className={countingQtyInputClass}
                   value={line.qty}
                   disabled={readOnly}
-                  aria-label={qtyAriaLabel(line, code)}
+                  aria-label={qtyAriaLabel(line, code, qtyColumnLabel)}
                   {...{ [COUNTING_QTY_INPUT_ATTR]: "true" }}
                   onChange={(e) =>
                     applyCountingQtyChange(line.key, e.target.value, onLineChange)

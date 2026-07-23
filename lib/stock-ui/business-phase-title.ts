@@ -5,7 +5,14 @@ import {
 } from "@/lib/legal-entity"
 
 /** Staff-facing business phase codes (MC-1F locked vocabulary). */
-export type BusinessPhaseCode = "ORD" | "ORS" | "ORI" | "DEY" | "CNT" | "ADJ"
+export type BusinessPhaseCode =
+  | "ORD"
+  | "ORS"
+  | "ORI"
+  | "DEY"
+  | "CNT"
+  | "ADJ"
+  | "END"
 
 export type DeriveBusinessPhaseInput = {
   docType: DocType
@@ -71,6 +78,8 @@ export function deriveBusinessPhaseCode(
       return purchasePhase(status)
     case "TRANSFER_IN":
       return "ORI"
+    case "END":
+      return "END"
     default:
       return "ORD"
   }
@@ -90,7 +99,8 @@ export function usesBusinessPhaseTitle(docType: DocType): boolean {
     docType === "TRANSFER_OUT" ||
     docType === "ADJUSTMENT" ||
     docType === "PURCHASE" ||
-    docType === "TRANSFER_IN"
+    docType === "TRANSFER_IN" ||
+    docType === "END"
   )
 }
 

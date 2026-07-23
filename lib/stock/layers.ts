@@ -11,7 +11,10 @@ export type CreateLayerInput = {
   refId: string
 }
 
-/** Create one FIFO cost layer (inbound). */
+/**
+ * FIFO cost layer helper retained for future Cost Calculation.
+ * Per-event issue/receive no longer call this — operational workflows must not.
+ */
 export async function createStockLayer(
   tx: Prisma.TransactionClient,
   input: CreateLayerInput

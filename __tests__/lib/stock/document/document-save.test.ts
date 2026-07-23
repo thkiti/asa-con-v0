@@ -123,7 +123,9 @@ describe("saveDocument", () => {
         },
       ],
     })
-    const { tx } = createDocumentMockTx(initial)
+    const { tx } = createDocumentMockTx(initial, [
+      { id: "branch-shop", code: "SH001", type: "SH", isActive: true, deleted: false },
+    ])
 
     await expect(
       saveDocument({
@@ -132,6 +134,7 @@ describe("saveDocument", () => {
         date: "2026-02-01",
         branchId: "branch-shop",
         fromLocId: "branch-shop",
+        legalEntityCode: "AS",
         lines: [{ productId: "p1", qty: 1 }],
         tx,
       })
@@ -167,7 +170,9 @@ describe("saveDocument", () => {
         },
       ],
     })
-    const { tx, getDocument } = createDocumentMockTx(initial)
+    const { tx, getDocument } = createDocumentMockTx(initial, [
+      { id: "branch-shop", code: "SH001", type: "SH", isActive: true, deleted: false },
+    ])
 
     const saved = await saveDocument({
       id: "doc-1",
@@ -175,6 +180,7 @@ describe("saveDocument", () => {
       date: "2026-03-01",
       branchId: "branch-shop",
       fromLocId: "branch-shop",
+      legalEntityCode: "AS",
       lines: [{ productId: "p-new", qty: 1 }],
       tx,
     })
@@ -186,14 +192,17 @@ describe("saveDocument", () => {
   })
 
   it("persists reviewPostingDelta on ADJUSTMENT opening-count lines", async () => {
-    const { tx, getDocument } = createDocumentMockTx()
+    const { tx, getDocument } = createDocumentMockTx(undefined, [
+      { id: "branch-shop", code: "SH001", type: "SH", isActive: true, deleted: false },
+    ])
 
     const saved = await saveDocument({
       docType: "ADJUSTMENT",
       date: "2026-06-10",
       branchId: "branch-shop",
       fromLocId: "branch-shop",
-      lines: [{ productId: "p1", qty: 100, reviewPostingDelta: 100 }],
+      legalEntityCode: "AS",
+      lines: [{ productId: "p1", qty: 100, endingQty: 100, reviewPostingDelta: 100 }],
       tx,
     })
 
@@ -208,17 +217,18 @@ describe("saveDocument", () => {
 
   it("rejects invalid HO↔HO transfer route", async () => {
     const { tx } = createDocumentMockTx(undefined, [
-      { id: "ho-1", type: "HO", isActive: true, deleted: false },
-      { id: "ho-2", type: "HO", isActive: true, deleted: false },
+      { id: "ho-1", code: "HO999", type: "HO", isActive: true, deleted: false },
+      { id: "ho-2", code: "HO998", type: "HO", isActive: true, deleted: false },
     ])
 
     await expect(
       saveDocument({
-        docType: "TRANSFER_IN",
+        docType: "TRANSFER_OUT",
         date: "2026-02-01",
         branchId: "ho-1",
         fromLocId: "ho-1",
         toLocId: "ho-2",
+        legalEntityCode: "AD",
         lines: [{ productId: "p1", qty: 1 }],
         tx,
       })

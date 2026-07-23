@@ -26,7 +26,9 @@
     "uat:finance:reset:dry-run": "npx tsx scripts/uat/finance-uat-reset.ts",
     "uat:finance:reset:full": "npx tsx scripts/uat/finance-uat-reset-full.ts",
     "uat:finance:verify": "npx tsx scripts/uat/finance-uat-verify.ts",
-    "repair:mjv-pdf": "npx tsx scripts/repair-manual-journal-archived-pdfs.ts"
+    "repair:mjv-pdf": "npx tsx scripts/repair-manual-journal-archived-pdfs.ts",
+    "stock:cleanup-retired-tx:dry-run": "npx tsx scripts/cleanup-retired-stock-transactions.ts",
+    "stock:cleanup-retired-tx": "npx tsx scripts/cleanup-retired-stock-transactions.ts --execute --confirm=STOCK_TX_RETIRED_CLEANUP_CONFIRMED"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -45,6 +47,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-qr-code": "^2.1.1",
+    "server-only": "^0.0.1",
     "sharp": "^0.34.5"
   },
   "devDependencies": {

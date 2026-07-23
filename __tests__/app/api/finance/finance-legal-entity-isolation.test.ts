@@ -89,9 +89,13 @@ import { listBankAccounts } from "@/lib/finance/bank-account"
 import { listFinanceDocuments } from "@/lib/finance/inquiry/finance-document-inquiry"
 import { prisma } from "@/lib/shared/prisma"
 
-jest.mock("@/lib/finance/inquiry/finance-document-inquiry", () => ({
-  listFinanceDocuments: jest.fn(),
-}))
+jest.mock("@/lib/finance/inquiry/finance-document-inquiry", () => {
+  const actual = jest.requireActual("@/lib/finance/inquiry/finance-document-inquiry")
+  return {
+    ...actual,
+    listFinanceDocuments: jest.fn(),
+  }
+})
 
 const mockList = listManualJournalEntries as jest.Mock
 const mockCreate = createManualJournalEntryDraft as jest.Mock
@@ -202,7 +206,7 @@ describe("finance legal entity isolation", () => {
     mockVoucherList.mockResolvedValue({ documents: [], total: 0 })
 
     const req = new NextRequest(
-      "http://localhost/api/finance/vouchers?legalEntityCode=AS&postingState=all"
+      "http://localhost/api/finance/vouchers?legalEntityCode=AS&refType=COL&postingState=all"
     )
     const res = await voucherListRoute(req)
 

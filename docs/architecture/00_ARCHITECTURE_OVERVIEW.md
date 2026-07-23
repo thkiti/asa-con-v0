@@ -22,6 +22,7 @@ They explain **why** `asa-con-v0` uses:
 |----------|----------|
 | [00_ARCHITECTURE_OVERVIEW.md](./00_ARCHITECTURE_OVERVIEW.md) | This file — principles and summary |
 | [01_ASAS_ASAD_ENTITY_MODEL.md](./01_ASAS_ASAD_ENTITY_MODEL.md) | Entity model, module classification, ownership, menu, identity leakage |
+| [02_PERIOD_STOCK_LEDGER_DECISION.md](./02_PERIOD_STOCK_LEDGER_DECISION.md) | Period-based stock ledger — per-event StockTransaction retired |
 
 Implementation detail for schema and migration gates: [migration/MC1A_MINIMAL_LEGAL_ENTITY_DESIGN.md](../migration/MC1A_MINIMAL_LEGAL_ENTITY_DESIGN.md), [migration/MC1D_LEGAL_ENTITY_IMPLEMENTATION_PLAN.md](../migration/MC1D_LEGAL_ENTITY_IMPLEMENTATION_PLAN.md).
 

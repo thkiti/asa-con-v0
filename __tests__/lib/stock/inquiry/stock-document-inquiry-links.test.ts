@@ -1,6 +1,7 @@
 import {
   buildStockDocumentInquiryPath,
   buildStockDocumentInquiryPrintPath,
+  buildStockDocumentOperationalPath,
 } from "@/lib/stock/inquiry/stock-document-inquiry-links"
 
 describe("stock document inquiry links", () => {
@@ -16,5 +17,14 @@ describe("stock document inquiry links", () => {
     )
     expect(buildStockDocumentInquiryPrintPath("")).toBeNull()
     expect(buildStockDocumentInquiryPrintPath("  ")).toBeNull()
+  })
+
+  it("routes END operational detail to end path", () => {
+    expect(buildStockDocumentOperationalPath("doc-1")).toBe(
+      "/shop/stock-documents/doc-1"
+    )
+    expect(buildStockDocumentOperationalPath("end-1", "END")).toBe(
+      "/shop/stock-documents/end/end-1"
+    )
   })
 })

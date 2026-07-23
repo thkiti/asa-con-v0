@@ -58,6 +58,12 @@ import { fetchFinanceDocuments } from "@/lib/finance-ui/voucher-inquiry"
 
 const mockFetchFinanceDocuments = fetchFinanceDocuments as jest.Mock
 
+const resultsTableProps = {
+  page: 1,
+  totalPages: 1,
+  onPageChange: () => undefined,
+}
+
 const recListRow = {
   id: "voucher-rec-1",
   rowKind: "posted" as const,
@@ -291,6 +297,7 @@ describe("FinanceVoucherInquiryPage", () => {
     expect(html).toContain('data-testid="voucher-inquiry-filters"')
     expect(html).toContain("voucher-inquiry-filter-bar")
     expect(html).toContain('data-testid="voucher-inquiry-filter-branch"')
+    expect(html).toContain("voucher-inquiry-filter-branch-readable")
     expect(html).toContain('data-testid="voucher-inquiry-filter-period-year"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-period-month"')
     expect(html).toContain(">Year</span>")
@@ -301,7 +308,12 @@ describe("FinanceVoucherInquiryPage", () => {
     expect(html).toContain('data-active="true"')
     expect(html).toContain("voucher-inquiry-more-filter-button--active")
     expect(html).toContain('data-testid="voucher-inquiry-filter-document-type"')
+    expect(html).toContain("เลือก Doc Type")
+    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS.every((option) => option.label !== "All")).toBe(
+      true
+    )
     expect(html).toContain('data-testid="voucher-inquiry-filter-no"')
+    expect(html).toContain("voucher-inquiry-filter-no-compact")
     expect(html).toContain('data-testid="voucher-inquiry-filter-status"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-posting-state"')
     expect(html).toContain(financeFilterSelect)
@@ -333,15 +345,22 @@ describe("VoucherInquiryListPage", () => {
         documents={[listRow]}
         total={1}
         listReturnPath="/finance/vouchers"
+        {...resultsTableProps}
       />
     )
     expect(html).toContain('data-testid="voucher-inquiry-table"')
+    expect(html).toContain('data-testid="voucher-inquiry-page-summary"')
+    expect(html).toContain("1 รายการ • หน้า 1 / 1")
     expect(html).toContain("Doc No.")
     expect(html).toContain("Voucher No.")
-    expect(html).toContain("Journal Entry")
+    expect(html).not.toContain("Journal Entry")
     expect(html).toContain("COL-260001")
     expect(html).toContain("V-2026-06-00001")
     expect(html).toContain('data-testid="voucher-inquiry-journal-voucher-pickup-1"')
+    expect(html).toContain("/finance/journal-entries/journal-pickup-1")
+    expect(html).toMatch(/>V-2026-06-00001<\/a>/)
+    expect(html).not.toContain("journal-…")
+    expect(html).not.toContain("journal-p…")
     expect(html).toContain('data-testid="voucher-inquiry-view-voucher-pickup-1"')
     expect(html).toContain("Inquiry")
     expect(html).toContain("14/06/2026")
@@ -352,6 +371,27 @@ describe("VoucherInquiryListPage", () => {
     expect(html).not.toContain(">Type<")
     expect(html).not.toContain("text-zinc-")
     expect(html).toContain("text-secondary")
+  })
+
+  it("shows voucher number as plain text when journal entry is missing", () => {
+    const html = renderToStaticMarkup(
+      <VoucherInquiryResultsTable
+        documents={[
+          {
+            ...listRow,
+            id: "voucher-no-journal",
+            journalEntryId: null,
+            voucherNo: "V-2026-06-00999",
+          },
+        ]}
+        total={1}
+        listReturnPath="/finance/vouchers"
+        {...resultsTableProps}
+      />
+    )
+    expect(html).toContain("V-2026-06-00999")
+    expect(html).not.toContain('data-testid="voucher-inquiry-journal-voucher-no-journal"')
+    expect(html).not.toContain("/finance/journal-entries/")
   })
 
   it("renders PDF status dots with accessible labels", () => {
@@ -378,6 +418,7 @@ describe("VoucherInquiryListPage", () => {
         documents={[unpostedMjvRow]}
         total={1}
         listReturnPath="/finance/vouchers"
+        {...resultsTableProps}
       />
     )
     expect(html).toContain('data-testid="voucher-inquiry-pdf-mje-draft-1"')
@@ -393,6 +434,7 @@ describe("VoucherInquiryListPage", () => {
         documents={[postedMjvWithPdfRow]}
         total={1}
         listReturnPath="/finance/vouchers"
+        {...resultsTableProps}
       />
     )
     expect(html).toContain('data-testid="voucher-inquiry-pdf-mje-posted-1"')
@@ -408,6 +450,7 @@ describe("VoucherInquiryListPage", () => {
         documents={[recListRow, refListRow]}
         total={2}
         listReturnPath="/finance/vouchers"
+        {...resultsTableProps}
       />
     )
     expect(html).toContain("REC-SH001-202606-0001")
@@ -422,12 +465,30 @@ describe("VoucherInquiryListPage", () => {
     expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-')
   })
 
+  it("shows pagination controls when there are multiple pages", () => {
+    const html = renderToStaticMarkup(
+      <VoucherInquiryResultsTable
+        documents={[listRow]}
+        total={224}
+        listReturnPath="/finance/vouchers"
+        page={1}
+        totalPages={5}
+        onPageChange={() => undefined}
+      />
+    )
+    expect(html).toContain("224 รายการ • หน้า 1 / 5")
+    expect(html).toContain('data-testid="voucher-inquiry-pagination"')
+    expect(html).toContain('data-testid="voucher-inquiry-page-prev"')
+    expect(html).toContain('data-testid="voucher-inquiry-page-next"')
+  })
+
   it("renders PAV, REV, and PCV rows with operational inquiry and print paths", () => {
     const html = renderToStaticMarkup(
       <VoucherInquiryResultsTable
         documents={[postedPavRow, postedRevRow, postedPcvRow]}
         total={3}
         listReturnPath="/finance/vouchers"
+        {...resultsTableProps}
       />
     )
     expect(html).toContain("PAV-260001")
@@ -466,10 +527,14 @@ describe("VoucherInquiryListPage", () => {
     mockFetchFinanceDocuments.mockResolvedValue({ documents: [], total: 0 })
     const html = renderToStaticMarkup(<VoucherInquiryListPage />)
     expect(html).toContain("Doc Type")
+    expect(html).toContain("เลือก Doc Type")
+    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS.every((option) => option.label !== "All")).toBe(
+      true
+    )
     for (const option of VOUCHER_INQUIRY_REF_TYPE_OPTIONS) {
       expect(html).toContain(option.label)
     }
-    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS).toHaveLength(10)
+    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS).toHaveLength(9)
     expect(html).toContain("OPB • Opening Balance")
   })
 })

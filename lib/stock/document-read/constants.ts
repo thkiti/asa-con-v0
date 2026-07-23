@@ -5,6 +5,7 @@ export const SHOP_STOCK_DOC_TYPES: readonly DocType[] = [
   "TRANSFER_OUT",
   "PERFORMANCE",
   "ADJUSTMENT",
+  "END",
 ] as const
 
 export const DEFAULT_LIST_LIMIT = 50

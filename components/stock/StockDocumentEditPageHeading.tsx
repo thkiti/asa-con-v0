@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import { fetchStockDocumentDetail } from "@/lib/stock-ui/fetchers"
 import { formatStaffFacingDocumentTitle } from "@/lib/stock-ui/format"
-import { fetchShopSession } from "@/lib/stock-ui/session"
 
 type StockDocumentEditPageHeadingProps = {
   documentId: string
@@ -20,16 +20,16 @@ export function StockDocumentEditPageHeading({
 
     async function load() {
       try {
-        const session = await fetchShopSession()
-        const viewerEntityCode =
-          session.documentEntityCode ?? DEFAULT_DOCUMENT_ENTITY_CODE
         const detail = await fetchStockDocumentDetail(documentId)
         if (cancelled) return
+        const entityCode =
+          parseDocumentEntityCode(detail.legalEntityCode) ??
+          DEFAULT_DOCUMENT_ENTITY_CODE
         setTitle(
           formatStaffFacingDocumentTitle(
             detail.docType,
             detail.status,
-            viewerEntityCode
+            entityCode
           )
         )
       } catch {

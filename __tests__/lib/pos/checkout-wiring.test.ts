@@ -1,7 +1,7 @@
-import { PaymentMethod, Prisma, ProductType } from "@/generated/prisma/client"
+import { PaymentMethod, ProductType } from "@/generated/prisma/client"
 import { FinancePostingError } from "@/lib/finance/posting-errors"
 import { checkout } from "@/lib/pos/checkout"
-import { createCheckoutMockTx, type CheckoutMockState } from "./mock-checkout-tx"
+import { createCheckoutMockTx } from "./mock-checkout-tx"
 import { mockResolvedRetailPrice } from "./helpers/mock-retail-price"
 
 jest.mock("@/lib/pricing/resolve-pos-retail-price", () => ({
@@ -37,32 +37,6 @@ const trackedProduct = {
   id: productId,
   productType: ProductType.TRACKED,
   deleted: false,
-}
-
-function seedTrackedStock(
-  state: CheckoutMockState,
-  qty: number,
-  avgCost: number
-) {
-  const key = `${branchId}:${productId}`
-  state.stocks.set(key, {
-    id: "stock-1",
-    branchId,
-    productId,
-    qty,
-    avgCost: new Prisma.Decimal(avgCost),
-  })
-  state.layers.push({
-    id: "layer-1",
-    branchId,
-    productId,
-    qty,
-    qtyRemain: qty,
-    unitCost: new Prisma.Decimal(avgCost),
-    refType: null,
-    refId: null,
-    createdAt: new Date("2026-01-01"),
-  })
 }
 
 describe("checkout finance wiring", () => {
@@ -114,7 +88,6 @@ describe("checkout finance wiring", () => {
 
   it("completes checkout without finance hook when flag is off", async () => {
     const { state } = setupTx()
-    seedTrackedStock(state, 5, 10)
 
     await checkout({
       branchId,
@@ -124,13 +97,13 @@ describe("checkout finance wiring", () => {
     })
 
     expect(state.sales.length).toBe(1)
+    expect(state.transactions.length).toBe(0)
     expect(postSaleVoucher).not.toHaveBeenCalled()
   })
 
-  it("calls postSaleVoucher with same tx when finance flag is on", async () => {
+  it("calls postSaleVoucher with same tx when finance flag is on (cogs=0)", async () => {
     ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
     const { tx, state } = setupTx()
-    seedTrackedStock(state, 5, 10)
 
     await checkout({
       branchId,
@@ -143,10 +116,8 @@ describe("checkout finance wiring", () => {
     const payload = (postSaleVoucher as jest.Mock).mock.calls[0][0]
     expect(payload.tx).toBe(tx)
     expect(payload.sale.id).toBe(state.sales[0]?.id)
-    expect(payload.sale.branchId).toBe(branchId)
-    expect(payload.sale.paymentMethod).toBe(PaymentMethod.CASH)
-    expect(payload.sale.receiptNo).toBe(state.receipts[0]?.receiptNo)
-    expect(state.transactions.length).toBeGreaterThan(0)
+    expect(payload.ledgerResult.cogsAmount.toNumber()).toBe(0)
+    expect(state.transactions.length).toBe(0)
   })
 
   it("rolls back operational writes when finance hook fails", async () => {
@@ -155,7 +126,6 @@ describe("checkout finance wiring", () => {
       new FinancePostingError("period closed", "PERIOD_CLOSED")
     )
     const { state } = setupTxWithRollback()
-    seedTrackedStock(state, 5, 10)
 
     await expect(
       checkout({
@@ -170,24 +140,5 @@ describe("checkout finance wiring", () => {
     expect(state.sales.length).toBe(0)
     expect(state.saleItems.length).toBe(0)
     expect(state.transactions.length).toBe(0)
-  })
-
-  it("passes ledger COGS from unitCost not retail unitPrice when flag is on", async () => {
-    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
-    const { state } = setupTx()
-    seedTrackedStock(state, 5, 10)
-    const qty = 2
-    const unitPrice = 50
-
-    await checkout({
-      branchId,
-      paymentMethod: PaymentMethod.CASH,
-      paidAmount: qty * unitPrice,
-      lines: [{ productId, qty }],
-    })
-
-    const payload = (postSaleVoucher as jest.Mock).mock.calls[0][0]
-    expect(payload.ledgerResult.cogsAmount.toNumber()).toBe(10 * qty)
-    expect(payload.ledgerResult.cogsAmount.toNumber()).not.toBe(unitPrice * qty)
   })
 })

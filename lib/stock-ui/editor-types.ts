@@ -27,6 +27,8 @@ export type StockDocumentEditorStateVM = {
   status: DocStatus
   date: string
   branchId: string
+  /** Document owner entity — drives phase headings (not session default). */
+  legalEntityCode: string
   fromLocId: string
   toLocId: string
   readOnly: boolean

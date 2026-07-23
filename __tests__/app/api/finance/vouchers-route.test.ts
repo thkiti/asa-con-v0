@@ -5,9 +5,13 @@ import { getSession, requirePeriodAdminActor } from "@/lib/auth"
 import { prisma } from "@/lib/shared/prisma"
 import { PeriodAdminAuthError } from "@/lib/auth"
 
-jest.mock("@/lib/finance/inquiry/finance-document-inquiry", () => ({
-  listFinanceDocuments: jest.fn(),
-}))
+jest.mock("@/lib/finance/inquiry/finance-document-inquiry", () => {
+  const actual = jest.requireActual("@/lib/finance/inquiry/finance-document-inquiry")
+  return {
+    ...actual,
+    listFinanceDocuments: jest.fn(),
+  }
+})
 
 jest.mock("@/lib/auth", () => {
   const actual = jest.requireActual("@/lib/auth")
@@ -64,7 +68,7 @@ describe("GET finance/vouchers", () => {
     })
 
     const req = new NextRequest(
-      "http://localhost/api/finance/vouchers?documentNo=COL-260001&from=2026-06-01&to=2026-06-30&postingState=posted&branchId=branch-1"
+      "http://localhost/api/finance/vouchers?refType=COL&documentNo=COL-260001&from=2026-06-01&to=2026-06-30&postingState=posted&branchId=branch-1"
     )
     const res = await GET(req)
 
@@ -83,6 +87,7 @@ describe("GET finance/vouchers", () => {
       prisma,
       expect.objectContaining({
         legalEntityCode: "AS",
+        refType: "COL",
         refNo: "COL-260001",
         postingState: "posted",
         branchId: "branch-1",
@@ -90,12 +95,40 @@ describe("GET finance/vouchers", () => {
     )
   })
 
+  it("rejects unscoped All-document requests without Doc Type", async () => {
+    const req = new NextRequest(
+      "http://localhost/api/finance/vouchers?periodKey=2026-06&postingState=all"
+    )
+    const res = await GET(req)
+
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "Doc Type is required",
+      code: "VALIDATION_ERROR",
+    })
+    expect(mockListFinanceDocuments).not.toHaveBeenCalled()
+  })
+
+  it("rejects REC inquiries without a specific Shop", async () => {
+    const req = new NextRequest(
+      "http://localhost/api/finance/vouchers?refType=REC&periodKey=2026-06&postingState=posted"
+    )
+    const res = await GET(req)
+
+    expect(res.status).toBe(400)
+    await expect(res.json()).resolves.toEqual({
+      error: "REC inquiry requires a specific Shop",
+      code: "VALIDATION_ERROR",
+    })
+    expect(mockListFinanceDocuments).not.toHaveBeenCalled()
+  })
+
   it("blocks unauthorized roles", async () => {
     ;(requirePeriodAdminActor as jest.Mock).mockImplementation(() => {
       throw new PeriodAdminAuthError("Insufficient permissions", "FORBIDDEN", 403)
     })
 
-    const req = new NextRequest("http://localhost/api/finance/vouchers")
+    const req = new NextRequest("http://localhost/api/finance/vouchers?refType=COL")
     const res = await GET(req)
 
     expect(res.status).toBe(403)

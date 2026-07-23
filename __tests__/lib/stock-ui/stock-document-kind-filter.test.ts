@@ -23,6 +23,16 @@ describe("stockDocumentKindToListQuery", () => {
     })
   })
 
+  it("maps END to docType END", () => {
+    expect(stockDocumentKindToListQuery("END", "")).toEqual({
+      docType: "END",
+    })
+    expect(stockDocumentKindToListQuery("END", "DRAFT")).toEqual({
+      docType: "END",
+      status: "DRAFT",
+    })
+  })
+
   it("passes explicit status for ORD and ADJ", () => {
     expect(stockDocumentKindToListQuery("ORD", "POSTED")).toEqual({
       docType: "TRANSFER_OUT",
@@ -44,6 +54,17 @@ describe("matchesStockDocumentKindFilter", () => {
     expect(matchesStockDocumentKindFilter("CNT", "", posted)).toBe(false)
     expect(matchesStockDocumentKindFilter("ADJ", "", draft)).toBe(false)
     expect(matchesStockDocumentKindFilter("ADJ", "", posted)).toBe(true)
+  })
+
+  it("matches END by docType", () => {
+    const endDoc = { docType: "END" as const, status: "DRAFT" as const }
+    expect(matchesStockDocumentKindFilter("END", "", endDoc)).toBe(true)
+    expect(
+      matchesStockDocumentKindFilter("END", "", {
+        docType: "ADJUSTMENT",
+        status: "DRAFT",
+      })
+    ).toBe(false)
   })
 
   it("still shows rows with removed statuses when returned from API", () => {

@@ -64,6 +64,8 @@ export type SaveDocumentInput = {
   fromLocId?: string | null
   toLocId?: string | null
   createdByStaffId?: string | null
+  /** Session legal entity — required on create; defaults rejected if invalid for type/branch. */
+  legalEntityCode?: string | null
   lines: SaveDocumentLineInput[]
   tx?: Prisma.TransactionClient
 }

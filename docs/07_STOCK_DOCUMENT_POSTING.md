@@ -1,8 +1,10 @@
 # Stock Document Posting (Phase 4)
 
-Status: Planned — architecture only (no implementation in this document)  
-Scope: Stock-document **posting workflow** and orchestration boundary on top of Phase 3 ledger  
-Reference: `asa-con/lib/stock-document/executeLedgerPost.ts`, workflow routes — rewrite clean in `lib/stock/`, do not copy legacy code
+Status: **Updated 2026-07** — POST is operational status only; per-event ledger writes retired  
+Scope: Stock-document **posting workflow**  
+See also: [architecture/02_PERIOD_STOCK_LEDGER_DECISION.md](./architecture/02_PERIOD_STOCK_LEDGER_DECISION.md)
+
+> **2026-07 decision:** ASA-CON retired per-event StockTransaction creation. `postDocument()` sets status `POSTED` and does **not** call `issueStock` / `receiveStock` or post inventory-cost Finance vouchers. Source documents remain evidence for future END.
 
 ---
 

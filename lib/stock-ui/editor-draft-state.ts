@@ -9,6 +9,8 @@ import type {
   StockDocumentEditorStateVM,
 } from "./editor-types"
 import type { DocType, StockDocumentDetailVM } from "./types"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
+import { applyShopSelection } from "@/lib/stock/document-read/stock-document-shop-selection"
 
 export type CountingEditorHeader = Omit<
   StockDocumentEditorStateVM,
@@ -40,16 +42,24 @@ export function isShopDocType(value: string): value is DocType {
 
 export function defaultLocationsForDocType(
   docType: DocType,
-  shopBranchId: string
-): { fromLocId: string; toLocId: string } {
-  switch (docType) {
-    case "TRANSFER_OUT":
-      return { fromLocId: shopBranchId, toLocId: "" }
-    case "PERFORMANCE":
-    case "ADJUSTMENT":
-      return { fromLocId: shopBranchId, toLocId: "" }
-    default:
-      return { fromLocId: shopBranchId, toLocId: "" }
+  shopBranchId: string,
+  opts?: {
+    legalEntityCode?: string
+    hoBranchId?: string | null
+  }
+): { fromLocId: string; toLocId: string; branchId?: string } {
+  const entity =
+    parseDocumentEntityCode(opts?.legalEntityCode) ??
+    ("AS" as const)
+  const mapped = applyShopSelection(shopBranchId, {
+    legalEntityCode: entity,
+    docType,
+    hoBranchId: opts?.hoBranchId ?? null,
+  })
+  return {
+    fromLocId: mapped.fromLocId,
+    toLocId: mapped.toLocId,
+    branchId: mapped.branchId,
   }
 }
 
@@ -67,6 +77,7 @@ export function countingEditorHeaderFromDetail(
     status: detail.status,
     date: detail.date.slice(0, 10),
     branchId: detail.branchId,
+    legalEntityCode: detail.legalEntityCode,
     fromLocId: detail.fromLocId ?? "",
     toLocId: detail.toLocId ?? "",
   }
@@ -74,9 +85,10 @@ export function countingEditorHeaderFromDetail(
 
 export function countingEditorHeaderFromDraft(
   docType: DocType,
-  branchId: string
+  branchId: string,
+  legalEntityCode: string = "AS"
 ): CountingEditorHeader {
-  const draft = createDraftEditorState(docType, branchId)
+  const draft = createDraftEditorState(docType, branchId, legalEntityCode)
   return {
     documentId: draft.documentId,
     refNo: draft.refNo,
@@ -84,6 +96,7 @@ export function countingEditorHeaderFromDraft(
     status: draft.status,
     date: draft.date,
     branchId: draft.branchId,
+    legalEntityCode: draft.legalEntityCode,
     fromLocId: draft.fromLocId,
     toLocId: draft.toLocId,
   }
@@ -137,6 +150,7 @@ export function applyCountingSaveToEditorState(
     status: saved.status,
     date: saved.date.slice(0, 10),
     branchId: saved.branchId,
+    legalEntityCode: saved.legalEntityCode || prev.legalEntityCode,
     fromLocId: saved.fromLocId ?? "",
     toLocId: saved.toLocId ?? "",
   }
@@ -154,9 +168,14 @@ export function countEditedLinesInHookGroup(
 
 export function createDraftEditorState(
   docType: DocType,
-  branchId: string
+  branchId: string,
+  legalEntityCode: string = "AS",
+  hoBranchId: string | null = null
 ): StockDocumentEditorStateVM {
-  const locs = defaultLocationsForDocType(docType, branchId)
+  const locs = defaultLocationsForDocType(docType, branchId, {
+    legalEntityCode,
+    hoBranchId,
+  })
   const today = new Date().toISOString().slice(0, 10)
 
   return {
@@ -165,7 +184,8 @@ export function createDraftEditorState(
     docType,
     status: "DRAFT",
     date: today,
-    branchId,
+    branchId: locs.branchId || branchId,
+    legalEntityCode,
     fromLocId: locs.fromLocId,
     toLocId: locs.toLocId,
     readOnly: false,
@@ -184,6 +204,7 @@ export function detailToEditorState(detail: StockDocumentDetailVM): StockDocumen
     status: detail.status,
     date,
     branchId: detail.branchId,
+    legalEntityCode: detail.legalEntityCode,
     fromLocId: detail.fromLocId ?? "",
     toLocId: detail.toLocId ?? "",
     readOnly,

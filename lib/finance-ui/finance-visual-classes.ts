@@ -101,6 +101,10 @@ export const voucherInquiryFilterBranch =
 export const voucherInquiryFilterBranchWide =
   "voucher-inquiry-filter-field voucher-inquiry-filter-branch-wide"
 
+/** Finance Document Inquiry — wider Branch for readable shop labels. */
+export const voucherInquiryFilterBranchReadable =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-branch-readable"
+
 export const voucherInquiryFilterGlAccount =
   "voucher-inquiry-filter-field voucher-inquiry-filter-gl-account"
 
@@ -131,6 +135,10 @@ export const voucherInquiryActions = "voucher-inquiry-actions"
 
 export const voucherInquiryFilterNo =
   "voucher-inquiry-filter-field voucher-inquiry-filter-no"
+
+/** Finance Document Inquiry — compact No. for up to ~5 characters. */
+export const voucherInquiryFilterNoCompact =
+  "voucher-inquiry-filter-field voucher-inquiry-filter-no-compact"
 
 /** @deprecated Use voucherInquiryFilterNo */
 export const voucherInquiryFilterDocumentNo =

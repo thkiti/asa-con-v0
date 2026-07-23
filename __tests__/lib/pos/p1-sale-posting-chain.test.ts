@@ -130,7 +130,7 @@ describe("P1 sale posting chain", () => {
     return { tx, state }
   }
 
-  it("deducts stock with POS_SALE ledger row and posts finance voucher", async () => {
+  it("completes TRACKED sale without StockTransaction; posts non-inventory finance (cogs=0)", async () => {
     ;(prisma.product.findMany as jest.Mock).mockResolvedValue([trackedProduct])
     const { tx, state } = setupTx()
     seedTrackedStock(state, 10, 12.5)
@@ -147,22 +147,15 @@ describe("P1 sale posting chain", () => {
     const stockKey = `${branchId}:${trackedProductId}`
     const stock = state.stocks.get(stockKey)
 
-    expect(stock?.qty).toBe(8)
-    expect(state.transactions).toHaveLength(1)
-    expect(state.transactions[0]).toMatchObject({
-      refType: "POS_SALE",
-      refId: saleId,
-      qtyOut: qty,
-      beforeQty: 10,
-      afterQty: 8,
-    })
+    expect(stock?.qty).toBe(10)
+    expect(state.transactions).toHaveLength(0)
 
     expect(postSaleVoucher).toHaveBeenCalledTimes(1)
     const payload = (postSaleVoucher as jest.Mock).mock.calls[0][0]
     expect(payload.tx).toBe(tx)
     expect(payload.sale.id).toBe(saleId)
     expect(payload.sale.receiptNo).toBe(state.receipts[0]?.receiptNo)
-    expect(payload.ledgerResult.cogsAmount.toNumber()).toBe(12.5 * qty)
+    expect(payload.ledgerResult.cogsAmount.toNumber()).toBe(0)
   })
 
   it("skips stock movement for CONSUMABLE when finance is enabled", async () => {

@@ -1,85 +1,93 @@
 import { issueStock, receiveStock } from "@/lib/stock/ledger"
-import { createMockTx } from "./helpers/mock-tx"
+import { applyIssueItem } from "@/lib/stock/issue-stock"
+import { applyReceiveItem } from "@/lib/stock/receive-stock"
+import { StockLedgerError } from "@/lib/stock/stock-errors"
+import {
+  AUTHORIZED_STOCK_TRANSACTION_SOURCE,
+  assertCanCreateStockTransaction,
+  createStockTransaction,
+} from "@/lib/stock/stock-transaction-authority"
 
-jest.mock("@/lib/shared/prisma", () => ({
-  prisma: {
-    $transaction: jest.fn(),
-  },
-}))
-
-import { prisma } from "@/lib/shared/prisma"
-
-const branchId = "branch-1"
-const productId = "product-1"
-
-describe("ledger transaction boundaries", () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
-  it("receiveStock joins caller tx without opening prisma.$transaction", async () => {
-    const { tx, state } = createMockTx()
-
-    const result = await receiveStock({
-      branchId,
-      refType: "STOCK_DOC",
-      refId: "doc-1",
-      items: [{ productId, qty: 2, unitCost: 5 }],
-      tx,
+describe("retired per-event stock ledger", () => {
+  it("issueStock throws PER_EVENT_LEDGER_RETIRED", async () => {
+    await expect(
+      issueStock({
+        branchId: "b1",
+        refType: "POS_SALE",
+        refId: "s1",
+        items: [{ productId: "p1", qty: 1 }],
+      })
+    ).rejects.toMatchObject({
+      code: "PER_EVENT_LEDGER_RETIRED",
     })
-
-    expect(result).toEqual({ applied: 1, skippedZeroQty: 0 })
-    expect(prisma.$transaction).not.toHaveBeenCalled()
-    expect(state.stocks.get(`${branchId}:${productId}`)?.qty).toBe(2)
   })
 
-  it("issueStock joins caller tx without opening prisma.$transaction", async () => {
-    const { tx, state } = createMockTx()
-
-    const result = await issueStock({
-      branchId,
-      refType: "POS_SALE",
-      refId: "sale-1",
-      items: [{ productId, qty: 1 }],
-      tx,
+  it("receiveStock throws PER_EVENT_LEDGER_RETIRED", async () => {
+    await expect(
+      receiveStock({
+        branchId: "b1",
+        refType: "STOCK_DOC_PURCHASE",
+        refId: "d1",
+        items: [{ productId: "p1", qty: 1 }],
+      })
+    ).rejects.toMatchObject({
+      code: "PER_EVENT_LEDGER_RETIRED",
     })
-
-    expect(result).toEqual({ applied: 1, skippedZeroQty: 0 })
-    expect(prisma.$transaction).not.toHaveBeenCalled()
-    expect(state.stocks.get(`${branchId}:${productId}`)?.qty).toBe(-1)
   })
 
-  it("opens prisma.$transaction when tx omitted", async () => {
-    const { tx, state } = createMockTx()
-    ;(prisma.$transaction as jest.Mock).mockImplementation(
-      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
+  it("applyIssueItem / applyReceiveItem throw without writing", async () => {
+    const tx = {} as never
+    await expect(
+      applyIssueItem(
+        tx,
+        {
+          branchId: "b1",
+          refType: "X",
+          refId: "r",
+          documentId: null,
+          date: new Date(),
+        },
+        { productId: "p1", qty: 1 }
+      )
+    ).rejects.toBeInstanceOf(StockLedgerError)
+
+    await expect(
+      applyReceiveItem(
+        tx,
+        {
+          branchId: "b1",
+          refType: "X",
+          refId: "r",
+          documentId: null,
+          date: new Date(),
+        },
+        { productId: "p1", qty: 1 }
+      )
+    ).rejects.toBeInstanceOf(StockLedgerError)
+  })
+})
+
+describe("stock-transaction-authority", () => {
+  it("rejects non-authorized sources", () => {
+    expect(() => assertCanCreateStockTransaction("POS_SALE")).toThrow(
+      /END_COST_CALCULATION/
     )
-
-    await receiveStock({
-      branchId,
-      refType: "STOCK_DOC",
-      refId: "doc-2",
-      items: [{ productId, qty: 3, unitCost: 4 }],
-    })
-
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1)
-    expect(state.stocks.get(`${branchId}:${productId}`)?.qty).toBe(3)
+    expect(() => assertCanCreateStockTransaction(null)).toThrow(StockLedgerError)
   })
 
-  it("skips zero-qty lines in batch", async () => {
-    const { tx } = createMockTx()
+  it("authorized source constant is END_COST_CALCULATION", () => {
+    expect(AUTHORIZED_STOCK_TRANSACTION_SOURCE).toBe("END_COST_CALCULATION")
+  })
 
-    const result = await receiveStock({
-      branchId,
-      refType: "STOCK_DOC",
-      refId: "doc-3",
-      items: [
-        { productId, qty: 0 },
-        { productId: "product-2", qty: 1, unitCost: 1 },
-      ],
-      tx,
+  it("createStockTransaction still fails until Cost Calculation is implemented", async () => {
+    await expect(
+      createStockTransaction({
+        source: AUTHORIZED_STOCK_TRANSACTION_SOURCE,
+        data: {} as never,
+        tx: {} as never,
+      })
+    ).rejects.toMatchObject({
+      code: "COST_CALCULATION_NOT_IMPLEMENTED",
     })
-
-    expect(result).toEqual({ applied: 1, skippedZeroQty: 1 })
   })
 })

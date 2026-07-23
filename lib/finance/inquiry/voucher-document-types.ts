@@ -55,8 +55,8 @@ for (const refType of VOUCHER_INQUIRY_MJV_REF_TYPES) {
   VOUCHER_INQUIRY_REF_TYPE_LABELS[refType] = "MJV • Manual Journal"
 }
 
+/** Doc Type dropdown options — no "All"; inquiry requires an explicit type. */
 export const VOUCHER_INQUIRY_REF_TYPE_OPTIONS: VoucherInquiryRefTypeOption[] = [
-  { value: "", label: "All" },
   { value: VOUCHER_INQUIRY_DOC_TYPE.COL, label: "COL • Collector Pickup" },
   { value: VOUCHER_INQUIRY_DOC_TYPE.PAY, label: "PAY • Bank Deposit" },
   { value: VOUCHER_INQUIRY_DOC_TYPE.REC, label: "REC • Receipt" },
@@ -67,6 +67,24 @@ export const VOUCHER_INQUIRY_REF_TYPE_OPTIONS: VoucherInquiryRefTypeOption[] = [
   { value: VOUCHER_INQUIRY_DOC_TYPE.REV, label: "REV • Revenue Voucher" },
   { value: VOUCHER_INQUIRY_DOC_TYPE.PCV, label: "PCV • Petty Cash Voucher" },
 ]
+
+export function hasFinanceDocumentInquiryDocType(
+  refType: string | null | undefined
+): boolean {
+  return Boolean(String(refType ?? "").trim())
+}
+
+export function isFinanceDocumentInquiryRecDocType(
+  refType: string | null | undefined
+): boolean {
+  return String(refType ?? "").trim().toUpperCase() === VOUCHER_INQUIRY_DOC_TYPE.REC
+}
+
+export function hasFinanceDocumentInquiryBranch(
+  branchId: string | null | undefined
+): boolean {
+  return Boolean(String(branchId ?? "").trim())
+}
 
 const DOC_TYPE_TO_REF_TYPE: Record<string, string> = {
   [VOUCHER_INQUIRY_DOC_TYPE.COL]: FINANCE_REF_TYPES.POS_SETTLEMENT_COLLECTOR_PICKUP,

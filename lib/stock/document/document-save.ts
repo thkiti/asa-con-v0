@@ -1,6 +1,11 @@
 import type { Prisma } from "@/generated/prisma/client"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import { prisma } from "@/lib/shared/prisma"
+import {
+  assertDocTypeAllowedForEntity,
+  assertStockDocumentEntityBranchScope,
+} from "@/lib/stock/document-read/stock-document-entity-scope"
 import { DocumentError, DocumentErrorCodes } from "./document-errors"
 import type { SaveDocumentInput, StockDocumentWithLines } from "./document-types"
 import {
@@ -71,8 +76,30 @@ export async function saveDocument(
   const sanitizedLines = buildSaveLines(input.lines, docType)
   assertNonEmptyLines(sanitizedLines)
 
+  const legalEntityCode =
+    parseDocumentEntityCode(input.legalEntityCode) ?? DEFAULT_DOCUMENT_ENTITY_CODE
+
+  assertDocTypeAllowedForEntity(legalEntityCode, docType)
+
   const run = async (tx: Prisma.TransactionClient): Promise<StockDocumentWithLines> => {
+    await assertStockDocumentEntityBranchScope(tx, {
+      legalEntityCode,
+      branchId,
+      forEnd: false,
+    })
     await assertTransferRoute(tx, docType, input.fromLocId, input.toLocId)
+
+    // DEY ownership: ASAD TRANSFER_OUT must leave HO (fromLoc = HO), destination is toLoc only.
+    if (legalEntityCode === "AD" && docType === "TRANSFER_OUT") {
+      const fromId = String(input.fromLocId ?? "").trim()
+      if (fromId && fromId !== branchId) {
+        throw new DocumentError(
+          "ASAD DEY must ship from HO999 (fromLoc must match document Location)",
+          DocumentErrorCodes.INVALID_TRANSFER_ROUTE,
+          400
+        )
+      }
+    }
 
     const headerData = {
       date: docDate,
@@ -98,6 +125,22 @@ export async function saveDocument(
       }
 
       assertDraftEditable(existing)
+
+      if (existing.shopReceivedAt) {
+        throw new DocumentError(
+          "Document confirmed as shop-received cannot be edited; use controlled correction",
+          DocumentErrorCodes.DOCUMENT_IMMUTABLE,
+          409
+        )
+      }
+
+      if (existing.docType === "END") {
+        throw new DocumentError(
+          "END documents cannot be saved via generic stock document save",
+          DocumentErrorCodes.INVALID_DOCUMENT_STATUS,
+          400
+        )
+      }
 
       if (existing.docType !== docType) {
         throw new DocumentError(
@@ -135,7 +178,7 @@ export async function saveDocument(
         docType,
         status: "DRAFT",
         branchId,
-        legalEntityCode: DEFAULT_DOCUMENT_ENTITY_CODE,
+        legalEntityCode,
         createdByStaffId: input.createdByStaffId ?? null,
         ...headerData,
         lines: {

@@ -22,18 +22,18 @@ describe("POS receipt accounting wiring (REC-1 discovery)", () => {
     expect(STOCK_REF_TYPES.POS_SALE).toBe("POS_SALE")
   })
 
-  it("checkout orchestrator: sale → stock → payment → receipt → optional postSaleVoucher", () => {
+  it("checkout orchestrator: sale → payment → receipt → optional postSaleVoucher (no issueStock)", () => {
     const checkoutSource = readFileSync(
       path.join(process.cwd(), "lib/pos/checkout.ts"),
       "utf8"
     )
-    expect(checkoutSource).toMatch(/issueStock\(/)
-    expect(checkoutSource).toMatch(/STOCK_REF_TYPES\.POS_SALE/)
+    expect(checkoutSource).not.toMatch(/issueStock\s*\(/)
     expect(checkoutSource).toMatch(/allocateReceiptNo/)
     expect(checkoutSource).toMatch(/createReceiptRow/)
     expect(checkoutSource).toMatch(/isFinancePostingEnabled\(\)/)
     expect(checkoutSource).toMatch(/postSaleVoucher\(/)
     expect(checkoutSource).toMatch(/buildPostSaleVoucherInput/)
+    expect(checkoutSource).toMatch(/ledgerRows:\s*\[\]/)
   })
 
   it("postSaleVoucher binds voucher refId to sale.id (not receipt.id)", () => {

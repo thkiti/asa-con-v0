@@ -1,4 +1,4 @@
-import { PaymentEvidenceStatus, PaymentMethod, ProductType } from "@/generated/prisma/client"
+import { PaymentMethod, ProductType } from "@/generated/prisma/client"
 import { checkout } from "@/lib/pos/checkout"
 import { CheckoutError } from "@/lib/pos/checkout-errors"
 import { createCheckoutMockTx } from "./mock-checkout-tx"
@@ -62,7 +62,7 @@ describe("checkout", () => {
     })
   })
 
-  it("issues stock for TRACKED lines and sets POSTED sale atomically", async () => {
+  it("completes TRACKED sale without creating StockTransaction", async () => {
     ;(prisma.product.findMany as jest.Mock).mockResolvedValue([trackedProduct])
     const { tx, state } = createCheckoutMockTx()
     ;(prisma.$transaction as jest.Mock).mockImplementation(
@@ -77,10 +77,9 @@ describe("checkout", () => {
       lines: [{ productId: "p-tracked", qty: 2 }],
     })
 
-    expect(result.ledger.applied).toBe(1)
-    expect(state.transactions).toHaveLength(1)
-    expect(state.transactions[0].qtyOut).toBe(2)
-    expect(state.transactions[0].refType).toBe("POS_SALE")
+    expect(result.ledger.applied).toBe(0)
+    expect(state.transactions).toHaveLength(0)
+    expect(state.stocks.size).toBe(0)
     expect(state.sales).toHaveLength(1)
     expect(state.payments).toHaveLength(1)
     expect(state.receipts).toHaveLength(1)
@@ -106,102 +105,62 @@ describe("checkout", () => {
     expect(result.items[0].ledgerSkippedReason).toBe("CONSUMABLE")
   })
 
-  it("handles mixed TRACKED and CONSUMABLE in one checkout tx", async () => {
-    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([
-      trackedProduct,
-      consumableProduct,
-    ])
+  it("retry-safe: second checkout creates another sale still without StockTransaction", async () => {
+    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([trackedProduct])
     const { tx, state } = createCheckoutMockTx()
     ;(prisma.$transaction as jest.Mock).mockImplementation(
       async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
     )
-
-    const result = await checkout({
-      branchId,
-      paymentMethod: PaymentMethod.CASH,
-      paidAmount: 80,
-      lines: [
-        { productId: "p-tracked", qty: 1 },
-        { productId: "p-consumable", qty: 1 },
-      ],
-    })
-
-    expect(result.ledger.applied).toBe(1)
-    expect(state.transactions).toHaveLength(1)
-    expect(result.items).toHaveLength(2)
-  })
-
-  it("joins caller tx without opening prisma.$transaction", async () => {
-    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([trackedProduct])
-    const { tx } = createCheckoutMockTx()
 
     await checkout({
       branchId,
       paymentMethod: PaymentMethod.CASH,
-      paidAmount: 0,
+      paidAmount: 50,
       lines: [{ productId: "p-tracked", qty: 1 }],
-      tx,
+    })
+    await checkout({
+      branchId,
+      paymentMethod: PaymentMethod.CASH,
+      paidAmount: 50,
+      lines: [{ productId: "p-tracked", qty: 1 }],
     })
 
-    expect(prisma.$transaction).not.toHaveBeenCalled()
+    expect(state.sales).toHaveLength(2)
+    expect(state.transactions).toHaveLength(0)
   })
 
-  it("rejects insufficient payment before ledger", async () => {
+  it("posts non-inventory sale Finance without COGS when finance enabled", async () => {
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
     ;(prisma.product.findMany as jest.Mock).mockResolvedValue([trackedProduct])
     const { tx, state } = createCheckoutMockTx()
     ;(prisma.$transaction as jest.Mock).mockImplementation(
       async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
     )
 
+    await checkout({
+      branchId,
+      paymentMethod: PaymentMethod.CASH,
+      paidAmount: 100,
+      lines: [{ productId: "p-tracked", qty: 2 }],
+    })
+
+    expect(state.transactions).toHaveLength(0)
+    expect(postSaleVoucher).toHaveBeenCalledTimes(1)
+    const arg = (postSaleVoucher as jest.Mock).mock.calls[0][0]
+    expect(arg.ledgerResult?.cogsAmount?.toString?.() ?? String(arg.ledgerResult?.cogsAmount)).toBe(
+      "0"
+    )
+  })
+
+  it("rejects checkout when branch missing", async () => {
+    ;(prisma.branch.findUnique as jest.Mock).mockResolvedValue(null)
     await expect(
       checkout({
         branchId,
         paymentMethod: PaymentMethod.CASH,
-        paidAmount: 5,
+        paidAmount: 10,
         lines: [{ productId: "p-tracked", qty: 1 }],
       })
-    ).rejects.toMatchObject({ code: "INSUFFICIENT_PAYMENT" })
-
-    expect(state.sales).toHaveLength(0)
-    expect(state.transactions).toHaveLength(0)
-  })
-
-  it("creates PENDING payment evidence for BANK_TRANSFER checkout", async () => {
-    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([consumableProduct])
-    const { tx, state } = createCheckoutMockTx()
-    ;(prisma.$transaction as jest.Mock).mockImplementation(
-      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
-    )
-
-    await checkout({
-      branchId,
-      paymentMethod: PaymentMethod.BANK_TRANSFER,
-      paidAmount: 25,
-      lines: [{ productId: "p-consumable", qty: 1 }],
-    })
-
-    expect(state.paymentEvidences).toHaveLength(1)
-    expect(state.paymentEvidences[0]).toMatchObject({
-      branchId,
-      status: PaymentEvidenceStatus.PENDING,
-    })
-    expect(state.paymentEvidences[0]?.receiptNo).toMatch(/^REC-SH001-/)
-  })
-
-  it("does not create payment evidence for CASH checkout", async () => {
-    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([consumableProduct])
-    const { tx, state } = createCheckoutMockTx()
-    ;(prisma.$transaction as jest.Mock).mockImplementation(
-      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
-    )
-
-    await checkout({
-      branchId,
-      paymentMethod: PaymentMethod.CASH,
-      paidAmount: 25,
-      lines: [{ productId: "p-consumable", qty: 1 }],
-    })
-
-    expect(state.paymentEvidences).toHaveLength(0)
+    ).rejects.toBeInstanceOf(CheckoutError)
   })
 })

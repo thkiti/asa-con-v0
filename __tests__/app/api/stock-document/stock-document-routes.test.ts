@@ -13,6 +13,10 @@ import {
 } from "@/lib/stock/document/document-workflow"
 import type { StockDocumentWithLines } from "@/lib/stock/posting-types"
 
+jest.mock("@/lib/auth/session", () => ({
+  getSession: jest.fn(),
+}))
+
 jest.mock("@/lib/stock/document/document-save", () => ({
   saveDocument: jest.fn(),
 }))
@@ -24,11 +28,30 @@ jest.mock("@/lib/stock/document/document-workflow", () => ({
   deleteDraftDocument: jest.fn(),
 }))
 
+jest.mock("@/lib/shared/prisma", () => ({
+  prisma: {},
+}))
+
+import { getSession } from "@/lib/auth/session"
+
+const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
 const mockedSave = saveDocument as jest.MockedFunction<typeof saveDocument>
 const mockedSubmit = submitDocument as jest.MockedFunction<typeof submitDocument>
 const mockedConfirm = confirmDocument as jest.MockedFunction<typeof confirmDocument>
 const mockedCancel = cancelDocument as jest.MockedFunction<typeof cancelDocument>
 const mockedDelete = deleteDraftDocument as jest.MockedFunction<typeof deleteDraftDocument>
+
+const shopSession = {
+  sessionId: "s1",
+  userId: "u1",
+  role: "SH_STAFF" as const,
+  staffId: "staff-1",
+  name: "Shop",
+  branchId: "branch-1",
+  branchCode: "SH001",
+  branchName: "Shop",
+  documentEntityCode: "AS" as const,
+}
 
 const sampleDoc = {
   id: "doc-1",
@@ -71,7 +94,11 @@ function jsonRequest(url: string, method: string, body?: unknown) {
 }
 
 describe("POST /api/stock-document", () => {
-  beforeEach(() => mockedSave.mockReset())
+  beforeEach(() => {
+    mockedSave.mockReset()
+    mockedGetSession.mockReset()
+    mockedGetSession.mockResolvedValue(shopSession)
+  })
 
   it("returns saved document on success", async () => {
     mockedSave.mockResolvedValue(sampleDoc)
@@ -88,7 +115,26 @@ describe("POST /api/stock-document", () => {
 
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toMatchObject({ id: "doc-1", status: "DRAFT" })
-    expect(mockedSave).toHaveBeenCalled()
+    expect(mockedSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        legalEntityCode: "AS",
+        createdByStaffId: "staff-1",
+      })
+    )
+  })
+
+  it("rejects unauthenticated POST", async () => {
+    mockedGetSession.mockResolvedValue(null)
+    const res = await POSTSave(
+      jsonRequest("http://localhost/api/stock-document", "POST", {
+        docType: "PERFORMANCE",
+        date: "2026-02-01",
+        branchId: "branch-1",
+        lines: [{ productId: "p1", qty: 1 }],
+      })
+    )
+    expect(res.status).toBe(401)
+    expect(mockedSave).not.toHaveBeenCalled()
   })
 
   it("maps DOCUMENT_NOT_FOUND", async () => {
@@ -135,6 +181,39 @@ describe("POST /api/stock-document", () => {
     await expect(res.json()).resolves.toMatchObject({
       code: DocumentErrorCodes.DOCUMENT_IMMUTABLE,
     })
+  })
+  it("passes session ASAD entity into saveDocument", async () => {
+    mockedGetSession.mockResolvedValue({
+      ...shopSession,
+      documentEntityCode: "AD",
+      branchCode: "HO999",
+      branchId: "branch-ho",
+      role: "HO_ADMIN",
+    })
+    mockedSave.mockResolvedValue({
+      ...sampleDoc,
+      docType: "ADJUSTMENT",
+      branchId: "branch-ho",
+    })
+
+    const res = await POSTSave(
+      jsonRequest("http://localhost/api/stock-document", "POST", {
+        docType: "ADJUSTMENT",
+        date: "2026-01-15",
+        branchId: "branch-ho",
+        fromLocId: "branch-ho",
+        lines: [{ productId: "p1", qty: 1, endingQty: 1 }],
+      })
+    )
+
+    expect(res.status).toBe(200)
+    expect(mockedSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        legalEntityCode: "AD",
+        branchId: "branch-ho",
+        docType: "ADJUSTMENT",
+      })
+    )
   })
 })
 

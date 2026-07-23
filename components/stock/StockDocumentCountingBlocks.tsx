@@ -22,6 +22,7 @@ export type StockDocumentCountingBlocksProps = {
   activeHookGroup: CountingHookGroup
   readOnly: boolean
   onLineChange: (key: string, patch: Partial<EditorLineRowVM>) => void
+  qtyColumnLabel?: string
 }
 
 type ShoeSectionBlock = {
@@ -72,6 +73,7 @@ function HorizontalBlockRow({
   blockShellClass,
   readOnly,
   onLineChange,
+  qtyColumnLabel,
 }: {
   rowChunks: EditorLineRowVM[][]
   showHook: boolean
@@ -80,6 +82,7 @@ function HorizontalBlockRow({
   blockShellClass: string
   readOnly: boolean
   onLineChange: StockDocumentCountingBlocksProps["onLineChange"]
+  qtyColumnLabel?: string
 }) {
   return (
     <div className="flex flex-nowrap gap-3">
@@ -95,6 +98,7 @@ function HorizontalBlockRow({
             hookGroup={hookGroup}
             readOnly={readOnly}
             onLineChange={onLineChange}
+            qtyColumnLabel={qtyColumnLabel}
           />
         </div>
       ))}
@@ -107,10 +111,12 @@ function ShoeHorizontalSections({
   sections,
   readOnly,
   onLineChange,
+  qtyColumnLabel,
 }: {
   sections: ShoeSectionBlock[]
   readOnly: boolean
   onLineChange: StockDocumentCountingBlocksProps["onLineChange"]
+  qtyColumnLabel?: string
 }) {
   return (
     <div className={countingShoeScrollClass}>
@@ -128,6 +134,7 @@ function ShoeHorizontalSections({
               blockShellClass={countingBlockShellShoeClass}
               readOnly={readOnly}
               onLineChange={onLineChange}
+              qtyColumnLabel={qtyColumnLabel}
             />
           </div>
         ))}
@@ -141,6 +148,7 @@ export function StockDocumentCountingBlocks({
   activeHookGroup,
   readOnly,
   onLineChange,
+  qtyColumnLabel,
 }: StockDocumentCountingBlocksProps) {
   const visibleRows = useMemo(
     () => lines.filter((line) => line.hookGroup === activeHookGroup),
@@ -182,6 +190,7 @@ export function StockDocumentCountingBlocks({
         sections={shoeSections}
         readOnly={readOnly}
         onLineChange={onLineChange}
+        qtyColumnLabel={qtyColumnLabel}
       />
     )
   }
@@ -195,6 +204,7 @@ export function StockDocumentCountingBlocks({
         blockShellClass={countingBlockShellClass}
         readOnly={readOnly}
         onLineChange={onLineChange}
+        qtyColumnLabel={qtyColumnLabel}
       />
     </div>
   )

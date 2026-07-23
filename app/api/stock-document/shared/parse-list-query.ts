@@ -37,7 +37,11 @@ export function parseListQuery(url: string): ParsedListQuery {
   const branchId = params.get("branchId")
   const docType = parseDocType(params.get("docType") ?? params.get("type"))
   const status = parseDocStatus(params.get("status"))
-  const periodMonth = params.get("periodMonth")?.trim() || undefined
+  // Prefer periodKey (PeriodSelector contract); accept legacy periodMonth.
+  const periodMonth =
+    params.get("periodKey")?.trim() ||
+    params.get("periodMonth")?.trim() ||
+    undefined
   const cursor = params.get("cursor")
 
   const fromRaw = params.get("from")?.trim()

@@ -11,8 +11,15 @@ export function buildStockDocumentInquiryPrintPath(documentId: string): string |
   return `${buildStockDocumentInquiryPath(id)}?autoprint=1`
 }
 
-export function buildStockDocumentOperationalPath(documentId: string): string {
-  return `/shop/stock-documents/${documentId}`
+export function buildStockDocumentOperationalPath(
+  documentId: string,
+  docType?: string
+): string {
+  const id = String(documentId ?? "").trim()
+  if (docType === "END") {
+    return `/shop/stock-documents/end/${encodeURIComponent(id)}`
+  }
+  return `/shop/stock-documents/${id}`
 }
 
 export function buildStockDocumentJournalInquiryPath(

@@ -7,9 +7,6 @@ import {
   ledgerSkipReasonAtSale,
   participatesInLedgerAtSale,
 } from "@/lib/products/product-type-rules"
-import { issueStock } from "@/lib/stock/ledger"
-import { STOCK_REF_TYPES } from "@/lib/stock/transaction-types"
-import type { StockMoveItem } from "@/lib/stock/transaction-types"
 import { CheckoutError } from "./checkout-errors"
 import type { CheckoutInput, CheckoutResult } from "./checkout-types"
 import { createPaymentRow } from "./payment"
@@ -25,8 +22,12 @@ import { validateAndPrepareCheckout } from "./validation"
 const EMPTY_LEDGER = { applied: 0, skippedZeroQty: 0 }
 
 /**
- * POS checkout orchestrator — only module that atomically creates
- * Sale, SaleItem, Payment, Receipt and calls issueStock().
+ * POS checkout orchestrator — creates Sale, SaleItem, Payment, Receipt.
+ *
+ * Per-event StockTransaction / Stock mutations are retired. REC remains the
+ * operational source for future END USAGE. Non-inventory sale Finance
+ * (tender / revenue / VAT) may still post; COGS/inventory lines are omitted
+ * until Cost Calculation.
  */
 export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
   const prepared = await validateAndPrepareCheckout(prisma, input)
@@ -49,10 +50,20 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     })
 
     const createdItems: CheckoutResult["items"] = []
-    const issueItems: StockMoveItem[] = []
 
     for (const line of prepared.lines) {
       const skipReason = ledgerSkipReasonAtSale(line.productType)
+      if (
+        !participatesInLedgerAtSale(line.productType) &&
+        skipReason === null
+      ) {
+        throw new CheckoutError(
+          `Missing ledger skip reason for non-tracked product ${line.productId}`,
+          "MISSING_SKIP_REASON",
+          500
+        )
+      }
+
       const item = await tx.saleItem.create({
         data: {
           saleId: sale.id,
@@ -71,33 +82,6 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         productType: item.productType,
         qty: item.qty,
         ledgerSkippedReason: item.ledgerSkippedReason,
-      })
-
-      if (participatesInLedgerAtSale(line.productType)) {
-        issueItems.push({
-          productId: line.productId,
-          qty: line.qty,
-          lineId: item.id,
-        })
-      } else if (skipReason === null) {
-        throw new CheckoutError(
-          `Missing ledger skip reason for non-tracked product ${line.productId}`,
-          "MISSING_SKIP_REASON",
-          500
-        )
-      }
-    }
-
-    let ledgerResult = EMPTY_LEDGER
-    if (issueItems.length > 0) {
-      ledgerResult = await issueStock({
-        tx,
-        branchId: prepared.branchId,
-        items: issueItems,
-        refType: STOCK_REF_TYPES.POS_SALE,
-        refId: sale.id,
-        documentId: null,
-        date: sale.createdAt,
       })
     }
 
@@ -127,19 +111,14 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     }
 
     if (isFinancePostingEnabled()) {
-      const ledgerRows = await tx.stockTransaction.findMany({
-        where: {
-          refType: STOCK_REF_TYPES.POS_SALE,
-          refId: sale.id,
-        },
-      })
+      // Empty ledger rows → cogsAmount 0 → no inventory/COGS journal lines.
       await postSaleVoucher(
         buildPostSaleVoucherInput({
           tx,
           receiptNo: receipt.receiptNo,
           sale,
           payment,
-          ledgerRows,
+          ledgerRows: [],
           legalEntityCode: resolvePosLegalEntityCode(),
           vatEconomics,
         })
@@ -166,7 +145,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         receiptNo: receipt.receiptNo,
         issuedAt: receipt.issuedAt,
       },
-      ledger: ledgerResult,
+      ledger: EMPTY_LEDGER,
     }
   }
 

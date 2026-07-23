@@ -177,8 +177,8 @@ async function main() {
       where: { branchId_productId: { branchId, productId } },
     })
     record(
-      "P1 sale stock decremented",
-      stockAfterOpen?.qty === qtyBeforeOpen - 1,
+      "P1 sale stock unchanged (per-event ledger retired)",
+      stockAfterOpen?.qty === qtyBeforeOpen,
       `qty ${qtyBeforeOpen}→${stockAfterOpen?.qty ?? "?"}`
     )
 
@@ -189,9 +189,9 @@ async function main() {
       },
     })
     record(
-      "P1 sale StockTransaction POS_SALE",
-      saleLedgerRows.length === 1 && saleLedgerRows[0]?.qtyOut === 1,
-      `rows=${saleLedgerRows.length} qtyOut=${saleLedgerRows[0]?.qtyOut ?? "?"}`
+      "P1 sale has no StockTransaction (retired)",
+      saleLedgerRows.length === 0,
+      `rows=${saleLedgerRows.length}`
     )
 
     const saleVoucher = await prisma.voucher.findFirst({

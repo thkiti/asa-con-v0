@@ -329,7 +329,7 @@ describe("operational wiring — postDocument", () => {
     expect(getDocument().status).toBe("POSTED")
   })
 
-  it("flag ON: postStockDocumentVoucher called with same tx object", async () => {
+  it("flag ON: still does not call postStockDocumentVoucher (inventory finance retired)", async () => {
     ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
     const initial = stockDoc({
       docType: "PURCHASE",
@@ -345,20 +345,16 @@ describe("operational wiring — postDocument", () => {
         },
       ],
     })
-    const { tx } = setupPostingTx(initial)
+    const { state } = setupPostingTx(initial)
 
     await postDocument({ documentId: "doc-1", postedByStaffId: "staff-1" })
 
-    expect(postStockDocumentVoucher).toHaveBeenCalledTimes(1)
-    const payload = (postStockDocumentVoucher as jest.Mock).mock.calls[0][0]
-    expect(payload.tx).toBe(tx)
+    expect(postStockDocumentVoucher).not.toHaveBeenCalled()
+    expect(state.transactions.length).toBe(0)
   })
 
-  it("finance throw: outer transaction rejects with no partial POSTED commit", async () => {
+  it("posts without StockTransaction regardless of finance flag", async () => {
     ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
-    ;(postStockDocumentVoucher as jest.Mock).mockRejectedValue(
-      new FinancePostingError("period closed", "PERIOD_CLOSED")
-    )
     const initial = stockDoc({
       docType: "PURCHASE",
       status: "RECEIVED",
@@ -375,13 +371,11 @@ describe("operational wiring — postDocument", () => {
     })
     const { getDocument, state } = setupPostingTxWithRollback(initial)
 
-    await expect(
-      postDocument({ documentId: "doc-1", postedByStaffId: "staff-1" })
-    ).rejects.toMatchObject({ code: "PERIOD_CLOSED" })
+    await postDocument({ documentId: "doc-1", postedByStaffId: "staff-1" })
 
-    expect(postStockDocumentVoucher).toHaveBeenCalledTimes(1)
-    expect(getDocument().status).toBe("RECEIVED")
+    expect(getDocument().status).toBe("POSTED")
     expect(state.transactions.length).toBe(0)
+    expect(postStockDocumentVoucher).not.toHaveBeenCalled()
   })
 })
 

@@ -1,20 +1,18 @@
 import type { Prisma } from "@/generated/prisma/client"
-import { isFinancePostingEnabled } from "@/lib/finance/config"
-import { postStockDocumentVoucher } from "@/lib/finance/posting"
 import { prisma } from "@/lib/shared/prisma"
-import { mapDocumentToLedgerMoves } from "./document-mapper"
-import { issueStock, receiveStock } from "./ledger"
 import { assertPostingRequiredString } from "./posting-errors"
 import type { PostDocumentInput, PostDocumentResult } from "./posting-types"
-import { buildPostStockDocumentVoucherInput } from "./posting-finance"
 import { applyPostedTransition } from "./document/document-status"
 import { assertCanPost } from "./validation"
 
 const EMPTY_LEDGER = { applied: 0, skippedZeroQty: 0 }
 
 /**
- * Post a stock document: ledger mutations + status POSTED in one transaction.
- * Status writes delegate to document-status.ts (sole status writer).
+ * Post a stock document: operational status POSTED only.
+ *
+ * Per-event StockTransaction / Stock / StockLayer mutations are retired.
+ * Inventory-cost Finance vouchers are deferred until Cost Calculation on
+ * locked END documents. Source document headers and lines are preserved.
  */
 export async function postDocument(
   input: PostDocumentInput
@@ -34,33 +32,6 @@ export async function postDocument(
     assertCanPost(doc)
 
     const priorStatus = doc.status
-    const mapped = mapDocumentToLedgerMoves(doc)
-    const ledgerBase = {
-      branchId: mapped.branchId,
-      refType: mapped.refType,
-      refId: doc.id,
-      documentId: doc.id,
-      date: doc.date,
-      tx,
-    }
-
-    let receiveResult = EMPTY_LEDGER
-    let issueResult = EMPTY_LEDGER
-
-    if (mapped.inbound.length > 0) {
-      receiveResult = await receiveStock({
-        ...ledgerBase,
-        items: mapped.inbound,
-      })
-    }
-
-    if (mapped.outbound.length > 0) {
-      issueResult = await issueStock({
-        ...ledgerBase,
-        items: mapped.outbound,
-      })
-    }
-
     const updated = await applyPostedTransition(tx, {
       documentId,
       postedByStaffId,
@@ -69,23 +40,11 @@ export async function postDocument(
       confirmedByStaffId: doc.confirmedByStaffId,
     })
 
-    if (isFinancePostingEnabled()) {
-      const ledgerRows = await tx.stockTransaction.findMany({
-        where: {
-          refId: doc.id,
-          documentId: doc.id,
-        },
-      })
-      await postStockDocumentVoucher(
-        buildPostStockDocumentVoucherInput({ tx, doc: updated, ledgerRows })
-      )
-    }
-
     return {
       document: updated,
       ledger: {
-        issue: issueResult,
-        receive: receiveResult,
+        issue: EMPTY_LEDGER,
+        receive: EMPTY_LEDGER,
       },
     }
   }

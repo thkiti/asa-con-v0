@@ -40,13 +40,25 @@ import type {
 } from "@/lib/stock-ui/types"
 import type { Role } from "@/lib/shared"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
-import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE, HO_BRANCH_CODE } from "@/lib/legal-entity/constants"
+import {
+  applyShopSelection,
+  getStockDocumentShopSelectionPolicy,
+} from "@/lib/stock/document-read/stock-document-shop-selection"
+import {
+  fetchShopBranchOptions,
+  type ShopBranchOption,
+} from "@/lib/stock-ui/fetch-shop-branches"
 import { StockDocumentEditorView } from "./StockDocumentEditorView"
 
 type CreateProps = {
   mode: "create"
   docType: DocType
   stockCountStaffMode?: boolean
+  /** HO creating CNT for a selected Location/Shop. */
+  createBranchId?: string
+  /** PeriodSelector value YYYY-MM — sets document date into that month. */
+  createPeriodKey?: string
 }
 
 type EditProps = {
@@ -56,6 +68,15 @@ type EditProps = {
 }
 
 export type StockDocumentEditorControllerProps = CreateProps | EditProps
+
+function documentDateForPeriodKey(periodKey: string | undefined): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(String(periodKey ?? "").trim())
+  if (!match) return new Date().toISOString().slice(0, 10)
+  const year = Number(match[1])
+  const month = Number(match[2])
+  // Use mid-month to keep periodMonthFromDate stable across TZ edges.
+  return `${year}-${String(month).padStart(2, "0")}-15`
+}
 
 function workflowSuccessMessage(actionId: StockDocumentActionId): string {
   switch (actionId) {
@@ -98,9 +119,31 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
   const [viewerEntityCode, setViewerEntityCode] = useState<DocumentEntityCode>(
     DEFAULT_DOCUMENT_ENTITY_CODE
   )
+  const [shopOptions, setShopOptions] = useState<ShopBranchOption[]>([])
+  const [hoBranch, setHoBranch] = useState<ShopBranchOption | null>(null)
   const [activeHookGroup, setActiveHookGroup] = useState<CountingHookGroup>("K")
 
   const stockCountStaffMode = Boolean(props.stockCountStaffMode)
+
+  function resolveHoFromSession(
+    session: {
+      branchId: string
+      branchCode: string
+      branchName: string
+    },
+    shops: readonly ShopBranchOption[]
+  ): ShopBranchOption | null {
+    if (session.branchCode.trim().toUpperCase() === HO_BRANCH_CODE) {
+      return {
+        id: session.branchId,
+        code: session.branchCode,
+        name: session.branchName || "Head Office",
+      }
+    }
+    return (
+      shops.find((b) => b.code.trim().toUpperCase() === HO_BRANCH_CODE) ?? null
+    )
+  }
 
   const applyDetail = useCallback((detail: StockDocumentDetailVM) => {
     setDetailSnapshot(detail)
@@ -175,19 +218,69 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
           staffName: session.name,
         })
 
+        let shops: ShopBranchOption[] = []
+        try {
+          shops = await fetchShopBranchOptions()
+        } catch {
+          shops = []
+        }
+        const ho = resolveHoFromSession(session, shops)
+        if (cancelled) return
+        setShopOptions(shops)
+        setHoBranch(ho)
+
+        const entityCode = session.documentEntityCode
+        const hoId = ho?.id ?? null
+
         if (props.mode === "create") {
           if (!isShopDocType(props.docType)) {
             throw new Error("Invalid document type for shop editor")
           }
 
-          if (props.docType === "ADJUSTMENT" || (stockCountStaffMode && props.docType === "TRANSFER_OUT")) {
+          const periodDate = documentDateForPeriodKey(props.createPeriodKey)
+          const policy = getStockDocumentShopSelectionPolicy(
+            entityCode,
+            props.docType
+          )
+          const createId = props.createBranchId?.trim() || ""
+          let selectedShopId = createId || session.branchId
+          if (policy.mapsTo === "to_destination") {
+            // ASAD DEY: list/create branch is HO owner — Shop is destination SH.
+            selectedShopId =
+              createId && createId !== (hoId ?? "")
+                ? createId
+                : session.branchId !== (hoId ?? "")
+                  ? session.branchId
+                  : ""
+          } else if (policy.optionScope === "ho_only") {
+            selectedShopId = hoId || createId || session.branchId
+          } else if (selectedShopId === (hoId ?? "")) {
+            selectedShopId = createId || ""
+          }
+
+          const locationFields = applyShopSelection(selectedShopId, {
+            legalEntityCode: entityCode,
+            docType: props.docType,
+            hoBranchId: hoId,
+          })
+
+          if (
+            props.docType === "ADJUSTMENT" ||
+            (stockCountStaffMode && props.docType === "TRANSFER_OUT")
+          ) {
             const loaded = await loadCountingEditorStateForCreate(
-              session.branchId,
-              props.docType
+              locationFields.branchId || selectedShopId,
+              props.docType,
+              entityCode
             )
             if (cancelled) return
             setDetailSnapshot(null)
-            setState(loaded.state)
+            setState({
+              ...loaded.state,
+              date: periodDate,
+              legalEntityCode: entityCode,
+              ...locationFields,
+            })
             if (loaded.orphans.length > 0) {
               setStatusMessage(orphanWarning(loaded.orphans.length))
             }
@@ -195,8 +288,13 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
             return
           }
 
+          const draft = createDraftEditorState(
+            props.docType,
+            locationFields.branchId || selectedShopId,
+            entityCode
+          )
           setDetailSnapshot(null)
-          setState(createDraftEditorState(props.docType, session.branchId))
+          setState({ ...draft, date: periodDate, ...locationFields })
           setLoading(false)
           return
         }
@@ -384,6 +482,7 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
     status: "DRAFT",
     date: "",
     branchId: "",
+    legalEntityCode: viewerEntityCode,
     fromLocId: "",
     toLocId: "",
     readOnly: false,
@@ -412,6 +511,8 @@ export function StockDocumentEditorController(props: StockDocumentEditorControll
       stockCountStaffMode={stockCountStaffMode}
       staffHeader={staffHeader}
       viewerEntityCode={viewerEntityCode}
+      shopOptions={shopOptions}
+      hoBranch={hoBranch}
     />
   )
 }

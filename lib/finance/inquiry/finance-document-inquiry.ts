@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client"
+import { FinancePostingError } from "@/lib/finance/posting-errors"
 import type {
   FinanceDocumentInquiryFilter,
   FinanceDocumentInquiryResult,
@@ -6,8 +7,56 @@ import type {
 } from "./finance-document-inquiry-types"
 import { resolvePostedVoucherInquiryPath, resolvePostedVoucherPrintPath } from "./finance-document-inquiry-links"
 import { listUnpostedOperationalDocuments } from "./unposted-operational-inquiry"
+import {
+  hasFinanceDocumentInquiryBranch,
+  hasFinanceDocumentInquiryDocType,
+  isFinanceDocumentInquiryRecDocType,
+} from "./voucher-document-types"
 import { listFinanceVouchers } from "./voucher-list"
 import type { FinanceVoucherListFilter, FinanceVoucherListRow } from "./voucher-list-types"
+import { FINANCE_DOCUMENT_INQUIRY_PAGE_SIZE } from "@/lib/finance-ui/finance-document-inquiry-paging"
+
+export { FINANCE_DOCUMENT_INQUIRY_PAGE_SIZE }
+
+export function assertFinanceDocumentInquiryDocTypeRequired(
+  filter: Pick<FinanceDocumentInquiryFilter, "refType">
+): void {
+  if (hasFinanceDocumentInquiryDocType(filter.refType)) {
+    return
+  }
+  throw new FinancePostingError(
+    "Doc Type is required",
+    "VALIDATION_ERROR"
+  )
+}
+
+export function assertFinanceDocumentInquiryRecBranchRequired(
+  filter: Pick<FinanceDocumentInquiryFilter, "refType" | "branchId">
+): void {
+  if (!isFinanceDocumentInquiryRecDocType(filter.refType)) {
+    return
+  }
+  if (hasFinanceDocumentInquiryBranch(filter.branchId)) {
+    return
+  }
+  throw new FinancePostingError(
+    "REC inquiry requires a specific Shop",
+    "VALIDATION_ERROR"
+  )
+}
+
+export function resolveFinanceDocumentInquiryPageSize(
+  limit: number | undefined
+): number {
+  return Math.min(
+    Math.max(
+      Number(limit ?? FINANCE_DOCUMENT_INQUIRY_PAGE_SIZE) ||
+        FINANCE_DOCUMENT_INQUIRY_PAGE_SIZE,
+      1
+    ),
+    200
+  )
+}
 
 export type {
   FinanceDocumentInquiryFilter,
@@ -73,7 +122,17 @@ export async function listFinanceDocuments(
   prisma: FinanceDocumentInquiryPrisma,
   filter: FinanceDocumentInquiryFilter
 ): Promise<FinanceDocumentInquiryResult> {
-  const voucherFilter: FinanceVoucherListFilter = filter
+  assertFinanceDocumentInquiryDocTypeRequired(filter)
+  assertFinanceDocumentInquiryRecBranchRequired(filter)
+
+  const limit = resolveFinanceDocumentInquiryPageSize(filter.limit)
+  const offset = Math.max(Number(filter.offset ?? 0) || 0, 0)
+  const pagedFilter: FinanceDocumentInquiryFilter = {
+    ...filter,
+    limit,
+    offset,
+  }
+  const voucherFilter: FinanceVoucherListFilter = pagedFilter
   const postingState = filter.postingState ?? "all"
 
   const [voucherResult, unpostedResult] = await Promise.all([
@@ -82,22 +141,10 @@ export async function listFinanceDocuments(
       : listFinanceVouchers(prisma, voucherFilter),
     postingState === "posted"
       ? Promise.resolve({ documents: [], total: 0 })
-      : listUnpostedOperationalDocuments(prisma, filter),
+      : listUnpostedOperationalDocuments(prisma, pagedFilter),
   ])
 
   const postedRows = voucherResult.vouchers.map(mapPostedVoucherRow)
-  const documents = mergeDocumentRows(postedRows, unpostedResult.documents)
-
-  const limit = Math.min(Math.max(Number(filter.limit ?? 50) || 50, 1), 200)
-  const offset = Math.max(Number(filter.offset ?? 0) || 0, 0)
-
-  if (postingState === "all") {
-    const total = voucherResult.total + unpostedResult.total
-    return {
-      documents: documents.slice(offset, offset + limit),
-      total,
-    }
-  }
 
   if (postingState === "posted") {
     return {
@@ -106,9 +153,34 @@ export async function listFinanceDocuments(
     }
   }
 
+  if (postingState === "unposted") {
+    return {
+      documents: unpostedResult.documents,
+      total: unpostedResult.total,
+    }
+  }
+
+  // postingState === "all": children already applied limit/offset.
+  // When one side is empty (typical for REC), return that page as-is.
+  if (unpostedResult.total === 0) {
+    return {
+      documents: postedRows,
+      total: voucherResult.total,
+    }
+  }
+  if (voucherResult.total === 0) {
+    return {
+      documents: unpostedResult.documents,
+      total: unpostedResult.total,
+    }
+  }
+
+  // Mixed posted + unposted: merge then slice for this page.
+  const documents = mergeDocumentRows(postedRows, unpostedResult.documents)
+  const total = voucherResult.total + unpostedResult.total
   return {
-    documents: unpostedResult.documents,
-    total: unpostedResult.total,
+    documents: documents.slice(0, limit),
+    total,
   }
 }
 

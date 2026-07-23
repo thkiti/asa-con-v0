@@ -180,33 +180,41 @@ export const API_RULES: AuditRule[] = [
 
 // --- Architecture-wide (mirrors ARCHITECTURE_GUARDS.md) ---
 
+/**
+ * Per-event issueStock/receiveStock are retired (throw only in ledger.ts).
+ * No operational caller may invoke them. Future StockTransaction writes go through
+ * createStockTransaction(..., END_COST_CALCULATION) only.
+ */
 export const LEDGER_CALLERS_ALLOWED = [
-  "lib/stock/posting.ts",
-  "lib/pos/checkout.ts",
   "lib/stock/ledger.ts",
-  "scripts/",
+  "lib/stock/issue-stock.ts",
+  "lib/stock/receive-stock.ts",
 ]
 
 export const LEDGER_CALLERS: AuditRule = {
   id: "LEDGER_CALLERS",
   pattern: /issueStock\s*\(|receiveStock\s*\(/,
   allowedRelativePaths: LEDGER_CALLERS_ALLOWED,
-  message: "issueStock/receiveStock only allowed in posting, checkout, ledger, scripts",
+  message:
+    "issueStock/receiveStock are retired; only ledger/issue-stock/receive-stock may reference them (throw boundary)",
 }
 
 export const STOCK_PRISMA_WRITERS_ALLOWED = [
-  "lib/stock/issue-stock.ts",
-  "lib/stock/receive-stock.ts",
   "lib/stock/layers.ts",
+  "lib/stock/cleanup-retired-stock-transactions.ts",
+  "lib/stock/stock-transaction-authority.ts",
+  "lib/dev/",
+  "lib/uat/",
   "scripts/",
 ]
 
 export const STOCK_PRISMA_WRITERS: AuditRule = {
   id: "STOCK_PRISMA_WRITERS",
   pattern:
-    /(\.stock\.(create|update|upsert|delete)|\.stockLayer\.(create|update|delete)|\.stockTransaction\.create)/,
+    /(\.stock\.(create|update|upsert|delete)|\.stockLayer\.(create|update|delete)|\.stockTransaction\.(create|createMany|upsert|deleteMany|delete))/,
   allowedRelativePaths: STOCK_PRISMA_WRITERS_ALLOWED,
-  message: "Stock Prisma writes only allowed in issue-stock, receive-stock, layers, scripts",
+  message:
+    "Stock Prisma writes only allowed in layers (future cost), cleanup/authority, scripts, and UAT/dev helpers",
 }
 
 export const LIB_NO_REACT: AuditRule = {

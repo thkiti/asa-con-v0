@@ -222,3 +222,25 @@ Any new page or significant UI edit in ASA-CON should:
 4. Document exceptions in the PR if a page cannot comply yet, with a follow-up migration note.
 
 When in doubt, prefer **tooltip clarity** over **color alone**. The dot attracts attention; the tooltip carries the precise meaning.
+
+---
+
+## 7. PeriodSelector (standard period control)
+
+**PeriodSelector** is the ASA-CON standard period control: separate Year and Month dropdowns. Year contains current year - 2 through current year + 7 (10 years). Month uses the shared `01 • JAN` through `12 • DEC` options. The control produces `periodKey` in `YYYY-MM` format.
+
+| Item | Location |
+|------|----------|
+| Component | `components/ui/PeriodSelector.tsx` |
+| Helpers | `lib/ui/period-selector.ts` |
+| Shared month labels | `lib/shop-ui/month-select-options.ts` (`formatCompactMonthOptionLabel`) |
+
+Contract:
+
+- Input: `periodKey` (`YYYY-MM`)
+- Output: `onPeriodChange(nextPeriodKey)` — always a complete valid `YYYY-MM`
+- Changing Year preserves Month; changing Month preserves Year
+- Default (when no valid period): current Asia/Bangkok calendar year and month
+
+Do **not** introduce page-local combined `YYYY • MM` period dropdowns or duplicate Month arrays when this control applies.
+

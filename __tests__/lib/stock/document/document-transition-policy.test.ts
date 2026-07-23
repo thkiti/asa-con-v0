@@ -87,6 +87,10 @@ describe("document-transition-policy", () => {
         expect.arrayContaining(["SUBMITTED", "CONFIRMED", "RECEIVED"])
       )
     })
+
+    it("END is never postable", () => {
+      expect([...POSTABLE_BY_DOC_TYPE.END]).toEqual([])
+    })
   })
 
   describe("assertTransitionAllowed — POST", () => {

@@ -1,8 +1,9 @@
 # Stock Ledger Foundation (Phase 3)
 
-Status: Planned — architecture only (no implementation in this document)  
-Scope: Centralized stock mutation model on top of the Phase 1 inventory kernel  
-Reference: `asa-con` behaviour specs — rewrite clean in `lib/stock/`, do not copy legacy code
+Status: **Superseded for per-event writes** — see [architecture/02_PERIOD_STOCK_LEDGER_DECISION.md](./architecture/02_PERIOD_STOCK_LEDGER_DECISION.md)  
+Scope: Historical design for centralized stock mutation (Phase 3). Per-event `issueStock` / `receiveStock` / `StockTransaction` creation is **retired**.
+
+> **2026-07 decision:** ASA-CON retired per-event StockTransaction creation. Operational REC, DEY, and CNT remain source documents. Future StockTransaction records will be generated only from Cost Calculation based on locked END Stock Documents.
 
 ---
 

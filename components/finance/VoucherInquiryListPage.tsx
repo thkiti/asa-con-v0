@@ -15,12 +15,12 @@ import {
   voucherInquiryActions,
   voucherInquiryFilterActions,
   voucherInquiryFilterBar,
-  voucherInquiryFilterBranch,
+  voucherInquiryFilterBranchReadable,
   voucherInquiryFilterButtonPrimary,
   voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
-  voucherInquiryFilterNo,
+  voucherInquiryFilterNoCompact,
   voucherInquiryFilterPostingState,
   voucherInquiryFilterSelect,
   voucherInquiryFilterStatus,
@@ -28,11 +28,15 @@ import {
   voucherInquiryTdActions,
   voucherInquiryTdDate,
   voucherInquiryTdDocNo,
-  voucherInquiryTdJournal,
   voucherInquiryTdVoucherNo,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { appendFinanceReturnTo, buildFinanceJournalInquiryPath } from "@/lib/finance-ui/finance-navigation"
-import { VOUCHER_INQUIRY_REF_TYPE_OPTIONS } from "@/lib/finance/inquiry/voucher-document-types"
+import {
+  hasFinanceDocumentInquiryBranch,
+  hasFinanceDocumentInquiryDocType,
+  isFinanceDocumentInquiryRecDocType,
+  VOUCHER_INQUIRY_REF_TYPE_OPTIONS,
+} from "@/lib/finance/inquiry/voucher-document-types"
 import {
   FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS,
   FINANCE_DOCUMENT_INQUIRY_STATUS_OPTIONS,
@@ -46,6 +50,13 @@ import {
   useInquiryMoreFilterOpen,
 } from "@/lib/finance-ui/inquiry-more-filter-state"
 import { defaultTrialBalancePeriodParts } from "@/lib/finance-ui/trial-balance-period"
+import {
+  formatFinanceDocumentInquiryPageSummary,
+  FINANCE_DOCUMENT_INQUIRY_PAGE_SIZE,
+  resetFinanceDocumentInquiryPage,
+  resolveFinanceDocumentInquiryPage,
+  withFinanceDocumentInquiryPage,
+} from "@/lib/finance-ui/finance-document-inquiry-paging"
 import {
   buildVoucherInquiryReturnPath,
   buildVoucherInquirySearchParams,
@@ -69,14 +80,19 @@ import {
   themeTextSecondary,
 } from "@/lib/theme/theme-classes"
 
+const DOC_TYPE_REQUIRED_MESSAGE = "เลือก Doc Type เพื่อค้นหาเอกสาร"
+const REC_SHOP_REQUIRED_MESSAGE =
+  "สำหรับ REC เนื่องจากมีเอกสารจำนวนมาก กรุณาเลือก Shop และค้นหาครั้งละหนึ่ง Period"
+
 function defaultInquiryPeriodKey(): string {
   return defaultTrialBalancePeriodParts().periodKey
 }
 
-const emptyFilter = (): FinanceVoucherInquiryFilter => ({
-  postingState: "all",
-  periodKey: defaultInquiryPeriodKey(),
-})
+const emptyFilter = (): FinanceVoucherInquiryFilter =>
+  resetFinanceDocumentInquiryPage({
+    postingState: "all",
+    periodKey: defaultInquiryPeriodKey(),
+  })
 
 function withRequiredPeriod(
   filter: FinanceVoucherInquiryFilter
@@ -86,22 +102,78 @@ function withRequiredPeriod(
   return { ...filter, periodKey: defaultInquiryPeriodKey() }
 }
 
+function withDefaultInquiryPaging(
+  filter: FinanceVoucherInquiryFilter
+): FinanceVoucherInquiryFilter {
+  return {
+    ...filter,
+    limit: filter.limit ?? FINANCE_DOCUMENT_INQUIRY_PAGE_SIZE,
+    offset: filter.offset ?? 0,
+  }
+}
+
+function needsRecShopSelection(filter: FinanceVoucherInquiryFilter): boolean {
+  return (
+    isFinanceDocumentInquiryRecDocType(filter.refType) &&
+    !hasFinanceDocumentInquiryBranch(filter.branchId)
+  )
+}
+
+function isSearchableInquiryFilter(filter: FinanceVoucherInquiryFilter): boolean {
+  if (!hasFinanceDocumentInquiryDocType(filter.refType)) return false
+  if (needsRecShopSelection(filter)) return false
+  return true
+}
+
 type VoucherInquiryResultsTableProps = {
   documents: FinanceDocumentInquiryRow[]
   total: number
+  page: number
+  totalPages: number
   listReturnPath: string
+  onPageChange: (page: number) => void
 }
 
 export function VoucherInquiryResultsTable({
   documents,
   total,
+  page,
+  totalPages,
   listReturnPath,
+  onPageChange,
 }: VoucherInquiryResultsTableProps) {
   return (
     <>
-      <p className={`text-sm ${themeTextSecondary}`}>
-        {total} document{total === 1 ? "" : "s"}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p
+          className={`text-sm ${themeTextSecondary}`}
+          data-testid="voucher-inquiry-page-summary"
+        >
+          {formatFinanceDocumentInquiryPageSummary(total, page, totalPages)}
+        </p>
+        {totalPages > 1 ? (
+          <div className="flex items-center gap-2" data-testid="voucher-inquiry-pagination">
+            <button
+              type="button"
+              className={voucherInquiryFilterButtonSecondary}
+              disabled={page <= 1}
+              onClick={() => onPageChange(page - 1)}
+              data-testid="voucher-inquiry-page-prev"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              className={voucherInquiryFilterButtonSecondary}
+              disabled={page >= totalPages}
+              onClick={() => onPageChange(page + 1)}
+              data-testid="voucher-inquiry-page-next"
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
+      </div>
       <div className={financeTableScroll}>
         <table
           className={`${financeTable} ${voucherInquiryTable}`}
@@ -112,7 +184,6 @@ export function VoucherInquiryResultsTable({
               <th className={financeTh}>Doc No.</th>
               <th className={financeTh}>Date</th>
               <th className={financeTh}>Voucher No.</th>
-              <th className={financeTh}>Journal Entry</th>
               <th className={financeTh}>PDF</th>
               <th className={financeTh}>Actions</th>
             </tr>
@@ -120,7 +191,7 @@ export function VoucherInquiryResultsTable({
           <tbody>
             {documents.length === 0 ? (
               <tr>
-                <td colSpan={6} className={`py-4 text-center ${themeEmptyState}`}>
+                <td colSpan={5} className={`py-4 text-center ${themeEmptyState}`}>
                   No documents match the current filters.
                 </td>
               </tr>
@@ -131,18 +202,17 @@ export function VoucherInquiryResultsTable({
                     {row.documentNo ?? "—"}
                   </td>
                   <td className={voucherInquiryTdDate}>{formatFinanceListDate(row.date)}</td>
-                  <td className={voucherInquiryTdVoucherNo}>{row.voucherNo ?? "—"}</td>
-                  <td className={voucherInquiryTdJournal}>
-                    {row.journalEntryId ? (
+                  <td className={voucherInquiryTdVoucherNo}>
+                    {row.voucherNo && row.journalEntryId ? (
                       <Link
                         href={buildFinanceJournalInquiryPath(row.journalEntryId, listReturnPath)}
                         className={themeLinkMuted}
                         data-testid={`voucher-inquiry-journal-${row.id}`}
                       >
-                        {row.journalEntryId.slice(0, 8)}…
+                        {row.voucherNo}
                       </Link>
                     ) : (
-                      "—"
+                      (row.voucherNo ?? "—")
                     )}
                   </td>
                   <td>
@@ -184,17 +254,20 @@ export function VoucherInquiryListPage() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const appliedFilter = useMemo(
-    () => withRequiredPeriod(parseVoucherInquiryFilterFromSearchParams(searchParams)),
+    () =>
+      withDefaultInquiryPaging(
+        withRequiredPeriod(parseVoucherInquiryFilterFromSearchParams(searchParams))
+      ),
     [searchParams]
   )
 
   const [draft, setDraft] = useState<FinanceVoucherInquiryFilter>(() =>
-    withRequiredPeriod(appliedFilter)
+    withDefaultInquiryPaging(withRequiredPeriod(appliedFilter))
   )
   const [inquiryNo, setInquiryNo] = useState(() => resolveVoucherInquiryNoDisplay(appliedFilter))
   const [documents, setDocuments] = useState<FinanceDocumentInquiryRow[]>([])
   const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => isSearchableInquiryFilter(appliedFilter))
   const [error, setError] = useState<string | null>(null)
   const [branches, setBranches] = useState<PosSettlementBranchOption[]>([])
 
@@ -207,6 +280,11 @@ export function VoucherInquiryListPage() {
     () => buildVoucherInquirySearchParams(appliedFilter).toString(),
     [appliedFilter]
   )
+
+  const hasAppliedDocType = hasFinanceDocumentInquiryDocType(appliedFilter.refType)
+  const needsRecShop = needsRecShopSelection(appliedFilter)
+  const canShowResults = isSearchableInquiryFilter(appliedFilter)
+  const pageInfo = resolveFinanceDocumentInquiryPage(appliedFilter, total)
 
   const { isMoreFilterOpen, setIsMoreFilterOpen } = useInquiryMoreFilterOpen(appliedFilterQuery)
 
@@ -222,10 +300,21 @@ export function VoucherInquiryListPage() {
   }, [])
 
   const load = useCallback(async (filter: FinanceVoucherInquiryFilter) => {
+    if (!isSearchableInquiryFilter(filter)) {
+      setDocuments([])
+      setTotal(0)
+      setError(null)
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
-      const result = await fetchFinanceDocuments(legalEntityCode, filter)
+      const result = await fetchFinanceDocuments(
+        legalEntityCode,
+        withDefaultInquiryPaging(filter)
+      )
       setDocuments(result.documents)
       setTotal(result.total)
     } catch (err) {
@@ -235,18 +324,30 @@ export function VoucherInquiryListPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [legalEntityCode])
 
   useEffect(() => {
     void load(appliedFilter)
   }, [appliedFilter, load])
 
-  const applyFilters = () => {
-    setIsMoreFilterOpen(false)
-    const next = applyVoucherInquiryNoToFilter(withRequiredPeriod(draft), inquiryNo)
-    const params = buildVoucherInquirySearchParams(next)
+  const navigateWithFilter = (next: FinanceVoucherInquiryFilter) => {
+    const params = buildVoucherInquirySearchParams(withDefaultInquiryPaging(next))
     const query = params.toString()
     router.replace(query ? `${pathname}?${query}` : pathname)
+  }
+
+  const applyFilters = () => {
+    setIsMoreFilterOpen(false)
+    const next = resetFinanceDocumentInquiryPage(
+      applyVoucherInquiryNoToFilter(withRequiredPeriod(draft), inquiryNo)
+    )
+    if (!isSearchableInquiryFilter(next)) {
+      setDocuments([])
+      setTotal(0)
+      setError(null)
+      setLoading(false)
+    }
+    navigateWithFilter(next)
   }
 
   const clearFilters = () => {
@@ -254,22 +355,64 @@ export function VoucherInquiryListPage() {
     const cleared = emptyFilter()
     setDraft(cleared)
     setInquiryNo("")
-    const params = buildVoucherInquirySearchParams(cleared)
-    const query = params.toString()
-    router.replace(query ? `${pathname}?${query}` : pathname)
+    setDocuments([])
+    setTotal(0)
+    setError(null)
+    setLoading(false)
+    navigateWithFilter(cleared)
+  }
+
+  const handleDocTypeChange = (value: string) => {
+    const refType = value.trim() || undefined
+    const next = resetFinanceDocumentInquiryPage(
+      applyVoucherInquiryNoToFilter(
+        withRequiredPeriod({ ...draft, refType }),
+        inquiryNo
+      )
+    )
+    setDraft(next)
+    setIsMoreFilterOpen(false)
+    if (!isSearchableInquiryFilter(next)) {
+      setDocuments([])
+      setTotal(0)
+      setError(null)
+      setLoading(false)
+    }
+    navigateWithFilter(next)
+  }
+
+  const handleBranchChange = (value: string) => {
+    const branchId = value.trim() || undefined
+    const next = resetFinanceDocumentInquiryPage(
+      applyVoucherInquiryNoToFilter(
+        withRequiredPeriod({ ...draft, branchId }),
+        inquiryNo
+      )
+    )
+    setDraft(next)
+    setIsMoreFilterOpen(false)
+    if (!isSearchableInquiryFilter(next)) {
+      setDocuments([])
+      setTotal(0)
+      setError(null)
+      setLoading(false)
+    }
+    navigateWithFilter(next)
+  }
+
+  const handlePageChange = (page: number) => {
+    navigateWithFilter(withFinanceDocumentInquiryPage(appliedFilter, page))
   }
 
   return (
     <div className="space-y-4" data-testid="voucher-inquiry-list-page">
       <div className={voucherInquiryFilterBar} data-testid="voucher-inquiry-filters">
-        <label className={voucherInquiryFilterBranch}>
+        <label className={voucherInquiryFilterBranchReadable}>
           <span className={themeLabel}>Branch</span>
           <select
             className={voucherInquiryFilterSelect}
             value={draft.branchId ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, branchId: e.target.value || undefined }))
-            }
+            onChange={(e) => handleBranchChange(e.target.value)}
             data-testid="voucher-inquiry-filter-branch"
           >
             <option value="">All branches</option>
@@ -307,19 +450,20 @@ export function VoucherInquiryListPage() {
           <select
             className={voucherInquiryFilterSelect}
             value={draft.refType ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, refType: e.target.value || undefined }))
-            }
+            onChange={(e) => handleDocTypeChange(e.target.value)}
             data-testid="voucher-inquiry-filter-document-type"
+            required
+            aria-required="true"
           >
+            <option value="">เลือก Doc Type</option>
             {VOUCHER_INQUIRY_REF_TYPE_OPTIONS.map((option) => (
-              <option key={option.value || "all"} value={option.value}>
+              <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
         </label>
-        <label className={voucherInquiryFilterNo}>
+        <label className={voucherInquiryFilterNoCompact}>
           <span className={themeLabel}>No</span>
           <input
             className={voucherInquiryFilterInput}
@@ -394,11 +538,32 @@ export function VoucherInquiryListPage() {
       {loading ? <p className={themeEmptyState}>Loading…</p> : null}
       {error ? <p className={themeInlineError}>{error}</p> : null}
 
-      {!loading && !error ? (
+      {!loading && !error && !hasAppliedDocType ? (
+        <p
+          className={`py-8 text-center ${themeEmptyState}`}
+          data-testid="voucher-inquiry-doc-type-required"
+        >
+          {DOC_TYPE_REQUIRED_MESSAGE}
+        </p>
+      ) : null}
+
+      {!loading && !error && hasAppliedDocType && needsRecShop ? (
+        <p
+          className={`py-8 text-center ${themeEmptyState}`}
+          data-testid="voucher-inquiry-rec-shop-required"
+        >
+          {REC_SHOP_REQUIRED_MESSAGE}
+        </p>
+      ) : null}
+
+      {!loading && !error && canShowResults ? (
         <VoucherInquiryResultsTable
           documents={documents}
           total={total}
+          page={pageInfo.page}
+          totalPages={pageInfo.totalPages}
           listReturnPath={listReturnPath}
+          onPageChange={handlePageChange}
         />
       ) : null}
     </div>

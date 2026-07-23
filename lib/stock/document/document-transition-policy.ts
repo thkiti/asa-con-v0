@@ -12,6 +12,8 @@ export const POSTABLE_BY_DOC_TYPE: Record<DocType, ReadonlySet<DocStatus>> = {
   ADJUSTMENT: new Set(["SUBMITTED", "CONFIRMED"]),
   PURCHASE: new Set(["SUBMITTED", "CONFIRMED", "RECEIVED"]),
   TRANSFER_IN: new Set(["SUBMITTED", "CONFIRMED", "RECEIVED"]),
+  /** END is never postable — lock via endStatus, not postDocument. */
+  END: new Set(),
 }
 
 const TERMINAL_STATUSES: ReadonlySet<DocStatus> = new Set(["POSTED", "CANCELLED"])

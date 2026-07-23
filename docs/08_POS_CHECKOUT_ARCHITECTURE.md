@@ -1,8 +1,10 @@
 # POS Checkout Architecture (Phase 5)
 
-Status: Planned — architecture only (no implementation in this document)  
-Scope: POS checkout flow, sales → ledger integration, separation from stock-document posting  
-Reference: `asa-con/app/api/pos/checkout/route.ts` — rewrite clean in `lib/pos/`, do not copy legacy inline FIFO code
+Status: **Updated 2026-07** — checkout no longer issues stock / StockTransaction  
+Scope: POS checkout flow  
+See also: [architecture/02_PERIOD_STOCK_LEDGER_DECISION.md](./architecture/02_PERIOD_STOCK_LEDGER_DECISION.md)
+
+> **2026-07 decision:** ASA-CON retired per-event StockTransaction creation. Checkout creates Sale / Payment / Receipt (REC) only. It does **not** call `issueStock`. Non-inventory sale Finance may remain; COGS/inventory posting waits for Cost Calculation on locked END.
 
 ---
 

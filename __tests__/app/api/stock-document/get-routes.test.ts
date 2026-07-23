@@ -18,6 +18,10 @@ jest.mock("@/lib/stock/document-read", () => ({
   getStockDocumentDetail: jest.fn(),
 }))
 
+jest.mock("@/lib/stock/document-read/resolve-stock-document-list-scope", () => ({
+  resolveStockDocumentListScope: jest.fn(),
+}))
+
 jest.mock("@/lib/shared/prisma", () => ({
   prisma: {},
 }))
@@ -27,11 +31,15 @@ import {
   getStockDocumentDetail,
   listStockDocuments,
 } from "@/lib/stock/document-read"
+import { resolveStockDocumentListScope } from "@/lib/stock/document-read/resolve-stock-document-list-scope"
 
 const mockedGetSession = getSession as jest.MockedFunction<typeof getSession>
 const mockedList = listStockDocuments as jest.MockedFunction<typeof listStockDocuments>
 const mockedDetail = getStockDocumentDetail as jest.MockedFunction<
   typeof getStockDocumentDetail
+>
+const mockedScope = resolveStockDocumentListScope as jest.MockedFunction<
+  typeof resolveStockDocumentListScope
 >
 
 const shopSession = {
@@ -43,16 +51,23 @@ const shopSession = {
   branchId: "branch-shop",
   branchCode: "SH001",
   branchName: "Shop Branch",
+  documentEntityCode: "AS" as const,
 }
 
 describe("GET /api/stock-document", () => {
   beforeEach(() => {
     mockedGetSession.mockReset()
     mockedList.mockReset()
+    mockedScope.mockReset()
   })
 
   it("returns list result", async () => {
     mockedGetSession.mockResolvedValue(shopSession)
+    mockedScope.mockResolvedValue({
+      legalEntityCode: "AS",
+      branchId: "branch-shop",
+      entityWhere: { branchId: "branch-shop" },
+    })
     mockedList.mockResolvedValue({ items: [], nextCursor: null, hasMore: false })
 
     const res = await GETList(
@@ -65,9 +80,15 @@ describe("GET /api/stock-document", () => {
       nextCursor: null,
       hasMore: false,
     })
+    expect(mockedScope).toHaveBeenCalled()
     expect(mockedList).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ branchId: "branch-shop", limit: 10 })
+      expect.objectContaining({
+        branchId: "branch-shop",
+        legalEntityCode: "AS",
+        limit: 10,
+        entityWhere: { branchId: "branch-shop" },
+      })
     )
   })
 
@@ -99,6 +120,7 @@ describe("GET /api/stock-document/[id]", () => {
       date: "2026-01-01T00:00:00.000Z",
       periodMonth: null,
       branchId: "branch-shop",
+      legalEntityCode: "AS",
       fromLocId: null,
       toLocId: null,
       submittedAt: null,

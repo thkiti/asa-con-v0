@@ -89,9 +89,20 @@ export async function listStockDocuments(
   const limit = normalizeListLimit(query.limit)
   const cursorWhere = buildCursorWhere(query.cursor)
 
+  const scopeParts: Prisma.StockDocumentWhereInput[] = []
+  if (query.entityWhere) {
+    scopeParts.push(query.entityWhere)
+  } else if (query.branchId) {
+    scopeParts.push(buildBranchWhere(query.branchId))
+  }
+
+  if (query.legalEntityCode && !query.entityWhere) {
+    scopeParts.push({ legalEntityCode: query.legalEntityCode })
+  }
+
   const where: Prisma.StockDocumentWhereInput = {
     AND: [
-      buildBranchWhere(query.branchId),
+      ...scopeParts,
       ...(query.docTypes?.length
         ? [{ docType: { in: [...query.docTypes] } }]
         : []),

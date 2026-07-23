@@ -6,6 +6,8 @@ import {
 } from "@/lib/stock-ui/format"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
+import { getSelectedShopIdFromLocations } from "@/lib/stock/document-read/stock-document-shop-selection"
 import type { StockDocumentDetailVM } from "@/lib/stock-ui/types"
 import { numericCell, numericTh } from "@/lib/ui/numeric-display"
 
@@ -18,17 +20,25 @@ export function StockDocumentPrintHeader({
   detail,
   viewerEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE,
 }: StockDocumentPrintHeaderProps) {
+  const documentEntityCode =
+    parseDocumentEntityCode(detail.legalEntityCode) ?? viewerEntityCode
   const phaseTitle = formatStaffFacingDocumentTitle(
     detail.docType,
     detail.status,
-    viewerEntityCode
+    documentEntityCode
   )
   const displayRefNo = formatStaffFacingDocumentNumber(
     detail.docType,
     detail.status,
     detail.refNo,
-    viewerEntityCode
+    documentEntityCode
   )
+  const shopId =
+    getSelectedShopIdFromLocations(documentEntityCode, detail.docType, {
+      branchId: detail.branchId,
+      fromLocId: detail.fromLocId ?? "",
+      toLocId: detail.toLocId ?? "",
+    }) || detail.branchId
 
   return (
     <header className="print-only print-break-inside-avoid mb-4 border-b border-zinc-300 pb-4">
@@ -52,21 +62,9 @@ export function StockDocumentPrintHeader({
           <dd className="font-medium text-zinc-900">{formatDocumentDate(detail.date)}</dd>
         </div>
         <div>
-          <dt className="text-xs text-zinc-500">Branch</dt>
-          <dd className="font-mono text-zinc-900">{detail.branchId}</dd>
+          <dt className="text-xs text-zinc-500">Shop</dt>
+          <dd className="font-mono text-zinc-900">{shopId}</dd>
         </div>
-        {detail.fromLocId ? (
-          <div>
-            <dt className="text-xs text-zinc-500">From location</dt>
-            <dd className="font-mono text-zinc-900">{detail.fromLocId}</dd>
-          </div>
-        ) : null}
-        {detail.toLocId ? (
-          <div>
-            <dt className="text-xs text-zinc-500">To location</dt>
-            <dd className="font-mono text-zinc-900">{detail.toLocId}</dd>
-          </div>
-        ) : null}
       </dl>
     </header>
   )

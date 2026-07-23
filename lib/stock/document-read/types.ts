@@ -45,6 +45,8 @@ export type StockDocumentDetailRead = {
   date: string
   periodMonth: string | null
   branchId: string
+  /** Owning legal entity on the StockDocument row (AS | AD). */
+  legalEntityCode: string
   fromLocId: string | null
   toLocId: string | null
   submittedAt: string | null
@@ -61,7 +63,10 @@ export type StockDocumentDetailRead = {
 }
 
 export type StockDocumentListQuery = {
-  branchId: string
+  branchId?: string | null
+  legalEntityCode?: string
+  /** Pre-built entity scope AND clauses (preferred). */
+  entityWhere?: import("@/generated/prisma/client").Prisma.StockDocumentWhereInput
   docType?: DocType
   status?: DocStatus
   periodMonth?: string

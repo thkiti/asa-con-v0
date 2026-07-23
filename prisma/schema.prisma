@@ -31,6 +31,31 @@ enum DocType {
   TRANSFER_IN
   ADJUSTMENT
   PERFORMANCE
+  END
+}
+
+/// END-only workflow. Locking END must not imply StockTransaction or Finance posting.
+enum EndWorkflowStatus {
+  DRAFT
+  READY_FOR_REVIEW
+  LOCKED
+}
+
+enum EndContributionKind {
+  IN
+  USAGE
+  COUNT
+}
+
+enum EndAuditEventType {
+  CREATED
+  REBUILT
+  IMPORTED
+  SUBMITTED
+  LOCKED
+  REOPENED
+  MANUAL_BEGIN
+  MANUAL_COUNT
 }
 
 enum DocStatus {
@@ -200,6 +225,7 @@ model Product {
   stockLayers        StockLayer[]
   stockTransactions  StockTransaction[]
   stockDocumentLines StockDocumentLine[]
+  endLines           EndLine[]
   saleItems          SaleItem[]
   sellingPrices      SellingPrice[]
 
@@ -326,13 +352,42 @@ model StockDocument {
   cancelReason       String?   @db.Text
   createdAt          DateTime  @default(now())
 
+  /// Shop receipt confirmation for DEY/TRANSFER_OUT (END IN/USAGE source).
+  shopReceivedAt         DateTime?
+  shopReceivedByStaffId  String?
+
+  /// END-only: unique key `${legalEntityCode}:${branchId}:${periodMonth}` when docType=END.
+  endPeriodKey           String?            @unique
+  endStatus              EndWorkflowStatus?
+  endRebuiltAt           DateTime?
+  endRebuiltByStaffId    String?
+  endSourceRebuildVersion Int?              @default(0)
+  endLockedAt            DateTime?
+  endLockedByStaffId     String?
+  endReopenedAt          DateTime?
+  endReopenedByStaffId   String?
+  endReopenReason        String?            @db.Text
+  endCompletenessOk      Boolean?           @default(false)
+  endCompletenessNotes   String?            @db.Text
+  endTotalAdjAmount      Decimal?           @db.Decimal(18, 2)
+  endTrackableSales      Decimal?           @db.Decimal(18, 2)
+  endUntrackableSales    Decimal?           @db.Decimal(18, 2)
+  endTotalSales          Decimal?           @db.Decimal(18, 2)
+  endRefundsTotal        Decimal?           @db.Decimal(18, 2)
+  endInitImportMeta      Json?
+  endUpdatedAt           DateTime?          @updatedAt
+
   branch       Branch              @relation(fields: [branchId], references: [id])
   legalEntity  LegalEntity         @relation(fields: [legalEntityCode], references: [code])
   lines        StockDocumentLine[]
   transactions StockTransaction[]
+  endLines     EndLine[]
+  endContributions EndSourceContribution[]
+  endAuditEvents EndAuditEvent[]
 
   @@index([legalEntityCode, date])
   @@index([legalEntityCode, docType, status])
+  @@index([docType, legalEntityCode, branchId, periodMonth])
 }
 
 model StockDocumentLine {
@@ -342,9 +397,74 @@ model StockDocumentLine {
   qty                Int
   endingQty          Int?
   reviewPostingDelta Int?
+  /// Confirmed received quantity on DEY/TRANSFER_OUT after shop receipt.
+  receivedQty        Int?
 
   document StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
   product  Product       @relation(fields: [productId], references: [id])
+}
+
+/// Period quantity worksheet lines for DocType.END (not StockTransaction / live Stock).
+model EndLine {
+  id                         String   @id @default(uuid())
+  documentId                 String
+  productId                  String
+  beginQty                   Int      @default(0)
+  inQty                      Int      @default(0)
+  usageQty                   Int      @default(0)
+  actualQty                  Int      @default(0)
+  countQty                   Int?
+  endingQty                  Int?
+  adjQty                     Int?
+  sellingPriceSnapshot       Decimal? @db.Decimal(18, 2)
+  sellingPriceSource         String?
+  sellingPriceEffectiveFrom  DateTime?
+  adjAmount                  Decimal? @db.Decimal(18, 2)
+  beginManual                Boolean  @default(false)
+  countManual                Boolean  @default(false)
+  priceIncomplete            Boolean  @default(false)
+  countIncomplete            Boolean  @default(false)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  document StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  product  Product       @relation(fields: [productId], references: [id])
+
+  @@unique([documentId, productId])
+  @@index([documentId])
+  @@index([productId])
+}
+
+model EndSourceContribution {
+  id               String               @id @default(uuid())
+  documentId       String
+  productId        String
+  sourceDocumentType String
+  sourceDocumentId String
+  sourceLineId     String
+  contributionKind EndContributionKind
+  quantity         Int
+  createdAt        DateTime             @default(now())
+
+  document StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, sourceDocumentType, sourceDocumentId, sourceLineId, contributionKind])
+  @@index([documentId, productId])
+  @@index([documentId, contributionKind])
+}
+
+model EndAuditEvent {
+  id               String            @id @default(uuid())
+  documentId       String
+  eventType        EndAuditEventType
+  at               DateTime          @default(now())
+  byStaffId        String?
+  reason           String?           @db.Text
+  payload          Json?
+
+  document StockDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, at])
 }
 
 model DocumentCounter {
@@ -442,6 +562,7 @@ enum DocumentKind {
   DEY
   ORS
   ORI
+  END
   REC
   REF
   COL

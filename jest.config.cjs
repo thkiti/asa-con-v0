@@ -14,5 +14,6 @@ module.exports = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
     "^@prisma/client$": "<rootDir>/generated/prisma/client",
+    "^server-only$": "<rootDir>/__tests__/mocks/server-only.js",
   },
 }

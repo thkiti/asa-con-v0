@@ -54,6 +54,7 @@ export async function getStockDocumentDetail(
     date: doc.date.toISOString(),
     periodMonth: doc.periodMonth,
     branchId: doc.branchId,
+    legalEntityCode: doc.legalEntityCode,
     fromLocId: doc.fromLocId,
     toLocId: doc.toLocId,
     submittedAt: toIso(doc.submittedAt),

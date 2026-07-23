@@ -8,6 +8,7 @@ export const STOCK_DOCUMENT_PHASE_THAI_LABELS: Record<BusinessPhaseCode, string>
   DEY: "ส่งของเข้าร้าน",
   ORS: "ส่งให้ซัพพลายเออร์",
   ORI: "รับสินค้า",
+  END: "สรุปสต็อกสิ้นเดือน",
 }
 
 export function formatStockDocumentInquiryHeader(

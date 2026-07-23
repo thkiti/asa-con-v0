@@ -4,6 +4,7 @@ import { createMockTx, type MockTxState } from "../helpers/mock-tx"
 
 type BranchRow = {
   id: string
+  code?: string
   type: BranchType
   isActive: boolean
   deleted: boolean
@@ -38,10 +39,16 @@ export function createDocumentMockTx(
       }) => {
         const row = branchById.get(where.id)
         if (!row) return null
-        if (!select) return row
+        const enriched = {
+          ...row,
+          code:
+            row.code ??
+            (row.type === "HO" ? "HO999" : row.id.replace("branch-", "SH").toUpperCase()),
+        }
+        if (!select) return enriched
         const picked: Record<string, unknown> = {}
         for (const key of Object.keys(select)) {
-          if (select[key]) picked[key] = (row as Record<string, unknown>)[key]
+          if (select[key]) picked[key] = (enriched as Record<string, unknown>)[key]
         }
         return picked
       },

@@ -77,6 +77,7 @@ describe("listFinanceDocuments", () => {
     const prisma = { mocked: true }
     const result = await listFinanceDocuments(prisma as never, {
       legalEntityCode: "AS",
+      refType: "MJV",
       postingState: "all",
     })
 
@@ -114,11 +115,70 @@ describe("listFinanceDocuments", () => {
 
     const result = await listFinanceDocuments({} as never, {
       legalEntityCode: "AS",
+      refType: "MJV",
       postingState: "unposted",
     })
 
     expect(mockListFinanceVouchers).not.toHaveBeenCalled()
     expect(result.documents).toHaveLength(1)
     expect(result.documents[0]?.status).toBe("DRAFT")
+  })
+
+  it("rejects unscoped inquiries without Doc Type", async () => {
+    await expect(
+      listFinanceDocuments({} as never, {
+        legalEntityCode: "AS",
+        postingState: "all",
+      })
+    ).rejects.toMatchObject({
+      message: "Doc Type is required",
+      code: "VALIDATION_ERROR",
+    })
+    expect(mockListFinanceVouchers).not.toHaveBeenCalled()
+    expect(mockListUnposted).not.toHaveBeenCalled()
+  })
+
+  it("rejects REC inquiries without a specific Shop", async () => {
+    await expect(
+      listFinanceDocuments({} as never, {
+        legalEntityCode: "AS",
+        refType: "REC",
+        periodKey: "2026-06",
+        postingState: "posted",
+      })
+    ).rejects.toMatchObject({
+      message: "REC inquiry requires a specific Shop",
+      code: "VALIDATION_ERROR",
+    })
+    expect(mockListFinanceVouchers).not.toHaveBeenCalled()
+    expect(mockListUnposted).not.toHaveBeenCalled()
+  })
+
+  it("allows REC inquiries when a Shop is selected", async () => {
+    mockListFinanceVouchers.mockResolvedValue({
+      vouchers: [postedVoucherRow],
+      total: 1,
+    })
+
+    const result = await listFinanceDocuments({} as never, {
+      legalEntityCode: "AS",
+      refType: "REC",
+      branchId: "branch-1",
+      periodKey: "2026-06",
+      postingState: "posted",
+      limit: 50,
+      offset: 0,
+    })
+
+    expect(result.total).toBe(1)
+    expect(mockListFinanceVouchers).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        refType: "REC",
+        branchId: "branch-1",
+        limit: 50,
+        offset: 0,
+      })
+    )
   })
 })

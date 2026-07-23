@@ -14,7 +14,9 @@ import {
 } from "@/lib/stock-ui/stock-count-staff-mode"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import { formatStaffFacingDocumentTitle } from "@/lib/stock-ui/format"
+import type { ShopBranchOption } from "@/lib/stock-ui/fetch-shop-branches"
 import { StockDocumentCountingSheet } from "./StockDocumentCountingSheet"
 import { StockDocumentEditorToolbarActions } from "./StockDocumentEditorToolbarActions"
 import { StockDocumentHeaderForm } from "./StockDocumentHeaderForm"
@@ -50,6 +52,8 @@ type StockDocumentEditorViewProps = {
     staffName: string
   } | null
   viewerEntityCode?: DocumentEntityCode
+  shopOptions?: readonly ShopBranchOption[]
+  hoBranch?: ShopBranchOption | null
 }
 
 export function StockDocumentEditorView({
@@ -73,14 +77,20 @@ export function StockDocumentEditorView({
   stockCountStaffMode = false,
   staffHeader = null,
   viewerEntityCode = DEFAULT_DOCUMENT_ENTITY_CODE,
+  shopOptions = [],
+  hoBranch = null,
 }: StockDocumentEditorViewProps) {
   const showOperationalSheet =
     staffOperationalSheet || (countingMode && isCountingEditorMode(state))
   const showPrintSnapshot = detailSnapshot && !stockCountStaffMode
+  const documentEntityCode =
+    parseDocumentEntityCode(state.legalEntityCode) ??
+    parseDocumentEntityCode(detailSnapshot?.legalEntityCode) ??
+    viewerEntityCode
   const staffPhaseTitle = formatStaffFacingDocumentTitle(
     state.docType,
     state.status,
-    viewerEntityCode
+    documentEntityCode
   )
 
   const toolbarActions = (
@@ -108,7 +118,7 @@ export function StockDocumentEditorView({
         <>
           <StockDocumentPrintHeader
             detail={detailSnapshot}
-            viewerEntityCode={viewerEntityCode}
+            viewerEntityCode={documentEntityCode}
           />
           <StockDocumentPrintLinesTable detail={detailSnapshot} />
         </>
@@ -153,7 +163,9 @@ export function StockDocumentEditorView({
               <StockDocumentHeaderForm
                 state={state}
                 onChange={onHeaderChange}
-                viewerEntityCode={viewerEntityCode}
+                viewerEntityCode={documentEntityCode}
+                shopOptions={shopOptions}
+                hoBranch={hoBranch}
               />
             </div>
           ) : null}
@@ -172,7 +184,7 @@ export function StockDocumentEditorView({
                     ? {
                         docType: state.docType,
                         status: state.status,
-                        viewerEntityCode,
+                        viewerEntityCode: documentEntityCode,
                       }
                     : null
                 }

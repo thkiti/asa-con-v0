@@ -9,8 +9,13 @@ import {
 import { FINANCE_REF_TYPES } from "@/lib/finance/posting-types"
 
 describe("voucher ref type filter", () => {
-  it("exposes inquiry dropdown options with All first and business codes", () => {
-    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS[0]).toEqual({ value: "", label: "All" })
+  it("exposes inquiry dropdown options without All and with business codes", () => {
+    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS.some((o) => o.value === "")).toBe(false)
+    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS.some((o) => o.label === "All")).toBe(false)
+    expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS[0]).toEqual({
+      value: "COL",
+      label: "COL • Collector Pickup",
+    })
     expect(VOUCHER_INQUIRY_REF_TYPE_OPTIONS).toContainEqual({
       value: "COL",
       label: "COL • Collector Pickup",

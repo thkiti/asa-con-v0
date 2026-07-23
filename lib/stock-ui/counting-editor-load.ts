@@ -19,11 +19,12 @@ export type CountingEditorLoadResult = {
 
 export async function loadCountingEditorStateForCreate(
   branchId: string,
-  docType: DocType = "ADJUSTMENT"
+  docType: DocType = "ADJUSTMENT",
+  legalEntityCode: string = "AS"
 ): Promise<CountingEditorLoadResult> {
   const inputRows = await fetchStockInputList()
   const mergeResult = mergeInputListWithSavedLines(inputRows, [])
-  const header = countingEditorHeaderFromDraft(docType, branchId)
+  const header = countingEditorHeaderFromDraft(docType, branchId, legalEntityCode)
 
   return {
     state: hydrateCountingEditorState(header, mergeResult),

@@ -412,6 +412,7 @@ body {
  * Dark theme — remap legacy Tailwind zinc / status utilities used across
  * finance/admin pages until surfaces migrate to semantic theme classes.
  */
+[data-theme="dark"] .text-zinc-950,
 [data-theme="dark"] .text-zinc-900,
 [data-theme="dark"] .text-zinc-800,
 [data-theme="dark"] .text-zinc-700 {
@@ -2247,6 +2248,12 @@ span.finance-account .finance-account-name-part {
   flex: 0 0 280px;
 }
 
+/* Finance Document Inquiry: space moved from compact No. (80px) to Branch. */
+.voucher-inquiry-filter-branch-readable {
+  width: 240px;
+  flex: 0 0 240px;
+}
+
 .voucher-inquiry-filter-gl-account {
   width: 380px;
   flex: 0 0 380px;
@@ -2260,6 +2267,11 @@ span.finance-account .finance-account-name-part {
 .voucher-inquiry-filter-no {
   width: 160px;
   flex: 0 0 160px;
+}
+
+.voucher-inquiry-filter-no-compact {
+  width: 80px;
+  flex: 0 0 80px;
 }
 
 .voucher-inquiry-filter-status {
@@ -3784,6 +3796,7 @@ span.finance-account .finance-account-name-part {
   color: #18181b;
 }
 
+[data-theme="dark"] .pos-terminal-root .text-zinc-950,
 [data-theme="dark"] .pos-terminal-root .text-zinc-900,
 [data-theme="dark"] .pos-terminal-root .text-zinc-800,
 [data-theme="dark"] .pos-terminal-root .text-zinc-700 {

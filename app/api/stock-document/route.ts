@@ -6,25 +6,31 @@ import { documentErrorResponse } from "@/app/api/stock-document/shared/document-
 import { getSession } from "@/lib/auth/session"
 import { saveDocument } from "@/lib/stock/document/document-save"
 import {
-  listDocTypesForRole,
   listStockDocuments,
   requireStockDocumentSession,
-  resolveListBranchId,
 } from "@/lib/stock/document-read"
+import { resolveStockDocumentListScope } from "@/lib/stock/document-read/resolve-stock-document-list-scope"
+import {
+  DEFAULT_DOCUMENT_ENTITY_CODE,
+} from "@/lib/legal-entity/constants"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import { prisma } from "@/lib/shared/prisma"
 
 export async function GET(req: NextRequest) {
   try {
     const session = requireStockDocumentSession(await getSession())
     const parsed = parseListQuery(req.url)
-    const branchId = resolveListBranchId(session, parsed.branchId)
+    const scope = await resolveStockDocumentListScope(prisma, session, {
+      branchId: parsed.branchId,
+      ...(parsed.docType ? { docType: parsed.docType } : {}),
+    })
 
     const result = await listStockDocuments(prisma, {
-      branchId,
+      entityWhere: scope.entityWhere,
+      legalEntityCode: scope.legalEntityCode,
+      branchId: scope.branchId,
       limit: parsed.limit,
       cursor: parsed.cursor,
-      docTypes: listDocTypesForRole(session.role),
-      ...(parsed.docType ? { docType: parsed.docType } : {}),
       ...(parsed.status ? { status: parsed.status } : {}),
       ...(parsed.periodMonth ? { periodMonth: parsed.periodMonth } : {}),
       ...(parsed.fromDate ? { fromDate: parsed.fromDate } : {}),
@@ -39,12 +45,17 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = requireStockDocumentSession(await getSession())
     const body = await req.json().catch(() => ({}))
     const parsed = parseSaveBody(body)
 
     if ("error" in parsed) {
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
+
+    const legalEntityCode =
+      parseDocumentEntityCode(session.documentEntityCode) ??
+      DEFAULT_DOCUMENT_ENTITY_CODE
 
     const document = await saveDocument({
       id: parsed.id,
@@ -53,7 +64,8 @@ export async function POST(req: NextRequest) {
       branchId: parsed.branchId,
       fromLocId: parsed.fromLocId,
       toLocId: parsed.toLocId,
-      createdByStaffId: parsed.createdByStaffId,
+      createdByStaffId: parsed.createdByStaffId ?? session.staffId,
+      legalEntityCode,
       lines: parsed.lines,
     })
 

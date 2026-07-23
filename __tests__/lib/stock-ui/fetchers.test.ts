@@ -28,6 +28,25 @@ describe("stock-ui fetchers", () => {
     )
   })
 
+  it("fetchStockDocumentList sends periodKey=YYYY-MM", async () => {
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+      }),
+    })
+
+    await fetchStockDocumentList({ branchId: "b1", periodKey: "2026-01" })
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("periodKey=2026-01")
+    )
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.not.stringContaining("periodMonth=")
+    )
+  })
+
   it("fetchStockInputList returns normalized rows", async () => {
     ;(global.fetch as jest.Mock).mockResolvedValue({
       ok: true,

@@ -1,18 +1,27 @@
 import type { DocStatus, DocType } from "./types"
 import type { StockDocumentListFilter } from "./types"
+import {
+  getStockDocumentTypesForEntity,
+  matchesStockDocumentKindFilter as matchesKindPolicy,
+  stockDocumentKindToListQuery as kindToQueryPolicy,
+  type StockDocumentKindFilter,
+} from "@/lib/stock/document-read/stock-document-entity-policy"
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
+import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 
-/** Staff-facing document kind for the list page Type filter (not entity titles). */
-export type StockDocumentKindFilter = "" | "ORD" | "CNT" | "ADJ"
+export type { StockDocumentKindFilter }
 
+/** @deprecated Prefer getStockDocumentTypesForEntity(entityCode) */
 export const STOCK_DOCUMENT_KIND_FILTER_OPTIONS: ReadonlyArray<{
   value: StockDocumentKindFilter
   label: string
-}> = [
-  { value: "", label: "All" },
-  { value: "ORD", label: "ORD • ใบสั่งของ" },
-  { value: "CNT", label: "CNT • ตรวจนับสินค้า" },
-  { value: "ADJ", label: "ADJ • ปรับปรุง" },
-]
+}> = getStockDocumentTypesForEntity(DEFAULT_DOCUMENT_ENTITY_CODE)
+
+export function getStockDocumentKindFilterOptions(
+  entityCode: DocumentEntityCode
+): ReadonlyArray<{ value: StockDocumentKindFilter; label: string }> {
+  return getStockDocumentTypesForEntity(entityCode)
+}
 
 /** Statuses exposed on the Stock Document list filter (UI only). */
 export const STOCK_DOCUMENT_LIST_STATUS_FILTER_OPTIONS: ReadonlyArray<{
@@ -28,8 +37,6 @@ export const STOCK_DOCUMENT_LIST_STATUS_FILTER_OPTIONS: ReadonlyArray<{
   { value: "POSTED", label: "Posted" },
 ]
 
-type ListRow = { docType: DocType; status: DocStatus }
-
 /**
  * Map UI kind + status to list API query fields.
  * CNT implies ADJUSTMENT draft; ADJ implies ADJUSTMENT non-draft when status is All.
@@ -38,44 +45,17 @@ export function stockDocumentKindToListQuery(
   kind: StockDocumentKindFilter,
   status: "" | DocStatus
 ): Pick<StockDocumentListFilter, "docType" | "status"> {
-  switch (kind) {
-    case "ORD":
-      return {
-        docType: "TRANSFER_OUT",
-        ...(status ? { status } : {}),
-      }
-    case "CNT":
-      return {
-        docType: "ADJUSTMENT",
-        status: status || "DRAFT",
-      }
-    case "ADJ":
-      return {
-        docType: "ADJUSTMENT",
-        ...(status ? { status } : {}),
-      }
-    default:
-      return status ? { status } : {}
-  }
+  return kindToQueryPolicy(kind, status) as Pick<
+    StockDocumentListFilter,
+    "docType" | "status"
+  >
 }
 
 /** Refine API rows when kind/status cannot be expressed fully in one query. */
 export function matchesStockDocumentKindFilter(
   kind: StockDocumentKindFilter,
   status: "" | DocStatus,
-  row: ListRow
+  row: { docType: DocType; status: DocStatus }
 ): boolean {
-  if (kind === "ORD") {
-    return row.docType === "TRANSFER_OUT"
-  }
-  if (kind === "CNT") {
-    if (row.docType !== "ADJUSTMENT") return false
-    return status ? row.status === status : row.status === "DRAFT"
-  }
-  if (kind === "ADJ") {
-    if (row.docType !== "ADJUSTMENT") return false
-    if (status) return row.status === status
-    return row.status !== "DRAFT"
-  }
-  return true
+  return matchesKindPolicy(kind, status, row)
 }

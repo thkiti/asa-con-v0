@@ -3,6 +3,11 @@ export { postDocument } from "./posting"
 export { mapDocumentToLedgerMoves } from "./document-mapper"
 export { assertCanPost } from "./validation"
 export { STOCK_REF_TYPES } from "./transaction-types"
+export {
+  AUTHORIZED_STOCK_TRANSACTION_SOURCE,
+  assertCanCreateStockTransaction,
+  createStockTransaction,
+} from "./stock-transaction-authority"
 export type {
   IssueStockInput,
   ReceiveStockInput,

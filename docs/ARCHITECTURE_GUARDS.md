@@ -2,7 +2,7 @@
 
 Status: Active  
 Scope: Centralized grep/audit rules that protect architecture boundaries across `asa-con-v0`  
-Related: [01_MODULAR_MONOLITH_BOUNDARIES.md](./01_MODULAR_MONOLITH_BOUNDARIES.md), [06_STOCK_LEDGER_FOUNDATION.md](./06_STOCK_LEDGER_FOUNDATION.md), [07_STOCK_DOCUMENT_POSTING.md](./07_STOCK_DOCUMENT_POSTING.md)
+Related: [01_MODULAR_MONOLITH_BOUNDARIES.md](./01_MODULAR_MONOLITH_BOUNDARIES.md), [06_STOCK_LEDGER_FOUNDATION.md](./06_STOCK_LEDGER_FOUNDATION.md), [07_STOCK_DOCUMENT_POSTING.md](./07_STOCK_DOCUMENT_POSTING.md), [architecture/02_PERIOD_STOCK_LEDGER_DECISION.md](./architecture/02_PERIOD_STOCK_LEDGER_DECISION.md)
 
 > **Automated audits:** Run `npm run audit:all` (or see [ARCHITECTURE_AUDIT_COMMANDS.md](./ARCHITECTURE_AUDIT_COMMANDS.md) for per-domain commands). The npm scripts mirror the Jest boundary tests under `__tests__/`.
 
@@ -10,37 +10,45 @@ This document defines **who may write what**, **forbidden patterns**, and **audi
 
 ---
 
+## 0. Period ledger decision (2026-07)
+
+**ASA-CON retired per-event StockTransaction creation.** Operational REC, DEY, and CNT remain source documents. Future StockTransaction records will be generated only from Cost Calculation based on locked END Stock Documents (`END_COST_CALCULATION`). See [architecture/02_PERIOD_STOCK_LEDGER_DECISION.md](./architecture/02_PERIOD_STOCK_LEDGER_DECISION.md).
+
+| API | Status |
+|-----|--------|
+| `issueStock` / `receiveStock` | **Retired** — throw `PER_EVENT_LEDGER_RETIRED` |
+| `createStockTransaction` | Sole future create boundary — authorized source `END_COST_CALCULATION` only (not implemented yet) |
+| Checkout / `postDocument` | Must not create StockTransaction or inventory-cost vouchers |
+
+---
+
 ## 1. Stock mutation guards
 
-Stock rows (`Stock`), FIFO layers (`StockLayer`), and ledger rows (`StockTransaction`) are the inventory source of truth. All mutations must flow through the Phase 3 ledger kernel.
+`Stock`, `StockLayer`, and `StockTransaction` are **not** updated by per-event operational workflows. Historical per-event `StockTransaction` rows are cleared by the retirement cleanup. Future `StockTransaction` rows come only from Cost Calculation on locked END documents.
 
 ### 1.1 Who may call Prisma stock writers
 
 | Prisma API | Allowed modules only |
 |------------|----------------------|
-| `tx.stock.create` / `tx.stock.update` | `lib/stock/receive-stock.ts`, `lib/stock/issue-stock.ts` |
-| `tx.stockLayer.create` / `tx.stockLayer.update` | `lib/stock/layers.ts`, `lib/stock/receive-stock.ts` (via `layers.ts`) |
-| `tx.stockTransaction.create` | `lib/stock/receive-stock.ts`, `lib/stock/issue-stock.ts` |
+| `tx.stock.create` / `tx.stock.update` | `lib/stock/layers.ts` helpers are not called from ops; smoke/UAT/scripts only until Cost Calculation |
+| `tx.stockLayer.create` / `tx.stockLayer.update` | `lib/stock/layers.ts` (future Cost Calculation); scripts / UAT |
+| `tx.stockTransaction.create` | `lib/stock/stock-transaction-authority.ts` only (throws unless `END_COST_CALCULATION`) |
+| `tx.stockTransaction.deleteMany` | Cleanup / UAT / smoke scripts only |
 
-**Indirect path (required):** all business flows call `ledger.issueStock()` or `ledger.receiveStock()` — never Prisma stock writers directly.
+**Indirect path:** Operational flows must **not** call `ledger.issueStock()` or `ledger.receiveStock()`.
 
-### 1.2 Allowed call graph
+### 1.2 Allowed call graph (current)
 
 ```mermaid
 flowchart LR
+  checkout[lib/pos/checkout.ts]
   posting[lib/stock/posting.ts]
-  pos[lib/pos/checkout.ts future]
-  ledger[lib/stock/ledger.ts]
-  issue[lib/stock/issue-stock.ts]
-  receive[lib/stock/receive-stock.ts]
-  layers[lib/stock/layers.ts]
+  authority[stock-transaction-authority.ts]
+  costCalc[Future Cost Calculation]
 
-  posting --> ledger
-  pos --> ledger
-  ledger --> issue
-  ledger --> receive
-  issue --> layers
-  receive --> layers
+  checkout -->|"Sale + optional non-inventory Finance"| saleFin[postSaleVoucher]
+  posting -->|"status POSTED only"| docStatus[document-status]
+  costCalc -->|"END_COST_CALCULATION only"| authority
 ```
 
 ### 1.3 Exemptions (non-production)

@@ -6,6 +6,7 @@ const REF_PREFIX_BY_DOC_TYPE: Partial<Record<DocType, string>> = {
   TRANSFER_IN: "TRI",
   ADJUSTMENT: "ADJ",
   PERFORMANCE: "PER",
+  END: "END",
 }
 
 /** Compact YYYYMM period key for refNo and DocumentCounter (legacy-aligned). */

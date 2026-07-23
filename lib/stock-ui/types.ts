@@ -48,6 +48,8 @@ export type StockDocumentDetailVM = {
   date: string
   periodMonth: string | null
   branchId: string
+  /** Owning legal entity on the StockDocument (AS | AD). */
+  legalEntityCode: string
   fromLocId: string | null
   toLocId: string | null
   submittedAt: string | null
@@ -67,6 +69,9 @@ export type StockDocumentListFilter = {
   branchId?: string
   docType?: DocType
   status?: DocStatus
+  /** Canonical period filter YYYY-MM (PeriodSelector output). */
+  periodKey?: string
+  /** @deprecated Prefer periodKey — kept for callers that still set periodMonth. */
   periodMonth?: string
   from?: string
   to?: string

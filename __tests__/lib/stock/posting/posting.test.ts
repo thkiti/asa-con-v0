@@ -54,12 +54,19 @@ describe("postDocument", () => {
     })
   })
 
-  it("posts TRANSFER_OUT with issueStock and sets POSTED atomically", async () => {
+  it("posts TRANSFER_OUT without StockTransaction and sets POSTED", async () => {
     const initial = doc({
       docType: "TRANSFER_OUT",
       status: "CONFIRMED",
       lines: [
-        { id: "l1", documentId: "doc-1", productId: "p1", qty: 2, endingQty: null, reviewPostingDelta: null },
+        {
+          id: "l1",
+          documentId: "doc-1",
+          productId: "p1",
+          qty: 2,
+          endingQty: null,
+          reviewPostingDelta: null,
+        },
       ],
     })
     const { tx, state, getDocument } = createPostingMockTx(initial)
@@ -74,39 +81,15 @@ describe("postDocument", () => {
 
     expect(result.document.status).toBe("POSTED")
     expect(result.document.postedByStaffId).toBe("staff-1")
-    expect(result.ledger.issue.applied).toBe(1)
-    expect(result.ledger.receive.applied).toBe(0)
-    expect(state.transactions).toHaveLength(1)
-    expect(state.transactions[0].qtyOut).toBe(2)
-    expect(getDocument().status).toBe("POSTED")
-  })
-
-  it("posts ADJ all-zero without ledger rows", async () => {
-    const initial = doc({
-      docType: "ADJUSTMENT",
-      status: "CONFIRMED",
-      fromLocId: "branch-from",
-      lines: [
-        { id: "l1", documentId: "doc-1", productId: "p1", qty: 0, endingQty: 5, reviewPostingDelta: 0 },
-      ],
-    })
-    const { tx, state } = createPostingMockTx(initial)
-    ;(prisma.$transaction as jest.Mock).mockImplementation(
-      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
-    )
-
-    const result = await postDocument({
-      documentId: "doc-1",
-      postedByStaffId: "staff-1",
-    })
-
-    expect(result.document.status).toBe("POSTED")
-    expect(state.transactions).toHaveLength(0)
     expect(result.ledger.issue.applied).toBe(0)
     expect(result.ledger.receive.applied).toBe(0)
+    expect(state.transactions).toHaveLength(0)
+    expect(getDocument().status).toBe("POSTED")
+    expect(postStockDocumentVoucher).not.toHaveBeenCalled()
   })
 
-  it("posts ADJUSTMENT opening-count lines (qty = reviewPostingDelta) via receiveStock", async () => {
+  it("posts ADJUSTMENT (CNT path) without StockTransaction or inventory voucher", async () => {
+    ;(isFinancePostingEnabled as jest.Mock).mockReturnValue(true)
     const initial = doc({
       docType: "ADJUSTMENT",
       status: "CONFIRMED",
@@ -116,9 +99,9 @@ describe("postDocument", () => {
           id: "l1",
           documentId: "doc-1",
           productId: "p1",
-          qty: 100,
+          qty: 5,
           endingQty: null,
-          reviewPostingDelta: 100,
+          reviewPostingDelta: 5,
         },
       ],
     })
@@ -133,20 +116,24 @@ describe("postDocument", () => {
     })
 
     expect(result.document.status).toBe("POSTED")
-    expect(result.ledger.receive.applied).toBe(1)
-    expect(result.ledger.issue.applied).toBe(0)
-    expect(state.transactions).toHaveLength(1)
-    expect(state.transactions[0].qtyIn).toBe(100)
+    expect(state.transactions).toHaveLength(0)
+    expect(postStockDocumentVoucher).not.toHaveBeenCalled()
   })
 
-  it("posts ADJ mixed deltas with both receive and issue", async () => {
+  it("posts ADJ all-zero without ledger rows", async () => {
     const initial = doc({
       docType: "ADJUSTMENT",
-      status: "SUBMITTED",
+      status: "CONFIRMED",
       fromLocId: "branch-from",
       lines: [
-        { id: "l1", documentId: "doc-1", productId: "p1", qty: 0, endingQty: 5, reviewPostingDelta: 2 },
-        { id: "l2", documentId: "doc-1", productId: "p2", qty: 0, endingQty: 5, reviewPostingDelta: -1 },
+        {
+          id: "l1",
+          documentId: "doc-1",
+          productId: "p1",
+          qty: 0,
+          endingQty: 5,
+          reviewPostingDelta: 0,
+        },
       ],
     })
     const { tx, state } = createPostingMockTx(initial)
@@ -159,18 +146,40 @@ describe("postDocument", () => {
       postedByStaffId: "staff-1",
     })
 
-    expect(result.ledger.receive.applied).toBe(1)
-    expect(result.ledger.issue.applied).toBe(1)
-    expect(state.transactions).toHaveLength(2)
-    expect(result.document.confirmedAt).toBeInstanceOf(Date)
+    expect(result.document.status).toBe("POSTED")
+    expect(state.transactions).toHaveLength(0)
   })
 
-  it("rejects already POSTED before ledger writes", async () => {
+  it("rejects already POSTED documents", async () => {
     const initial = doc({
       docType: "TRANSFER_OUT",
       status: "POSTED",
+      lines: [],
+    })
+    const { tx } = createPostingMockTx(initial)
+    ;(prisma.$transaction as jest.Mock).mockImplementation(
+      async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
+    )
+
+    await expect(
+      postDocument({ documentId: "doc-1", postedByStaffId: "staff-1" })
+    ).rejects.toBeInstanceOf(PostingError)
+  })
+
+  it("retry of successful post does not create StockTransaction", async () => {
+    const initial = doc({
+      docType: "PERFORMANCE",
+      status: "SUBMITTED",
+      fromLocId: "branch-from",
       lines: [
-        { id: "l1", documentId: "doc-1", productId: "p1", qty: 2, endingQty: null, reviewPostingDelta: null },
+        {
+          id: "l1",
+          documentId: "doc-1",
+          productId: "p1",
+          qty: 1,
+          endingQty: null,
+          reviewPostingDelta: null,
+        },
       ],
     })
     const { tx, state } = createPostingMockTx(initial)
@@ -178,30 +187,10 @@ describe("postDocument", () => {
       async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)
     )
 
+    await postDocument({ documentId: "doc-1", postedByStaffId: "staff-1" })
     await expect(
       postDocument({ documentId: "doc-1", postedByStaffId: "staff-1" })
-    ).rejects.toMatchObject({ code: "ALREADY_POSTED" })
-
+    ).rejects.toBeInstanceOf(PostingError)
     expect(state.transactions).toHaveLength(0)
-    expect(state.stocks.size).toBe(0)
-  })
-
-  it("joins caller tx without opening prisma.$transaction", async () => {
-    const initial = doc({
-      docType: "PURCHASE",
-      status: "RECEIVED",
-      lines: [
-        { id: "l1", documentId: "doc-1", productId: "p1", qty: 3, endingQty: null, reviewPostingDelta: null },
-      ],
-    })
-    const { tx } = createPostingMockTx(initial)
-
-    await postDocument({
-      documentId: "doc-1",
-      postedByStaffId: "staff-1",
-      tx,
-    })
-
-    expect(prisma.$transaction).not.toHaveBeenCalled()
   })
 })

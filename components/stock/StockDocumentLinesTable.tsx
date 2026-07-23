@@ -42,7 +42,9 @@ export function StockDocumentLinesTable({
               <th className="px-3 py-2 font-medium">Product ID</th>
               <th className="px-3 py-2 font-medium">Code</th>
               <th className="px-3 py-2 font-medium">Name</th>
-              <th className="px-3 py-2 font-medium text-right">Qty</th>
+              <th className="px-3 py-2 font-medium text-right">
+                {showAdjFields ? "Physical Count Qty" : "Qty"}
+              </th>
               {showAdjFields ? (
                 <>
                   <th className="px-3 py-2 font-medium text-right">Ending qty</th>

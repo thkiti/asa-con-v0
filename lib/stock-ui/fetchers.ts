@@ -44,7 +44,8 @@ function buildListQuery(filter: StockDocumentListFilter): string {
   if (filter.branchId?.trim()) params.set("branchId", filter.branchId.trim())
   if (filter.docType) params.set("docType", filter.docType)
   if (filter.status) params.set("status", filter.status)
-  if (filter.periodMonth?.trim()) params.set("periodMonth", filter.periodMonth.trim())
+  const periodKey = (filter.periodKey ?? filter.periodMonth)?.trim()
+  if (periodKey) params.set("periodKey", periodKey)
   if (filter.from?.trim()) params.set("from", filter.from.trim())
   if (filter.to?.trim()) params.set("to", filter.to.trim())
   if (filter.cursor) params.set("cursor", filter.cursor)
@@ -110,6 +111,7 @@ export function normalizeStockDocumentDetail(
 ): StockDocumentDetailVM {
   return {
     ...raw,
+    legalEntityCode: String(raw.legalEntityCode ?? "").trim() || "AS",
     date: typeof raw.date === "string" ? raw.date : new Date(raw.date as string | Date).toISOString(),
     lines: (raw.lines ?? []).map((line) => ({
       id: line.id,
