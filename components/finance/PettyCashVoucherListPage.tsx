@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { PettyCashVoucherStatusBadge } from "@/components/finance/PettyCashVoucherStatusBadge"
 import { formatAmount, formatFinanceListDate } from "@/lib/finance-ui/format"
 import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
@@ -37,10 +38,7 @@ import {
   manualJournalEntryListTdDescription,
   manualJournalEntryListTdDocNo,
   manualJournalEntryListTdStatus,
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterPostingState,
@@ -216,24 +214,12 @@ export function PettyCashVoucherListPage() {
             ))}
           </select>
         </label>
-        <div className={voucherInquiryFilterActions}>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonPrimary}
-            onClick={handleSearch}
-            data-testid="petty-cash-voucher-search"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonSecondary}
-            onClick={handleClear}
-            data-testid="petty-cash-voucher-clear"
-          >
-            Clear
-          </button>
-        </div>
+        <InquiryFilterActions
+          onPrimary={handleSearch}
+          onClear={handleClear}
+          primaryTestId="petty-cash-voucher-search"
+          clearTestId="petty-cash-voucher-clear"
+        />
       </div>
 
       {loading ? (

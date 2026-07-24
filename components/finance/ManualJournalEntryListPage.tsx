@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
@@ -41,10 +42,7 @@ import {
   manualJournalEntryListTdDocNo,
   manualJournalEntryListTdLines,
   manualJournalEntryListTdStatus,
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterPostingState,
@@ -223,24 +221,12 @@ export function ManualJournalEntryListPage() {
             ))}
           </select>
         </label>
-        <div className={voucherInquiryFilterActions}>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonPrimary}
-            onClick={handleSearch}
-            data-testid="manual-journal-entry-search"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonSecondary}
-            onClick={handleClear}
-            data-testid="manual-journal-entry-clear"
-          >
-            Clear
-          </button>
-        </div>
+        <InquiryFilterActions
+          onPrimary={handleSearch}
+          onClear={handleClear}
+          primaryTestId="manual-journal-entry-search"
+          clearTestId="manual-journal-entry-clear"
+        />
       </div>
 
       {loading ? <p className={`text-sm ${themeTextSecondary}`}>Loading entries…</p> : null}

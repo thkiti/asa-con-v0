@@ -1,12 +1,12 @@
 "use client"
 
 import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import type { BankStatementStatus } from "@/lib/finance/bank-statement"
 import type { BankAccountRow } from "@/lib/finance/bank-account"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import {
   voucherInquiryFilterBar,
-  voucherInquiryFilterButtonPrimary,
   voucherInquiryFilterInput,
   voucherInquiryFilterSelect,
 } from "@/lib/finance-ui/finance-visual-classes"
@@ -113,17 +113,14 @@ export function BankStatementFilterBar({
         />
       </div>
 
-      <div className="finance-filter-actions">
-        <button
-          type="button"
-          className={voucherInquiryFilterButtonPrimary}
-          onClick={onApply}
-          disabled={loading}
-          data-testid="bank-statement-filter-apply"
-        >
-          {loading ? "Loading…" : "Apply"}
-        </button>
-      </div>
+      <InquiryFilterActions
+        mode="apply-only"
+        onPrimary={onApply}
+        loading={loading}
+        loadingPrimaryLabel="Loading…"
+        primaryTestId="bank-statement-filter-apply"
+        className="finance-filter-actions"
+      />
     </section>
   )
 }

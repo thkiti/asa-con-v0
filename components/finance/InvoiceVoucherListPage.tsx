@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { InvoiceVoucherStatusBadge } from "@/components/finance/InvoiceVoucherStatusBadge"
 import { formatAmount, formatFinanceListDate } from "@/lib/finance-ui/format"
 import { appendFinanceLegalEntityToPath } from "@/lib/finance-ui/finance-entity-scope"
@@ -37,10 +38,7 @@ import {
   manualJournalEntryListTdDescription,
   manualJournalEntryListTdDocNo,
   manualJournalEntryListTdStatus,
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterPostingState,
@@ -216,24 +214,12 @@ export function InvoiceVoucherListPage() {
             ))}
           </select>
         </label>
-        <div className={voucherInquiryFilterActions}>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonPrimary}
-            onClick={handleSearch}
-            data-testid="invoice-voucher-search"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonSecondary}
-            onClick={handleClear}
-            data-testid="invoice-voucher-clear"
-          >
-            Clear
-          </button>
-        </div>
+        <InquiryFilterActions
+          onPrimary={handleSearch}
+          onClear={handleClear}
+          primaryTestId="invoice-voucher-search"
+          clearTestId="invoice-voucher-clear"
+        />
       </div>
 
       {loading ? (
