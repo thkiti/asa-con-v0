@@ -1,8 +1,6 @@
+import { StatusBadge } from "@/components/ui/StatusBadge"
 import type { DocStatus } from "@/lib/stock-ui/types"
-import {
-  docStatusToneClass,
-  formatDocStatusLabel,
-} from "@/lib/stock-ui/format"
+import { docStatusTone, formatDocStatusLabel } from "@/lib/stock-ui/format"
 
 type StockDocumentStatusBadgeProps = {
   status: DocStatus
@@ -10,10 +8,8 @@ type StockDocumentStatusBadgeProps = {
 
 export function StockDocumentStatusBadge({ status }: StockDocumentStatusBadgeProps) {
   return (
-    <span
-      className={`inline-block rounded px-2 py-0.5 text-sm font-medium ${docStatusToneClass(status)}`}
-    >
+    <StatusBadge tone={docStatusTone(status)} size="sm">
       {formatDocStatusLabel(status)}
-    </span>
+    </StatusBadge>
   )
 }

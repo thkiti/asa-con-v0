@@ -106,6 +106,6 @@ describe("PosRecRefLookup UI", () => {
       <PosRecRefLookupPdfIndicator row={{ ...sampleRow, pdfAvailable: false }} />
     )
     expect(html).toContain('data-testid="pos-rec-ref-lookup-pdf-receipt-1"')
-    expect(html).toContain("finance-pdf-indicator--missing")
+    expect(html).toContain("bg-[var(--tone-error-fg)]")
   })
 })

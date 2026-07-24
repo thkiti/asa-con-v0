@@ -1,10 +1,11 @@
+import { StatusBadge, type StatusBadgeTone } from "@/components/ui/StatusBadge"
 import type { ReconciliationRowStatus } from "@/lib/finance-ui/reconciliation"
 
-const toneClasses: Record<ReconciliationRowStatus, string> = {
-  MATCHED: "bg-green-100 text-green-800",
-  VARIANCE: "bg-amber-100 text-amber-800",
-  MISSING_SOURCE: "bg-orange-100 text-orange-900",
-  MISSING_GL: "bg-red-100 text-red-800",
+const STATUS_TONE: Record<ReconciliationRowStatus, StatusBadgeTone> = {
+  MATCHED: "ok",
+  VARIANCE: "warning",
+  MISSING_SOURCE: "caution",
+  MISSING_GL: "danger",
 }
 
 type ReconciliationStatusBadgeProps = {
@@ -15,10 +16,12 @@ export function ReconciliationStatusBadge({
   status,
 }: ReconciliationStatusBadgeProps) {
   return (
-    <span
-      className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${toneClasses[status]}`}
+    <StatusBadge
+      tone={STATUS_TONE[status]}
+      size="xs"
+      className="uppercase tracking-wide"
     >
       {status.replace("_", " ")}
-    </span>
+    </StatusBadge>
   )
 }

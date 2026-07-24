@@ -1,10 +1,11 @@
+import { StatusBadge, type StatusBadgeTone } from "@/components/ui/StatusBadge"
 import { formatPeriodStatusLabel } from "@/lib/finance-ui/periods"
 import type { AccountingPeriodStatus } from "@/lib/finance-ui/types"
 
-const toneClasses: Record<AccountingPeriodStatus, string> = {
-  OPEN: "bg-green-100 text-green-800",
-  SOFT_CLOSED: "bg-amber-100 text-amber-800",
-  HARD_CLOSED: "bg-red-100 text-red-800",
+const STATUS_TONE: Record<AccountingPeriodStatus, StatusBadgeTone> = {
+  OPEN: "ok",
+  SOFT_CLOSED: "warning",
+  HARD_CLOSED: "danger",
 }
 
 type PeriodStatusBadgeProps = {
@@ -13,10 +14,8 @@ type PeriodStatusBadgeProps = {
 
 export function PeriodStatusBadge({ status }: PeriodStatusBadgeProps) {
   return (
-    <span
-      className={`inline-block rounded px-2 py-0.5 text-sm font-medium ${toneClasses[status]}`}
-    >
+    <StatusBadge tone={STATUS_TONE[status]} size="sm">
       {formatPeriodStatusLabel(status)}
-    </span>
+    </StatusBadge>
   )
 }

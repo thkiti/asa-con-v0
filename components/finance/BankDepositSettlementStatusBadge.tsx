@@ -1,13 +1,14 @@
 "use client"
 
+import { StatusBadge, type StatusBadgeTone } from "@/components/ui/StatusBadge"
 import type { BankDepositSettlementStatus } from "@/lib/finance-ui/pos-settlement-status-types"
 
-const toneClasses: Record<BankDepositSettlementStatus, string> = {
-  NOT_POSTED: "bg-zinc-100 text-zinc-800",
-  POSTED: "bg-green-100 text-green-800",
-  VARIANCE: "bg-amber-100 text-amber-800",
-  INVALID_SOURCE: "bg-orange-100 text-orange-900",
-  NOT_ELIGIBLE: "bg-slate-100 text-slate-700",
+const STATUS_TONE: Record<BankDepositSettlementStatus, StatusBadgeTone> = {
+  NOT_POSTED: "neutral",
+  POSTED: "ok",
+  VARIANCE: "warning",
+  INVALID_SOURCE: "caution",
+  NOT_ELIGIBLE: "muted",
 }
 
 type BankDepositSettlementStatusBadgeProps = {
@@ -18,10 +19,12 @@ export function BankDepositSettlementStatusBadge({
   status,
 }: BankDepositSettlementStatusBadgeProps) {
   return (
-    <span
-      className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${toneClasses[status]}`}
+    <StatusBadge
+      tone={STATUS_TONE[status]}
+      size="xs"
+      className="uppercase tracking-wide"
     >
       {status.replace(/_/g, " ")}
-    </span>
+    </StatusBadge>
   )
 }

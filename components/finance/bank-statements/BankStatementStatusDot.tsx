@@ -1,12 +1,16 @@
 "use client"
 
+import {
+  TrafficLightStatusDot,
+  type TrafficLightStatus,
+} from "@/components/ui/TrafficLightStatusDot"
 import type { BankStatementStatus } from "@/lib/finance/bank-statement"
 import { bankStatementStatusTooltip } from "@/lib/finance-ui/bank-statements"
 
-const statusClass: Record<BankStatementStatus, string> = {
-  NEW: "bg-[var(--tone-error-fg)]",
-  DRAFT: "bg-[var(--tone-warning-fg,#ca8a04)]",
-  READY: "bg-[var(--tone-success-fg)]",
+const STATUS_TO_TRAFFIC: Record<BankStatementStatus, TrafficLightStatus> = {
+  NEW: "action_required",
+  DRAFT: "in_progress",
+  READY: "completed",
 }
 
 type BankStatementStatusDotProps = {
@@ -15,13 +19,10 @@ type BankStatementStatusDotProps = {
 }
 
 export function BankStatementStatusDot({ status, testId }: BankStatementStatusDotProps) {
-  const tooltip = bankStatementStatusTooltip(status)
-
   return (
-    <span
-      className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${statusClass[status]}`}
-      title={tooltip}
-      aria-label={tooltip}
+    <TrafficLightStatusDot
+      status={STATUS_TO_TRAFFIC[status]}
+      tooltip={bankStatementStatusTooltip(status)}
       data-testid={testId ?? `bank-statement-status-${status.toLowerCase()}`}
     />
   )

@@ -1,12 +1,10 @@
+import { TrafficLightStatusDot } from "@/components/ui/TrafficLightStatusDot"
 import { buildDocumentArchiveByDocumentDownloadPath } from "@/lib/document-archive-ui/paths"
 import { buildManualJournalPdfApiPath } from "@/lib/finance/inquiry/finance-document-inquiry-links"
 import { resolveOperationalVoucherDocumentKindByDocType } from "@/lib/document-archive/operational-voucher-kind"
 import type { FinanceDocumentInquiryRow } from "@/lib/finance-ui/types"
 import {
-  financePdfIndicator,
-  financePdfIndicatorExists,
   financePdfIndicatorLink,
-  financePdfIndicatorMissing,
   financePdfIndicatorStatic,
 } from "@/lib/finance-ui/finance-visual-classes"
 
@@ -64,12 +62,6 @@ function resolvePdfStatusLabel(
   return isCol ? "Evidence not supported" : "PDF not supported"
 }
 
-function resolvePdfIndicatorClass(triState: boolean | null): string {
-  if (triState === true) return `${financePdfIndicator} ${financePdfIndicatorExists}`
-  if (triState === false) return `${financePdfIndicator} ${financePdfIndicatorMissing}`
-  return financePdfIndicator
-}
-
 type VoucherInquiryPdfIndicatorProps = {
   row: FinanceDocumentInquiryRow
 }
@@ -83,7 +75,12 @@ export function VoucherInquiryPdfIndicator({ row }: VoucherInquiryPdfIndicatorPr
 
   const href = resolvePdfApiHref(row)
   const label = resolvePdfStatusLabel(row, triState)
-  const dot = <span className={resolvePdfIndicatorClass(triState)} aria-hidden="true" />
+  const dot = (
+    <TrafficLightStatusDot
+      status={triState ? "completed" : "action_required"}
+      tooltip={label}
+    />
+  )
 
   if (href) {
     return (

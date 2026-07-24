@@ -1,9 +1,6 @@
+import { TrafficLightStatusDot } from "@/components/ui/TrafficLightStatusDot"
 import type { StockDocumentInquiryRow } from "@/lib/stock-ui/stock-document-inquiry"
-import {
-  financePdfIndicator,
-  financePdfIndicatorMissing,
-  financePdfIndicatorStatic,
-} from "@/lib/finance-ui/finance-visual-classes"
+import { financePdfIndicatorStatic } from "@/lib/finance-ui/finance-visual-classes"
 
 type StockDocumentInquiryPdfIndicatorProps = {
   row: Pick<StockDocumentInquiryRow, "id" | "pdfAvailable">
@@ -27,10 +24,7 @@ export function StockDocumentInquiryPdfIndicator({
       role="img"
       data-testid={`stock-document-inquiry-pdf-${row.id}`}
     >
-      <span
-        className={`${financePdfIndicator} ${financePdfIndicatorMissing}`}
-        aria-hidden="true"
-      />
+      <TrafficLightStatusDot status="action_required" tooltip={label} />
     </span>
   )
 }

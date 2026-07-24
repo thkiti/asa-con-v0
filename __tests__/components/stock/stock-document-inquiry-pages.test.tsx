@@ -183,7 +183,7 @@ describe("Stock Document Inquiry UI", () => {
       <StockDocumentInquiryPdfIndicator row={{ id: "doc-1", pdfAvailable: false }} />
     )
     expect(html).toContain('data-testid="stock-document-inquiry-pdf-doc-1"')
-    expect(html).toContain("finance-pdf-indicator--missing")
+    expect(html).toContain("bg-[var(--tone-error-fg)]")
   })
 
   it("renders finance stock document inquiry page shell", () => {

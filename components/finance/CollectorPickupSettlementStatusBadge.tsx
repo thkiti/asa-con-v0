@@ -1,10 +1,11 @@
+import { StatusBadge, type StatusBadgeTone } from "@/components/ui/StatusBadge"
 import type { CollectorPickupSettlementStatus } from "@/lib/finance-ui/pos-settlement-status-types"
 
-const toneClasses: Record<CollectorPickupSettlementStatus, string> = {
-  NOT_POSTED: "bg-zinc-100 text-zinc-800",
-  POSTED: "bg-green-100 text-green-800",
-  VARIANCE: "bg-amber-100 text-amber-800",
-  INVALID_SOURCE: "bg-orange-100 text-orange-900",
+const STATUS_TONE: Record<CollectorPickupSettlementStatus, StatusBadgeTone> = {
+  NOT_POSTED: "neutral",
+  POSTED: "ok",
+  VARIANCE: "warning",
+  INVALID_SOURCE: "caution",
 }
 
 type CollectorPickupSettlementStatusBadgeProps = {
@@ -15,10 +16,12 @@ export function CollectorPickupSettlementStatusBadge({
   status,
 }: CollectorPickupSettlementStatusBadgeProps) {
   return (
-    <span
-      className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${toneClasses[status]}`}
+    <StatusBadge
+      tone={STATUS_TONE[status]}
+      size="xs"
+      className="uppercase tracking-wide"
     >
       {status.replace("_", " ")}
-    </span>
+    </StatusBadge>
   )
 }

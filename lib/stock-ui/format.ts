@@ -1,4 +1,5 @@
 import type { DocStatus, DocType } from "@/generated/prisma/client"
+import type { StatusBadgeTone } from "@/components/ui/StatusBadge"
 import { DEFAULT_DOCUMENT_ENTITY_CODE } from "@/lib/legal-entity/constants"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import {
@@ -19,7 +20,18 @@ const STATUS_LABELS: Record<DocStatus, string> = {
   CANCELLED: "Cancelled",
 }
 
-const STATUS_TONE: Record<DocStatus, string> = {
+const STATUS_TONE: Record<DocStatus, StatusBadgeTone> = {
+  DRAFT: "neutral",
+  SUBMITTED: "info",
+  SHIPPED: "accent",
+  CONFIRMED: "progress",
+  RECEIVED: "received",
+  POSTED: "ok",
+  TRANSFERRED: "special",
+  CANCELLED: "danger",
+}
+
+const STATUS_TONE_CLASS: Record<DocStatus, string> = {
   DRAFT: "bg-zinc-100 text-zinc-800",
   SUBMITTED: "bg-blue-100 text-blue-800",
   SHIPPED: "bg-indigo-100 text-indigo-800",
@@ -70,8 +82,12 @@ export function formatDocStatusLabel(status: DocStatus): string {
   return STATUS_LABELS[status] ?? status
 }
 
+export function docStatusTone(status: DocStatus): StatusBadgeTone {
+  return STATUS_TONE[status] ?? "neutral"
+}
+
 export function docStatusToneClass(status: DocStatus): string {
-  return STATUS_TONE[status] ?? "bg-zinc-100 text-zinc-800"
+  return STATUS_TONE_CLASS[status] ?? "bg-zinc-100 text-zinc-800"
 }
 
 export function formatDocumentDate(iso: string): string {

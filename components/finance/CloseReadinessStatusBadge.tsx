@@ -1,12 +1,13 @@
+import { StatusBadge, type StatusBadgeTone } from "@/components/ui/StatusBadge"
 import {
   formatCloseReadinessStatusLabel,
   type CloseReadinessResult,
 } from "@/lib/finance-ui/close-readiness"
 
-const toneClasses: Record<CloseReadinessResult["status"], string> = {
-  READY: "bg-green-100 text-green-800",
-  WARNING: "bg-amber-100 text-amber-800",
-  BLOCKED: "bg-red-100 text-red-800",
+const STATUS_TONE: Record<CloseReadinessResult["status"], StatusBadgeTone> = {
+  READY: "ok",
+  WARNING: "warning",
+  BLOCKED: "danger",
 }
 
 type CloseReadinessStatusBadgeProps = {
@@ -15,10 +16,8 @@ type CloseReadinessStatusBadgeProps = {
 
 export function CloseReadinessStatusBadge({ status }: CloseReadinessStatusBadgeProps) {
   return (
-    <span
-      className={`inline-block rounded px-2 py-0.5 text-sm font-medium ${toneClasses[status]}`}
-    >
+    <StatusBadge tone={STATUS_TONE[status]} size="sm">
       {formatCloseReadinessStatusLabel(status)}
-    </span>
+    </StatusBadge>
   )
 }

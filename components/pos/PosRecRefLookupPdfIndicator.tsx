@@ -1,8 +1,5 @@
-import {
-  financePdfIndicator,
-  financePdfIndicatorMissing,
-  financePdfIndicatorStatic,
-} from "@/lib/finance-ui/finance-visual-classes"
+import { TrafficLightStatusDot } from "@/components/ui/TrafficLightStatusDot"
+import { financePdfIndicatorStatic } from "@/lib/finance-ui/finance-visual-classes"
 import type { PosRecRefLookupRow } from "@/lib/pos-ui/pos-rec-ref-lookup"
 
 type PosRecRefLookupPdfIndicatorProps = {
@@ -25,10 +22,7 @@ export function PosRecRefLookupPdfIndicator({ row }: PosRecRefLookupPdfIndicator
       role="img"
       data-testid={`pos-rec-ref-lookup-pdf-${row.id}`}
     >
-      <span
-        className={`${financePdfIndicator} ${financePdfIndicatorMissing}`}
-        aria-hidden="true"
-      />
+      <TrafficLightStatusDot status="action_required" tooltip={label} />
     </span>
   )
 }
