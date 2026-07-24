@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { GlAccountCombobox } from "@/components/finance/GlAccountCombobox"
+import { ModalShell } from "@/components/ui/ModalShell"
 import type { BankAccountRow } from "@/lib/finance/bank-account"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { formatEntityShort } from "@/lib/legal-entity/display"
@@ -74,8 +75,6 @@ export function BankAccountFormModal({
     setIsActive(true)
   }, [open, mode, account])
 
-  if (!open) return null
-
   const isEdit = mode === "edit"
   const trimmedBankName = bankName.trim()
   const trimmedAccountName = accountName.trim()
@@ -89,37 +88,32 @@ export function BankAccountFormModal({
     !submitting
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center"
-      role="presentation"
-      onClick={onClose}
+    <ModalShell
+      open={open}
+      onClose={() => {
+        if (!submitting) onClose()
+      }}
+      title={isEdit ? "Edit bank account" : "Add bank account"}
+      titleId="bank-account-form-title"
+      panelClassName="max-w-lg p-5"
+      closeOnOverlayClick={!submitting}
+      data-testid="bank-account-form-modal"
     >
-      <div
-        className="w-full max-w-lg rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="bank-account-form-title"
-        onClick={(event) => event.stopPropagation()}
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!canSubmit) return
+          void onSubmit({
+            bankName: trimmedBankName,
+            accountNumber: trimmedAccountNumber,
+            accountName: trimmedAccountName,
+            currencyCode: currencyCode.trim().toUpperCase() || "THB",
+            glAccountCode: trimmedGlCode,
+            isActive,
+          })
+        }}
       >
-        <h2 id="bank-account-form-title" className="text-lg font-semibold">
-          {isEdit ? "Edit bank account" : "Add bank account"}
-        </h2>
-
-        <form
-          className="mt-3 space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!canSubmit) return
-            void onSubmit({
-              bankName: trimmedBankName,
-              accountNumber: trimmedAccountNumber,
-              accountName: trimmedAccountName,
-              currencyCode: currencyCode.trim().toUpperCase() || "THB",
-              glAccountCode: trimmedGlCode,
-              isActive,
-            })
-          }}
-        >
           <div>
             <span className={fieldLabel}>Legal entity</span>
             <p className={`mt-0.5 text-sm font-medium ${themeMuted}`}>
@@ -204,26 +198,25 @@ export function BankAccountFormModal({
             </p>
           ) : null}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className={themeBtnSecondary}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className={themeBtnPrimary}
-              data-testid="bank-account-form-submit"
-            >
-              {submitting ? "Saving…" : isEdit ? "Save changes" : "Add bank account"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className={themeBtnSecondary}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className={themeBtnPrimary}
+            data-testid="bank-account-form-submit"
+          >
+            {submitting ? "Saving…" : isEdit ? "Save changes" : "Add bank account"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   )
 }

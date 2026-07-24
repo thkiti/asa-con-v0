@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { ModalShell } from "@/components/ui/ModalShell"
 import {
   buildProductGroup,
   cleanGroupDisplayName,
@@ -195,7 +196,6 @@ export function ProductReferenceFormModal({
     }
   }
 
-  if (!open) return null
   if (!isCreateMode && !row) return null
 
   const trimmedName = name.trim()
@@ -304,34 +304,30 @@ export function ProductReferenceFormModal({
         }}
       />
 
-      <div
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center"
-        role="presentation"
-        onClick={onClose}
+      <ModalShell
+        open={open}
+        onClose={() => {
+          if (!submitting) onClose()
+        }}
+        title={title}
+        titleId="product-ref-form-title"
+        panelClassName="max-w-2xl p-6"
+        closeOnOverlayClick={!submitting}
+        data-testid="product-reference-form-modal"
       >
-        <div
-          className="w-full max-w-2xl rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="product-ref-form-title"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <h2 id="product-ref-form-title" className="text-lg font-semibold">
-              {title}
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className={themeBtnSecondary}
-              aria-label="Close"
-            >
-              Close
-            </button>
-          </div>
+        <div className="mb-2 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className={themeBtnSecondary}
+            aria-label="Close"
+          >
+            Close
+          </button>
+        </div>
 
-          <div className="mt-4 space-y-4">
+        <div className="space-y-4">
             <section className="space-y-3 border-t border-border pt-3">
               <h3 className="text-sm font-semibold">Reference Stock</h3>
 
@@ -529,9 +525,8 @@ export function ProductReferenceFormModal({
                 </button>
               </div>
             </div>
-          </div>
         </div>
-      </div>
+      </ModalShell>
     </>
   )
 }

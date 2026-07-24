@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ModalShell } from "@/components/ui/ModalShell"
 import {
   branchTaxIdFieldLabel,
   previewBranchCodeForTaxLabel,
@@ -76,8 +77,6 @@ export function BranchFormModal({
     setTaxId("")
   }, [open, mode, branch])
 
-  if (!open) return null
-
   const isEdit = mode === "edit"
   const trimmedName = name.trim()
   const trimmedCode = code.trim()
@@ -91,38 +90,33 @@ export function BranchFormModal({
     !submitting
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center"
-      role="presentation"
-      onClick={onClose}
+    <ModalShell
+      open={open}
+      onClose={() => {
+        if (!submitting) onClose()
+      }}
+      title={isEdit ? "Edit branch" : "Add branch"}
+      titleId="branch-form-title"
+      panelClassName="max-w-lg p-5"
+      closeOnOverlayClick={!submitting}
+      data-testid="branch-form-modal"
     >
-      <div
-        className="w-full max-w-lg rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="branch-form-title"
-        onClick={(event) => event.stopPropagation()}
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!canSubmit) return
+          void onSubmit({
+            code: trimmedCode,
+            name: trimmedName,
+            type,
+            isActive,
+            address: address.trim() || null,
+            phone: phone.trim() || null,
+            taxId: taxId.trim() || null,
+          })
+        }}
       >
-        <h2 id="branch-form-title" className="text-lg font-semibold">
-          {isEdit ? "Edit branch" : "Add branch"}
-        </h2>
-
-        <form
-          className="mt-3 space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!canSubmit) return
-            void onSubmit({
-              code: trimmedCode,
-              name: trimmedName,
-              type,
-              isActive,
-              address: address.trim() || null,
-              phone: phone.trim() || null,
-              taxId: taxId.trim() || null,
-            })
-          }}
-        >
           <div className="grid grid-cols-[5.5rem_minmax(0,1fr)_4.25rem] gap-x-2 gap-y-1">
             <label className="block min-w-0">
               <span className={fieldLabel}>Code</span>
@@ -227,25 +221,24 @@ export function BranchFormModal({
             </p>
           ) : null}
 
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className={themeBtnSecondary}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className={themeBtnPrimary}
-            >
-              {submitting ? "Saving…" : "Save"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className={themeBtnSecondary}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className={themeBtnPrimary}
+          >
+            {submitting ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   )
 }

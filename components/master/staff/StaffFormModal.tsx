@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ModalShell } from "@/components/ui/ModalShell"
 import type { BranchListItem, StaffListItem } from "@/lib/master/types"
 import { themeBtnPrimary, themeBtnSecondary, themeInput, themeMuted } from "@/lib/theme/theme-classes"
 import { StaffEvidenceSection } from "./StaffEvidenceSection"
@@ -84,8 +85,6 @@ export function StaffFormModal({
     setPassword("")
   }, [open, mode, staff, branches, defaultBranchId])
 
-  if (!open) return null
-
   const isEdit = mode === "edit"
   const trimmedName = name.trim()
   const trimmedStaffId = staffId.trim()
@@ -96,41 +95,36 @@ export function StaffFormModal({
     !submitting
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center"
-      role="presentation"
-      onClick={onClose}
+    <ModalShell
+      open={open}
+      onClose={() => {
+        if (!submitting) onClose()
+      }}
+      title={isEdit ? "Edit staff" : "Add staff"}
+      titleId="staff-form-title"
+      panelClassName="max-w-lg p-5"
+      closeOnOverlayClick={!submitting}
+      data-testid="staff-form-modal"
     >
-      <div
-        className="w-full max-w-lg rounded-lg border border-border bg-card p-5 text-card-foreground shadow-lg"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="staff-form-title"
-        onClick={(event) => event.stopPropagation()}
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!canSubmit) return
+          void (async () => {
+            await onSubmit({
+              staffId: trimmedStaffId,
+              name: trimmedName,
+              role,
+              branchId,
+              password: isEdit ? undefined : password.trim() || undefined,
+              posCanCollect: role === "SH_STAFF" ? false : posCanCollect,
+              allowAnyBranchLogin:
+                role === "SH_STAFF" ? allowAnyBranchLogin : false,
+            })
+          })()
+        }}
       >
-        <h2 id="staff-form-title" className="text-lg font-semibold">
-          {isEdit ? "Edit staff" : "Add staff"}
-        </h2>
-
-        <form
-          className="mt-3 space-y-3"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!canSubmit) return
-            void (async () => {
-              await onSubmit({
-                staffId: trimmedStaffId,
-                name: trimmedName,
-                role,
-                branchId,
-                password: isEdit ? undefined : password.trim() || undefined,
-                posCanCollect: role === "SH_STAFF" ? false : posCanCollect,
-                allowAnyBranchLogin:
-                  role === "SH_STAFF" ? allowAnyBranchLogin : false,
-              })
-            })()
-          }}
-        >
           <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-2 gap-y-1">
             <label className="block min-w-0">
               <span className={fieldLabel}>Staff ID</span>
@@ -267,21 +261,20 @@ export function StaffFormModal({
             </p>
           ) : null}
 
-          <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className={themeBtnSecondary}
-            >
-              Cancel
-            </button>
-            <button type="submit" disabled={!canSubmit} className={themeBtnPrimary}>
-              {submitting ? "Saving…" : "Save"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className={themeBtnSecondary}
+          >
+            Cancel
+          </button>
+          <button type="submit" disabled={!canSubmit} className={themeBtnPrimary}>
+            {submitting ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
   )
 }
