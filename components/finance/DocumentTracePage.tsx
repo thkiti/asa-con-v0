@@ -42,11 +42,8 @@ import {
   type DocumentTraceFilters,
 } from "@/lib/finance/audit/document-trace-filters"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
-import {
-  voucherInquiryFilterActions,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
-} from "@/lib/finance-ui/finance-visual-classes"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import {
   themeEmptyState,
   themeInlineError,
@@ -496,23 +493,18 @@ export function DocumentTracePage() {
       <div className="finance-filter-row">
         {showShopOnMainRow ? (
           <div className="finance-filter-field">
-            <label htmlFor="document-trace-shop" className="finance-filter-label">
-              Shop
-            </label>
-            <select
-              id="document-trace-shop"
+            <BranchSelect
+              label="Shop"
+              labelClassName="finance-filter-label"
               value={filters.branchCode}
-              onChange={(event) => updateFilters({ branchCode: event.target.value })}
-              className="finance-filter-control finance-filter-select"
+              onChange={(branchCode) => updateFilters({ branchCode })}
+              options={branches}
+              valueKey="code"
+              emptyOption={{ label: "All shops" }}
+              selectClassName="finance-filter-control finance-filter-select"
+              formatOptionLabel={formatPosSettlementBranchLabel}
               data-testid="document-trace-main-branch-select"
-            >
-              <option value="">All shops</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.code}>
-                  {formatPosSettlementBranchLabel(branch)}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         ) : null}
 
@@ -581,30 +573,20 @@ export function DocumentTracePage() {
           branches={branches}
         />
 
-        <div className={`finance-filter-field ${voucherInquiryFilterActions}`}>
+        <div className="finance-filter-field">
           <span className="finance-filter-label" aria-hidden="true">
             &nbsp;
           </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSearch}
-              disabled={loading || !searchEnabled}
-              className={voucherInquiryFilterButtonPrimary}
-              data-testid="document-trace-search-button"
-            >
-              {loading ? "Searching…" : "Search"}
-            </button>
-            <button
-              type="button"
-              onClick={handleClear}
-              disabled={loading}
-              className={voucherInquiryFilterButtonSecondary}
-              data-testid="document-trace-clear-button"
-            >
-              Clear
-            </button>
-          </div>
+          <InquiryFilterActions
+            className="flex flex-wrap items-center gap-2"
+            onPrimary={handleSearch}
+            onClear={handleClear}
+            loading={loading}
+            loadingPrimaryLabel="Searching…"
+            primaryDisabled={!searchEnabled}
+            primaryTestId="document-trace-search-button"
+            clearTestId="document-trace-clear-button"
+          />
         </div>
       </div>
 

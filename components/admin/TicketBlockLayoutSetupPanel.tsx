@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { ReceiptBlockEditor } from "@/components/admin/ReceiptBlockEditor"
 import { ReceiptInfoBlockFontEditor } from "@/components/admin/ReceiptInfoBlockFontEditor"
 import { ReceiptSetupPrintSampleButton } from "@/components/admin/ReceiptSetupPrintSampleButton"
+import { BranchSelect } from "@/components/ui/BranchSelect"
 import { fetchReceiptSetupBranches } from "@/lib/admin-ui/receipt-setup-branches-client"
 import {
   blockLayoutDraftFromView,
@@ -220,22 +221,21 @@ export function TicketBlockLayoutSetupPanel({
           {THERMAL_COLUMNS} monospace columns
         </p>
 
-        <label className="mt-3 block">
-          <span className="text-sm text-muted-foreground">Shop</span>
-          <select
-            className={`${themeInput} mt-1`}
-            value={selectedBranchId}
-            onChange={(event) => setSelectedBranchId(event.target.value)}
-            disabled={branchesLoading || branches.length === 0}
-            data-testid={`${documentType.toLowerCase()}-setup-shop-select`}
-          >
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {formatReceiptSetupBranchLabel(branch)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <BranchSelect
+          label="Shop"
+          labelClassName="text-sm text-muted-foreground"
+          wrapperClassName="mt-3 block"
+          selectClassName={`${themeInput} mt-1`}
+          value={selectedBranchId}
+          onChange={setSelectedBranchId}
+          options={branches}
+          formatOptionLabel={(option) =>
+            formatReceiptSetupBranchLabel(option as ReceiptSetupBranchOption)
+          }
+          disabled={branchesLoading || branches.length === 0}
+          loading={branchesLoading}
+          data-testid={`${documentType.toLowerCase()}-setup-shop-select`}
+        />
 
         <div className="receipt-setup-preview mt-3">
           {branchesLoading ? (

@@ -6,6 +6,7 @@ import { ReceiptInfoBlockFontEditor } from "@/components/admin/ReceiptInfoBlockF
 import { ReceiptSetupPreview } from "@/components/admin/ReceiptSetupPreview"
 import { ReceiptSetupPrintSampleButton } from "@/components/admin/ReceiptSetupPrintSampleButton"
 import { RefundSetupPreview } from "@/components/admin/RefundSetupPreview"
+import { BranchSelect } from "@/components/ui/BranchSelect"
 import { fetchReceiptSetupBranches } from "@/lib/admin-ui/receipt-setup-branches-client"
 import {
   blockLayoutDraftFromView,
@@ -217,22 +218,21 @@ export function ReceiptLayoutSetupPanel({
           80mm paper · 72mm printable · sample slip using live shop data.
         </p>
 
-        <label className="mt-3 block">
-          <span className="text-sm text-muted-foreground">Shop</span>
-          <select
-            className={`${themeInput} mt-1`}
-            value={selectedBranchId}
-            onChange={(event) => setSelectedBranchId(event.target.value)}
-            disabled={branchesLoading || branches.length === 0}
-            data-testid="receipt-setup-shop-select"
-          >
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {formatReceiptSetupBranchLabel(branch)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <BranchSelect
+          label="Shop"
+          labelClassName="text-sm text-muted-foreground"
+          wrapperClassName="mt-3 block"
+          selectClassName={`${themeInput} mt-1`}
+          value={selectedBranchId}
+          onChange={setSelectedBranchId}
+          options={branches}
+          formatOptionLabel={(option) =>
+            formatReceiptSetupBranchLabel(option as ReceiptSetupBranchOption)
+          }
+          disabled={branchesLoading || branches.length === 0}
+          loading={branchesLoading}
+          data-testid="receipt-setup-shop-select"
+        />
 
         <div className="receipt-setup-preview mt-3">
           {branchesLoading ? (

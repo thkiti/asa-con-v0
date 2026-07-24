@@ -1,5 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import {
+  fetchPosSettlementBranches,
+  formatPosSettlementBranchLabel,
+  type PosSettlementBranchOption,
+} from "@/lib/finance-ui/pos-settlement-branches"
 import type { FinanceFilterValues } from "@/lib/finance-ui/types"
 
 type FinanceFilterBarProps = {
@@ -15,6 +22,14 @@ export function FinanceFilterBar({
   onApply,
   loading = false,
 }: FinanceFilterBarProps) {
+  const [branches, setBranches] = useState<PosSettlementBranchOption[]>([])
+
+  useEffect(() => {
+    void fetchPosSettlementBranches()
+      .then((result) => setBranches(result.items))
+      .catch(() => setBranches([]))
+  }, [])
+
   return (
     <form
       className="flex flex-wrap items-end gap-4"
@@ -25,14 +40,15 @@ export function FinanceFilterBar({
     >
       <label className="flex flex-col gap-1 text-sm text-zinc-600">
         Branch ID
-        <input
-          type="text"
+        <BranchSelect
           value={values.branchId ?? ""}
-          onChange={(event) =>
-            onChange({ ...values, branchId: event.target.value })
+          onChange={(branchId) =>
+            onChange({ ...values, branchId: branchId || undefined })
           }
-          className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
-          placeholder="Optional"
+          options={branches}
+          emptyOption={{ label: "Optional" }}
+          formatOptionLabel={formatPosSettlementBranchLabel}
+          selectClassName="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm text-zinc-600">

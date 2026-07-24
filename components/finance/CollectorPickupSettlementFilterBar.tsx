@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import {
   fetchPosSettlementBranches,
   formatPosSettlementBranchLabel,
@@ -12,14 +14,10 @@ import {
   type CollectorPickupSettlementUiFilter,
 } from "@/lib/finance-ui/collector-pickup-settlement-list-filter"
 import {
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
   voucherInquiryFilterBranch,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterSelect,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { INQUIRY_FILTER_DISMISS_ATTR } from "@/lib/finance-ui/inquiry-more-filter-state"
 import { themeInlineError, themeLabel } from "@/lib/theme/theme-classes"
 
 type CollectorPickupSettlementFilterBarProps = {
@@ -63,28 +61,24 @@ export function CollectorPickupSettlementFilterBar({
       className={voucherInquiryFilterBar}
       data-testid="collector-pickup-settlement-filters"
     >
-      <label className={voucherInquiryFilterBranch}>
-        <span className={themeLabel}>Branch</span>
-        <select
-          className={voucherInquiryFilterSelect}
-          value={draft.branchId}
-          onChange={(event) =>
-            onDraftChange({ ...draft, branchId: event.target.value })
-          }
-          disabled={loading}
-          data-testid="collector-pickup-filter-branch"
-        >
-          <option value="">All SH branches</option>
-          {branches.map((branch) => (
-            <option key={branch.id} value={branch.id}>
-              {formatPosSettlementBranchLabel(branch)}
-            </option>
-          ))}
-        </select>
-        {branchesError ? (
-          <span className={`text-xs ${themeInlineError}`}>{branchesError}</span>
-        ) : null}
-      </label>
+      <BranchSelect
+        label="Branch"
+        labelClassName={themeLabel}
+        wrapperClassName={voucherInquiryFilterBranch}
+        selectClassName={voucherInquiryFilterSelect}
+        value={draft.branchId}
+        onChange={(branchId) => onDraftChange({ ...draft, branchId })}
+        options={branches}
+        emptyOption={{ label: "All SH branches" }}
+        formatOptionLabel={formatPosSettlementBranchLabel}
+        disabled={loading}
+        hint={
+          branchesError ? (
+            <span className={`text-xs ${themeInlineError}`}>{branchesError}</span>
+          ) : null
+        }
+        data-testid="collector-pickup-filter-branch"
+      />
 
       <DocumentInquiryMoreFilter
         periodKey={draft.periodKey}
@@ -105,28 +99,16 @@ export function CollectorPickupSettlementFilterBar({
         isMoreFilterActive={moreFilterActive}
       />
 
-      <div className={voucherInquiryFilterActions}>
-        <button
-          type="button"
-          className={voucherInquiryFilterButtonPrimary}
-          onClick={onApply}
-          disabled={loading}
-          {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-          data-testid="collector-pickup-apply"
-        >
-          {loading ? "…" : "Apply"}
-        </button>
-        <button
-          type="button"
-          className={voucherInquiryFilterButtonSecondary}
-          onClick={onClear}
-          disabled={loading}
-          {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-          data-testid="collector-pickup-clear"
-        >
-          Clear
-        </button>
-      </div>
+      <InquiryFilterActions
+        mode="apply-clear"
+        onPrimary={onApply}
+        onClear={onClear}
+        loading={loading}
+        loadingPrimaryLabel="…"
+        dismissOnAction
+        primaryTestId="collector-pickup-apply"
+        clearTestId="collector-pickup-clear"
+      />
     </div>
   )
 }

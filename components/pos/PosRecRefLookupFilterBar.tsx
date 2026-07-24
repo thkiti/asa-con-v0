@@ -1,18 +1,16 @@
 "use client"
 
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import {
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
   voucherInquiryFilterBranch,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterSelect,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { INQUIRY_FILTER_DISMISS_ATTR } from "@/lib/finance-ui/inquiry-more-filter-state"
 import {
   POS_REC_REF_LOOKUP_DOC_TYPE_OPTIONS,
   type PosRecRefLookupDocType,
@@ -62,28 +60,24 @@ export function PosRecRefLookupFilterBar({
   return (
     <div className={voucherInquiryFilterBar} data-testid={`${testIdPrefix}-filters`}>
       {showBranch ? (
-        <label className={voucherInquiryFilterBranch}>
-          <span className={themeLabel}>Branch</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={filter.branchId ?? ""}
-            onChange={(event) =>
-              onFilterChange({
-                ...filter,
-                branchId: event.target.value || undefined,
-              })
-            }
-            disabled={loading}
-            data-testid={`${testIdPrefix}-filter-branch`}
-          >
-            <option value="">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {formatBranchLabel(branch)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <BranchSelect
+          label="Branch"
+          labelClassName={themeLabel}
+          wrapperClassName={voucherInquiryFilterBranch}
+          selectClassName={voucherInquiryFilterSelect}
+          value={filter.branchId ?? ""}
+          onChange={(branchId) =>
+            onFilterChange({
+              ...filter,
+              branchId: branchId || undefined,
+            })
+          }
+          options={branches}
+          emptyOption
+          formatOptionLabel={formatBranchLabel}
+          disabled={loading}
+          data-testid={`${testIdPrefix}-filter-branch`}
+        />
       ) : null}
 
       <DocumentInquiryMoreFilter
@@ -140,28 +134,14 @@ export function PosRecRefLookupFilterBar({
         />
       </label>
 
-      <div className={voucherInquiryFilterActions}>
-        <button
-          type="button"
-          className={voucherInquiryFilterButtonPrimary}
-          onClick={onSearch}
-          disabled={loading}
-          {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-          data-testid={`${testIdPrefix}-search`}
-        >
-          Search
-        </button>
-        <button
-          type="button"
-          className={voucherInquiryFilterButtonSecondary}
-          onClick={onClear}
-          disabled={loading}
-          {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-          data-testid={`${testIdPrefix}-clear`}
-        >
-          Clear
-        </button>
-      </div>
+      <InquiryFilterActions
+        onPrimary={onSearch}
+        onClear={onClear}
+        loading={loading}
+        dismissOnAction
+        primaryTestId={`${testIdPrefix}-search`}
+        clearTestId={`${testIdPrefix}-clear`}
+      />
     </div>
   )
 }

@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { VoucherInquiryPdfIndicator } from "@/components/finance/VoucherInquiryPdfIndicator"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
@@ -13,10 +15,8 @@ import {
   financeTableScroll,
   financeTh,
   voucherInquiryActions,
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
   voucherInquiryFilterBranchReadable,
-  voucherInquiryFilterButtonPrimary,
   voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
@@ -45,10 +45,7 @@ import {
   applyVoucherInquiryNoToFilter,
   resolveVoucherInquiryNoDisplay,
 } from "@/lib/finance-ui/voucher-inquiry-no-filter"
-import {
-  INQUIRY_FILTER_DISMISS_ATTR,
-  useInquiryMoreFilterOpen,
-} from "@/lib/finance-ui/inquiry-more-filter-state"
+import { useInquiryMoreFilterOpen } from "@/lib/finance-ui/inquiry-more-filter-state"
 import { defaultTrialBalancePeriodParts } from "@/lib/finance-ui/trial-balance-period"
 import {
   formatFinanceDocumentInquiryPageSummary,
@@ -407,22 +404,18 @@ export function VoucherInquiryListPage() {
   return (
     <div className="space-y-4" data-testid="voucher-inquiry-list-page">
       <div className={voucherInquiryFilterBar} data-testid="voucher-inquiry-filters">
-        <label className={voucherInquiryFilterBranchReadable}>
-          <span className={themeLabel}>Branch</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.branchId ?? ""}
-            onChange={(e) => handleBranchChange(e.target.value)}
-            data-testid="voucher-inquiry-filter-branch"
-          >
-            <option value="">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {formatPosSettlementBranchLabel(branch)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <BranchSelect
+          label="Branch"
+          labelClassName={themeLabel}
+          wrapperClassName={voucherInquiryFilterBranchReadable}
+          selectClassName={voucherInquiryFilterSelect}
+          value={draft.branchId ?? ""}
+          onChange={handleBranchChange}
+          options={branches}
+          emptyOption
+          formatOptionLabel={formatPosSettlementBranchLabel}
+          data-testid="voucher-inquiry-filter-branch"
+        />
         <DocumentInquiryMoreFilter
           periodKey={draft.periodKey ?? defaultInquiryPeriodKey()}
           onPeriodKeyChange={(value) =>
@@ -513,26 +506,13 @@ export function VoucherInquiryListPage() {
             ))}
           </select>
         </label>
-        <div className={voucherInquiryFilterActions}>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonPrimary}
-            onClick={applyFilters}
-            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-            data-testid="voucher-inquiry-search"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonSecondary}
-            onClick={clearFilters}
-            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-            data-testid="voucher-inquiry-clear"
-          >
-            Clear
-          </button>
-        </div>
+        <InquiryFilterActions
+          onPrimary={applyFilters}
+          onClear={clearFilters}
+          dismissOnAction
+          primaryTestId="voucher-inquiry-search"
+          clearTestId="voucher-inquiry-clear"
+        />
       </div>
 
       {loading ? <p className={themeEmptyState}>Loading…</p> : null}

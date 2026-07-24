@@ -5,17 +5,16 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { StockDocumentInquiryPdfIndicator } from "@/components/stock/StockDocumentInquiryPdfIndicator"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import {
   financeMemo,
   financeTable,
   financeTableScroll,
   financeTh,
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
   voucherInquiryFilterBranch,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
@@ -45,7 +44,6 @@ import {
   type StockDocumentInquiryRow,
 } from "@/lib/stock-ui/stock-document-inquiry"
 import {
-  INQUIRY_FILTER_DISMISS_ATTR,
   useInquiryMoreFilterOpen,
 } from "@/lib/finance-ui/inquiry-more-filter-state"
 import {
@@ -214,24 +212,20 @@ export function StockDocumentInquiryListPage() {
   return (
     <div className="space-y-4" data-testid="stock-document-inquiry-list-page">
       <div className={voucherInquiryFilterBar} data-testid="stock-document-inquiry-filters">
-        <label className={voucherInquiryFilterBranch}>
-          <span className={themeLabel}>Branch</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.branchId ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, branchId: e.target.value || undefined }))
-            }
-            data-testid="stock-document-inquiry-filter-branch"
-          >
-            <option value="">All branches</option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {formatPosSettlementBranchLabel(branch)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <BranchSelect
+          label="Branch"
+          labelClassName={themeLabel}
+          wrapperClassName={voucherInquiryFilterBranch}
+          selectClassName={voucherInquiryFilterSelect}
+          value={draft.branchId ?? ""}
+          onChange={(branchId) =>
+            setDraft((prev) => ({ ...prev, branchId: branchId || undefined }))
+          }
+          options={branches}
+          emptyOption
+          formatOptionLabel={formatPosSettlementBranchLabel}
+          data-testid="stock-document-inquiry-filter-branch"
+        />
         <DocumentInquiryMoreFilter
           periodKey={draft.periodKey ?? ""}
           onPeriodKeyChange={(value) =>
@@ -324,26 +318,13 @@ export function StockDocumentInquiryListPage() {
             ))}
           </select>
         </label>
-        <div className={voucherInquiryFilterActions}>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonPrimary}
-            onClick={applyFilters}
-            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-            data-testid="stock-document-inquiry-search"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            className={voucherInquiryFilterButtonSecondary}
-            onClick={clearFilters}
-            {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-            data-testid="stock-document-inquiry-clear"
-          >
-            Clear
-          </button>
-        </div>
+        <InquiryFilterActions
+          onPrimary={applyFilters}
+          onClear={clearFilters}
+          dismissOnAction
+          primaryTestId="stock-document-inquiry-search"
+          clearTestId="stock-document-inquiry-clear"
+        />
       </div>
 
       {loading ? <p className={themeEmptyState}>Loading…</p> : null}

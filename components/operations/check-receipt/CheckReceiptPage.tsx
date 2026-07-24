@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { CheckReceiptReceiptTable } from "@/components/operations/check-receipt/CheckReceiptReceiptTable"
+import { BranchSelect } from "@/components/ui/BranchSelect"
 import { CompactControlRow } from "@/components/shop-ui/CompactControlRow"
 import { CompactFieldBox } from "@/components/shop-ui/CompactFieldBox"
 import type { SessionUserApi } from "@/lib/auth/session-user-api"
@@ -122,20 +123,16 @@ export function CheckReceiptPage({ user }: CheckReceiptPageProps) {
                   No active shop branches
                 </span>
               ) : (
-                <select
+                <BranchSelect
                   value={branchId}
-                  onChange={(event) => setBranchId(event.target.value)}
-                  className="compact-theme-select min-w-0 flex-1 px-2 text-sm"
+                  onChange={setBranchId}
+                  options={branches}
+                  selectClassName="compact-theme-select min-w-0 flex-1 px-2 text-sm"
                   disabled={loading || branches.length === 0}
                   aria-label="Shop"
+                  formatOptionLabel={(branch) => `${branch.code} — ${branch.name}`}
                   data-testid="check-receipt-shop"
-                >
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.code} — {branch.name}
-                    </option>
-                  ))}
-                </select>
+                />
               )}
             </CompactFieldBox>
 

@@ -3,7 +3,13 @@
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { BranchSelect } from "@/components/ui/BranchSelect"
 import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
+import {
+  fetchPosSettlementBranches,
+  formatPosSettlementBranchLabel,
+  type PosSettlementBranchOption,
+} from "@/lib/finance-ui/pos-settlement-branches"
 import {
   fetchJournalEntries,
   type JournalListFilter,
@@ -27,10 +33,17 @@ export function JournalEntryListPage() {
     limit: 50,
     offset: 0,
   })
+  const [branches, setBranches] = useState<PosSettlementBranchOption[]>([])
   const [journals, setJournals] = useState<JournalListRow[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void fetchPosSettlementBranches()
+      .then((result) => setBranches(result.items))
+      .catch(() => setBranches([]))
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -55,12 +68,15 @@ export function JournalEntryListPage() {
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-zinc-600">Branch</span>
-          <input
-            className="rounded border border-zinc-300 px-2 py-1"
+          <BranchSelect
             value={filter.branchId ?? ""}
-            onChange={(e) =>
-              setFilter((prev) => ({ ...prev, branchId: e.target.value, offset: 0 }))
+            onChange={(branchId) =>
+              setFilter((prev) => ({ ...prev, branchId, offset: 0 }))
             }
+            options={branches}
+            emptyOption
+            formatOptionLabel={formatPosSettlementBranchLabel}
+            selectClassName="rounded border border-zinc-300 px-2 py-1"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">

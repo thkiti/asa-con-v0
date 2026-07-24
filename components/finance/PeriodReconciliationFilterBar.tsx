@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import type { ReconciliationAccountRef } from "@/lib/finance/period-reconciliation-accounts"
 import { fetchReconciliationAccounts } from "@/lib/finance-ui/period-reconciliation-accounts"
 import {
@@ -15,15 +17,11 @@ import {
   type PeriodReconciliationUiFilter,
 } from "@/lib/finance-ui/period-reconciliation-list-filter"
 import {
-  voucherInquiryFilterActions,
   voucherInquiryFilterBar,
   voucherInquiryFilterBranchWide,
-  voucherInquiryFilterButtonPrimary,
-  voucherInquiryFilterButtonSecondary,
   voucherInquiryFilterGlAccount,
   voucherInquiryFilterSelect,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { INQUIRY_FILTER_DISMISS_ATTR } from "@/lib/finance-ui/inquiry-more-filter-state"
 import { themeInlineError, themeLabel } from "@/lib/theme/theme-classes"
 
 type PeriodReconciliationFilterBarProps = {
@@ -129,37 +127,36 @@ export function PeriodReconciliationFilterBar({
     Boolean(draft.glAccountId.trim()) &&
     (mode === "bank" || Boolean(draft.branchId.trim()))
 
+  const branchEmptyLabel = branchesLoading
+    ? "Loading branches…"
+    : branches.length === 0
+      ? "No branches available"
+      : "Select branch"
+
   return (
     <div className={voucherInquiryFilterBar} data-testid={`${testIdPrefix}-filters`}>
       {mode === "cash" ? (
-        <label className={voucherInquiryFilterBranchWide}>
-          <span className={themeLabel}>Branch</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.branchId}
-            disabled={branchesLoading || branches.length === 0 || loading}
-            onChange={(event) =>
-              onDraftChange((current) => ({ ...current, branchId: event.target.value }))
-            }
-            data-testid={`${testIdPrefix}-branch-select`}
-          >
-            <option value="">
-              {branchesLoading
-                ? "Loading branches…"
-                : branches.length === 0
-                  ? "No branches available"
-                  : "Select branch"}
-            </option>
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {formatPosSettlementBranchLabel(branch)}
-              </option>
-            ))}
-          </select>
-          {branchesError ? (
-            <span className={`text-xs ${themeInlineError}`}>{branchesError}</span>
-          ) : null}
-        </label>
+        <BranchSelect
+          label="Branch"
+          labelClassName={themeLabel}
+          wrapperClassName={voucherInquiryFilterBranchWide}
+          selectClassName={voucherInquiryFilterSelect}
+          value={draft.branchId}
+          onChange={(branchId) =>
+            onDraftChange((current) => ({ ...current, branchId }))
+          }
+          options={branches}
+          emptyOption={{ label: branchEmptyLabel }}
+          formatOptionLabel={formatPosSettlementBranchLabel}
+          loading={branchesLoading}
+          disabled={branches.length === 0 || loading}
+          hint={
+            branchesError ? (
+              <span className={`text-xs ${themeInlineError}`}>{branchesError}</span>
+            ) : null
+          }
+          data-testid={`${testIdPrefix}-branch-select`}
+        />
       ) : null}
 
       <label className={voucherInquiryFilterGlAccount}>
@@ -212,28 +209,17 @@ export function PeriodReconciliationFilterBar({
         isMoreFilterActive={moreFilterActive}
       />
 
-      <div className={voucherInquiryFilterActions}>
-        <button
-          type="button"
-          className={voucherInquiryFilterButtonPrimary}
-          onClick={onApply}
-          disabled={loading || !canApply}
-          {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-          data-testid={`${testIdPrefix}-apply`}
-        >
-          {loading ? "…" : "Apply"}
-        </button>
-        <button
-          type="button"
-          className={voucherInquiryFilterButtonSecondary}
-          onClick={onClear}
-          disabled={loading}
-          {...{ [INQUIRY_FILTER_DISMISS_ATTR]: "true" }}
-          data-testid={`${testIdPrefix}-clear`}
-        >
-          Clear
-        </button>
-      </div>
+      <InquiryFilterActions
+        mode="apply-clear"
+        onPrimary={onApply}
+        onClear={onClear}
+        loading={loading}
+        loadingPrimaryLabel="…"
+        primaryDisabled={!canApply}
+        dismissOnAction
+        primaryTestId={`${testIdPrefix}-apply`}
+        clearTestId={`${testIdPrefix}-clear`}
+      />
     </div>
   )
 }

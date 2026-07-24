@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { FinanceSettlementDateInput } from "@/components/finance/FinanceSettlementDateInput"
+import { BranchSelect } from "@/components/ui/BranchSelect"
 import {
   fetchPosSettlementBranches,
   formatPosSettlementBranchLabel,
@@ -55,27 +56,25 @@ export function PosSettlementFilterBar({
     >
       <label className={posSettlementFilterFieldBranch}>
         <span className={themeLabel}>Branch</span>
-        <select
-          data-testid="pos-settlement-branch-select"
+        <BranchSelect
           value={values.branchId ?? ""}
-          onChange={(event) =>
+          onChange={(branchId) =>
             onChange({
               ...values,
-              branchId: event.target.value || undefined,
+              branchId: branchId || undefined,
             })
           }
-          className={`${financeFilterSelect} px-3 py-2`}
-        >
-          <option value="">All SH branches</option>
-          {branches.map((branch) => (
-            <option key={branch.id} value={branch.id}>
-              {formatPosSettlementBranchLabel(branch)}
-            </option>
-          ))}
-        </select>
-        {branchesError ? (
-          <span className={`text-xs ${themeInlineError}`}>{branchesError}</span>
-        ) : null}
+          options={branches}
+          emptyOption={{ label: "All SH branches" }}
+          formatOptionLabel={formatPosSettlementBranchLabel}
+          selectClassName={`${financeFilterSelect} px-3 py-2`}
+          hint={
+            branchesError ? (
+              <span className={`text-xs ${themeInlineError}`}>{branchesError}</span>
+            ) : null
+          }
+          data-testid="pos-settlement-branch-select"
+        />
       </label>
       <FinanceSettlementDateInput
         label="From"

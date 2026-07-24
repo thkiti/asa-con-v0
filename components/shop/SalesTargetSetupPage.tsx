@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { MainMenuShell } from "@/components/main/MainMenuShell"
+import { BranchSelect } from "@/components/ui/BranchSelect"
 import { SalesTargetCalendarPreview } from "@/components/shop/SalesTargetCalendarPreview"
 import { CompactControlRow } from "@/components/shop-ui/CompactControlRow"
 import {
@@ -295,23 +296,17 @@ export function SalesTargetSetupPage({ user, canEdit }: SalesTargetSetupPageProp
                 No active shop branches found
               </p>
             ) : (
-              <select
+              <BranchSelect
                 value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                className={`${compactHeaderFieldClass} sales-target-header-control`}
+                onChange={setBranchId}
+                options={branches}
+                emptyOption={!branchId ? { label: "Select branch" } : false}
+                selectClassName={`${compactHeaderFieldClass} sales-target-header-control`}
                 disabled={loading || branches.length === 0}
                 aria-label="Branch"
+                formatOptionLabel={(branch) => `${branch.code} — ${branch.name}`}
                 data-testid="sales-target-header-control"
-              >
-                {!branchId ? (
-                  <option value="">Select branch</option>
-                ) : null}
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.code} — {b.name}
-                  </option>
-                ))}
-              </select>
+              />
             )}
           </div>
 
