@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
+import { FilterSelectField } from "@/components/ui/FilterSelectField"
 import {
   downloadGlAccountsExport,
   fetchGlAccounts,
@@ -12,6 +13,12 @@ import type {
   GlAccountListRow,
   GlAccountTreeNode,
 } from "@/lib/finance/gl-account-list"
+import {
+  voucherInquiryFilterBar,
+  voucherInquiryFilterField,
+  voucherInquiryFilterInput,
+} from "@/lib/finance-ui/finance-visual-classes"
+import { themeLabel } from "@/lib/theme/theme-classes"
 
 const ACCOUNT_TYPES = [
   "ALL",
@@ -96,56 +103,51 @@ export function GlAccountBrowserPage() {
         .
       </p>
 
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Search</span>
+      <div className={voucherInquiryFilterBar}>
+        <label className={voucherInquiryFilterField}>
+          <span className={themeLabel}>Search</span>
           <input
             type="search"
-            className="rounded border border-zinc-300 px-2 py-1"
+            className={voucherInquiryFilterInput}
             value={filter.search ?? ""}
             onChange={(e) =>
               setFilter((f) => ({ ...f, search: e.target.value, offset: 0 }))
             }
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Type</span>
-          <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.accountType ?? "ALL"}
-            onChange={(e) =>
-              setFilter((f) => ({
-                ...f,
-                accountType: e.target.value,
-                offset: 0,
-              }))
-            }
-          >
-            {ACCOUNT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Active</span>
-          <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.isActive ?? "all"}
-            onChange={(e) =>
-              setFilter((f) => ({
-                ...f,
-                isActive: e.target.value as GlAccountBrowserFilter["isActive"],
-                offset: 0,
-              }))
-            }
-          >
-            <option value="all">All</option>
-            <option value="true">Active only</option>
-            <option value="false">Inactive only</option>
-          </select>
-        </label>
+        <FilterSelectField
+          label="Type"
+          wrapperClassName={voucherInquiryFilterField}
+          value={filter.accountType ?? "ALL"}
+          onChange={(value) =>
+            setFilter((f) => ({
+              ...f,
+              accountType: value,
+              offset: 0,
+            }))
+          }
+          options={ACCOUNT_TYPES.map((t) => ({
+            value: t,
+            label: t,
+          }))}
+        />
+        <FilterSelectField
+          label="Active"
+          wrapperClassName={voucherInquiryFilterField}
+          value={filter.isActive ?? "all"}
+          onChange={(value) =>
+            setFilter((f) => ({
+              ...f,
+              isActive: value as GlAccountBrowserFilter["isActive"],
+              offset: 0,
+            }))
+          }
+          options={[
+            { value: "true", label: "Active only" },
+            { value: "false", label: "Inactive only" },
+          ]}
+          emptyOption={{ label: "All", value: "all" }}
+        />
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

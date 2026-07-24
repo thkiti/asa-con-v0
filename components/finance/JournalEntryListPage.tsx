@@ -23,8 +23,11 @@ import {
   financeTableScroll,
   financeTh,
   financeThRight,
+  voucherInquiryFilterBar,
+  voucherInquiryFilterField,
+  voucherInquiryFilterSelect,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { themeLinkMuted } from "@/lib/theme/theme-classes"
+import { themeLabel, themeLinkMuted } from "@/lib/theme/theme-classes"
 
 export function JournalEntryListPage() {
   const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
@@ -65,24 +68,24 @@ export function JournalEntryListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Branch</span>
-          <BranchSelect
-            value={filter.branchId ?? ""}
-            onChange={(branchId) =>
-              setFilter((prev) => ({ ...prev, branchId, offset: 0 }))
-            }
-            options={branches}
-            emptyOption
-            formatOptionLabel={formatPosSettlementBranchLabel}
-            selectClassName="rounded border border-zinc-300 px-2 py-1"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Period key</span>
+      <div className={voucherInquiryFilterBar}>
+        <BranchSelect
+          label="Branch"
+          labelClassName={themeLabel}
+          wrapperClassName={voucherInquiryFilterField}
+          selectClassName={voucherInquiryFilterSelect}
+          value={filter.branchId ?? ""}
+          onChange={(branchId) =>
+            setFilter((prev) => ({ ...prev, branchId, offset: 0 }))
+          }
+          options={branches}
+          emptyOption
+          formatOptionLabel={formatPosSettlementBranchLabel}
+        />
+        <label className={voucherInquiryFilterField}>
+          <span className={themeLabel}>Period key</span>
           <AccountingPeriodSelect
-            className="rounded border border-zinc-300 px-2 py-1"
+            className={voucherInquiryFilterSelect}
             periods={periods}
             value={filter.periodKey?.trim() || null}
             onChange={(value) =>
