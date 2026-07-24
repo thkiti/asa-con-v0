@@ -17,6 +17,36 @@ export const PERIOD_SELECTOR_YEAR_COUNT = 10
 export const PERIOD_SELECTOR_YEAR_PAST = 2
 export const PERIOD_SELECTOR_YEAR_FUTURE = 7
 
+/** Optional year window relative to the current Bangkok calendar year. */
+export type PeriodSelectorYearRange = {
+  /** Years before current (default {@link PERIOD_SELECTOR_YEAR_PAST}). */
+  yearsPast?: number
+  /** Years after current (default {@link PERIOD_SELECTOR_YEAR_FUTURE}). */
+  yearsFuture?: number
+}
+
+export function resolvePeriodSelectorYearRange(
+  range?: PeriodSelectorYearRange | null
+): { yearsPast: number; yearsFuture: number; yearCount: number } {
+  const yearsPast = range?.yearsPast ?? PERIOD_SELECTOR_YEAR_PAST
+  const yearsFuture = range?.yearsFuture ?? PERIOD_SELECTOR_YEAR_FUTURE
+  if (
+    !Number.isInteger(yearsPast) ||
+    !Number.isInteger(yearsFuture) ||
+    yearsPast < 0 ||
+    yearsFuture < 0
+  ) {
+    throw new Error(
+      `Invalid PeriodSelector year range: yearsPast=${yearsPast}, yearsFuture=${yearsFuture}`
+    )
+  }
+  return {
+    yearsPast,
+    yearsFuture,
+    yearCount: yearsPast + yearsFuture + 1,
+  }
+}
+
 /** Build canonical periodKey YYYY-MM from year + month (1–12). */
 export function buildPeriodKeyFromYearMonth(year: number, month: number): string {
   if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
@@ -41,13 +71,17 @@ export function parsePeriodKeyYearMonth(
 }
 
 /**
- * Year options: current year - 2 through current year + 7 (10 years inclusive).
+ * Year options for the active window (default: current−2 … current+7).
  * Uses Asia/Bangkok calendar year when `now` is a real clock date.
  */
-export function periodSelectorYearOptions(now: Date = new Date()): number[] {
+export function periodSelectorYearOptions(
+  now: Date = new Date(),
+  range?: PeriodSelectorYearRange | null
+): number[] {
+  const { yearsPast, yearCount } = resolvePeriodSelectorYearRange(range)
   const current = bangkokCalendarParts(now).y
-  const start = current - PERIOD_SELECTOR_YEAR_PAST
-  return Array.from({ length: PERIOD_SELECTOR_YEAR_COUNT }, (_, index) => start + index)
+  const start = current - yearsPast
+  return Array.from({ length: yearCount }, (_, index) => start + index)
 }
 
 /** Default period = current Bangkok calendar year/month. */
@@ -71,10 +105,11 @@ export function defaultPeriodSelectorParts(now: Date = new Date()): {
  */
 export function resolvePeriodSelectorParts(
   periodKey: string | null | undefined,
-  now: Date = new Date()
+  now: Date = new Date(),
+  range?: PeriodSelectorYearRange | null
 ): { year: number; month: number; periodKey: string } {
   const parsed = periodKey ? parsePeriodKeyYearMonth(periodKey) : null
-  const years = periodSelectorYearOptions(now)
+  const years = periodSelectorYearOptions(now, range)
   if (parsed && years.includes(parsed.year)) {
     return {
       year: parsed.year,

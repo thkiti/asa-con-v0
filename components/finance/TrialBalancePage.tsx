@@ -15,12 +15,11 @@ import {
 import { FinanceAccountOption } from "@/components/finance/FinanceAccountOption"
 import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
 import {
-  buildPeriodKeyFromYearMonth,
   defaultTrialBalancePeriodParts,
-  formatCompactMonthOptionLabel,
-  trialBalanceYearOptions,
-  TRIAL_BALANCE_MONTH_VALUES,
+  TRIAL_BALANCE_YEAR_FUTURE,
+  TRIAL_BALANCE_YEAR_PAST,
 } from "@/lib/finance-ui/trial-balance-period"
+import { PeriodSelector } from "@/components/ui/PeriodSelector"
 import {
   financeAccount,
   financeDiffBalanced,
@@ -41,19 +40,15 @@ import { formatEntityShort } from "@/lib/legal-entity/display"
 type FilterMode = "period" | "dateRange"
 
 export function TrialBalancePage() {
-  const initialPeriod = useMemo(() => defaultTrialBalancePeriodParts(), [])
+  const initialPeriodKey = useMemo(() => defaultTrialBalancePeriodParts().periodKey, [])
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
-  const [year, setYear] = useState(initialPeriod.year)
-  const [month, setMonth] = useState(initialPeriod.month)
+  const [periodKey, setPeriodKey] = useState(initialPeriodKey)
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const [hideZeroBalances, setHideZeroBalances] = useState(false)
   const [result, setResult] = useState<TrialBalanceResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const periodKey = buildPeriodKeyFromYearMonth(year, month)
-  const yearOptions = useMemo(() => trialBalanceYearOptions(), [])
 
   const buildFilter = useCallback((): TrialBalanceFilter => {
     const base: TrialBalanceFilter = {
@@ -114,46 +109,17 @@ export function TrialBalancePage() {
           />
 
           {filterMode === "period" ? (
-            <>
-              <div className="finance-filter-field finance-filter-field--period-year">
-                <label htmlFor="tb-period-year" className="finance-filter-label">
-                  Year
-                </label>
-                <select
-                  id="tb-period-year"
-                  className="finance-filter-control finance-filter-select tabular-nums"
-                  value={year}
-                  onChange={(event) => setYear(Number(event.target.value))}
-                  data-testid="trial-balance-year"
-                  aria-label="Year"
-                >
-                  {yearOptions.map((optionYear) => (
-                    <option key={optionYear} value={optionYear}>
-                      {optionYear}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="finance-filter-field finance-filter-field--period-month">
-                <label htmlFor="tb-period-month" className="finance-filter-label">
-                  Month
-                </label>
-                <select
-                  id="tb-period-month"
-                  className="finance-filter-control finance-filter-select"
-                  value={month}
-                  onChange={(event) => setMonth(Number(event.target.value))}
-                  data-testid="trial-balance-month"
-                  aria-label="Month"
-                >
-                  {TRIAL_BALANCE_MONTH_VALUES.map((optionMonth) => (
-                    <option key={optionMonth} value={optionMonth}>
-                      {formatCompactMonthOptionLabel(optionMonth)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </>
+            <PeriodSelector
+              periodKey={periodKey}
+              onPeriodChange={setPeriodKey}
+              yearsPast={TRIAL_BALANCE_YEAR_PAST}
+              yearsFuture={TRIAL_BALANCE_YEAR_FUTURE}
+              yearClassName="finance-filter-control finance-filter-select tabular-nums"
+              monthClassName="finance-filter-control finance-filter-select"
+              yearId="tb-period-year"
+              monthId="tb-period-month"
+              data-testid="trial-balance"
+            />
           ) : (
             <>
               <div className="finance-filter-field finance-filter-field--date">

@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import {
   fetchJournalEntries,
   type JournalListFilter,
@@ -20,6 +21,7 @@ import {
 import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 export function JournalEntryListPage() {
+  const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
   const [filter, setFilter] = useState<JournalListFilter>({
     branchId: "branch-1",
     limit: 50,
@@ -63,9 +65,10 @@ export function JournalEntryListPage() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-zinc-600">Period key</span>
-          <AccountingPeriodInput
+          <AccountingPeriodSelect
             className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.periodKey ?? ""}
+            periods={periods}
+            value={filter.periodKey?.trim() || null}
             onChange={(value) =>
               setFilter((prev) => ({
                 ...prev,
@@ -73,6 +76,8 @@ export function JournalEntryListPage() {
                 offset: 0,
               }))
             }
+            loading={periodsLoading}
+            showEmptyHint={false}
           />
         </label>
         <Link

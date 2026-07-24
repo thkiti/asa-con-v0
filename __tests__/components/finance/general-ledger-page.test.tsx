@@ -79,6 +79,28 @@ jest.mock("@/lib/finance-ui/general-ledger", () => ({
   downloadGeneralLedgerCsv: jest.fn(),
 }))
 
+jest.mock("@/lib/finance-ui/use-accounting-period-options", () => ({
+  useAccountingPeriodOptions: () => ({
+    legalEntityCode: "AD",
+    periods: [
+      {
+        id: "period-1",
+        periodKey: "2026-07",
+        legalEntityCode: "AD",
+        branchId: "branch-1",
+        branchName: "HO",
+        status: "OPEN",
+        openedAt: "2026-07-01T00:00:00.000Z",
+        closedAt: null,
+      },
+    ],
+    loading: false,
+    loadError: null,
+    hasPeriods: true,
+    emptyMessage: "No accounting period found for this entity.",
+  }),
+}))
+
 jest.mock("next/link", () => ({
   __esModule: true,
   default: ({

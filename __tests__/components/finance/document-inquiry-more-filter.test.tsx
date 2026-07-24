@@ -18,6 +18,8 @@ const baseProps = {
   onToChange: () => {},
   isMoreFilterOpen: false,
   setIsMoreFilterOpen: () => {},
+  /** Injected so static markup tests skip Next.js searchParams / period fetch. */
+  periods: [] as const,
 }
 
 describe("DocumentInquiryMoreFilter", () => {
@@ -90,9 +92,9 @@ describe("DocumentInquiryMoreFilter", () => {
     expect(html).toContain('data-testid="voucher-inquiry-filter-period-year"')
     expect(html).toContain('data-testid="voucher-inquiry-filter-period-month"')
     expect(html).toContain('value="2026"')
-    expect(html).toContain(">01</option>")
-    expect(html).toContain(">12</option>")
-    expect(html).not.toContain('data-testid="voucher-inquiry-filter-period"')
+    expect(html).toContain(">01 • JAN</option>")
+    expect(html).toContain(">12 • DEC</option>")
+    expect(html).toContain('data-testid="voucher-inquiry-filter-period"')
     expect(html).toContain('data-testid="voucher-inquiry-more-filter"')
   })
 

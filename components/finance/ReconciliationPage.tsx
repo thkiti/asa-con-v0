@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
-import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import {
   createReconciliationSnapshot,
   fetchReconciliationDashboard,
@@ -55,6 +55,7 @@ export function ReconciliationPage({
   initialBranchId,
   initialPeriodKey,
 }: ReconciliationPageProps = {}) {
+  const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
   const [filter, setFilter] = useState<ReconciliationDashboardFilter>({
     status: "ALL",
     domain: "all",
@@ -241,9 +242,12 @@ export function ReconciliationPage({
           </label>
           <label className="flex flex-col gap-1 text-sm text-zinc-600">
             Period key
-            <AccountingPeriodInput
-              value={filter.periodKey ?? ""}
+            <AccountingPeriodSelect
+              periods={periods}
+              value={filter.periodKey?.trim() || null}
               onChange={(value) => setFilter({ ...filter, periodKey: value })}
+              loading={periodsLoading}
+              showEmptyHint={false}
               className="rounded border border-zinc-300 px-3 py-2 text-zinc-900"
             />
           </label>

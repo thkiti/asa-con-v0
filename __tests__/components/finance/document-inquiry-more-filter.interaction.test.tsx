@@ -23,6 +23,7 @@ function ControlledMoreFilter(props: {
         periodKey="2026-06"
         onPeriodKeyChange={() => {}}
         periodTestId="voucher-inquiry-filter-period"
+        periods={[]}
         from={from}
         to={to}
         onFromChange={setFrom}

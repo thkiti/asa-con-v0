@@ -92,6 +92,7 @@ export function PosRecRefLookupFilterBar({
           onFilterChange({ ...filter, periodKey: value || undefined })
         }
         periodTestId={`${testIdPrefix}-filter-period`}
+        periodMode="calendar"
         from={filter.from ?? ""}
         to={filter.to ?? ""}
         onFromChange={(value) =>

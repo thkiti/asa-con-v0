@@ -7,6 +7,7 @@ import {
   PERIOD_SELECTOR_MONTH_VALUES,
   periodSelectorYearOptions,
   resolvePeriodSelectorParts,
+  type PeriodSelectorYearRange,
 } from "@/lib/ui/period-selector"
 import { masterToolbarInput, masterToolbarLabel } from "@/lib/master-ui/table-classes"
 
@@ -21,12 +22,18 @@ export type PeriodSelectorProps = {
   monthClassName?: string
   yearId?: string
   monthId?: string
+  /**
+   * Optional year window. Default remains current−2 … current+7.
+   * Pass `yearsPast` / `yearsFuture` to widen or narrow the Year dropdown.
+   */
+  yearsPast?: number
+  yearsFuture?: number
   "data-testid"?: string
 }
 
 /**
  * ASA-CON standard period control: separate Year and Month dropdowns.
- * Year = current−2 … current+7 (10 years). Month = shared 01 • JAN … 12 • DEC.
+ * Default Year = current−2 … current+7 (10 years). Month = shared 01 • JAN … 12 • DEC.
  * Output: periodKey YYYY-MM.
  */
 export function PeriodSelector({
@@ -38,10 +45,23 @@ export function PeriodSelector({
   monthClassName,
   yearId = "period-selector-year",
   monthId = "period-selector-month",
+  yearsPast,
+  yearsFuture,
   "data-testid": testId = "period-selector",
 }: PeriodSelectorProps) {
-  const parts = useMemo(() => resolvePeriodSelectorParts(periodKey), [periodKey])
-  const yearOptions = useMemo(() => periodSelectorYearOptions(), [])
+  const yearRange = useMemo((): PeriodSelectorYearRange | undefined => {
+    if (yearsPast === undefined && yearsFuture === undefined) return undefined
+    return { yearsPast, yearsFuture }
+  }, [yearsPast, yearsFuture])
+
+  const parts = useMemo(
+    () => resolvePeriodSelectorParts(periodKey, new Date(), yearRange),
+    [periodKey, yearRange]
+  )
+  const yearOptions = useMemo(
+    () => periodSelectorYearOptions(new Date(), yearRange),
+    [yearRange]
+  )
 
   const emit = (year: number, month: number) => {
     onPeriodChange(buildPeriodKeyFromYearMonth(year, month))

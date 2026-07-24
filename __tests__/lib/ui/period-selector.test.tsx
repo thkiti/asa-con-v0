@@ -37,6 +37,28 @@ describe("PeriodSelector helpers", () => {
     ])
   })
 
+  it("accepts a custom yearsPast / yearsFuture window", () => {
+    expect(
+      periodSelectorYearOptions(FIXED_NOW, { yearsPast: 5, yearsFuture: 5 })
+    ).toEqual([
+      2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031,
+    ])
+    expect(
+      periodSelectorYearOptions(FIXED_NOW, { yearsPast: 5, yearsFuture: 5 })
+    ).toHaveLength(11)
+  })
+
+  it("resolvePeriodSelectorParts respects a custom year window", () => {
+    const wide = { yearsPast: 5, yearsFuture: 5 }
+    expect(resolvePeriodSelectorParts("2021-03", FIXED_NOW, wide)).toEqual({
+      year: 2021,
+      month: 3,
+      periodKey: "2021-03",
+    })
+    // 2021 is outside the default −2…+7 window → falls back to current
+    expect(resolvePeriodSelectorParts("2021-03", FIXED_NOW).periodKey).toBe("2026-07")
+  })
+
   it("Current year is the default Year when no valid period is supplied", () => {
     expect(defaultPeriodSelectorParts(FIXED_NOW).year).toBe(2026)
     expect(resolvePeriodSelectorParts("", FIXED_NOW).year).toBe(2026)
@@ -119,6 +141,21 @@ describe("PeriodSelector component", () => {
     expect(html).toContain("2024")
     expect(html).toContain("2033")
     expect(html).not.toContain("YYYY • MM")
+  })
+
+  it("renders a custom year window when yearsPast / yearsFuture are set", () => {
+    const html = renderToStaticMarkup(
+      <PeriodSelector
+        periodKey="2026-07"
+        onPeriodChange={() => {}}
+        yearsPast={5}
+        yearsFuture={5}
+      />
+    )
+    expect(html).toContain(">2021</option>")
+    expect(html).toContain(">2031</option>")
+    expect(html).not.toContain(">2020</option>")
+    expect(html).not.toContain(">2032</option>")
   })
 })
 

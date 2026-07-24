@@ -27,8 +27,9 @@ import {
   financeTotalValue,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
 import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 
 type FilterMode = "period" | "dateRange"
@@ -88,6 +89,7 @@ function SectionTable({
 }
 
 export function ProfitLossPage() {
+  const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
   const [branchId, setBranchId] = useState("")
   const [periodKey, setPeriodKey] = useState(() => {
@@ -179,11 +181,14 @@ export function ProfitLossPage() {
               <label htmlFor="pl-period-key" className="finance-filter-label">
                 Period key
               </label>
-              <AccountingPeriodInput
+              <AccountingPeriodSelect
                 id="pl-period-key"
                 className="finance-filter-control finance-filter-control--mono"
-                value={periodKey}
+                periods={periods}
+                value={periodKey.trim() || null}
                 onChange={setPeriodKey}
+                loading={periodsLoading}
+                showEmptyHint={false}
               />
             </div>
           ) : (

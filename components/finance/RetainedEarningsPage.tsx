@@ -10,8 +10,9 @@ import {
 } from "@/lib/finance-ui/retained-earnings"
 import type { BalanceSheetRow, RetainedEarningsResult } from "@/lib/finance-ui/types"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
 import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import {
   financeAccount,
   financeNumber,
@@ -89,6 +90,7 @@ function BridgeLine({
 }
 
 export function RetainedEarningsPage() {
+  const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
@@ -176,10 +178,13 @@ export function RetainedEarningsPage() {
           {filterMode === "period" ? (
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-zinc-600">Period key</span>
-              <AccountingPeriodInput
+              <AccountingPeriodSelect
                 className="rounded border border-zinc-300 px-2 py-1 font-mono text-xs"
-                value={periodKey}
+                periods={periods}
+                value={periodKey.trim() || null}
                 onChange={setPeriodKey}
+                loading={periodsLoading}
+                showEmptyHint={false}
               />
             </label>
           ) : (

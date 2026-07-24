@@ -6,16 +6,17 @@ import {
   useRef,
   type Dispatch,
   type KeyboardEvent,
+  type ReactNode,
   type SetStateAction,
 } from "react"
 import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { PeriodSelector } from "@/components/ui/PeriodSelector"
 import {
   voucherInquiryFilterInput,
   voucherInquiryFilterMore,
   voucherInquiryFilterPeriod,
   voucherInquiryFilterPeriodGroup,
-  voucherInquiryFilterPeriodMonth,
-  voucherInquiryFilterPeriodYear,
   voucherInquiryFilterSelect,
   voucherInquiryMoreFilterButton,
   voucherInquiryMoreFilterButtonActive,
@@ -23,17 +24,21 @@ import {
   voucherInquiryMoreFilterDateInput,
   voucherInquiryMoreFilterPopover,
 } from "@/lib/finance-ui/finance-visual-classes"
-import {
-  buildPeriodKeyFromYearMonth,
-  defaultTrialBalancePeriodParts,
-  parsePeriodKeyYearMonth,
-} from "@/lib/finance-ui/trial-balance-period"
-import { formatPaddedMonth } from "@/lib/shop-ui/month-select-options"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
+import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
 import { themeLabel } from "@/lib/theme/theme-classes"
 
-const PERIOD_MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => index + 1)
-
-export type DocumentInquiryPeriodMode = "text" | "year-month"
+/**
+ * `accounting` — AccountingPeriodSelect (entity-scoped AccountingPeriod rows).
+ * `calendar` — PeriodSelector Year/Month (YYYY-MM), for document / stock inquiry.
+ * `year-month` — alias of `calendar` (legacy prop name).
+ * `text` — free-text AccountingPeriodInput when empty period (= all) must remain allowed.
+ */
+export type DocumentInquiryPeriodMode =
+  | "accounting"
+  | "calendar"
+  | "year-month"
+  | "text"
 
 type DocumentInquiryMoreFilterProps = {
   periodKey: string
@@ -50,14 +55,60 @@ type DocumentInquiryMoreFilterProps = {
   /** When set, overrides default active state (any from/to set). */
   isMoreFilterActive?: boolean
   /**
-   * `text` — free-text period (legacy inquiry lists).
-   * `year-month` — required Year numeric + Month 01–12 (Finance Document Inquiry).
+   * Default `accounting` — finance AccountingPeriod dropdown.
+   * Use `calendar` / `year-month` for Year+Month PeriodSelector.
+   * Use `text` only when empty period must remain allowed (e.g. stock inquiry).
    */
   periodMode?: DocumentInquiryPeriodMode
+  /** Optional injected periods (skips entity fetch — useful for tests). */
+  periods?: AccountingPeriodRow[]
+  periodsLoading?: boolean
 }
 
-function resolveYearMonthParts(periodKey: string): { year: number; month: number } {
-  return parsePeriodKeyYearMonth(periodKey) ?? defaultTrialBalancePeriodParts()
+type AccountingPeriodFieldProps = {
+  periodKey: string
+  onPeriodKeyChange: (value: string) => void
+  periodTestId: string
+  onPeriodKeyEnter?: () => void
+  periods: AccountingPeriodRow[]
+  loading: boolean
+}
+
+function AccountingPeriodFieldView({
+  periodKey,
+  onPeriodKeyChange,
+  periodTestId,
+  onPeriodKeyEnter,
+  periods,
+  loading,
+}: AccountingPeriodFieldProps) {
+  return (
+    <label className={voucherInquiryFilterPeriod}>
+      <span className={themeLabel}>Period</span>
+      <AccountingPeriodSelect
+        className={voucherInquiryFilterSelect}
+        periods={periods}
+        value={periodKey.trim() || null}
+        onChange={onPeriodKeyChange}
+        loading={loading}
+        showEmptyHint={false}
+        onKeyDown={(event: KeyboardEvent<HTMLSelectElement>) => {
+          if (event.key === "Enter") {
+            event.preventDefault()
+            onPeriodKeyEnter?.()
+          }
+        }}
+        data-testid={periodTestId}
+      />
+    </label>
+  )
+}
+
+function AccountingPeriodInquiryFieldFetched(
+  props: Omit<AccountingPeriodFieldProps, "periods" | "loading">
+) {
+  const { periods, loading } = useAccountingPeriodOptions()
+  return <AccountingPeriodFieldView {...props} periods={periods} loading={loading} />
 }
 
 export function DocumentInquiryMoreFilter({
@@ -73,13 +124,16 @@ export function DocumentInquiryMoreFilter({
   setIsMoreFilterOpen,
   onPeriodKeyEnter,
   isMoreFilterActive,
-  periodMode = "text",
+  periodMode = "accounting",
+  periods,
+  periodsLoading = false,
 }: DocumentInquiryMoreFilterProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const popoverId = useId()
   const hasDateFilter = Boolean(from.trim() || to.trim())
   const moreFilterActive = isMoreFilterActive ?? hasDateFilter
-  const yearMonth = resolveYearMonthParts(periodKey)
+  const useCalendar = periodMode === "calendar" || periodMode === "year-month"
+  const useText = periodMode === "text"
 
   useEffect(() => {
     if (!isMoreFilterOpen) return
@@ -98,82 +152,59 @@ export function DocumentInquiryMoreFilter({
     setIsMoreFilterOpen((open) => !open)
   }
 
-  const emitYearMonth = (year: number, month: number) => {
-    onPeriodKeyChange(buildPeriodKeyFromYearMonth(year, month))
+  const accountingFieldProps = {
+    periodKey,
+    onPeriodKeyChange,
+    periodTestId,
+    onPeriodKeyEnter,
   }
 
-  const handlePeriodKeyDown = (
-    event: KeyboardEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    if (event.key === "Enter") {
-      event.preventDefault()
-      onPeriodKeyEnter?.()
-    }
+  let periodControl: ReactNode
+  if (useCalendar) {
+    periodControl = (
+      <PeriodSelector
+        periodKey={periodKey}
+        onPeriodChange={onPeriodKeyChange}
+        yearClassName={voucherInquiryFilterSelect}
+        monthClassName={voucherInquiryFilterSelect}
+        yearId={`${periodTestId}-year`}
+        monthId={`${periodTestId}-month`}
+        data-testid={periodTestId}
+      />
+    )
+  } else if (useText) {
+    periodControl = (
+      <label className={voucherInquiryFilterPeriod}>
+        <span className={themeLabel}>Period</span>
+        <AccountingPeriodInput
+          className={voucherInquiryFilterInput}
+          value={periodKey}
+          onChange={onPeriodKeyChange}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault()
+              onPeriodKeyEnter?.()
+            }
+          }}
+          data-testid={periodTestId}
+        />
+      </label>
+    )
+  } else if (periods) {
+    periodControl = (
+      <AccountingPeriodFieldView
+        {...accountingFieldProps}
+        periods={periods}
+        loading={periodsLoading}
+      />
+    )
+  } else {
+    periodControl = <AccountingPeriodInquiryFieldFetched {...accountingFieldProps} />
   }
 
   return (
     <div ref={rootRef} className={voucherInquiryFilterPeriodGroup}>
-      {periodMode === "year-month" ? (
-        <>
-          <label className={voucherInquiryFilterPeriodYear}>
-            <span className={themeLabel}>Year</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={2000}
-              max={2100}
-              step={1}
-              required
-              className={voucherInquiryFilterInput}
-              value={yearMonth.year}
-              onChange={(event) => {
-                const nextYear = Number(event.target.value)
-                if (!Number.isFinite(nextYear)) return
-                emitYearMonth(nextYear, yearMonth.month)
-              }}
-              onKeyDown={handlePeriodKeyDown}
-              aria-label="Period year"
-              data-testid={`${periodTestId}-year`}
-            />
-          </label>
-          <label className={voucherInquiryFilterPeriodMonth}>
-            <span className={themeLabel}>Month</span>
-            <select
-              required
-              className={voucherInquiryFilterSelect}
-              value={yearMonth.month}
-              onChange={(event) => {
-                emitYearMonth(yearMonth.year, Number(event.target.value))
-              }}
-              onKeyDown={handlePeriodKeyDown}
-              aria-label="Period month"
-              data-testid={`${periodTestId}-month`}
-            >
-              {PERIOD_MONTH_OPTIONS.map((month) => (
-                <option key={month} value={month}>
-                  {formatPaddedMonth(month)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </>
-      ) : (
-        <label className={voucherInquiryFilterPeriod}>
-          <span className={themeLabel}>Period</span>
-          <AccountingPeriodInput
-            className={voucherInquiryFilterInput}
-            value={periodKey}
-            onChange={onPeriodKeyChange}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault()
-                onPeriodKeyEnter?.()
-              }
-            }}
-            data-testid={periodTestId}
-          />
-        </label>
-      )}
+      {periodControl}
       <div className={voucherInquiryFilterMore}>
         <span className={`${themeLabel} invisible select-none`} aria-hidden="true">
           &nbsp;

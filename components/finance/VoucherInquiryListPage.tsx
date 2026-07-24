@@ -432,7 +432,7 @@ export function VoucherInquiryListPage() {
             }))
           }
           periodTestId="voucher-inquiry-filter-period"
-          periodMode="year-month"
+          periodMode="calendar"
           from={draft.from ?? ""}
           to={draft.to ?? ""}
           onFromChange={(value) =>

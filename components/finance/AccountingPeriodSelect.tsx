@@ -202,6 +202,7 @@ export function AccountingPeriodSelect({
         disabled={selectDisabled}
         title={selectedTooltip}
         onChange={(event) => onChange(event.target.value)}
+        data-testid={dataTestId}
       >
         <option value="">
           {loading

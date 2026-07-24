@@ -10,8 +10,9 @@ import {
 } from "@/lib/finance-ui/general-ledger"
 import type { GeneralLedgerResult } from "@/lib/finance-ui/types"
 import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
 import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import { GlAccountCombobox } from "@/components/finance/GlAccountCombobox"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 
@@ -21,6 +22,7 @@ type ViewMode = "list" | "t-account"
 const GL_RETURN_TO = "/finance/reports/general-ledger"
 
 export function GeneralLedgerPage() {
+  const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
@@ -141,11 +143,14 @@ export function GeneralLedgerPage() {
               <label htmlFor="gl-period-key" className="finance-filter-label">
                 Period key
               </label>
-              <AccountingPeriodInput
+              <AccountingPeriodSelect
                 id="gl-period-key"
                 className="finance-filter-control finance-filter-control--mono"
-                value={periodKey}
+                periods={periods}
+                value={periodKey.trim() || null}
                 onChange={setPeriodKey}
+                loading={periodsLoading}
+                showEmptyHint={false}
                 data-testid="gl-period-key"
               />
             </div>

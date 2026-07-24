@@ -123,4 +123,13 @@ describe("Trial Balance Year + Month period selector", () => {
     expect(TRIAL_BALANCE_MONTH_VALUES).toHaveLength(12)
     expect(html).not.toContain("Period key")
   })
+
+  it("preserves Trial Balance year window current ± 5 via PeriodSelector", () => {
+    const html = renderToStaticMarkup(<TrialBalancePage />)
+    const current = new Date().getFullYear()
+    expect(html).toContain(`>${current - 5}</option>`)
+    expect(html).toContain(`>${current + 5}</option>`)
+    expect(html).not.toContain(`>${current - 6}</option>`)
+    expect(html).not.toContain(`>${current + 6}</option>`)
+  })
 })

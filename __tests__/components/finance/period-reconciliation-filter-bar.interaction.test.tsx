@@ -19,6 +19,28 @@ jest.mock("@/lib/finance-ui/pos-settlement-branches", () => ({
     `${branch.code} — ${branch.name}`,
 }))
 
+jest.mock("@/lib/finance-ui/use-accounting-period-options", () => ({
+  useAccountingPeriodOptions: () => ({
+    legalEntityCode: "AD",
+    periods: [
+      {
+        id: "period-1",
+        periodKey: "2026-07",
+        legalEntityCode: "AD",
+        branchId: "branch-1",
+        branchName: "HO",
+        status: "OPEN",
+        openedAt: "2026-07-01T00:00:00.000Z",
+        closedAt: null,
+      },
+    ],
+    loading: false,
+    loadError: null,
+    hasPeriods: true,
+    emptyMessage: "No accounting period found for this entity.",
+  }),
+}))
+
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
 function ControlledFilterBar(props: { mode?: "bank" | "cash" }) {

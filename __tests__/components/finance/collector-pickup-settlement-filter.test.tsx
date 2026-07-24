@@ -16,6 +16,28 @@ jest.mock("@/lib/finance-ui/pos-settlement-branches", () => ({
     `${branch.code} — ${branch.name}`,
 }))
 
+jest.mock("@/lib/finance-ui/use-accounting-period-options", () => ({
+  useAccountingPeriodOptions: () => ({
+    legalEntityCode: "AD",
+    periods: [
+      {
+        id: "period-1",
+        periodKey: "2026-06",
+        legalEntityCode: "AD",
+        branchId: "branch-1",
+        branchName: "HO",
+        status: "OPEN",
+        openedAt: "2026-06-01T00:00:00.000Z",
+        closedAt: null,
+      },
+    ],
+    loading: false,
+    loadError: null,
+    hasPeriods: true,
+    emptyMessage: "No accounting period found for this entity.",
+  }),
+}))
+
 describe("CollectorPickupSettlementFilterBar", () => {
   const baseDraft = {
     ...defaultCollectorPickupSettlementUiFilter(new Date("2026-06-15T12:00:00.000Z")),
@@ -105,9 +127,9 @@ describe("CollectorPickupSettlementFilterBar", () => {
     expect(css).toContain(".voucher-inquiry-filter-bar")
   })
 
-  it("wires Period Enter to Apply via DocumentInquiryMoreFilter", () => {
+  it("wires Period select via DocumentInquiryMoreFilter AccountingPeriodSelect", () => {
     const html = renderBar()
     expect(html).toContain('data-testid="collector-pickup-filter-period"')
-    expect(html).toContain('placeholder="202601"')
+    expect(html).toContain("2026-06 (OPEN)")
   })
 })

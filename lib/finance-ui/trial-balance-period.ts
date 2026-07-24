@@ -20,14 +20,20 @@ export function defaultTrialBalancePeriodParts(now = new Date()): {
   return { year, month, periodKey: buildPeriodKeyFromYearMonth(year, month) }
 }
 
+/** Trial Balance Year dropdown: current ± 5 (11 years inclusive). */
+export const TRIAL_BALANCE_YEAR_PAST = 5
+export const TRIAL_BALANCE_YEAR_FUTURE = 5
+
 /**
  * Year options for Trial Balance period dropdown (current ± 5).
- * Note: ASA-CON PeriodSelector standard uses current−2…+7 (10 years).
- * Trial Balance still uses this wider window until migrated.
+ * Prefer configuring PeriodSelector with these constants over calling this helper.
  */
 export function trialBalanceYearOptions(now = new Date()): number[] {
   const current = now.getFullYear()
-  return Array.from({ length: 11 }, (_, index) => current - 5 + index)
+  return Array.from(
+    { length: TRIAL_BALANCE_YEAR_PAST + TRIAL_BALANCE_YEAR_FUTURE + 1 },
+    (_, index) => current - TRIAL_BALANCE_YEAR_PAST + index
+  )
 }
 
 export {

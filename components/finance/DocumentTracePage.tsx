@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { DocumentTraceListTable } from "@/components/finance/DocumentTraceListTable"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
 import { DocumentTraceMoreFilter, type DocumentTraceMoreFilterHandle } from "@/components/finance/DocumentTraceMoreFilter"
 import {
   formatTraceNodeDate,
@@ -18,6 +18,7 @@ import {
   parseDocumentTraceFiltersFromSearchParams,
 } from "@/lib/finance-ui/document-trace-filters"
 import { useInquiryMoreFilterOpen } from "@/lib/finance-ui/inquiry-more-filter-state"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import { fetchManualJournalSessionContext } from "@/lib/finance-ui/manual-journal-entry-session"
 import {
   fetchPosSettlementBranches,
@@ -166,6 +167,7 @@ export function DocumentTracePage() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
 
   const [legalEntityCode, setLegalEntityCode] = useState<DocumentEntityCode>("AS")
   const [filters, setFilters] = useState<DocumentTraceFilters>(() =>
@@ -548,9 +550,10 @@ export function DocumentTracePage() {
           <label htmlFor="document-trace-period" className="finance-filter-label">
             Period
           </label>
-          <AccountingPeriodInput
+          <AccountingPeriodSelect
             id="document-trace-period"
-            value={filters.period}
+            periods={periods}
+            value={filters.period.trim() || null}
             onChange={(value) => updateFilters({ period: value })}
             onKeyDown={(event) => {
               if (event.key === "Enter" && searchEnabled) {
@@ -558,6 +561,8 @@ export function DocumentTracePage() {
                 handleSearch()
               }
             }}
+            loading={periodsLoading}
+            showEmptyHint={false}
             className="finance-filter-control finance-filter-control--mono"
             data-testid="document-trace-period-input"
           />

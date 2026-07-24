@@ -238,6 +238,7 @@ export function StockDocumentInquiryListPage() {
             setDraft((prev) => ({ ...prev, periodKey: value || undefined }))
           }
           periodTestId="stock-document-inquiry-filter-period"
+          periodMode="text"
           from={draft.from ?? ""}
           to={draft.to ?? ""}
           onFromChange={(value) =>

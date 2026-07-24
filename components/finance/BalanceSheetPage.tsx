@@ -13,8 +13,9 @@ import {
   formatFinanceReportPeriodLabel,
 } from "@/lib/finance-ui/finance-report-display"
 import { FinanceScopeRadioFieldset } from "@/components/finance/FinanceScopeRadioFieldset"
-import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
 import { resolveAccountingPeriodKeyFilter } from "@/lib/finance-ui/accounting-period-input"
+import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import { formatEntityShort } from "@/lib/legal-entity/display"
 import { FinanceAccountDisplay } from "@/components/finance/FinanceAccountDisplay"
 import {
@@ -89,6 +90,7 @@ function SectionTable({
 }
 
 export function BalanceSheetPage() {
+  const { periods, loading: periodsLoading } = useAccountingPeriodOptions()
   const [filterMode, setFilterMode] = useState<FilterMode>("period")
   const [periodKey, setPeriodKey] = useState(() => {
     const now = new Date()
@@ -163,11 +165,14 @@ export function BalanceSheetPage() {
               <label htmlFor="bs-period-key" className="finance-filter-label">
                 Period key
               </label>
-              <AccountingPeriodInput
+              <AccountingPeriodSelect
                 id="bs-period-key"
                 className="finance-filter-control finance-filter-control--mono"
-                value={periodKey}
+                periods={periods}
+                value={periodKey.trim() || null}
                 onChange={setPeriodKey}
+                loading={periodsLoading}
+                showEmptyHint={false}
               />
             </div>
           ) : (
