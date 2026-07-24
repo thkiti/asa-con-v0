@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { BankStatementFilterBar } from "@/components/finance/bank-statements/BankStatementFilterBar"
 import { BankStatementStatusDot } from "@/components/finance/bank-statements/BankStatementStatusDot"
+import { PageBackDotButton } from "@/components/ui/PageBackDotButton"
 import type { BankStatementRow } from "@/lib/finance/bank-statement"
 import { fetchBankAccounts } from "@/lib/finance-ui/bank-accounts"
 import {
@@ -115,29 +116,28 @@ export function BankStatementsPage() {
 
   return (
     <div className="space-y-6" data-testid="bank-statements-page">
-      <Link
-        href={entityPath("/finance/accounting-periods")}
-        className={`text-sm print:hidden ${themeTextSecondary} underline underline-offset-2`}
-      >
-        ← Month-End Closing
-      </Link>
-
       <div className="flex flex-wrap items-start justify-between gap-4">
         <h1
-          className="text-2xl font-bold tracking-tight text-foreground"
+          className="min-w-0 text-2xl font-bold tracking-tight text-foreground"
           data-testid="entity-context-page-title"
         >
           {pageTitle}
         </h1>
-        <button
-          type="button"
-          className={themeBtnPrimary}
-          onClick={() => router.push(entityPath(`${FINANCE_BANK_STATEMENTS_PAGE_PATH}/new`))}
-          disabled={!hasPeriods}
-          data-testid="bank-statement-new"
-        >
-          New Statement
-        </button>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            className={themeBtnPrimary}
+            onClick={() => router.push(entityPath(`${FINANCE_BANK_STATEMENTS_PAGE_PATH}/new`))}
+            disabled={!hasPeriods}
+            data-testid="bank-statement-new"
+          >
+            New Statement
+          </button>
+          <PageBackDotButton
+            fallbackHref={entityPath("/finance/accounting-periods")}
+            tooltip="Back to Month-End Closing"
+          />
+        </div>
       </div>
 
       <p className={`text-sm ${themeTextSecondary}`}>

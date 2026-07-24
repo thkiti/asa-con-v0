@@ -1,7 +1,11 @@
-import Link from "next/link"
+"use client"
+
 import type { ReactNode } from "react"
+import {
+  PageBackDotButton,
+  backTooltipFromLabel,
+} from "@/components/ui/PageBackDotButton"
 import { FinanceDocumentContainer } from "@/components/finance/FinanceDocumentContainer"
-import { themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type FinanceDocumentPageShellProps = {
   backHref: string
@@ -9,7 +13,7 @@ type FinanceDocumentPageShellProps = {
   children: ReactNode
 }
 
-/** Centered document page frame — back link + 1050px container (OPB/MJV/inquiry parity). */
+/** Centered document page frame — back control + 1050px container (OPB/MJV/inquiry parity). */
 export function FinanceDocumentPageShell({
   backHref,
   backLabel,
@@ -17,13 +21,13 @@ export function FinanceDocumentPageShell({
 }: FinanceDocumentPageShellProps) {
   return (
     <FinanceDocumentContainer>
-      <Link
-        href={backHref}
-        className={`text-sm ${themeLinkMuted}`}
-        data-testid="finance-document-back-link"
-      >
-        {backLabel}
-      </Link>
+      <div className="flex justify-end">
+        <PageBackDotButton
+          fallbackHref={backHref}
+          tooltip={backTooltipFromLabel(backLabel)}
+          data-testid="finance-document-back-link"
+        />
+      </div>
       <div className="mt-4">{children}</div>
     </FinanceDocumentContainer>
   )

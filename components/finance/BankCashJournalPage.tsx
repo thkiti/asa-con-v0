@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { PageBackDotButton } from "@/components/ui/PageBackDotButton"
 import { BankCashCheckStatusDot } from "@/components/finance/bank-cash/BankCashCheckStatusDot"
 import { BankStatementQuickPanel, type MatchedJournalLineRef } from "@/components/finance/bank-cash/BankStatementQuickPanel"
 import { GeneralLedgerRefLink } from "@/components/finance/GeneralLedgerRefLink"
@@ -377,19 +378,18 @@ export function BankCashJournalPage() {
 
   return (
     <div className="space-y-6" data-testid="bank-cash-journal-page">
-      <Link
-        href={entityPath("/finance")}
-        className={`text-sm print:hidden ${themeTextSecondary} underline underline-offset-2`}
-      >
-        ← Finance
-      </Link>
-
-      <h1
-        className="text-2xl font-bold tracking-tight text-foreground"
-        data-testid="entity-context-page-title"
-      >
-        {pageTitle}
-      </h1>
+      <div className="flex items-start justify-between gap-3">
+        <h1
+          className="min-w-0 text-2xl font-bold tracking-tight text-foreground"
+          data-testid="entity-context-page-title"
+        >
+          {pageTitle}
+        </h1>
+        <PageBackDotButton
+          fallbackHref={entityPath("/finance")}
+          tooltip="Back to Finance"
+        />
+      </div>
 
       <p className={`text-sm ${themeTextSecondary}`}>
         Compare posted GL movements (system) with amounts from the paper bank statement. Enter

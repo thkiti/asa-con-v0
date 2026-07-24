@@ -6,8 +6,6 @@ import { VoucherInquiryPdfIndicator } from "@/components/finance/VoucherInquiryP
 import { VOUCHER_INQUIRY_REF_TYPE_OPTIONS } from "@/lib/finance/inquiry/voucher-document-types"
 import {
   financeFilterSelect,
-  financePdfIndicatorExists,
-  financePdfIndicatorMissing,
   voucherInquiryFilterControl,
   voucherInquiryFilterFramed,
   voucherInquiryFilterSelect,
@@ -402,10 +400,10 @@ describe("VoucherInquiryListPage", () => {
         <VoucherInquiryPdfIndicator row={refListRow} />
       </>
     )
-    expect(html).toContain(financePdfIndicatorExists)
+    expect(html).toContain("bg-[var(--tone-success-fg)]")
     expect(html).toContain('aria-label="PDF exists"')
     expect(html).toContain("/api/finance/manual-journal-entries/mje-posted-1/pdf")
-    expect(html).toContain(financePdfIndicatorMissing)
+    expect(html).toContain("bg-[var(--tone-error-fg)]")
     expect(html).toContain('aria-label="PDF missing"')
     expect(html).not.toContain('aria-label="PDF not supported"')
     expect(html).not.toContain(">Yes<")
@@ -422,7 +420,7 @@ describe("VoucherInquiryListPage", () => {
       />
     )
     expect(html).toContain('data-testid="voucher-inquiry-pdf-mje-draft-1"')
-    expect(html).toContain(financePdfIndicatorMissing)
+    expect(html).toContain("bg-[var(--tone-error-fg)]")
     expect(html).toContain('aria-label="PDF missing"')
     expect(html).toContain("MJV-260001")
     expect(html).not.toContain('data-testid="voucher-inquiry-pdf-link-')
@@ -508,7 +506,7 @@ describe("VoucherInquiryListPage", () => {
     const html = renderToStaticMarkup(
       <VoucherInquiryPdfIndicator row={postedPavMissingPdfRow} />
     )
-    expect(html).toContain(financePdfIndicatorMissing)
+    expect(html).toContain("bg-[var(--tone-error-fg)]")
     expect(html).toContain('aria-label="PDF missing"')
     expect(html).not.toContain("/api/document-archive/by-document/PAV/pav-1/file")
   })
@@ -517,7 +515,7 @@ describe("VoucherInquiryListPage", () => {
     const html = renderToStaticMarkup(
       <VoucherInquiryPdfIndicator row={postedPavWithPdfRow} />
     )
-    expect(html).toContain(financePdfIndicatorExists)
+    expect(html).toContain("bg-[var(--tone-success-fg)]")
     expect(html).toContain(
       "/api/document-archive/by-document/PAV/pav-1/file?archiveKind=DOCUMENT_PDF"
     )
@@ -599,8 +597,9 @@ describe("FinanceVoucherInquiryDetailView", () => {
       />
     )
 
+    expect(html).toContain('data-testid="finance-admin-back-button"')
     expect(html).toContain(
-      'href="/finance/pos-settlement/collector-pickup?branchId=branch-1&amp;from=2026-06-01&amp;to=2026-06-30"'
+      'data-fallback-href="/finance/pos-settlement/collector-pickup?branchId=branch-1&amp;from=2026-06-01&amp;to=2026-06-30"'
     )
   })
 
@@ -612,7 +611,8 @@ describe("FinanceVoucherInquiryDetailView", () => {
       />
     )
 
-    expect(html).toContain('href="/finance/vouchers"')
-    expect(html).toContain("← Voucher / Journal Inquiry")
+    expect(html).toContain('data-testid="finance-admin-back-button"')
+    expect(html).toContain('data-fallback-href="/finance/vouchers"')
+    expect(html).toContain('aria-label="Back to Voucher / Journal Inquiry"')
   })
 })

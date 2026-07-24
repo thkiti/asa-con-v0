@@ -1,11 +1,15 @@
-import Link from "next/link"
+"use client"
+
 import type { ReactNode } from "react"
+import {
+  PageBackDotButton,
+  backTooltipFromLabel,
+} from "@/components/ui/PageBackDotButton"
 import {
   formatEntityContextTitleOrDefault,
   type DocumentEntityCode,
 } from "@/lib/legal-entity"
 import {
-  themeLinkMuted,
   themeMuted,
   themePage,
   themePageTitle,
@@ -38,17 +42,21 @@ export function MasterPageShell({
   return (
     <main className={`mx-auto max-w-6xl p-6 ${themePage}`}>
       <header className="border-b border-border pb-4">
-        {backHref ? (
-          <Link href={backHref} className={`text-sm ${themeLinkMuted}`}>
-            {backLabel}
-          </Link>
-        ) : null}
-        <h1
-          className={`mt-3 ${themePageTitle}`}
-          data-testid="entity-context-page-title"
-        >
-          {displayTitle}
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1
+            className={`min-w-0 ${themePageTitle}`}
+            data-testid="entity-context-page-title"
+          >
+            {displayTitle}
+          </h1>
+          {backHref ? (
+            <PageBackDotButton
+              fallbackHref={backHref}
+              tooltip={backTooltipFromLabel(backLabel)}
+              data-testid="master-page-back-button"
+            />
+          ) : null}
+        </div>
         {description && headerActions ? (
           <div className="mt-2 flex items-start justify-between gap-4">
             <p className={`max-w-3xl text-sm ${themeMuted}`}>{description}</p>

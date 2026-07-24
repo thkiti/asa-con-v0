@@ -1,8 +1,12 @@
-import Link from "next/link"
+"use client"
+
 import type { ReactNode } from "react"
+import {
+  PageBackDotButton,
+  backTooltipFromLabel,
+} from "@/components/ui/PageBackDotButton"
 import { FinancePageShell } from "./FinancePageShell"
 import {
-  financeAdminBackLinkClass,
   financeAdminContentClass,
   financeAdminIntroClass,
   financeWorkPanelClass,
@@ -35,10 +39,14 @@ export function FinanceAdminPageShell({
 
   return (
     <FinancePageShell testId="finance-admin-page">
-      <Link href={backHref} className={financeAdminBackLinkClass}>
-        {backLabel}
-      </Link>
-      {heading}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">{heading}</div>
+        <PageBackDotButton
+          fallbackHref={backHref}
+          tooltip={backTooltipFromLabel(backLabel)}
+          data-testid="finance-admin-back-button"
+        />
+      </div>
       {intro ? <p className={introClassName}>{intro}</p> : null}
       <div className={bodyClass} data-testid="finance-page-body">
         {children}
