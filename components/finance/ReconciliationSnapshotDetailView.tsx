@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton"
 import { fetchReconciliationSnapshotById } from "@/lib/finance-ui/fetchers"
 import { formatAmount, formatDateTime } from "@/lib/finance-ui/format"
 import {
@@ -474,15 +475,12 @@ export function ReconciliationSnapshotDetailView({
           </p>
           <ReconciliationIssuesTable issues={allIssues} snapshotTrace={snapshotTraceContext} />
         </div>
-        {issuesPagination.hasMore ? (
-          <button
-            type="button"
-            onClick={() => setIssuesVisibleCount(issuesPagination.nextVisibleCount)}
-            className="no-print mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
-          >
-            Show more issues ({issuesPagination.total - issuesPagination.visible.length} remaining)
-          </button>
-        ) : null}
+        <LoadMoreButton
+          hasMore={issuesPagination.hasMore}
+          onClick={() => setIssuesVisibleCount(issuesPagination.nextVisibleCount)}
+          label={`Show more issues (${issuesPagination.total - issuesPagination.visible.length} remaining)`}
+          className="no-print mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
+        />
         </CollapsibleSection>
       </div>
     </div>

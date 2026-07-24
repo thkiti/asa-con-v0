@@ -12,6 +12,7 @@ import { MasterListStatus } from "@/components/master/shared/MasterListStatus"
 import { MasterTable } from "@/components/master/shared/MasterTable"
 import { MasterTableRow } from "@/components/master/shared/MasterTableRow"
 import { masterPageLayout } from "@/lib/master-ui/table-classes"
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton"
 import { themeBtnSecondary } from "@/lib/theme/theme-classes"
 import { StockDocumentStatusBadge } from "./StockDocumentStatusBadge"
 import {
@@ -128,14 +129,14 @@ export function StockDocumentListView({
 
       {hasMore ? (
         <div className="mt-3 shrink-0">
-          <button
-            type="button"
-            className={themeBtnSecondary}
-            disabled={loadingMore}
+          <LoadMoreButton
+            hasMore
             onClick={onLoadMore}
-          >
-            {loadingMore ? "Loading…" : "Load more"}
-          </button>
+            loading={loadingMore}
+            loadingLabel="Loading…"
+            label="Load more"
+            className={themeBtnSecondary}
+          />
         </div>
       ) : null}
     </div>

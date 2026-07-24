@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import type { RefObject } from "react"
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import {
   documentTraceListScroll,
@@ -136,16 +137,16 @@ export function DocumentTraceListTable({
           {limitedHelper}
         </p>
       ) : null}
-      {hasMore && onLoadMore ? (
-        <button
-          type="button"
+      {onLoadMore ? (
+        <LoadMoreButton
+          hasMore={hasMore}
           onClick={onLoadMore}
-          disabled={loadingMore}
+          loading={loadingMore}
+          loadingLabel="Loading more…"
+          label="Load more"
           className="text-sm font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-600 disabled:opacity-60"
           data-testid="document-trace-list-load-more"
-        >
-          {loadingMore ? "Loading more…" : "Load more"}
-        </button>
+        />
       ) : null}
     </div>
   )

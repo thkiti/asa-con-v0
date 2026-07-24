@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton"
 import {
   fetchReconciliationSnapshotById,
   fetchReconciliationSnapshots,
@@ -602,17 +603,14 @@ export function ReconciliationSnapshotCompareView({
                 </p>
               ) : null}
               <CompareIssueDiffTable diffs={visibleIssueDiffs} leftSnapshot={left} rightSnapshot={right} />
-              {issueDiffPagination.hasMore ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setIssueDiffVisibleCount(issueDiffPagination.nextVisibleCount)
-                  }
-                  className="no-print mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
-                >
-                  Show more changes ({issueDiffPagination.total - issueDiffPagination.visible.length} remaining)
-                </button>
-              ) : null}
+              <LoadMoreButton
+                hasMore={issueDiffPagination.hasMore}
+                onClick={() =>
+                  setIssueDiffVisibleCount(issueDiffPagination.nextVisibleCount)
+                }
+                label={`Show more changes (${issueDiffPagination.total - issueDiffPagination.visible.length} remaining)`}
+                className="no-print mt-4 rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900"
+              />
             </>
           )}
         </div>
