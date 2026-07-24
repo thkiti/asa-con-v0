@@ -1,9 +1,6 @@
 "use client"
 
 import {
-  useEffect,
-  useId,
-  useRef,
   type Dispatch,
   type KeyboardEvent,
   type ReactNode,
@@ -11,18 +8,13 @@ import {
 } from "react"
 import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
 import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { MoreFilterPopover } from "@/components/ui/MoreFilterPopover"
 import { PeriodSelector } from "@/components/ui/PeriodSelector"
 import {
   voucherInquiryFilterInput,
-  voucherInquiryFilterMore,
   voucherInquiryFilterPeriod,
-  voucherInquiryFilterPeriodGroup,
   voucherInquiryFilterSelect,
-  voucherInquiryMoreFilterButton,
-  voucherInquiryMoreFilterButtonActive,
-  voucherInquiryMoreFilterButtonDot,
   voucherInquiryMoreFilterDateInput,
-  voucherInquiryMoreFilterPopover,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { useAccountingPeriodOptions } from "@/lib/finance-ui/use-accounting-period-options"
 import type { AccountingPeriodRow } from "@/lib/finance-ui/types"
@@ -128,29 +120,10 @@ export function DocumentInquiryMoreFilter({
   periods,
   periodsLoading = false,
 }: DocumentInquiryMoreFilterProps) {
-  const rootRef = useRef<HTMLDivElement>(null)
-  const popoverId = useId()
   const hasDateFilter = Boolean(from.trim() || to.trim())
   const moreFilterActive = isMoreFilterActive ?? hasDateFilter
   const useCalendar = periodMode === "calendar" || periodMode === "year-month"
   const useText = periodMode === "text"
-
-  useEffect(() => {
-    if (!isMoreFilterOpen) return
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target
-      if (rootRef.current?.contains(target as Node)) return
-      setIsMoreFilterOpen(false)
-    }
-
-    document.addEventListener("mousedown", handlePointerDown)
-    return () => document.removeEventListener("mousedown", handlePointerDown)
-  }, [isMoreFilterOpen, setIsMoreFilterOpen])
-
-  const handleToggle = () => {
-    setIsMoreFilterOpen((open) => !open)
-  }
 
   const accountingFieldProps = {
     periodKey,
@@ -203,56 +176,31 @@ export function DocumentInquiryMoreFilter({
   }
 
   return (
-    <div ref={rootRef} className={voucherInquiryFilterPeriodGroup}>
-      {periodControl}
-      <div className={voucherInquiryFilterMore}>
-        <span className={`${themeLabel} invisible select-none`} aria-hidden="true">
-          &nbsp;
-        </span>
-        <button
-          type="button"
-          className={`${voucherInquiryMoreFilterButton}${
-            moreFilterActive ? ` ${voucherInquiryMoreFilterButtonActive}` : ""
-          }`}
-          title="More filter"
-          aria-label="More filter"
-          aria-expanded={isMoreFilterOpen}
-          aria-controls={isMoreFilterOpen ? popoverId : undefined}
-          data-active={moreFilterActive ? "true" : "false"}
-          onMouseDown={(event) => event.stopPropagation()}
-          onClick={handleToggle}
-          data-testid={`${testIdPrefix}-more-filter`}
-        >
-          <span className={voucherInquiryMoreFilterButtonDot} aria-hidden="true" />
-        </button>
-      </div>
-      {isMoreFilterOpen ? (
-        <div
-          id={popoverId}
-          className={voucherInquiryMoreFilterPopover}
-          data-testid={`${testIdPrefix}-more-filter-panel`}
-          role="group"
-          aria-label="Date range filter"
-          onMouseDown={(event) => event.stopPropagation()}
-        >
-          <input
-            type="date"
-            className={voucherInquiryMoreFilterDateInput}
-            value={from}
-            onChange={(event) => onFromChange(event.target.value)}
-            aria-label="From date"
-            data-testid={`${testIdPrefix}-filter-from`}
-          />
-          <input
-            type="date"
-            className={voucherInquiryMoreFilterDateInput}
-            value={to}
-            onChange={(event) => onToChange(event.target.value)}
-            aria-label="To date"
-            data-testid={`${testIdPrefix}-filter-to`}
-          />
-        </div>
-      ) : null}
-    </div>
+    <MoreFilterPopover
+      open={isMoreFilterOpen}
+      onOpenChange={setIsMoreFilterOpen}
+      active={moreFilterActive}
+      leading={periodControl}
+      testId={`${testIdPrefix}-more-filter`}
+      panelTestId={`${testIdPrefix}-more-filter-panel`}
+      panelAriaLabel="Date range filter"
+    >
+      <input
+        type="date"
+        className={voucherInquiryMoreFilterDateInput}
+        value={from}
+        onChange={(event) => onFromChange(event.target.value)}
+        aria-label="From date"
+        data-testid={`${testIdPrefix}-filter-from`}
+      />
+      <input
+        type="date"
+        className={voucherInquiryMoreFilterDateInput}
+        value={to}
+        onChange={(event) => onToChange(event.target.value)}
+        aria-label="To date"
+        data-testid={`${testIdPrefix}-filter-to`}
+      />
+    </MoreFilterPopover>
   )
 }

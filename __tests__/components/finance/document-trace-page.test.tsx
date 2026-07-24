@@ -23,6 +23,11 @@ function setInputValue(element: HTMLInputElement, value: string): void {
   element.dispatchEvent(new Event("change", { bubbles: true }))
 }
 
+function setSelectValue(element: HTMLSelectElement, value: string): void {
+  element.value = value
+  element.dispatchEvent(new Event("change", { bubbles: true }))
+}
+
 let searchParams = new URLSearchParams("")
 const replaceMock = jest.fn((url: string) => {
   const query = url.includes("?") ? url.split("?")[1] : ""
@@ -47,6 +52,56 @@ jest.mock("@/lib/finance-ui/pos-settlement-branches", () => ({
   }),
   formatPosSettlementBranchLabel: (branch: { code: string; name: string }) =>
     `${branch.code} • ${branch.name}`,
+}))
+
+jest.mock("@/lib/finance-ui/use-accounting-period-options", () => ({
+  useAccountingPeriodOptions: () => ({
+    periods: [
+      {
+        id: "p-2026-06",
+        periodKey: "2026-06",
+        legalEntityCode: "AS",
+        branchId: "branch-1",
+        branchName: "Shop 1",
+        status: "OPEN",
+        openedAt: "2026-06-01T00:00:00.000Z",
+        closedAt: null,
+      },
+      {
+        id: "p-2026-05",
+        periodKey: "2026-05",
+        legalEntityCode: "AS",
+        branchId: "branch-1",
+        branchName: "Shop 1",
+        status: "OPEN",
+        openedAt: "2026-05-01T00:00:00.000Z",
+        closedAt: null,
+      },
+      {
+        id: "p-2026-01",
+        periodKey: "2026-01",
+        legalEntityCode: "AS",
+        branchId: "branch-1",
+        branchName: "Shop 1",
+        status: "OPEN",
+        openedAt: "2026-01-01T00:00:00.000Z",
+        closedAt: null,
+      },
+      {
+        id: "p-2026-02",
+        periodKey: "2026-02",
+        legalEntityCode: "AS",
+        branchId: "branch-1",
+        branchName: "Shop 1",
+        status: "OPEN",
+        openedAt: "2026-02-01T00:00:00.000Z",
+        closedAt: null,
+      },
+    ],
+    loading: false,
+    loadError: null,
+    emptyMessage: null,
+  }),
 }))
 
 jest.mock("@/lib/finance-ui/document-trace", () => ({
@@ -121,10 +176,10 @@ describe("DocumentTracePage fetch behavior", () => {
     ) as HTMLSelectElement
   }
 
-  function periodInput(): HTMLInputElement {
+  function periodSelect(): HTMLSelectElement {
     return container.querySelector(
       '[data-testid="document-trace-period-input"]'
-    ) as HTMLInputElement
+    ) as HTMLSelectElement
   }
 
   function searchButton(): HTMLButtonElement {
@@ -144,7 +199,7 @@ describe("DocumentTracePage fetch behavior", () => {
 
   async function setPeriod(value: string) {
     await act(async () => {
-      setInputValue(periodInput(), value)
+      setSelectValue(periodSelect(), value)
       await Promise.resolve()
     })
   }
@@ -374,10 +429,10 @@ describe("DocumentTracePage shop filter visibility", () => {
     ) as HTMLSelectElement
   }
 
-  function periodInput(): HTMLInputElement {
+  function periodSelect(): HTMLSelectElement {
     return container.querySelector(
       '[data-testid="document-trace-period-input"]'
-    ) as HTMLInputElement
+    ) as HTMLSelectElement
   }
 
   async function selectDocType(value: string) {
@@ -391,7 +446,7 @@ describe("DocumentTracePage shop filter visibility", () => {
 
   async function setPeriod(value: string) {
     await act(async () => {
-      setInputValue(periodInput(), value)
+      setSelectValue(periodSelect(), value)
       await Promise.resolve()
     })
   }
@@ -665,10 +720,10 @@ describe("DocumentTracePage two-state view mode", () => {
 
   async function setPeriod(value: string) {
     await act(async () => {
-      const input = container.querySelector(
+      const select = container.querySelector(
         '[data-testid="document-trace-period-input"]'
-      ) as HTMLInputElement
-      setInputValue(input, value)
+      ) as HTMLSelectElement
+      setSelectValue(select, value)
       await Promise.resolve()
     })
   }

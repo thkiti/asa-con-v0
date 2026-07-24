@@ -4,7 +4,6 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
-  useRef,
   useState,
 } from "react"
 import {
@@ -12,15 +11,9 @@ import {
   documentTraceDateFieldDisplayFromIso,
   documentTraceDateFieldIsoValue,
 } from "@/components/finance/DocumentTraceMoreFilterDateField"
-import {
-  voucherInquiryFilterInput,
-  voucherInquiryFilterMore,
-  voucherInquiryFilterPeriodGroup,
-  voucherInquiryMoreFilterButton,
-  voucherInquiryMoreFilterButtonActive,
-  voucherInquiryMoreFilterButtonDot,
-  voucherInquiryMoreFilterPopover,
-} from "@/lib/finance-ui/finance-visual-classes"
+import { BranchSelect } from "@/components/ui/BranchSelect"
+import { MoreFilterPopover } from "@/components/ui/MoreFilterPopover"
+import { voucherInquiryFilterInput } from "@/lib/finance-ui/finance-visual-classes"
 import {
   formatPosSettlementBranchLabel,
   type PosSettlementBranchOption,
@@ -68,7 +61,6 @@ export const DocumentTraceMoreFilter = forwardRef<
   },
   ref
 ) {
-  const rootRef = useRef<HTMLDivElement>(null)
   const [dateFromDraft, setDateFromDraft] = useState("")
   const [dateToDraft, setDateToDraft] = useState("")
 
@@ -88,19 +80,6 @@ export const DocumentTraceMoreFilter = forwardRef<
     if (!isOpen) return
     resetDraftsFromFilters()
   }, [isOpen, filters.period, filters.dateFrom, filters.dateTo])
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target
-      if (rootRef.current?.contains(target as Node)) return
-      onOpenChange(false)
-    }
-
-    document.addEventListener("mousedown", handlePointerDown)
-    return () => document.removeEventListener("mousedown", handlePointerDown)
-  }, [isOpen, onOpenChange])
 
   const commitDateRange = (): Pick<DocumentTraceFilters, "dateFrom" | "dateTo"> => {
     return buildDocumentTraceCommittedDatePatch({
@@ -186,93 +165,67 @@ export const DocumentTraceMoreFilter = forwardRef<
   }
 
   return (
-    <div ref={rootRef} className={voucherInquiryFilterPeriodGroup}>
-      <div className={voucherInquiryFilterMore}>
-        <span className={`${themeLabel} invisible select-none`} aria-hidden="true">
-          &nbsp;
-        </span>
-        <button
-          type="button"
-          className={`${voucherInquiryMoreFilterButton}${
-            isActive ? ` ${voucherInquiryMoreFilterButtonActive}` : ""
-          }`}
-          title="More filter"
-          aria-label="More filter"
-          aria-expanded={isOpen}
-          data-active={isActive ? "true" : "false"}
-          onMouseDown={(event) => event.stopPropagation()}
-          onClick={() => onOpenChange(!isOpen)}
-          data-testid="document-trace-more-filter"
-        >
-          <span className={voucherInquiryMoreFilterButtonDot} aria-hidden="true" />
-        </button>
-      </div>
-      {isOpen ? (
-        <div
-          className={voucherInquiryMoreFilterPopover}
-          data-testid="document-trace-more-filter-panel"
-          role="group"
-          aria-label="Date range filter"
-          onMouseDown={(event) => event.stopPropagation()}
-        >
-          {showShopField ? (
-            <label className="flex min-w-[10rem] flex-col gap-1">
-              <span className={themeLabel}>{shopLabel}</span>
-              {shopMode === "locked" ? (
-                <input
-                  type="text"
-                  value={shopLabel}
-                  disabled
-                  className={voucherInquiryFilterInput}
-                  data-testid="document-trace-more-branch-locked"
-                />
-              ) : (
-                <select
-                  value={filters.branchCode}
-                  onChange={(event) => onChange({ branchCode: event.target.value })}
-                  className={voucherInquiryFilterInput}
-                  data-testid="document-trace-more-branch-select"
-                >
-                  <option value="">All shops</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.code}>
-                      {formatPosSettlementBranchLabel(branch)}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </label>
-          ) : null}
-          <DocumentTraceMoreFilterDateField
-            displayValue={dateFromDraft}
-            isoValue={documentTraceDateFieldIsoValue(
-              dateFromDraft,
-              periodRange?.dateFrom ?? ""
-            )}
-            minIso={periodRange?.dateFrom}
-            maxIso={periodRange?.dateTo}
-            ariaLabel="From date"
-            testId="document-trace-more-date-from"
-            onDisplayChange={setDateFromDraft}
-            onBlur={() => handleBlur("from")}
-            onCalendarPick={(iso) => handleCalendarPick("from", iso)}
-          />
-          <DocumentTraceMoreFilterDateField
-            displayValue={dateToDraft}
-            isoValue={documentTraceDateFieldIsoValue(
-              dateToDraft,
-              periodRange?.dateTo ?? ""
-            )}
-            minIso={periodRange?.dateFrom}
-            maxIso={periodRange?.dateTo}
-            ariaLabel="To date"
-            testId="document-trace-more-date-to"
-            onDisplayChange={setDateToDraft}
-            onBlur={() => handleBlur("to")}
-            onCalendarPick={(iso) => handleCalendarPick("to", iso)}
-          />
-        </div>
+    <MoreFilterPopover
+      open={isOpen}
+      onOpenChange={onOpenChange}
+      active={isActive}
+      testId="document-trace-more-filter"
+      panelTestId="document-trace-more-filter-panel"
+      panelAriaLabel="Date range filter"
+    >
+      {showShopField ? (
+        <label className="flex min-w-[10rem] flex-col gap-1">
+          <span className={themeLabel}>{shopLabel}</span>
+          {shopMode === "locked" ? (
+            <input
+              type="text"
+              value={shopLabel}
+              disabled
+              className={voucherInquiryFilterInput}
+              data-testid="document-trace-more-branch-locked"
+            />
+          ) : (
+            <BranchSelect
+              value={filters.branchCode}
+              onChange={(branchCode) => onChange({ branchCode })}
+              options={branches}
+              valueKey="code"
+              emptyOption={{ label: "All shops" }}
+              selectClassName={voucherInquiryFilterInput}
+              formatOptionLabel={formatPosSettlementBranchLabel}
+              data-testid="document-trace-more-branch-select"
+            />
+          )}
+        </label>
       ) : null}
-    </div>
+      <DocumentTraceMoreFilterDateField
+        displayValue={dateFromDraft}
+        isoValue={documentTraceDateFieldIsoValue(
+          dateFromDraft,
+          periodRange?.dateFrom ?? ""
+        )}
+        minIso={periodRange?.dateFrom}
+        maxIso={periodRange?.dateTo}
+        ariaLabel="From date"
+        testId="document-trace-more-date-from"
+        onDisplayChange={setDateFromDraft}
+        onBlur={() => handleBlur("from")}
+        onCalendarPick={(iso) => handleCalendarPick("from", iso)}
+      />
+      <DocumentTraceMoreFilterDateField
+        displayValue={dateToDraft}
+        isoValue={documentTraceDateFieldIsoValue(
+          dateToDraft,
+          periodRange?.dateTo ?? ""
+        )}
+        minIso={periodRange?.dateFrom}
+        maxIso={periodRange?.dateTo}
+        ariaLabel="To date"
+        testId="document-trace-more-date-to"
+        onDisplayChange={setDateToDraft}
+        onBlur={() => handleBlur("to")}
+        onCalendarPick={(iso) => handleCalendarPick("to", iso)}
+      />
+    </MoreFilterPopover>
   )
 })
