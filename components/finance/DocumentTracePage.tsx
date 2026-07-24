@@ -43,6 +43,7 @@ import {
 } from "@/lib/finance/audit/document-trace-filters"
 import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { BranchSelect } from "@/components/ui/BranchSelect"
+import { FilterSelectField } from "@/components/ui/FilterSelectField"
 import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import {
   themeEmptyState,
@@ -202,6 +203,15 @@ export function DocumentTracePage() {
   const docTypeOptions = useMemo(
     () => listDocumentTraceDocTypeSelectOptions(legalEntityCode),
     [legalEntityCode]
+  )
+  const docTypeSelectOptions = useMemo(
+    () =>
+      docTypeOptions.map((item) =>
+        item.kind === "group"
+          ? { value: "", label: item.label, disabled: true }
+          : { value: item.value, label: item.label }
+      ),
+    [docTypeOptions]
   )
   const shopField = useMemo(
     () => getDocumentTraceShopFieldState(legalEntityCode),
@@ -509,33 +519,22 @@ export function DocumentTracePage() {
         ) : null}
 
         <div className="finance-filter-field">
-          <label htmlFor="document-trace-doc-type" className="finance-filter-label">
-            Doc Type
-          </label>
-          <select
+          <FilterSelectField
             id="document-trace-doc-type"
+            label="Doc Type"
+            labelClassName="finance-filter-label"
+            selectClassName="finance-filter-control finance-filter-select"
+            wrapperClassName=""
             value={filters.docType}
-            onChange={(event) =>
+            onChange={(value) =>
               updateFilters({
-                docType: event.target.value as DocumentTraceFilters["docType"],
+                docType: value as DocumentTraceFilters["docType"],
               })
             }
-            className="finance-filter-control finance-filter-select"
+            emptyOption={{ label: "Select type" }}
+            options={docTypeSelectOptions}
             data-testid="document-trace-doc-type-select"
-          >
-            <option value="">Select type</option>
-            {docTypeOptions.map((item) =>
-              item.kind === "group" ? (
-                <option key={item.label} value="" disabled>
-                  {item.label}
-                </option>
-              ) : (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              )
-            )}
-          </select>
+          />
         </div>
 
         <div className="finance-filter-field finance-filter-field--period-key">

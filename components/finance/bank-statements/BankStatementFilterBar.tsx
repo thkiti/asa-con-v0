@@ -1,6 +1,7 @@
 "use client"
 
 import { AccountingPeriodSelect } from "@/components/finance/AccountingPeriodSelect"
+import { StatusFilterField } from "@/components/ui/FilterSelectField"
 import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import type { BankStatementStatus } from "@/lib/finance/bank-statement"
 import type { BankAccountRow } from "@/lib/finance/bank-account"
@@ -79,23 +80,23 @@ export function BankStatementFilterBar({
       </div>
 
       <div className="finance-filter-field">
-        <label htmlFor="bs-filter-status" className={themeLabel}>
-          Status
-        </label>
-        <select
+        <StatusFilterField
           id="bs-filter-status"
-          className={voucherInquiryFilterSelect}
+          labelClassName={themeLabel}
+          wrapperClassName=""
+          selectClassName={voucherInquiryFilterSelect}
           value={values.statusFilter}
-          onChange={(event) =>
-            onChange({ statusFilter: event.target.value as BankStatementStatusFilter })
+          onChange={(value) =>
+            onChange({ statusFilter: value as BankStatementStatusFilter })
           }
+          emptyOption={{ label: "All", value: "all" }}
+          options={[
+            { value: "NEW", label: "New" },
+            { value: "DRAFT", label: "Draft" },
+            { value: "READY", label: "Ready" },
+          ]}
           data-testid="bank-statement-filter-status"
-        >
-          <option value="all">All</option>
-          <option value="NEW">New</option>
-          <option value="DRAFT">Draft</option>
-          <option value="READY">Ready</option>
-        </select>
+        />
       </div>
 
       <div className="finance-filter-field finance-filter-field--no">

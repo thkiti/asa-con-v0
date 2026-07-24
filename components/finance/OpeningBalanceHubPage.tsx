@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
 import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
+import { FilterSelectField, StatusFilterField } from "@/components/ui/FilterSelectField"
 import { formatDateTime } from "@/lib/finance-ui/format"
 import { formatManualJournalEntryDocumentNo } from "@/lib/finance-ui/manual-journal-entry-display"
 import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
@@ -22,10 +23,11 @@ import {
   financeTable,
   financeTableScroll,
   financeTh,
+  voucherInquiryFilterBar,
+  voucherInquiryFilterField,
+  voucherInquiryFilterInput,
 } from "@/lib/finance-ui/finance-visual-classes"
-import { themeLinkMuted } from "@/lib/theme/theme-classes"
-
-const ALL = ""
+import { themeLabel, themeLinkMuted } from "@/lib/theme/theme-classes"
 
 type FilterState = {
   legalEntityCode: string
@@ -35,8 +37,8 @@ type FilterState = {
 }
 
 const defaultFilter: FilterState = {
-  legalEntityCode: ALL,
-  status: ALL,
+  legalEntityCode: "",
+  status: "",
   dateFrom: "",
   dateTo: "",
 }
@@ -97,54 +99,46 @@ export function OpeningBalanceHubPage() {
         liability, equity) are allowed.
       </p>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Legal entity</span>
-          <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.legalEntityCode}
-            onChange={(e) =>
-              setFilter((prev) => ({ ...prev, legalEntityCode: e.target.value }))
-            }
-            data-testid="opb-filter-legal-entity"
-          >
-            <option value={ALL}>All</option>
-            {LEGAL_ENTITY_CODES.map((code) => (
-              <option key={code} value={code}>
-                {formatEntityShort(code)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Status</span>
-          <select
-            className="rounded border border-zinc-300 px-2 py-1"
-            value={filter.status}
-            onChange={(e) => setFilter((prev) => ({ ...prev, status: e.target.value }))}
-            data-testid="opb-filter-status"
-          >
-            <option value={ALL}>All</option>
-            {OPB_STATUSES.map((status) => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Date from</span>
+      <div className={voucherInquiryFilterBar}>
+        <FilterSelectField
+          label="Legal entity"
+          wrapperClassName={voucherInquiryFilterField}
+          value={filter.legalEntityCode}
+          onChange={(value) =>
+            setFilter((prev) => ({ ...prev, legalEntityCode: value }))
+          }
+          emptyOption={{ label: "All" }}
+          options={LEGAL_ENTITY_CODES.map((code) => ({
+            value: code,
+            label: formatEntityShort(code),
+          }))}
+          data-testid="opb-filter-legal-entity"
+        />
+        <StatusFilterField
+          value={filter.status}
+          onChange={(value) => setFilter((prev) => ({ ...prev, status: value }))}
+          emptyOption={{ label: "All" }}
+          options={OPB_STATUSES.map((status) => ({
+            value: status,
+            label: status,
+          }))}
+          data-testid="opb-filter-status"
+        />
+        <label className={voucherInquiryFilterField}>
+          <span className={themeLabel}>Date from</span>
           <input
             type="date"
-            className="rounded border border-zinc-300 px-2 py-1"
+            className={voucherInquiryFilterInput}
             value={filter.dateFrom}
             onChange={(e) => setFilter((prev) => ({ ...prev, dateFrom: e.target.value }))}
             data-testid="opb-filter-date-from"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-600">Date to</span>
+        <label className={voucherInquiryFilterField}>
+          <span className={themeLabel}>Date to</span>
           <input
             type="date"
-            className="rounded border border-zinc-300 px-2 py-1"
+            className={voucherInquiryFilterInput}
             value={filter.dateTo}
             onChange={(e) => setFilter((prev) => ({ ...prev, dateTo: e.target.value }))}
             data-testid="opb-filter-date-to"

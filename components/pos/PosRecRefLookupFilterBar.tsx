@@ -2,11 +2,11 @@
 
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { BranchSelect } from "@/components/ui/BranchSelect"
+import { DocumentTypeFilterField } from "@/components/ui/FilterSelectField"
 import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import {
   voucherInquiryFilterBar,
   voucherInquiryFilterBranch,
-  voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterSelect,
@@ -99,27 +99,21 @@ export function PosRecRefLookupFilterBar({
       />
 
       {showDocType ? (
-        <label className={voucherInquiryFilterDocType}>
-          <span className={themeLabel}>Doc Type</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={filter.docType ?? ""}
-            onChange={(event) =>
-              onFilterChange({
-                ...filter,
-                docType: event.target.value as PosRecRefLookupDocType,
-              })
-            }
-            disabled={loading}
-            data-testid={`${testIdPrefix}-filter-doc-type`}
-          >
-            {POS_REC_REF_LOOKUP_DOC_TYPE_OPTIONS.map((option) => (
-              <option key={option.value || "all"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <DocumentTypeFilterField
+          value={filter.docType ?? ""}
+          onChange={(value) =>
+            onFilterChange({
+              ...filter,
+              docType: value as PosRecRefLookupDocType,
+            })
+          }
+          disabled={loading}
+          options={POS_REC_REF_LOOKUP_DOC_TYPE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid={`${testIdPrefix}-filter-doc-type`}
+        />
       ) : null}
 
       <label className={voucherInquiryFilterNo}>

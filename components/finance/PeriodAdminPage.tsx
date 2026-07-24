@@ -9,6 +9,7 @@ import type {
 } from "@/lib/finance-ui/types"
 import { PeriodTable } from "./PeriodTable"
 import { AccountingPeriodInput } from "@/components/finance/AccountingPeriodInput"
+import { StatusFilterField } from "@/components/ui/FilterSelectField"
 import { isValidPeriodKey, normalizeAccountingPeriodKey } from "@/lib/finance/period-key"
 import {
   themeBannerError,
@@ -154,24 +155,19 @@ export function PeriodAdminPage({
 
       <section className="w-full">
         <div className={voucherInquiryFilterBar}>
-          <label className={`${voucherInquiryFilterField} w-[180px] shrink-0`}>
-            <span className={themeLabel}>Status</span>
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as "" | AccountingPeriodStatus)
-              }
-              className={voucherInquiryFilterSelect}
-              disabled={controlsDisabled}
-            >
-              <option value="">Select status</option>
-              {STATUS_FILTER_OPTIONS.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
+          <StatusFilterField
+            wrapperClassName={`${voucherInquiryFilterField} w-[180px] shrink-0`}
+            value={statusFilter}
+            onChange={(value) =>
+              setStatusFilter(value as "" | AccountingPeriodStatus)
+            }
+            emptyOption={{ label: "Select status" }}
+            options={STATUS_FILTER_OPTIONS.map((status) => ({
+              value: status,
+              label: status,
+            }))}
+            disabled={controlsDisabled}
+          />
           <label className={`${voucherInquiryFilterField} w-[120px] shrink-0`}>
             <span className={themeLabel}>Period</span>
             <select

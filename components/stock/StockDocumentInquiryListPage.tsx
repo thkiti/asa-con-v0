@@ -6,6 +6,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { StockDocumentInquiryPdfIndicator } from "@/components/stock/StockDocumentInquiryPdfIndicator"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { BranchSelect } from "@/components/ui/BranchSelect"
+import {
+  DocumentTypeFilterField,
+  FilterSelectField,
+  StatusFilterField,
+} from "@/components/ui/FilterSelectField"
 import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import {
@@ -15,12 +20,10 @@ import {
   financeTh,
   voucherInquiryFilterBar,
   voucherInquiryFilterBranch,
-  voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterPostingState,
   voucherInquiryFilterSelect,
-  voucherInquiryFilterStatus,
 } from "@/lib/finance-ui/finance-visual-classes"
 import {
   fetchPosSettlementBranches,
@@ -245,26 +248,20 @@ export function StockDocumentInquiryListPage() {
           isMoreFilterOpen={isMoreFilterOpen}
           setIsMoreFilterOpen={setIsMoreFilterOpen}
         />
-        <label className={voucherInquiryFilterDocType}>
-          <span className={themeLabel}>Doc Type</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.kind ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({
-                ...prev,
-                kind: (e.target.value || undefined) as StockDocumentInquiryFilter["kind"],
-              }))
-            }
-            data-testid="stock-document-inquiry-filter-doc-type"
-          >
-            {STOCK_DOCUMENT_INQUIRY_KIND_OPTIONS.map((option) => (
-              <option key={option.value || "all"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <DocumentTypeFilterField
+          value={draft.kind ?? ""}
+          onChange={(value) =>
+            setDraft((prev) => ({
+              ...prev,
+              kind: (value || undefined) as StockDocumentInquiryFilter["kind"],
+            }))
+          }
+          options={STOCK_DOCUMENT_INQUIRY_KIND_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="stock-document-inquiry-filter-doc-type"
+        />
         <label className={voucherInquiryFilterNo}>
           <span className={themeLabel}>No</span>
           <input
@@ -275,49 +272,37 @@ export function StockDocumentInquiryListPage() {
             data-testid="stock-document-inquiry-filter-no"
           />
         </label>
-        <label className={voucherInquiryFilterStatus}>
-          <span className={themeLabel}>Status</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.status ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({
-                ...prev,
-                status: (e.target.value || undefined) as StockDocumentInquiryFilter["status"],
-              }))
-            }
-            data-testid="stock-document-inquiry-filter-status"
-          >
-            {STOCK_DOCUMENT_INQUIRY_STATUS_OPTIONS.map((option) => (
-              <option key={option.value || "all"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={voucherInquiryFilterPostingState}>
-          <span className={themeLabel}>Posted</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.postingState ?? "all"}
-            onChange={(e) =>
-              setDraft((prev) => ({
-                ...prev,
-                postingState:
-                  e.target.value === "all"
-                    ? "all"
-                    : (e.target.value as "posted" | "unposted"),
-              }))
-            }
-            data-testid="stock-document-inquiry-filter-posting-state"
-          >
-            {STOCK_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <StatusFilterField
+          value={draft.status ?? ""}
+          onChange={(value) =>
+            setDraft((prev) => ({
+              ...prev,
+              status: (value || undefined) as StockDocumentInquiryFilter["status"],
+            }))
+          }
+          options={STOCK_DOCUMENT_INQUIRY_STATUS_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="stock-document-inquiry-filter-status"
+        />
+        <FilterSelectField
+          label="Posted"
+          wrapperClassName={voucherInquiryFilterPostingState}
+          value={draft.postingState ?? "all"}
+          onChange={(value) =>
+            setDraft((prev) => ({
+              ...prev,
+              postingState:
+                value === "all" ? "all" : (value as "posted" | "unposted"),
+            }))
+          }
+          options={STOCK_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="stock-document-inquiry-filter-posting-state"
+        />
         <InquiryFilterActions
           onPrimary={applyFilters}
           onClear={clearFilters}

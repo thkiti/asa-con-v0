@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { FilterSelectField, StatusFilterField } from "@/components/ui/FilterSelectField"
 import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { RevenueVoucherStatusBadge } from "@/components/finance/RevenueVoucherStatusBadge"
 import { formatAmount, formatFinanceListDate } from "@/lib/finance-ui/format"
@@ -42,12 +43,8 @@ import {
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterPostingState,
-  voucherInquiryFilterSelect,
-  voucherInquiryFilterStatus,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeLabel, themeLinkMuted, themeTextSecondary } from "@/lib/theme/theme-classes"
-
-const ALL = ""
 
 export function RevenueVoucherListPage() {
   const legalEntityCode = useFinanceLegalEntityScope()
@@ -176,44 +173,32 @@ export function RevenueVoucherListPage() {
             data-testid="revenue-voucher-filter-no"
           />
         </label>
-        <label className={voucherInquiryFilterStatus}>
-          <span className={themeLabel}>Status</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.status}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, status: e.target.value }))
-            }
-            data-testid="filter-status"
-          >
-            <option value={ALL}>All</option>
-            {REVENUE_VOUCHER_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={voucherInquiryFilterPostingState}>
-          <span className={themeLabel}>Post</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.postingState}
-            onChange={(e) =>
-              setDraft((prev) => ({
-                ...prev,
-                postingState: e.target.value as RevenueVoucherListUiFilter["postingState"],
-              }))
-            }
-            data-testid="revenue-voucher-filter-post"
-          >
-            {FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <StatusFilterField
+          value={draft.status}
+          onChange={(value) => setDraft((prev) => ({ ...prev, status: value }))}
+          emptyOption={{ label: "All" }}
+          options={REVENUE_VOUCHER_STATUSES.map((status) => ({
+            value: status,
+            label: status,
+          }))}
+          data-testid="filter-status"
+        />
+        <FilterSelectField
+          label="Post"
+          wrapperClassName={voucherInquiryFilterPostingState}
+          value={draft.postingState}
+          onChange={(value) =>
+            setDraft((prev) => ({
+              ...prev,
+              postingState: value as RevenueVoucherListUiFilter["postingState"],
+            }))
+          }
+          options={FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="revenue-voucher-filter-post"
+        />
         <InquiryFilterActions
           onPrimary={handleSearch}
           onClear={handleClear}

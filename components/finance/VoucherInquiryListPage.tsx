@@ -6,7 +6,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { VoucherInquiryPdfIndicator } from "@/components/finance/VoucherInquiryPdfIndicator"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
 import { BranchSelect } from "@/components/ui/BranchSelect"
+import {
+  DocumentTypeFilterField,
+  FilterSelectField,
+  StatusFilterField,
+} from "@/components/ui/FilterSelectField"
 import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
+import { ListPagination } from "@/components/ui/ListPagination"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
 import { useFinanceLegalEntityScope } from "@/lib/finance-ui/use-finance-legal-entity-scope"
 import {
@@ -17,13 +23,10 @@ import {
   voucherInquiryActions,
   voucherInquiryFilterBar,
   voucherInquiryFilterBranchReadable,
-  voucherInquiryFilterButtonSecondary,
-  voucherInquiryFilterDocType,
   voucherInquiryFilterInput,
   voucherInquiryFilterNoCompact,
   voucherInquiryFilterPostingState,
   voucherInquiryFilterSelect,
-  voucherInquiryFilterStatus,
   voucherInquiryTable,
   voucherInquiryTdActions,
   voucherInquiryTdDate,
@@ -141,36 +144,20 @@ export function VoucherInquiryResultsTable({
 }: VoucherInquiryResultsTableProps) {
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p
-          className={`text-sm ${themeTextSecondary}`}
-          data-testid="voucher-inquiry-page-summary"
-        >
-          {formatFinanceDocumentInquiryPageSummary(total, page, totalPages)}
-        </p>
-        {totalPages > 1 ? (
-          <div className="flex items-center gap-2" data-testid="voucher-inquiry-pagination">
-            <button
-              type="button"
-              className={voucherInquiryFilterButtonSecondary}
-              disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
-              data-testid="voucher-inquiry-page-prev"
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              className={voucherInquiryFilterButtonSecondary}
-              disabled={page >= totalPages}
-              onClick={() => onPageChange(page + 1)}
-              data-testid="voucher-inquiry-page-next"
-            >
-              Next
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <ListPagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+        summary={
+          <p className={`text-sm ${themeTextSecondary}`}>
+            {formatFinanceDocumentInquiryPageSummary(total, page, totalPages)}
+          </p>
+        }
+        summaryTestId="voucher-inquiry-page-summary"
+        testId="voucher-inquiry-pagination"
+        prevTestId="voucher-inquiry-page-prev"
+        nextTestId="voucher-inquiry-page-next"
+      />
       <div className={financeTableScroll}>
         <table
           className={`${financeTable} ${voucherInquiryTable}`}
@@ -438,24 +425,17 @@ export function VoucherInquiryListPage() {
           isMoreFilterOpen={isMoreFilterOpen}
           setIsMoreFilterOpen={setIsMoreFilterOpen}
         />
-        <label className={voucherInquiryFilterDocType}>
-          <span className={themeLabel}>Doc Type</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.refType ?? ""}
-            onChange={(e) => handleDocTypeChange(e.target.value)}
-            data-testid="voucher-inquiry-filter-document-type"
-            required
-            aria-required="true"
-          >
-            <option value="">เลือก Doc Type</option>
-            {VOUCHER_INQUIRY_REF_TYPE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <DocumentTypeFilterField
+          value={draft.refType ?? ""}
+          onChange={handleDocTypeChange}
+          required
+          emptyOption={{ label: "เลือก Doc Type" }}
+          options={VOUCHER_INQUIRY_REF_TYPE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="voucher-inquiry-filter-document-type"
+        />
         <label className={voucherInquiryFilterNoCompact}>
           <span className={themeLabel}>No</span>
           <input
@@ -466,46 +446,34 @@ export function VoucherInquiryListPage() {
             data-testid="voucher-inquiry-filter-no"
           />
         </label>
-        <label className={voucherInquiryFilterStatus}>
-          <span className={themeLabel}>Status</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.status ?? ""}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, status: e.target.value || undefined }))
-            }
-            data-testid="voucher-inquiry-filter-status"
-          >
-            {FINANCE_DOCUMENT_INQUIRY_STATUS_OPTIONS.map((option) => (
-              <option key={option.value || "all"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={voucherInquiryFilterPostingState}>
-          <span className={themeLabel}>Posted</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.postingState ?? "all"}
-            onChange={(e) =>
-              setDraft((prev) => ({
-                ...prev,
-                postingState:
-                  e.target.value === "all"
-                    ? "all"
-                    : (e.target.value as "posted" | "unposted"),
-              }))
-            }
-            data-testid="voucher-inquiry-filter-posting-state"
-          >
-            {FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <StatusFilterField
+          value={draft.status ?? ""}
+          onChange={(value) =>
+            setDraft((prev) => ({ ...prev, status: value || undefined }))
+          }
+          options={FINANCE_DOCUMENT_INQUIRY_STATUS_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="voucher-inquiry-filter-status"
+        />
+        <FilterSelectField
+          label="Posted"
+          wrapperClassName={voucherInquiryFilterPostingState}
+          value={draft.postingState ?? "all"}
+          onChange={(value) =>
+            setDraft((prev) => ({
+              ...prev,
+              postingState:
+                value === "all" ? "all" : (value as "posted" | "unposted"),
+            }))
+          }
+          options={FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="voucher-inquiry-filter-posting-state"
+        />
         <InquiryFilterActions
           onPrimary={applyFilters}
           onClear={clearFilters}

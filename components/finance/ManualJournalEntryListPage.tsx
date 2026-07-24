@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { DocumentInquiryMoreFilter } from "@/components/finance/DocumentInquiryMoreFilter"
+import { FilterSelectField, StatusFilterField } from "@/components/ui/FilterSelectField"
 import { InquiryFilterActions } from "@/components/ui/InquiryFilterActions"
 import { ManualJournalEntryStatusBadge } from "@/components/finance/ManualJournalEntryStatusBadge"
 import { formatFinanceListDate } from "@/lib/finance-ui/format"
@@ -46,12 +47,8 @@ import {
   voucherInquiryFilterInput,
   voucherInquiryFilterNo,
   voucherInquiryFilterPostingState,
-  voucherInquiryFilterSelect,
-  voucherInquiryFilterStatus,
 } from "@/lib/finance-ui/finance-visual-classes"
 import { themeLabel, themeLinkMuted, themeTextSecondary } from "@/lib/theme/theme-classes"
-
-const ALL = ""
 
 export function ManualJournalEntryListPage() {
   const legalEntityCode = useFinanceLegalEntityScope()
@@ -165,62 +162,44 @@ export function ManualJournalEntryListPage() {
             data-testid="manual-journal-entry-filter-no"
           />
         </label>
-        <label className={voucherInquiryFilterStatus}>
-          <span className={themeLabel}>Status</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.status}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, status: e.target.value }))
-            }
-            data-testid="filter-status"
-          >
-            <option value={ALL}>All</option>
-            {MANUAL_JOURNAL_ENTRY_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={manualJournalEntryListFilterEntryType}>
-          <span className={themeLabel}>Entry type</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.entryType}
-            onChange={(e) =>
-              setDraft((prev) => ({ ...prev, entryType: e.target.value }))
-            }
-            data-testid="filter-entry-type"
-          >
-            <option value={ALL}>All</option>
-            {MANUAL_JOURNAL_ENTRY_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {formatManualJournalEntryTypeLabel(type)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={voucherInquiryFilterPostingState}>
-          <span className={themeLabel}>Post</span>
-          <select
-            className={voucherInquiryFilterSelect}
-            value={draft.postingState}
-            onChange={(e) =>
-              setDraft((prev) => ({
-                ...prev,
-                postingState: e.target.value as ManualJournalEntryListUiFilter["postingState"],
-              }))
-            }
-            data-testid="manual-journal-entry-filter-post"
-          >
-            {FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <StatusFilterField
+          value={draft.status}
+          onChange={(value) => setDraft((prev) => ({ ...prev, status: value }))}
+          emptyOption={{ label: "All" }}
+          options={MANUAL_JOURNAL_ENTRY_STATUSES.map((status) => ({
+            value: status,
+            label: status,
+          }))}
+          data-testid="filter-status"
+        />
+        <FilterSelectField
+          label="Entry type"
+          wrapperClassName={manualJournalEntryListFilterEntryType}
+          value={draft.entryType}
+          onChange={(value) => setDraft((prev) => ({ ...prev, entryType: value }))}
+          emptyOption={{ label: "All" }}
+          options={MANUAL_JOURNAL_ENTRY_TYPES.map((type) => ({
+            value: type,
+            label: formatManualJournalEntryTypeLabel(type),
+          }))}
+          data-testid="filter-entry-type"
+        />
+        <FilterSelectField
+          label="Post"
+          wrapperClassName={voucherInquiryFilterPostingState}
+          value={draft.postingState}
+          onChange={(value) =>
+            setDraft((prev) => ({
+              ...prev,
+              postingState: value as ManualJournalEntryListUiFilter["postingState"],
+            }))
+          }
+          options={FINANCE_DOCUMENT_INQUIRY_POSTING_STATE_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          data-testid="manual-journal-entry-filter-post"
+        />
         <InquiryFilterActions
           onPrimary={handleSearch}
           onClear={handleClear}
