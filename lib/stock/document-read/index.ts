@@ -7,6 +7,7 @@ export {
   listDocTypesForRole,
   requireStockDocumentSession,
   resolveListBranchId,
+  resolveSessionLegalEntityCode,
 } from "./document-access"
 export { decodeListCursor, encodeListCursor } from "./cursor"
 export { listStockDocuments, normalizeListLimit } from "./document-list"

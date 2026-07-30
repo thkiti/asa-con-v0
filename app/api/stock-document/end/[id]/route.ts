@@ -11,6 +11,7 @@ import {
 import {
   assertCanReadDocument,
   requireStockDocumentSession,
+  resolveSessionLegalEntityCode,
 } from "@/lib/stock/document-read"
 
 type Context = {
@@ -29,7 +30,8 @@ export async function GET(_req: NextRequest, context: Context) {
       )
     }
 
-    const detail = await getEndDocumentDetail(id)
+    const legalEntityCode = resolveSessionLegalEntityCode(session)
+    const detail = await getEndDocumentDetail(id, legalEntityCode)
     assertCanReadDocument(session, detail)
     return NextResponse.json(detail)
   } catch (err: unknown) {

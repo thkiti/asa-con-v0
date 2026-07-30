@@ -1,7 +1,10 @@
 import type { PrismaClient } from "@/generated/prisma/client"
 import { DocumentError, DocumentErrorCodes } from "../document/document-errors"
 import type { SessionUser } from "@/lib/auth/types"
-import { assertCanReadDocument } from "./document-access"
+import {
+  assertCanReadDocument,
+  resolveSessionLegalEntityCode,
+} from "./document-access"
 import type { StockDocumentDetailRead } from "./types"
 
 function toIso(value: Date | null | undefined): string | null {
@@ -22,8 +25,11 @@ export async function getStockDocumentDetail(
     )
   }
 
-  const doc = await prisma.stockDocument.findUnique({
-    where: { id },
+  // Same legal-entity scope as list — never load by id alone.
+  const legalEntityCode = resolveSessionLegalEntityCode(session)
+
+  const doc = await prisma.stockDocument.findFirst({
+    where: { id, legalEntityCode },
     include: {
       lines: {
         orderBy: { id: "asc" },

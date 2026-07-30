@@ -1,8 +1,23 @@
 import type { DocType, StockDocument } from "@/generated/prisma/client"
 import type { SessionUser } from "@/lib/auth/types"
+import {
+  DEFAULT_DOCUMENT_ENTITY_CODE,
+  type DocumentEntityCode,
+} from "@/lib/legal-entity/constants"
+import { parseDocumentEntityCode } from "@/lib/legal-entity/document-entity"
 import type { Role } from "@/lib/shared"
 import { DocumentError, DocumentErrorCodes } from "../document/document-errors"
 import { SHOP_STOCK_DOC_TYPES } from "./constants"
+
+/** Session working entity — same source as list scope (not route / client). */
+export function resolveSessionLegalEntityCode(
+  session: SessionUser
+): DocumentEntityCode {
+  return (
+    parseDocumentEntityCode(session.documentEntityCode) ??
+    DEFAULT_DOCUMENT_ENTITY_CODE
+  )
+}
 
 export class StockDocumentAuthError extends Error {
   readonly code: string
@@ -100,8 +115,20 @@ export function documentTouchesBranch(
 
 export function assertCanReadDocument(
   session: SessionUser,
-  doc: Pick<StockDocument, "branchId" | "fromLocId" | "toLocId" | "docType">
+  doc: Pick<
+    StockDocument,
+    "branchId" | "fromLocId" | "toLocId" | "docType" | "legalEntityCode"
+  >
 ): void {
+  const sessionEntity = resolveSessionLegalEntityCode(session)
+  if (String(doc.legalEntityCode ?? "").trim().toUpperCase() !== sessionEntity) {
+    throw new DocumentError(
+      "Document not found",
+      DocumentErrorCodes.DOCUMENT_NOT_FOUND,
+      404
+    )
+  }
+
   if (session.role === "SH_STAFF") {
     if (!SHOP_STOCK_DOC_TYPES.includes(doc.docType)) {
       throw new DocumentError(
@@ -121,14 +148,7 @@ export function assertCanReadDocument(
     return
   }
 
-  if (isHoRole(session.role)) {
-    const branchId = session.branchId.trim()
-    if (branchId && !documentTouchesBranch(doc, branchId)) {
-      throw new DocumentError(
-        "Document not found",
-        DocumentErrorCodes.DOCUMENT_NOT_FOUND,
-        404
-      )
-    }
-  }
+  // HO roles: entity match is the isolation boundary (same as list scope).
+  // Do not require session.branchId (typically HO999) to touch shop docs —
+  // ASAS list allows All Shops / SHxxx while HO session remains at HO999.
 }

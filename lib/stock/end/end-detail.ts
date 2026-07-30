@@ -1,16 +1,21 @@
 import "server-only"
 
+import type { DocumentEntityCode } from "@/lib/legal-entity/constants"
 import { prisma } from "@/lib/shared/prisma"
 import { EndError, EndErrorCodes } from "./end-errors"
 
-export async function getEndDocumentDetail(documentId: string) {
+export async function getEndDocumentDetail(
+  documentId: string,
+  legalEntityCode: DocumentEntityCode
+) {
   const id = String(documentId ?? "").trim()
   if (!id) {
     throw new EndError("documentId is required", EndErrorCodes.INVALID_INPUT)
   }
 
-  const document = await prisma.stockDocument.findUnique({
-    where: { id },
+  // Same legal-entity scope as list — never load by id alone.
+  const document = await prisma.stockDocument.findFirst({
+    where: { id, legalEntityCode, docType: "END" },
     include: {
       endLines: {
         orderBy: { productId: "asc" },
@@ -29,7 +34,7 @@ export async function getEndDocumentDetail(documentId: string) {
     },
   })
 
-  if (!document || document.docType !== "END") {
+  if (!document) {
     throw new EndError("END document not found", EndErrorCodes.END_NOT_FOUND, 404)
   }
 
