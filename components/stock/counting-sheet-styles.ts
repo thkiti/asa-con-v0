@@ -10,6 +10,10 @@ export const countingBlockHeadClass =
 export const countingBlockHeadCellClass =
   "sticky top-0 z-[1] bg-zinc-100 px-1 py-0.5 font-semibold whitespace-nowrap text-zinc-900 shadow-[0_1px_0_0_rgb(212_212_216)]"
 
+/** Shoe qty header — allow wrap so the fixed input column stays fully visible. */
+export const countingShoeQtyHeadCellClass =
+  "sticky top-0 z-[1] w-[5.5rem] bg-zinc-100 px-1 py-0.5 text-right text-xs font-semibold leading-tight whitespace-normal text-zinc-900 shadow-[0_1px_0_0_rgb(212_212_216)]"
+
 export const countingCellHookClass =
   "px-1 py-0.5 whitespace-nowrap tabular-nums font-semibold text-zinc-900"
 
@@ -22,14 +26,25 @@ export const countingQtyInputClass =
 export const countingBlockShellClass =
   "min-w-[9rem] shrink-0 rounded border border-zinc-300 bg-white shadow-sm counting-block-shell"
 
+/**
+ * Shoe Materials blocks — wider than Key for Name column.
+ * Fixed width + shrink-0 so groups stay in one horizontal strip (scroll, don’t wrap).
+ */
 export const countingBlockShellShoeClass =
-  "min-w-[11rem] max-w-[14rem] shrink-0 rounded border border-zinc-300 bg-white shadow-sm counting-block-shell"
+  "w-[19rem] shrink-0 overflow-hidden rounded border border-zinc-300 bg-white shadow-sm counting-block-shell"
 
-export const countingCellNameClass =
-  "max-w-[6rem] truncate px-1 py-0.5 font-medium text-zinc-900"
-
+/** Shoe Materials / Key: single-row horizontal strip with overflow scroll. */
 export const countingShoeScrollClass =
   "max-w-full overflow-x-auto pb-1"
+
+export const countingShoeStripClass =
+  "flex flex-nowrap items-start gap-4"
+
+export const countingBlockTableShoeClass =
+  "w-full table-fixed text-left text-xs text-zinc-900"
+
+export const countingCellNameClass =
+  "min-w-0 truncate px-1 py-0.5 font-medium text-zinc-900"
 
 export const countingSummaryPanelClass =
   "flex max-h-[min(70vh,28rem)] flex-col overflow-hidden rounded border border-zinc-300 bg-white"

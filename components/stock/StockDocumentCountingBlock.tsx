@@ -10,10 +10,12 @@ import {
   countingBlockHeadCellClass,
   countingBlockHeadClass,
   countingBlockTableClass,
+  countingBlockTableShoeClass,
   countingCellCodeClass,
   countingCellHookClass,
   countingCellNameClass,
   countingQtyInputClass,
+  countingShoeQtyHeadCellClass,
 } from "./counting-sheet-styles"
 
 export type StockDocumentCountingBlockProps = {
@@ -69,17 +71,33 @@ export function StockDocumentCountingBlock({
   if (rows.length === 0) return null
 
   return (
-    <table className={countingBlockTableClass}>
+    <table
+      className={
+        showProductName ? countingBlockTableShoeClass : countingBlockTableClass
+      }
+    >
       <thead className={countingBlockHeadClass}>
         <tr>
           {showHook ? (
             <th className={countingBlockHeadCellClass}>Hook</th>
           ) : null}
-          <th className={countingBlockHeadCellClass}>รหัส</th>
+          <th
+            className={`${countingBlockHeadCellClass}${
+              showProductName ? " w-[30%]" : ""
+            }`}
+          >
+            รหัส
+          </th>
           {showProductName ? (
             <th className={countingBlockHeadCellClass}>Name</th>
           ) : null}
-          <th className={`${countingBlockHeadCellClass} text-right`}>
+          <th
+            className={
+              showProductName
+                ? countingShoeQtyHeadCellClass
+                : `${countingBlockHeadCellClass} text-right`
+            }
+          >
             {qtyColumnLabel}
           </th>
         </tr>

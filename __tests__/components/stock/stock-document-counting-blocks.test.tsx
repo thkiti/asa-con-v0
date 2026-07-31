@@ -158,7 +158,7 @@ describe("StockDocumentCountingBlock", () => {
     )
 
     expect(html).toContain('aria-label="จำนวน Home key รหัส #K1"')
-    expect(html).toContain("text-zinc-950")
+    expect(html).toContain("text-zinc-900")
     expect(html).toContain("border-zinc-400")
   })
 
@@ -202,7 +202,7 @@ describe("StockDocumentCountingBlocks", () => {
     expect(html).not.toContain(">Home key<")
   })
 
-  it("renders shoe sections in horizontal scroll with Name column", () => {
+  it("renders shoe sections in a wide horizontal scroll strip with Name column", () => {
     const html = renderToStaticMarkup(
       <StockDocumentCountingBlocks
         lines={kLines}
@@ -219,6 +219,12 @@ describe("StockDocumentCountingBlocks", () => {
     expect(html).not.toContain(">Hook</th>")
     expect(html).toContain("flex flex-nowrap items-start gap-4")
     expect(html).toContain("overflow-x-auto")
+    expect(html).toContain("w-[19rem]")
+    expect(html).toContain("table-fixed")
+    expect(html).toContain("truncate")
+    expect(html).toContain("w-14")
+    expect(html).not.toContain("minmax(18rem,1fr)")
+    expect(html).not.toContain("flex flex-col gap-4")
   })
 
   it("sorts rows by hook number ascending within K tab", () => {

@@ -139,7 +139,7 @@ describe("StockDocumentCountingSheet", () => {
     expect(html).toContain(">จำนวน<")
   })
 
-  it("renders shoe sections horizontally with Name column for S tab", () => {
+  it("renders shoe sections in a wide horizontal scroll strip with Name column for S tab", () => {
     const html = renderToStaticMarkup(
       <StockDocumentCountingSheet
         lines={lines}
@@ -156,6 +156,9 @@ describe("StockDocumentCountingSheet", () => {
     expect(html).not.toContain(">ตะขอ</th>")
     expect(html).toContain("flex flex-nowrap items-start gap-4")
     expect(html).toContain("overflow-x-auto")
+    expect(html).toContain("w-[19rem]")
+    expect(html).toContain("table-fixed")
+    expect(html).not.toContain("minmax(18rem,1fr)")
   })
 
   it("appends Items and Qty to status line when lines are counted", () => {

@@ -15,6 +15,7 @@ import {
   countingBlockShellClass,
   countingBlockShellShoeClass,
   countingShoeScrollClass,
+  countingShoeStripClass,
 } from "./counting-sheet-styles"
 
 export type StockDocumentCountingBlocksProps = {
@@ -106,8 +107,11 @@ function HorizontalBlockRow({
   )
 }
 
-/** Shoe Materials: sections and blocks flow horizontally (order-sheet scroll). */
-function ShoeHorizontalSections({
+/**
+ * Shoe Materials: groups and chunk tables flow left → right.
+ * Wider shells than Key; overflow scrolls horizontally (no vertical stack on desktop).
+ */
+function ShoeMaterialSections({
   sections,
   readOnly,
   onLineChange,
@@ -120,7 +124,7 @@ function ShoeHorizontalSections({
 }) {
   return (
     <div className={countingShoeScrollClass}>
-      <div className="flex flex-nowrap items-start gap-4">
+      <div className={countingShoeStripClass}>
         {sections.map((section) => (
           <div key={section.key} className="flex shrink-0 flex-col gap-1.5">
             <h3 className="whitespace-nowrap px-0.5 text-xs font-semibold text-zinc-900">
@@ -186,7 +190,7 @@ export function StockDocumentCountingBlocks({
       )
     }
     return (
-      <ShoeHorizontalSections
+      <ShoeMaterialSections
         sections={shoeSections}
         readOnly={readOnly}
         onLineChange={onLineChange}
