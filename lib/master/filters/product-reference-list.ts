@@ -102,3 +102,38 @@ export function applyProductReferenceFilters(
 
   return result
 }
+
+function hookNoSortKey(hookNo: number | null | undefined): number {
+  if (hookNo == null || !Number.isFinite(hookNo)) {
+    return Number.POSITIVE_INFINITY
+  }
+  return Math.trunc(hookNo)
+}
+
+function isHookFilterSelected(query: ProductReferenceListQuery): boolean {
+  return Boolean(query.hookGroup.trim() || query.hookNo.trim())
+}
+
+/**
+ * When a Hook filter is selected, order by Hook ascending (group, then numeric hookNo).
+ * Otherwise keep the incoming order (Product Code ascending from the list query).
+ * No secondary Product Code tie-break — one Hook maps to one Product.
+ */
+export function orderProductReferenceList(
+  rows: ProductReferenceListItem[],
+  query: ProductReferenceListQuery
+): ProductReferenceListItem[] {
+  if (!isHookFilterSelected(query)) return rows
+
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => {
+      const groupCmp = a.row.hookGroup.localeCompare(b.row.hookGroup)
+      if (groupCmp !== 0) return groupCmp
+      const keyA = hookNoSortKey(a.row.hookNo)
+      const keyB = hookNoSortKey(b.row.hookNo)
+      if (keyA !== keyB) return keyA - keyB
+      return a.index - b.index
+    })
+    .map(({ row }) => row)
+}

@@ -85,4 +85,5 @@ export {
   matchesProductName,
   matchesProductGroup,
   matchesSupplierCode,
+  orderProductReferenceList,
 } from "./filters/product-reference-list"

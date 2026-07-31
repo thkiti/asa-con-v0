@@ -1,5 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client"
-import { applyProductReferenceFilters } from "./filters/product-reference-list"
+import {
+  applyProductReferenceFilters,
+  orderProductReferenceList,
+} from "./filters/product-reference-list"
 import {
   sortReferences,
   toProductReferenceListItemFromReference,
@@ -66,5 +69,8 @@ export async function listProductReference(
     return toProductReferenceListItemWithoutReference(product)
   })
 
-  return applyProductReferenceFilters(rows, query)
+  return orderProductReferenceList(
+    applyProductReferenceFilters(rows, query),
+    query
+  )
 }
