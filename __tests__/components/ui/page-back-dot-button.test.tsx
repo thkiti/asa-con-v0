@@ -68,6 +68,25 @@ describe("PageBackDotButton", () => {
     expect(back).not.toHaveBeenCalled()
   })
 
+  it("uses href even when history can go back", () => {
+    Object.defineProperty(window.history, "length", {
+      configurable: true,
+      get: () => 5,
+    })
+
+    act(() => {
+      root.render(<PageBackDotButton href="/shop" />)
+    })
+    const button = container.querySelector(
+      '[data-testid="page-back-dot-button"]'
+    ) as HTMLButtonElement
+    act(() => {
+      button.click()
+    })
+    expect(push).toHaveBeenCalledWith("/shop")
+    expect(back).not.toHaveBeenCalled()
+  })
+
   it("falls back to fallbackHref when history cannot go back", () => {
     const originalLength = window.history.length
     Object.defineProperty(window.history, "length", {

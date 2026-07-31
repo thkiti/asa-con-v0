@@ -108,6 +108,7 @@ describe("StockDocumentEditorView", () => {
     expect(html).not.toMatch(/>Print</)
     expect(html.match(/>Save</g)?.length).toBe(1)
     expect(html.match(/Back to list/g)?.length).toBe(1)
+    expect(html).toContain('href="/shop/stock-documents"')
   })
 
   it("renders confirm, cancel, post, and print for SUBMITTED", () => {

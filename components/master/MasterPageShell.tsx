@@ -51,7 +51,7 @@ export function MasterPageShell({
           </h1>
           {backHref ? (
             <PageBackDotButton
-              fallbackHref={backHref}
+              href={backHref}
               tooltip={backTooltipFromLabel(backLabel)}
               data-testid="master-page-back-button"
             />

@@ -43,6 +43,7 @@ describe("EditStockDocumentPage", () => {
 
     expect(html).toContain("Stock document")
     expect(html).toContain("Stock documents")
+    expect(html).toContain('href="/shop/stock-documents"')
     expect(html).toContain('class="p-8"')
   })
 })
