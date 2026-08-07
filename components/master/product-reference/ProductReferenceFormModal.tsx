@@ -291,45 +291,16 @@ export function ProductReferenceFormModal({
         onCancel={() => setShowSaveChoice(false)}
       />
 
-      <ProductReferenceConfirmDialog
-        open={trashRefConfirmOpen}
-        title="Remove reference link"
-        message={
-          pendingTrashLink
-            ? `Permanently remove reference ${pendingTrashLink.hookGroup}.${pendingTrashLink.hookNo} for ${sellableProductCode}? Product stays active; other reference links are unchanged.`
-            : `Permanently remove this reference for ${sellableProductCode}? Product stays active.`
-        }
-        confirmLabel="Remove reference"
-        pending={submitting}
-        error={displayError}
-        onClose={() => {
-          if (!submitting) {
-            setTrashRefConfirmOpen(false)
-            setPendingTrashRefId(null)
-          }
-        }}
-        onConfirm={() => {
-          if (!onTrashReference || !pendingTrashRefId) return
-          void onTrashReference(pendingTrashRefId)
-            .then(() => {
-              setTrashRefConfirmOpen(false)
-              setPendingTrashRefId(null)
-            })
-            .catch(() => {
-              /* error shown via error prop */
-            })
-        }}
-      />
-
       <ModalShell
         open={open}
         onClose={() => {
-          if (!submitting) onClose()
+          if (!submitting && !trashRefConfirmOpen) onClose()
         }}
         title={title}
         titleId="product-ref-form-title"
         panelClassName="max-w-2xl p-6"
-        closeOnOverlayClick={!submitting}
+        closeOnOverlayClick={!submitting && !trashRefConfirmOpen}
+        closeOnEscape={!submitting && !trashRefConfirmOpen}
         data-testid="product-reference-form-modal"
       >
         <div className="mb-2 flex justify-end">
@@ -389,7 +360,10 @@ export function ProductReferenceFormModal({
                                 type="button"
                                 disabled={submitting}
                                 className="text-red-600 underline-offset-2 hover:underline disabled:opacity-50"
-                                onClick={() => {
+                                data-testid={`remove-reference-${link.id}`}
+                                onClick={(event) => {
+                                  event.preventDefault()
+                                  event.stopPropagation()
                                   setLocalError(null)
                                   setPendingTrashRefId(link.id)
                                   setTrashRefConfirmOpen(true)
@@ -604,6 +578,39 @@ export function ProductReferenceFormModal({
             </div>
         </div>
       </ModalShell>
+
+      {/* Rendered after the edit modal and at z-[60] so it is not trapped under z-50 form chrome. */}
+      <ProductReferenceConfirmDialog
+        open={trashRefConfirmOpen}
+        title="Remove reference link"
+        message={
+          pendingTrashLink
+            ? `Permanently remove reference ${pendingTrashLink.hookGroup}.${pendingTrashLink.hookNo} for ${sellableProductCode}? Product stays active; other reference links are unchanged.`
+            : `Permanently remove this reference for ${sellableProductCode}? Product stays active.`
+        }
+        confirmLabel="Remove reference"
+        pending={submitting}
+        error={displayError}
+        destructive
+        overlayClassName="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+        onClose={() => {
+          if (!submitting) {
+            setTrashRefConfirmOpen(false)
+            setPendingTrashRefId(null)
+          }
+        }}
+        onConfirm={() => {
+          if (!onTrashReference || !pendingTrashRefId) return
+          void onTrashReference(pendingTrashRefId)
+            .then(() => {
+              setTrashRefConfirmOpen(false)
+              setPendingTrashRefId(null)
+            })
+            .catch(() => {
+              /* error shown via error prop on confirm + modal */
+            })
+        }}
+      />
     </>
   )
 }

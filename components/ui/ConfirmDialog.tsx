@@ -28,6 +28,8 @@ export type ConfirmDialogProps = {
   warning?: boolean
   onClose: () => void
   onConfirm: () => void
+  /** Overlay class override (e.g. raise z-index above an open parent modal). */
+  overlayClassName?: string
   "data-testid"?: string
 }
 
@@ -49,6 +51,7 @@ export function ConfirmDialog({
   warning = false,
   onClose,
   onConfirm,
+  overlayClassName,
   "data-testid": testId = "confirm-dialog",
 }: ConfirmDialogProps) {
   const actionsDisabled = pending || disabled
@@ -70,6 +73,7 @@ export function ConfirmDialog({
       title={title}
       titleId={`${testId}-title`}
       overlayAlign="center"
+      overlayClassName={overlayClassName}
       closeOnOverlayClick={false}
       closeOnEscape={!pending}
       panelClassName="max-w-md p-6"

@@ -9,6 +9,8 @@ type ProductReferenceConfirmDialogProps = {
   confirmLabel: string
   pending?: boolean
   error?: string | null
+  destructive?: boolean
+  overlayClassName?: string
   onClose: () => void
   onConfirm: () => void
 }
