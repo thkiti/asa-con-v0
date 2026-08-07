@@ -20,6 +20,7 @@ export { formatShopBranchCode } from "./validation/branch-code"
 export {
   normalizePosinyProductCode,
   normalizeReferenceProductCode,
+  normalizeInternalProductCode,
 } from "./validation/product-code"
 export { assertImportApplyAllowed } from "./safety"
 export {

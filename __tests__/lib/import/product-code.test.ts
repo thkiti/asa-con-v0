@@ -1,6 +1,7 @@
 import {
   normalizePosinyProductCode,
   normalizeReferenceProductCode,
+  normalizeInternalProductCode,
 } from "@/lib/import/validation/product-code"
 
 describe("product code normalization", () => {
@@ -25,5 +26,10 @@ describe("product code normalization", () => {
 
   it("removes dashes and quotes from reference codes", () => {
     expect(normalizeReferenceProductCode('"01-010-015"')).toBe("0101001")
+  })
+
+  it("preserves internal 7-digit codes without check-digit strip", () => {
+    expect(normalizeInternalProductCode("0105006")).toBe("0105006")
+    expect(normalizeInternalProductCode("0105901")).toBe("0105901")
   })
 })

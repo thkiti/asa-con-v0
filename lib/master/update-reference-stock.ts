@@ -10,6 +10,11 @@ import type { ProductReferenceListItem } from "./types"
 
 type ReferenceDb = Pick<PrismaClient, "referenceStock">
 
+/**
+ * Update an existing reference. If the target unique key is held only by a
+ * soft-deleted orphan row, hard-delete that orphan so the active edit can move
+ * onto the key (avoids P2002 / invisible blockers).
+ */
 export async function updateReferenceStock(
   db: ReferenceDb,
   id: string,
@@ -22,6 +27,29 @@ export async function updateReferenceStock(
 
   if (!existing) {
     throw new MasterDomainError("Reference not found", "REFERENCE_NOT_FOUND", 404)
+  }
+
+  const conflict = await db.referenceStock.findUnique({
+    where: {
+      productId_hookGroup_hookNo: {
+        productId: existing.productId,
+        hookGroup: input.hookGroup,
+        hookNo: input.hookNo,
+      },
+    },
+    select: { id: true, deleted: true },
+  })
+
+  if (conflict && conflict.id !== existing.id) {
+    if (conflict.deleted) {
+      await db.referenceStock.delete({ where: { id: conflict.id } })
+    } else {
+      throw new MasterDomainError(
+        `Reference hook already exists for this product: ${input.hookGroup}.${input.hookNo}`,
+        "HOOK_DUPLICATE",
+        409
+      )
+    }
   }
 
   try {

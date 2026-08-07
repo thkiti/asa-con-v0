@@ -1,15 +1,15 @@
-import { Prisma } from "@/generated/prisma/client"
 import { ProductType } from "@/generated/prisma/client"
 import { createProductWithReference } from "@/lib/master/create-product-with-reference"
 import { createReferenceStock } from "@/lib/master/create-reference-stock"
 import { deleteProduct } from "@/lib/master/delete-product"
 import { restoreProduct } from "@/lib/master/restore-product"
 import { deleteReferenceStock } from "@/lib/master/delete-reference-stock"
-import { MasterDomainError } from "@/lib/master/errors"
+import { updateReferenceStock } from "@/lib/master/update-reference-stock"
 import { parsePatchProductBody } from "@/lib/master/parse-product-mutation"
 import { parseCreateReferenceStockBody } from "@/lib/master/parse-product-reference-mutation"
 import { parseCreateProductWithReferenceBody } from "@/lib/master/parse-product-create-mutation"
 import { updateProduct } from "@/lib/master/update-product"
+import { listProductReference } from "@/lib/master/product-reference-list"
 
 const product = {
   id: "prod-1",
@@ -204,6 +204,22 @@ describe("parseCreateReferenceStockBody", () => {
       hookNo: 12,
     })
   })
+
+  it("preserves internal 7-digit productCode and productGroup", () => {
+    expect(
+      parseCreateReferenceStockBody({
+        productId: product.id,
+        hookGroup: "K",
+        hookNo: 1,
+        supplierCode: "K.338",
+        productCode: "0105006",
+        productGroup: "0105901",
+      })
+    ).toMatchObject({
+      productCode: "0105006",
+      productGroup: "0105901",
+    })
+  })
 })
 
 describe("parsePatchProductBody", () => {
@@ -221,6 +237,7 @@ describe("createReferenceStock", () => {
         findUnique: jest.fn().mockResolvedValue(product),
       },
       referenceStock: {
+        findUnique: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue(referenceRow),
       },
     }
@@ -236,12 +253,88 @@ describe("createReferenceStock", () => {
 
     expect(item.hasReference).toBe(true)
     expect(item.hookGroup).toBe("K")
+    expect(db.referenceStock.create).toHaveBeenCalled()
+  })
+
+  it("preserves 7-digit internal productCode and productGroup on create", async () => {
+    const create = jest.fn().mockResolvedValue({
+      ...referenceRow,
+      productCode: "0105006",
+      productGroup: "0105901",
+    })
+    const db = {
+      product: { findUnique: jest.fn().mockResolvedValue(product) },
+      referenceStock: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create,
+      },
+    }
+
+    await createReferenceStock(db, {
+      productId: product.id,
+      hookGroup: "K",
+      hookNo: 1,
+      supplierCode: "K.338",
+      productCode: "0105006",
+      productGroup: "0105901",
+    })
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          productCode: "0105006",
+          productGroup: "0105901",
+        }),
+      })
+    )
+  })
+
+  it("revives soft-deleted exact hook instead of creating duplicate", async () => {
+    const update = jest.fn().mockResolvedValue({
+      ...referenceRow,
+      deleted: false,
+      supplierCode: "K.999",
+      productCode: "0105006",
+      productGroup: "0105901",
+    })
+    const db = {
+      product: { findUnique: jest.fn().mockResolvedValue(product) },
+      referenceStock: {
+        findUnique: jest.fn().mockResolvedValue({ id: "ref-1", deleted: true }),
+        update,
+        create: jest.fn(),
+      },
+    }
+
+    const item = await createReferenceStock(db, {
+      productId: product.id,
+      hookGroup: "K",
+      hookNo: 12,
+      supplierCode: "K.999",
+      productCode: "0105006",
+      productGroup: "0105901",
+    })
+
+    expect(db.referenceStock.create).not.toHaveBeenCalled()
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ref-1" },
+        data: expect.objectContaining({
+          deleted: false,
+          supplierCode: "K.999",
+          productCode: "0105006",
+          productGroup: "0105901",
+        }),
+      })
+    )
+    expect(item.hasReference).toBe(true)
+    expect(item.deleted).toBe(false)
   })
 
   it("blocks missing product", async () => {
     const db = {
       product: { findUnique: jest.fn().mockResolvedValue(null) },
-      referenceStock: { create: jest.fn() },
+      referenceStock: { findUnique: jest.fn(), create: jest.fn() },
     }
 
     await expect(
@@ -256,14 +349,13 @@ describe("createReferenceStock", () => {
     ).rejects.toMatchObject({ code: "PRODUCT_NOT_FOUND" })
   })
 
-  it("maps duplicate hook to HOOK_DUPLICATE", async () => {
-    const err = new Prisma.PrismaClientKnownRequestError("dup", {
-      code: "P2002",
-      clientVersion: "test",
-    })
+  it("blocks duplicate active hook with HOOK_DUPLICATE", async () => {
     const db = {
       product: { findUnique: jest.fn().mockResolvedValue(product) },
-      referenceStock: { create: jest.fn().mockRejectedValue(err) },
+      referenceStock: {
+        findUnique: jest.fn().mockResolvedValue({ id: "ref-1", deleted: false }),
+        create: jest.fn(),
+      },
     }
 
     await expect(
@@ -276,6 +368,7 @@ describe("createReferenceStock", () => {
         productGroup: null,
       })
     ).rejects.toMatchObject({ code: "HOOK_DUPLICATE" })
+    expect(db.referenceStock.create).not.toHaveBeenCalled()
   })
 })
 
@@ -351,18 +444,189 @@ describe("deleteProduct", () => {
 })
 
 describe("restoreProduct", () => {
-  it("restores product only without touching referenceStock", async () => {
+  it("restores product and soft-deleted referenceStock rows", async () => {
+    const txProductUpdate = jest.fn().mockResolvedValue({ ...product, deleted: false })
+    const txRefUpdateMany = jest.fn().mockResolvedValue({ count: 1 })
+    const txRefFindMany = jest.fn().mockResolvedValue([
+      { ...referenceRow, deleted: false },
+    ])
+
     const db = {
       product: {
         findUnique: jest.fn().mockResolvedValue({ ...product, deleted: true }),
-        update: jest.fn().mockResolvedValue({ ...product, deleted: false }),
       },
+      referenceStock: {},
+      $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn({
+          product: { update: txProductUpdate },
+          referenceStock: {
+            updateMany: txRefUpdateMany,
+            findMany: txRefFindMany,
+          },
+        })
+      ),
     }
 
     const item = await restoreProduct(db, product.id)
 
+    expect(db.$transaction).toHaveBeenCalledTimes(1)
+    expect(txProductUpdate).toHaveBeenCalledWith({
+      where: { id: product.id },
+      data: { deleted: false },
+      select: expect.any(Object),
+    })
+    expect(txRefUpdateMany).toHaveBeenCalledWith({
+      where: { productId: product.id, deleted: true },
+      data: { deleted: false },
+    })
     expect(item.deleted).toBe(false)
-    expect(db).not.toHaveProperty("referenceStock")
+    expect(item.hasReference).toBe(true)
+    expect(item.hookGroup).toBe("K")
+  })
+
+  it("returns product without reference when none restored", async () => {
+    const db = {
+      product: {
+        findUnique: jest.fn().mockResolvedValue({ ...product, deleted: true }),
+      },
+      referenceStock: {},
+      $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn({
+          product: {
+            update: jest.fn().mockResolvedValue({ ...product, deleted: false }),
+          },
+          referenceStock: {
+            updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+            findMany: jest.fn().mockResolvedValue([]),
+          },
+        })
+      ),
+    }
+
+    const item = await restoreProduct(db, product.id)
+    expect(item.hasReference).toBe(false)
+    expect(item.deleted).toBe(false)
+  })
+})
+
+describe("updateReferenceStock", () => {
+  it("updates and preserves 7-digit productGroup", async () => {
+    const update = jest.fn().mockResolvedValue({
+      ...referenceRow,
+      productGroup: "0105901",
+      productCode: "0105006",
+    })
+    const db = {
+      referenceStock: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "ref-1", productId: product.id })
+          .mockResolvedValueOnce(null),
+        update,
+      },
+    }
+
+    const item = await updateReferenceStock(db, "ref-1", {
+      hookGroup: "K",
+      hookNo: 12,
+      supplierCode: "K.338",
+      productCode: "0105006",
+      productGroup: "0105901",
+    })
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          productCode: "0105006",
+          productGroup: "0105901",
+        }),
+      })
+    )
+    expect(item.productGroup).toBe("0105901")
+  })
+
+  it("hard-deletes soft-deleted unique-key orphan then updates", async () => {
+    const del = jest.fn().mockResolvedValue({ id: "orphan" })
+    const update = jest.fn().mockResolvedValue({
+      ...referenceRow,
+      hookNo: 99,
+    })
+    const db = {
+      referenceStock: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "ref-1", productId: product.id })
+          .mockResolvedValueOnce({ id: "orphan", deleted: true }),
+        delete: del,
+        update,
+      },
+    }
+
+    await updateReferenceStock(db, "ref-1", {
+      hookGroup: "K",
+      hookNo: 99,
+      supplierCode: "K.1",
+      productCode: "0105006",
+      productGroup: "0101900",
+    })
+
+    expect(del).toHaveBeenCalledWith({ where: { id: "orphan" } })
+    expect(update).toHaveBeenCalled()
+  })
+
+  it("blocks active unique-key conflict", async () => {
+    const db = {
+      referenceStock: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "ref-1", productId: product.id })
+          .mockResolvedValueOnce({ id: "other", deleted: false }),
+        update: jest.fn(),
+      },
+    }
+
+    await expect(
+      updateReferenceStock(db, "ref-1", {
+        hookGroup: "K",
+        hookNo: 99,
+        supplierCode: "K.1",
+        productCode: "0105006",
+        productGroup: null,
+      })
+    ).rejects.toMatchObject({ code: "HOOK_DUPLICATE" })
+  })
+})
+
+describe("listProductReference after restore visibility", () => {
+  it("shows restored reference on active list", async () => {
+    const db = {
+      product: {
+        findMany: jest.fn().mockResolvedValue([product]),
+      },
+      referenceStock: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            ...referenceRow,
+            deleted: false,
+            product,
+          },
+        ]),
+      },
+    }
+
+    const items = await listProductReference(db, {
+      mode: "active",
+      productCode: "",
+      productName: "",
+      hookGroup: "",
+      hookNo: "",
+      supplierCode: "",
+      productGroup: "",
+      referenceStatus: "all",
+    })
+    expect(items).toHaveLength(1)
+    expect(items[0]?.hasReference).toBe(true)
+    expect(items[0]?.hookNo).toBe(12)
   })
 })
 

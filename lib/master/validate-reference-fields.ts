@@ -1,4 +1,4 @@
-import { normalizeReferenceProductCode } from "@/lib/import/validation/product-code"
+import { normalizeInternalProductCode } from "@/lib/import/validation/product-code"
 import { MasterDomainError } from "./errors"
 
 export type ParsedReferenceFields = {
@@ -37,7 +37,7 @@ export function parseSupplierCode(value: unknown, hookGroup: string): string {
 }
 
 export function parseReferenceProductCode(value: unknown): string {
-  const productCode = normalizeReferenceProductCode(value)
+  const productCode = normalizeInternalProductCode(value)
   if (!productCode) {
     throw new MasterDomainError("Reference product code is invalid", "PRODUCT_CODE_INVALID", 400)
   }
@@ -48,7 +48,7 @@ export function parseProductGroup(value: unknown): string | null {
   if (value === undefined || value === null || String(value).trim() === "") {
     return null
   }
-  const normalized = normalizeReferenceProductCode(value)
+  const normalized = normalizeInternalProductCode(value)
   return normalized || null
 }
 
