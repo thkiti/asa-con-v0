@@ -389,10 +389,10 @@ export function ProductReferencePage({
         message={
           confirmAction === "deleteProduct"
             ? selectedRow
-              ? "Trash this product? All linked ReferenceStock rows will also be moved to trash."
+              ? "Trash this product? Linked ReferenceStock rows are permanently removed and their hooks freed. The product can be restored later without those links."
               : ""
             : selectedRow
-              ? `Restore product ${selectedRow.productCode}? Reference links stay in trash until restored separately.`
+              ? `Restore product ${selectedRow.productCode}? It returns without reference links; assign a new hook later if needed.`
               : ""
         }
         confirmLabel={confirmAction === "restore" ? "Restore" : "Trash product"}

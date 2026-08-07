@@ -13,6 +13,10 @@ const productSelect = {
   deleted: true,
 } as const
 
+/**
+ * Trash Product: soft-delete Product and hard-delete all ReferenceStock rows
+ * so hook slots are released immediately (not locked by an inactive Product).
+ */
 export async function deleteProduct(
   db: ProductDb,
   id: string
@@ -33,9 +37,8 @@ export async function deleteProduct(
       select: productSelect,
     })
 
-    await tx.referenceStock.updateMany({
+    await tx.referenceStock.deleteMany({
       where: { productId: id },
-      data: { deleted: true },
     })
 
     return toProductReferenceListItemWithoutReference(updated)

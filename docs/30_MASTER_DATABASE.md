@@ -105,15 +105,15 @@ Main **Save** opens a choice overlay (Save Product / Save All / Cancel). **Cance
 
 | Action | Behavior |
 |--------|----------|
-| **Row trash (active list)** | Soft-delete **Product** and **all** `ReferenceStock` rows for that `productId` in one transaction |
-| **Restore product (trash list)** | `Product.deleted = false` only — references **stay** trashed until explicitly restored or re-linked |
-| **Trash Reference Link (modal)** | Soft-delete **one** reference; product stays active |
+| **Row trash (active list)** | Soft-delete **Product** and **hard-delete all** `ReferenceStock` rows for that `productId` (hooks freed immediately) |
+| **Restore product (trash list)** | `Product.deleted = false` only — product returns **hook-less**; assign a new reference later if needed |
+| **Trash Reference Link (modal)** | **Hard-delete** that `ReferenceStock` row; Product stays active; hook slot is reusable immediately |
 
-No physical deletes. Stock input list and posting continue to filter `product.deleted` and `referenceStock.deleted` (unchanged).
+`Product.id` is durable (soft-delete only in normal UI). `ReferenceStock` is the current Product↔Hook link, not permanent history — no Restore Reference Link. Stock input list continues to load active (`deleted: false`) products/refs only.
 
 ### What Master Database does not do
 
-- No `schema.prisma` changes for this feature set
+- No `schema.prisma` changes for this feature set (`ReferenceStock.deleted` column retained for residual rows; app no longer soft-deletes refs)
 - No import logic changes
 - No stock document posting or ledger changes
 - No finance / GL posting changes

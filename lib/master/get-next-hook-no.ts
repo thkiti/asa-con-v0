@@ -9,7 +9,7 @@ export async function getNextHookNo(db: HookNoDb, hookGroup: string): Promise<nu
   }
 
   const last = await db.referenceStock.findFirst({
-    where: { hookGroup: normalized },
+    where: { hookGroup: normalized, deleted: false },
     orderBy: { hookNo: "desc" },
     select: { hookNo: true },
   })

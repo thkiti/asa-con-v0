@@ -10,7 +10,6 @@ export type UpdateReferenceStockInput = import("./validate-reference-fields").Pa
 export type PatchReferenceStockBody =
   | { action: "update" } & UpdateReferenceStockInput
   | { action: "delete" }
-  | { action: "restore" }
 
 function rejectImmutableReferenceFields(body: Record<string, unknown>): void {
   if ("productId" in body && body.productId !== undefined) {
@@ -52,7 +51,11 @@ export function parsePatchReferenceStockBody(body: unknown): PatchReferenceStock
     return { action: "delete" }
   }
   if (record.deleted === false) {
-    return { action: "restore" }
+    throw new MasterDomainError(
+      "Reference links are hard-deleted and cannot be restored; create a new reference instead",
+      "REFERENCE_RESTORE_UNSUPPORTED",
+      400
+    )
   }
 
   const fields = parseReferenceFields(record)

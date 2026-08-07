@@ -12,8 +12,8 @@ import type { ProductReferenceListItem } from "./types"
 type ReferenceDb = Pick<PrismaClient, "product" | "referenceStock">
 
 /**
- * Create a reference link, or revive an exact soft-deleted
- * (productId, hookGroup, hookNo) row in place.
+ * Create a current Product ↔ Hook reference link.
+ * Residual soft-deleted unique-key orphans are hard-deleted so the slot is reusable.
  */
 export async function createReferenceStock(
   db: ReferenceDb,
@@ -40,18 +40,7 @@ export async function createReferenceStock(
         409
       )
     }
-
-    const restored = await db.referenceStock.update({
-      where: { id: existingRef.id },
-      data: {
-        supplierCode: input.supplierCode,
-        productCode: input.productCode,
-        productGroup: input.productGroup,
-        deleted: false,
-      },
-      select: referenceStockSelectWithProduct,
-    })
-    return toProductReferenceListItemFromReference(restored)
+    await db.referenceStock.delete({ where: { id: existingRef.id } })
   }
 
   try {

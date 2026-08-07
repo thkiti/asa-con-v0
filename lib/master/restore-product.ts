@@ -19,8 +19,8 @@ const productSelect = {
 } as const
 
 /**
- * Restore Product and all of its soft-deleted ReferenceStock rows.
- * Keeps active Products from retaining invisible deleted refs that block unique keys.
+ * Restore Product identity only. Does not recreate ReferenceStock —
+ * product may return hook-less and receive a new current reference later.
  */
 export async function restoreProduct(
   db: ProductDb,
@@ -40,11 +40,6 @@ export async function restoreProduct(
       where: { id },
       data: { deleted: false },
       select: productSelect,
-    })
-
-    await tx.referenceStock.updateMany({
-      where: { productId: id, deleted: true },
-      data: { deleted: false },
     })
 
     const refs = await tx.referenceStock.findMany({

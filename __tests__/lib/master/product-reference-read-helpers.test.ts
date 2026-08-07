@@ -17,7 +17,7 @@ describe("getNextHookNo", () => {
     await expect(getNextHookNo(db, "k")).resolves.toBe(13)
     expect(db.referenceStock.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { hookGroup: "K" },
+        where: { hookGroup: "K", deleted: false },
         orderBy: { hookNo: "desc" },
       })
     )

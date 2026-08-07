@@ -287,8 +287,8 @@ export function ProductReferenceFormModal({
       <ProductReferenceConfirmDialog
         open={trashRefConfirmOpen}
         title="Trash reference link"
-        message={`Move reference ${formatHookLabel(hookGroup, hookNo)} for ${sellableProductCode} to trash? Product stays active.`}
-        confirmLabel="Trash reference"
+        message={`Permanently remove reference ${formatHookLabel(hookGroup, hookNo)} for ${sellableProductCode}? Product stays active and the hook becomes free for reuse.`}
+        confirmLabel="Remove reference"
         pending={submitting}
         error={displayError}
         onClose={() => {

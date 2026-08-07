@@ -41,7 +41,7 @@ Collector (`posCanCollect`) is independent — unchanged by replacer.
 | Staff | `/master/staff` | Create / edit / reset password / soft-delete; guards for `001`, `DEV`, last HO_ADMIN |
 | Product & reference | `/master/product-reference` | Product name/type; reference links; Save Product vs Save All; row trash cascades refs |
 
-**Product–reference rules (summary):** Product = sellable item; ReferenceStock = counting link. Row trash soft-deletes product and all its references; restore product only. Modal can trash a single reference while product stays active. No schema, import, stock-posting, or finance-posting changes.
+**Product–reference rules (summary):** Product = durable sellable identity; ReferenceStock = current counting/hook link (mutable, hard-deleted on trash). Row trash soft-deletes product and hard-deletes its references (hooks freed). Restore product only (hook-less). Modal trash hard-deletes a single reference while product stays active. No Restore Reference Link. No stock-posting or finance-posting changes.
 
 ## Route matrix (examples)
 

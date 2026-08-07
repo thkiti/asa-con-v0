@@ -11,9 +11,8 @@ import type { ProductReferenceListItem } from "./types"
 type ReferenceDb = Pick<PrismaClient, "referenceStock">
 
 /**
- * Update an existing reference. If the target unique key is held only by a
- * soft-deleted orphan row, hard-delete that orphan so the active edit can move
- * onto the key (avoids P2002 / invisible blockers).
+ * Update an existing reference. Residual soft-deleted unique-key orphans are
+ * hard-deleted so the active edit can move onto the key.
  */
 export async function updateReferenceStock(
   db: ReferenceDb,

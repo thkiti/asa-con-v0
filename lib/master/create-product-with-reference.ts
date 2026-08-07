@@ -66,18 +66,7 @@ export async function createProductWithReference(
           409
         )
       }
-
-      const restored = await tx.referenceStock.update({
-        where: { id: existingRef.id },
-        data: {
-          supplierCode: input.supplierCode,
-          productCode: input.productCode,
-          productGroup: input.productGroup,
-          deleted: false,
-        },
-        select: referenceStockSelectWithProduct,
-      })
-      return toProductReferenceListItemFromReference(restored)
+      await tx.referenceStock.delete({ where: { id: existingRef.id } })
     }
 
     try {
