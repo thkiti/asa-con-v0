@@ -6,6 +6,10 @@ import {
   referenceStockSelectWithProduct,
   toProductReferenceListItemFromReference,
 } from "./product-reference-mapper"
+import {
+  assertActiveHookAvailable,
+  assertActiveSupplierAvailable,
+} from "./reference-uniqueness"
 import type { ProductReferenceListItem } from "./types"
 
 type CreateDb = Pick<PrismaClient, "product" | "referenceStock" | "$transaction">
@@ -46,6 +50,16 @@ export async function createProductWithReference(
             select: { id: true },
           })
         ).id
+
+    await assertActiveHookAvailable(tx, {
+      hookGroup: input.hookGroup,
+      hookNo: input.hookNo,
+      productId,
+    })
+    await assertActiveSupplierAvailable(tx, {
+      supplierCode: input.supplierCode,
+      productId,
+    })
 
     const existingRef = await tx.referenceStock.findUnique({
       where: {

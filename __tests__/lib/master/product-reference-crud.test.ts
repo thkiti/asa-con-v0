@@ -89,6 +89,8 @@ describe("createProductWithReference", () => {
           },
           referenceStock: {
             findUnique: jest.fn().mockResolvedValue(null),
+            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]),
             create: txReferenceCreate,
             update: jest.fn(),
           },
@@ -128,6 +130,8 @@ describe("createProductWithReference", () => {
           },
           referenceStock: {
             findUnique: jest.fn().mockResolvedValue(null),
+            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]),
             create: txReferenceCreate,
             update: jest.fn(),
           },
@@ -167,6 +171,12 @@ describe("createProductWithReference", () => {
           },
           referenceStock: {
             findUnique: jest.fn().mockResolvedValue({ id: "ref-1", deleted: false }),
+            findFirst: jest.fn().mockResolvedValue({
+              id: "ref-1",
+              productId: product.id,
+              product: { code: product.code },
+            }),
+            findMany: jest.fn().mockResolvedValue([]),
             create: jest.fn(),
             update: jest.fn(),
           },
@@ -242,6 +252,8 @@ describe("createReferenceStock", () => {
       },
       referenceStock: {
         findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockResolvedValue(referenceRow),
       },
     }
@@ -270,6 +282,8 @@ describe("createReferenceStock", () => {
       product: { findUnique: jest.fn().mockResolvedValue(product) },
       referenceStock: {
         findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         create,
       },
     }
@@ -305,6 +319,8 @@ describe("createReferenceStock", () => {
       product: { findUnique: jest.fn().mockResolvedValue(product) },
       referenceStock: {
         findUnique: jest.fn().mockResolvedValue({ id: "ref-1", deleted: true }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         delete: del,
         create,
       },
@@ -347,6 +363,12 @@ describe("createReferenceStock", () => {
       product: { findUnique: jest.fn().mockResolvedValue(product) },
       referenceStock: {
         findUnique: jest.fn().mockResolvedValue({ id: "ref-1", deleted: false }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: "ref-1",
+          productId: product.id,
+          product: { code: product.code },
+        }),
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn(),
       },
     }
@@ -554,6 +576,8 @@ describe("reusable hook lifecycle", () => {
       product: { findUnique: jest.fn().mockResolvedValue(otherProduct) },
       referenceStock: {
         findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         create,
       },
     }
@@ -594,6 +618,8 @@ describe("reusable hook lifecycle", () => {
       product: { findUnique: jest.fn().mockResolvedValue(product) },
       referenceStock: {
         findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         create,
       },
     }
@@ -641,6 +667,8 @@ describe("updateReferenceStock", () => {
           .fn()
           .mockResolvedValueOnce({ id: "ref-1", productId: product.id })
           .mockResolvedValueOnce(null),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         update,
       },
     }
@@ -676,6 +704,8 @@ describe("updateReferenceStock", () => {
           .fn()
           .mockResolvedValueOnce({ id: "ref-1", productId: product.id })
           .mockResolvedValueOnce({ id: "orphan", deleted: true }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         delete: del,
         update,
       },
@@ -700,6 +730,12 @@ describe("updateReferenceStock", () => {
           .fn()
           .mockResolvedValueOnce({ id: "ref-1", productId: product.id })
           .mockResolvedValueOnce({ id: "other", deleted: false }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: "other",
+          productId: product.id,
+          product: { code: product.code },
+        }),
+        findMany: jest.fn().mockResolvedValue([]),
         update: jest.fn(),
       },
     }

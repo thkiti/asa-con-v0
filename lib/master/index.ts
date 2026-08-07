@@ -18,6 +18,12 @@ export { patchBranch } from "./patch-branch"
 export { normalizeBranchCodeForCreate } from "./branch-code"
 export { MasterDomainError } from "./errors"
 export {
+  canonicalSupplierCode,
+  isSharedSupplierPlaceholder,
+  assertActiveHookAvailable,
+  assertActiveSupplierAvailable,
+} from "./reference-uniqueness"
+export {
   parseCreateBranchBody,
   parsePatchBranchBody,
 } from "./parse-branch-mutation"

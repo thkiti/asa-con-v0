@@ -6,6 +6,10 @@ import {
   referenceStockSelectWithProduct,
   toProductReferenceListItemFromReference,
 } from "./product-reference-mapper"
+import {
+  assertActiveHookAvailable,
+  assertActiveSupplierAvailable,
+} from "./reference-uniqueness"
 import type { ProductReferenceListItem } from "./types"
 
 type ReferenceDb = Pick<PrismaClient, "referenceStock">
@@ -27,6 +31,18 @@ export async function updateReferenceStock(
   if (!existing) {
     throw new MasterDomainError("Reference not found", "REFERENCE_NOT_FOUND", 404)
   }
+
+  await assertActiveHookAvailable(db, {
+    hookGroup: input.hookGroup,
+    hookNo: input.hookNo,
+    productId: existing.productId,
+    excludeReferenceId: existing.id,
+  })
+  await assertActiveSupplierAvailable(db, {
+    supplierCode: input.supplierCode,
+    productId: existing.productId,
+    excludeReferenceId: existing.id,
+  })
 
   const conflict = await db.referenceStock.findUnique({
     where: {
