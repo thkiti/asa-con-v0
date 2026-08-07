@@ -44,9 +44,13 @@ const COLUMNS = [
 ] as const
 
 function formatHookLabel(row: ProductReferenceListItem): string {
-  if (!row.hookGroup) return ""
-  if (row.hookNo == null) return row.hookGroup
-  return `${row.hookGroup}.${row.hookNo}`
+  if (!row.hasReference) return ""
+  const primary =
+    row.hookNo == null ? row.hookGroup : `${row.hookGroup}.${row.hookNo}`
+  if (row.referenceCount > 1) {
+    return `${primary} · ${row.referenceCount} refs`
+  }
+  return primary
 }
 
 function referenceIdFromRow(row: ProductReferenceListItem): string | null {
@@ -107,7 +111,7 @@ export function ProductReferencePage({
     return () => clearTimeout(timer)
   }, [productCode, productName, hookGroup, hookNo, supplierCode, productGroup])
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<ProductReferenceListItem[]> => {
     setLoading(true)
     setError(null)
     try {
@@ -117,9 +121,11 @@ export function ProductReferencePage({
         referenceStatus: "all",
       })
       setItems(result.items)
+      return result.items
     } catch (err: unknown) {
       setItems([])
       setError(err instanceof Error ? err.message : "Failed to load product reference")
+      return []
     } finally {
       setLoading(false)
     }
@@ -205,17 +211,20 @@ export function ProductReferencePage({
     }
   }
 
-  const handleTrashReference = async () => {
+  const handleTrashReference = async (referenceId: string) => {
     if (!selectedRow) return
-    const refId = referenceIdFromRow(selectedRow)
-    if (!refId) throw new Error("No reference to trash")
 
     setFormSubmitting(true)
     setFormError(null)
     try {
-      await patchMasterProductReference(refId, { deleted: true })
-      setFormOpen(false)
-      await load()
+      await patchMasterProductReference(referenceId, { deleted: true })
+      const nextItems = await load()
+      const updated = nextItems.find((item) => item.productId === selectedRow.productId)
+      if (updated) {
+        setSelectedRow(updated)
+      } else {
+        setFormOpen(false)
+      }
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Trash reference failed")
       throw err
@@ -377,8 +386,8 @@ export function ProductReferencePage({
         onSaveAll={handleSaveAll}
         onCreate={formMode === "create" ? handleCreate : undefined}
         onTrashReference={
-          formMode === "edit" && selectedRow?.hasReference
-            ? () => handleTrashReference()
+          formMode === "edit" && selectedRow
+            ? (referenceId) => handleTrashReference(referenceId)
             : undefined
         }
       />

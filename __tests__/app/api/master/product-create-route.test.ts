@@ -48,6 +48,17 @@ const sampleItem = {
   productGroup: null,
   referenceProductCode: "5101001",
   hasReference: true,
+  references: [
+    {
+      id: "ref-1",
+      hookGroup: "K",
+      hookNo: 12,
+      supplierCode: "K.144",
+      productGroup: null,
+      productCode: "5101001",
+    },
+  ],
+  referenceCount: 1,
   deleted: false,
 }
 

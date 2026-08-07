@@ -384,6 +384,27 @@ describe("deleteReferenceStock", () => {
     expect(item.productId).toBe(product.id)
     expect(item.deleted).toBe(false)
     expect(item.hookNo).toBeNull()
+    expect(item.references).toEqual([])
+    expect(item.referenceCount).toBe(0)
+  })
+
+  it("deletes only the targeted reference id", async () => {
+    const del = jest.fn().mockResolvedValue({ id: "ref-k19" })
+    const db = {
+      referenceStock: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: "ref-k19",
+          product: { ...product, id: "p-0104004", code: "0104004" },
+        }),
+        delete: del,
+      },
+    }
+
+    await deleteReferenceStock(db, "ref-k19")
+    expect(del).toHaveBeenCalledTimes(1)
+    expect(del).toHaveBeenCalledWith({ where: { id: "ref-k19" } })
+    expect(del).not.toHaveBeenCalledWith({ where: { id: "ref-k2" } })
+    expect(del).not.toHaveBeenCalledWith({ where: { id: "ref-k291" } })
   })
 })
 

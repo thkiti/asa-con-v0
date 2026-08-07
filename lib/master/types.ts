@@ -31,6 +31,15 @@ export type StaffListItem = {
   evidenceIdUploaded?: boolean
 }
 
+export type ProductReferenceLink = {
+  id: string
+  hookGroup: string
+  hookNo: number
+  supplierCode: string
+  productGroup: string | null
+  productCode: string
+}
+
 export type ProductReferenceListItem = {
   rowId: string
   productId: string
@@ -43,6 +52,9 @@ export type ProductReferenceListItem = {
   productGroup: string | null
   referenceProductCode: string
   hasReference: boolean
+  /** All active ReferenceStock links for this product (sorted). */
+  references: ProductReferenceLink[]
+  referenceCount: number
   deleted: boolean
 }
 

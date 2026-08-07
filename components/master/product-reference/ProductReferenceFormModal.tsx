@@ -57,7 +57,7 @@ type ProductReferenceFormModalProps = {
   onSaveProduct: (values: ProductReferenceSaveProductValues) => Promise<void>
   onSaveAll: (values: ProductReferenceSaveAllValues) => Promise<void>
   onCreate?: (values: ProductReferenceCreateValues) => Promise<void>
-  onTrashReference?: () => Promise<void>
+  onTrashReference?: (referenceId: string) => Promise<void>
 }
 
 function sanitizeHookGroupInput(value: string): string {
@@ -94,10 +94,16 @@ export function ProductReferenceFormModal({
   const [groupLookupMissing, setGroupLookupMissing] = useState(false)
   const [showSaveChoice, setShowSaveChoice] = useState(false)
   const [trashRefConfirmOpen, setTrashRefConfirmOpen] = useState(false)
+  const [pendingTrashRefId, setPendingTrashRefId] = useState<string | null>(null)
   const [localError, setLocalError] = useState<string | null>(null)
 
   const hasReference = row?.hasReference ?? false
+  const referenceLinks = row?.references ?? []
   const sellableProductCode = isCreateMode ? productCodeInput : (row?.productCode ?? "")
+
+  const pendingTrashLink = pendingTrashRefId
+    ? referenceLinks.find((link) => link.id === pendingTrashRefId) ?? null
+    : null
 
   const resetFormEmpty = useCallback(() => {
     setProductCodeInput("")
@@ -130,6 +136,7 @@ export function ProductReferenceFormModal({
     if (!open) {
       setShowSaveChoice(false)
       setTrashRefConfirmOpen(false)
+      setPendingTrashRefId(null)
       return
     }
     if (isCreateMode) {
@@ -286,18 +293,28 @@ export function ProductReferenceFormModal({
 
       <ProductReferenceConfirmDialog
         open={trashRefConfirmOpen}
-        title="Trash reference link"
-        message={`Permanently remove reference ${formatHookLabel(hookGroup, hookNo)} for ${sellableProductCode}? Product stays active and the hook becomes free for reuse.`}
+        title="Remove reference link"
+        message={
+          pendingTrashLink
+            ? `Permanently remove reference ${pendingTrashLink.hookGroup}.${pendingTrashLink.hookNo} for ${sellableProductCode}? Product stays active; other reference links are unchanged.`
+            : `Permanently remove this reference for ${sellableProductCode}? Product stays active.`
+        }
         confirmLabel="Remove reference"
         pending={submitting}
         error={displayError}
         onClose={() => {
-          if (!submitting) setTrashRefConfirmOpen(false)
+          if (!submitting) {
+            setTrashRefConfirmOpen(false)
+            setPendingTrashRefId(null)
+          }
         }}
         onConfirm={() => {
-          if (!onTrashReference) return
-          void onTrashReference()
-            .then(() => setTrashRefConfirmOpen(false))
+          if (!onTrashReference || !pendingTrashRefId) return
+          void onTrashReference(pendingTrashRefId)
+            .then(() => {
+              setTrashRefConfirmOpen(false)
+              setPendingTrashRefId(null)
+            })
             .catch(() => {
               /* error shown via error prop */
             })
@@ -328,8 +345,80 @@ export function ProductReferenceFormModal({
         </div>
 
         <div className="space-y-4">
+            {!isCreateMode && referenceLinks.length > 0 ? (
+              <section
+                className="space-y-2 border-t border-border pt-3"
+                data-testid="product-reference-links"
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="text-sm font-semibold">Current Reference Links</h3>
+                  <span className="text-xs text-muted-foreground">
+                    {referenceLinks.length}{" "}
+                    {referenceLinks.length === 1 ? "ref" : "refs"}
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded border border-border">
+                  <table className="w-full min-w-[36rem] text-left text-xs">
+                    <thead className="bg-[var(--btn-secondary-hover)] text-muted-foreground">
+                      <tr>
+                        <th className="px-2 py-1.5 font-medium">Hook</th>
+                        <th className="px-2 py-1.5 font-medium">Supplier</th>
+                        <th className="px-2 py-1.5 font-medium">Product Group</th>
+                        <th className="px-2 py-1.5 font-medium">Ref code</th>
+                        <th className="px-2 py-1.5 font-medium"> </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {referenceLinks.map((link) => (
+                        <tr
+                          key={link.id}
+                          className="border-t border-border"
+                          data-testid={`product-reference-link-${link.id}`}
+                        >
+                          <td className="px-2 py-1.5 font-mono">
+                            {link.hookGroup}.{link.hookNo}
+                          </td>
+                          <td className="px-2 py-1.5 font-mono">{link.supplierCode}</td>
+                          <td className="px-2 py-1.5 font-mono">
+                            {link.productGroup ?? ""}
+                          </td>
+                          <td className="px-2 py-1.5 font-mono">{link.productCode}</td>
+                          <td className="px-2 py-1.5 text-right">
+                            {onTrashReference ? (
+                              <button
+                                type="button"
+                                disabled={submitting}
+                                className="text-red-600 underline-offset-2 hover:underline disabled:opacity-50"
+                                onClick={() => {
+                                  setLocalError(null)
+                                  setPendingTrashRefId(link.id)
+                                  setTrashRefConfirmOpen(true)
+                                }}
+                              >
+                                Remove Reference
+                              </button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Remove deletes that reference link only. Clearing the fields below does not
+                  delete a link — use the per-row remove action.
+                </p>
+              </section>
+            ) : null}
+
             <section className="space-y-3 border-t border-border pt-3">
-              <h3 className="text-sm font-semibold">Reference Stock</h3>
+              <h3 className="text-sm font-semibold">
+                {isCreateMode || !hasReference
+                  ? "Reference Stock"
+                  : referenceLinks.length > 1
+                    ? "Edit Primary Reference / Save All"
+                    : "Reference Stock"}
+              </h3>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <label className="block">
@@ -486,19 +575,7 @@ export function ProductReferenceFormModal({
               </p>
             ) : null}
 
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-              {!isCreateMode && hasReference && onTrashReference ? (
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => setTrashRefConfirmOpen(true)}
-                  className="text-sm text-red-600 underline-offset-2 hover:underline disabled:opacity-50"
-                >
-                  Trash Reference Link
-                </button>
-              ) : (
-                <span />
-              )}
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -529,10 +606,4 @@ export function ProductReferenceFormModal({
       </ModalShell>
     </>
   )
-}
-
-function formatHookLabel(group: string, no: string): string {
-  if (!group) return ""
-  if (!no) return group
-  return `${group}.${no}`
 }

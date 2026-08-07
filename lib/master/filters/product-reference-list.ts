@@ -27,39 +27,56 @@ export function matchesProductCode(row: ProductReferenceListItem, search: string
   return code.startsWith(key)
 }
 
-/** Product name: substring search. */
+/** Product name / description: case-insensitive substring contains. */
 export function matchesProductName(row: ProductReferenceListItem, search: string): boolean {
-  if (!search) return true
-  return containsInsensitive(row.productName, search)
+  const key = search.trim()
+  if (!key) return true
+  return containsInsensitive(row.productName, key)
 }
 
-/** Hook group: exact match (case-insensitive). */
+/** Hook group: exact match against any link (case-insensitive). */
 export function matchesHookGroup(row: ProductReferenceListItem, search: string): boolean {
   const key = search.trim()
   if (!key) return true
-  return row.hookGroup.toUpperCase() === key.toUpperCase()
+  const upper = key.toUpperCase()
+  if (row.references.length > 0) {
+    return row.references.some((ref) => ref.hookGroup.toUpperCase() === upper)
+  }
+  return row.hookGroup.toUpperCase() === upper
 }
 
-/** Hook no: exact numeric match. */
+/** Hook no: exact numeric match against any link. */
 export function matchesHookNo(row: ProductReferenceListItem, search: string): boolean {
   const key = search.trim()
   if (!key) return true
   if (!/^\d+$/.test(key)) return false
+  const n = Number.parseInt(key, 10)
+  if (row.references.length > 0) {
+    return row.references.some((ref) => ref.hookNo === n)
+  }
   if (row.hookNo == null) return false
-  return row.hookNo === Number.parseInt(key, 10)
+  return row.hookNo === n
 }
 
-/** Supplier code: prefix match. */
+/** Supplier code: prefix match against any link. */
 export function matchesSupplierCode(row: ProductReferenceListItem, search: string): boolean {
   const key = search.trim()
   if (!key) return true
+  if (row.references.length > 0) {
+    return row.references.some((ref) => prefixInsensitive(ref.supplierCode, key))
+  }
   return prefixInsensitive(row.supplierCode, key)
 }
 
-/** Product group: prefix match. */
+/** Product group: prefix match against any link. */
 export function matchesProductGroup(row: ProductReferenceListItem, search: string): boolean {
   const key = search.trim()
   if (!key) return true
+  if (row.references.length > 0) {
+    return row.references.some(
+      (ref) => ref.productGroup != null && prefixInsensitive(ref.productGroup, key)
+    )
+  }
   if (row.productGroup == null) return false
   return prefixInsensitive(row.productGroup, key)
 }

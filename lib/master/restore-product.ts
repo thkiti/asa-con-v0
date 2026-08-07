@@ -2,8 +2,7 @@ import type { PrismaClient } from "@/generated/prisma/client"
 import { MasterDomainError } from "./errors"
 import {
   referenceStockSelectWithProduct,
-  sortReferences,
-  toProductReferenceListItemFromReference,
+  toProductReferenceListItemFromReferences,
   toProductReferenceListItemWithoutReference,
 } from "./product-reference-mapper"
 import type { ProductReferenceListItem } from "./types"
@@ -46,9 +45,8 @@ export async function restoreProduct(
       where: { productId: id, deleted: false },
       select: referenceStockSelectWithProduct,
     })
-    const primary = sortReferences(refs)[0]
-    if (primary) {
-      return toProductReferenceListItemFromReference(primary)
+    if (refs.length > 0) {
+      return toProductReferenceListItemFromReferences(updated, refs)
     }
     return toProductReferenceListItemWithoutReference(updated)
   })

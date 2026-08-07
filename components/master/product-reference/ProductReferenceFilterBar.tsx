@@ -57,14 +57,14 @@ export function ProductReferenceFilterBar({
       </label>
 
       <label className="flex min-w-[8rem] flex-1 flex-col">
-        <span className={masterToolbarLabel}>Name</span>
+        <span className={masterToolbarLabel}>Name / Desc.</span>
         <input
           type="search"
           value={values.productName}
           onChange={(e) => onChange({ productName: e.target.value })}
-          placeholder="Name…"
+          placeholder="Contains…"
           className={masterToolbarInput}
-          aria-label="Product name"
+          aria-label="Product name or description"
         />
       </label>
 

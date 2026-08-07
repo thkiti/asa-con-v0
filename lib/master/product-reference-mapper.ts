@@ -1,4 +1,4 @@
-import type { ProductReferenceListItem } from "./types"
+import type { ProductReferenceLink, ProductReferenceListItem } from "./types"
 
 export type ReferenceWithProductRow = {
   id: string
@@ -37,23 +37,56 @@ export function sortReferences<T extends { hookGroup: string; hookNo: number; su
   })
 }
 
-export function toProductReferenceListItemFromReference(
-  ref: ReferenceWithProductRow
-): ProductReferenceListItem {
+export function toProductReferenceLink(
+  ref: Pick<
+    ReferenceWithProductRow,
+    "id" | "hookGroup" | "hookNo" | "supplierCode" | "productGroup" | "productCode"
+  >
+): ProductReferenceLink {
   return {
-    rowId: ref.id,
-    productId: ref.productId,
-    productCode: ref.product.code,
-    productName: ref.product.name,
-    productType: ref.product.productType,
+    id: ref.id,
     hookGroup: ref.hookGroup,
     hookNo: ref.hookNo,
     supplierCode: ref.supplierCode,
     productGroup: ref.productGroup,
-    referenceProductCode: ref.productCode,
-    hasReference: true,
-    deleted: ref.deleted,
+    productCode: ref.productCode,
   }
+}
+
+export function toProductReferenceListItemFromReferences(
+  product: ProductRowForList,
+  refs: ReferenceWithProductRow[]
+): ProductReferenceListItem {
+  const sorted = sortReferences(refs)
+  const links = sorted.map(toProductReferenceLink)
+  const primary = sorted[0]
+
+  if (!primary) {
+    return toProductReferenceListItemWithoutReference(product)
+  }
+
+  return {
+    rowId: primary.id,
+    productId: product.id,
+    productCode: product.code,
+    productName: product.name,
+    productType: product.productType,
+    hookGroup: primary.hookGroup,
+    hookNo: primary.hookNo,
+    supplierCode: primary.supplierCode,
+    productGroup: primary.productGroup,
+    referenceProductCode: primary.productCode,
+    hasReference: true,
+    references: links,
+    referenceCount: links.length,
+    deleted: product.deleted,
+  }
+}
+
+export function toProductReferenceListItemFromReference(
+  ref: ReferenceWithProductRow
+): ProductReferenceListItem {
+  return toProductReferenceListItemFromReferences(ref.product, [ref])
 }
 
 export function toProductReferenceListItemWithoutReference(
@@ -71,6 +104,8 @@ export function toProductReferenceListItemWithoutReference(
     productGroup: null,
     referenceProductCode: "",
     hasReference: false,
+    references: [],
+    referenceCount: 0,
     deleted: product.deleted,
   }
 }

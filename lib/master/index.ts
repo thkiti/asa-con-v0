@@ -2,6 +2,7 @@ export type {
   BranchListItem,
   BranchListQuery,
   ListMode,
+  ProductReferenceLink,
   ProductReferenceListItem,
   ProductReferenceListQuery,
   ReferenceStatusFilter,

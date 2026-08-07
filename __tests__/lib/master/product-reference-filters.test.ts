@@ -12,7 +12,7 @@ import { ProductType } from "@/lib/shared/types"
 function row(
   overrides: Partial<ProductReferenceListItem> = {}
 ): ProductReferenceListItem {
-  return {
+  const base: ProductReferenceListItem = {
     rowId: "r1",
     productId: "p1",
     productCode: "5101001",
@@ -24,9 +24,37 @@ function row(
     productGroup: "5101900",
     referenceProductCode: "5101001",
     hasReference: true,
+    references: [
+      {
+        id: "ref-1",
+        hookGroup: "K",
+        hookNo: 12,
+        supplierCode: "SUP01",
+        productGroup: "5101900",
+        productCode: "5101001",
+      },
+    ],
+    referenceCount: 1,
     deleted: false,
-    ...overrides,
   }
+
+  const merged = { ...base, ...overrides }
+  if (!("references" in overrides) && merged.hasReference) {
+    merged.references = [
+      {
+        id: typeof merged.rowId === "string" && !merged.rowId.startsWith("product-")
+          ? merged.rowId
+          : "ref-1",
+        hookGroup: merged.hookGroup || "K",
+        hookNo: merged.hookNo ?? 0,
+        supplierCode: merged.supplierCode,
+        productGroup: merged.productGroup,
+        productCode: merged.referenceProductCode || merged.productCode,
+      },
+    ]
+    merged.referenceCount = 1
+  }
+  return merged
 }
 
 const baseQuery = {
@@ -74,10 +102,39 @@ describe("matchesHookNo", () => {
 })
 
 describe("matchesProductName", () => {
-  it("uses contains for name", () => {
+  it("uses case-insensitive substring contains for name", () => {
     expect(matchesProductName(row(), "alpha")).toBe(true)
     expect(matchesProductName(row(), "wid")).toBe(true)
+    expect(matchesProductName(row(), "ALPHA")).toBe(true)
     expect(matchesProductName(row(), "zzz")).toBe(false)
+  })
+
+  it("matches embedded supplier/reference fragments inside product description", () => {
+    const description =
+      "กุญแจบ้าน(ตัด/นิเกิล)พิเศษของใน C58/C5/K338"
+    const target = row({
+      productCode: "0105006",
+      productName: description,
+    })
+
+    expect(matchesProductName(target, "C5")).toBe(true)
+    expect(matchesProductName(target, "c5")).toBe(true)
+    expect(matchesProductName(target, "C58")).toBe(true)
+    expect(matchesProductName(target, "K338")).toBe(true)
+    expect(matchesProductName(target, "C58/C5")).toBe(true)
+    expect(matchesProductName(target, "บ้าน")).toBe(true)
+    // Substring only — "K38" is not contiguous inside "K338"
+    expect(matchesProductName(target, "K38")).toBe(false)
+    expect(matchesProductName(target, "zzz")).toBe(false)
+  })
+
+  it("does not require the search text to start at the beginning of the name", () => {
+    expect(
+      matchesProductName(
+        row({ productName: "กุญแจบ้าน(ตัด/นิเกิล)พิเศษของใน C58/C5/K338" }),
+        "พิเศษ"
+      )
+    ).toBe(true)
   })
 })
 
@@ -95,6 +152,8 @@ describe("applyProductReferenceFilters", () => {
       productGroup: null,
       referenceProductCode: "",
       hasReference: false,
+      references: [],
+      referenceCount: 0,
     }),
   ]
 
@@ -131,6 +190,69 @@ describe("applyProductReferenceFilters", () => {
       productCode: "5",
     })
     expect(result.map((r) => r.productCode)).toEqual(["5101001"])
+  })
+
+  it("filters by product name substring contains (embedded supplier text)", () => {
+    const withDesc = [
+      ...rows,
+      row({
+        rowId: "product-0105006",
+        productId: "p-0105006",
+        productCode: "0105006",
+        productName: "กุญแจบ้าน(ตัด/นิเกิล)พิเศษของใน C58/C5/K338",
+        hookGroup: "",
+        hookNo: null,
+        supplierCode: "",
+        productGroup: null,
+        referenceProductCode: "",
+        hasReference: false,
+        references: [],
+        referenceCount: 0,
+      }),
+    ]
+
+    const byC5 = applyProductReferenceFilters(withDesc, {
+      ...baseQuery,
+      productName: "C5",
+    })
+    expect(byC5.map((r) => r.productCode)).toEqual(["0105006"])
+
+    const byK338 = applyProductReferenceFilters(withDesc, {
+      ...baseQuery,
+      productName: "K338",
+    })
+    expect(byK338.map((r) => r.productCode)).toEqual(["0105006"])
+  })
+
+  it("combines name contains with other filters", () => {
+    const withDesc = [
+      row({
+        productCode: "0105006",
+        productName: "กุญแจบ้าน(ตัด/นิเกิล)พิเศษของใน C58/C5/K338",
+        hookGroup: "K",
+        hookNo: 326,
+        supplierCode: "K.338",
+        productGroup: "0105902",
+      }),
+      row({
+        rowId: "r2",
+        productId: "p2",
+        productCode: "0105007",
+        productName: "other C5 item",
+        hookGroup: "C",
+        hookNo: 1,
+        supplierCode: "C.1",
+        productGroup: "0105901",
+      }),
+    ]
+
+    const result = applyProductReferenceFilters(withDesc, {
+      ...baseQuery,
+      productName: "C5",
+      hookGroup: "K",
+    })
+    expect(result).toHaveLength(1)
+    expect(result[0]?.productCode).toBe("0105006")
   })
 
   it("filters by product name contains", () => {

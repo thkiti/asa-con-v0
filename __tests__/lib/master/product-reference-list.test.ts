@@ -1,4 +1,5 @@
 import { listProductReference } from "@/lib/master/product-reference-list"
+import { toProductReferenceListItemFromReferences } from "@/lib/master/product-reference-mapper"
 import { ProductType } from "@/lib/shared"
 
 describe("listProductReference", () => {
@@ -70,6 +71,110 @@ describe("listProductReference", () => {
     expect(none).toHaveLength(1)
     expect(none[0]?.hasReference).toBe(false)
     expect(none[0]?.productCode).toBe("6101001")
+    expect(none[0]?.references).toEqual([])
+    expect(none[0]?.referenceCount).toBe(0)
+  })
+
+  it("attaches all active references on a multi-ref product", async () => {
+    const product = {
+      id: "p-0104004",
+      code: "0104004",
+      name: "Multi",
+      productType: ProductType.TRACKED,
+      deleted: false,
+    }
+    const db = {
+      product: {
+        findMany: jest.fn().mockResolvedValue([product]),
+      },
+      referenceStock: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: "ref-k291",
+            hookGroup: "K",
+            hookNo: 291,
+            supplierCode: "K.161",
+            productCode: "0104004",
+            productGroup: "0104901",
+            productId: product.id,
+            deleted: false,
+            product,
+          },
+          {
+            id: "ref-k2",
+            hookGroup: "K",
+            hookNo: 2,
+            supplierCode: "KS1",
+            productCode: "0104004",
+            productGroup: "0104901",
+            productId: product.id,
+            deleted: false,
+            product,
+          },
+          {
+            id: "ref-k19",
+            hookGroup: "K",
+            hookNo: 19,
+            supplierCode: "ULO50",
+            productCode: "0104004",
+            productGroup: "0104901",
+            productId: product.id,
+            deleted: false,
+            product,
+          },
+        ]),
+      },
+    }
+
+    const items = await listProductReference(db, {
+      mode: "active",
+      productCode: "",
+      productName: "",
+      hookGroup: "",
+      hookNo: "",
+      supplierCode: "",
+      productGroup: "",
+      referenceStatus: "all",
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items[0]?.referenceCount).toBe(3)
+    expect(items[0]?.references.map((r) => `${r.hookGroup}.${r.hookNo}`)).toEqual([
+      "K.2",
+      "K.19",
+      "K.291",
+    ])
+    expect(items[0]?.hookNo).toBe(2)
+    expect(items[0]?.rowId).toBe("ref-k2")
+  })
+
+  it("after removing two refs, mapper keeps only the intended third ref", () => {
+    const product = {
+      id: "p-0104004",
+      code: "0104004",
+      name: "Multi",
+      productType: ProductType.TRACKED,
+      deleted: false,
+    }
+    const remaining = toProductReferenceListItemFromReferences(product, [
+      {
+        id: "ref-k291",
+        hookGroup: "K",
+        hookNo: 291,
+        supplierCode: "K.161",
+        productCode: "0104004",
+        productGroup: "0104901",
+        productId: product.id,
+        deleted: false,
+        product,
+      },
+    ])
+
+    expect(remaining.referenceCount).toBe(1)
+    expect(remaining.references.map((r) => `${r.hookGroup}.${r.hookNo}`)).toEqual(["K.291"])
+    expect(remaining.productId).toBe(product.id)
+    expect(remaining.productCode).toBe("0104004")
+    expect(remaining.deleted).toBe(false)
   })
 
   it("orders by numeric Hook when hookGroup is selected, not Product Code", async () => {

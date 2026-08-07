@@ -5,7 +5,7 @@ import {
 } from "./filters/product-reference-list"
 import {
   sortReferences,
-  toProductReferenceListItemFromReference,
+  toProductReferenceListItemFromReferences,
   toProductReferenceListItemWithoutReference,
 } from "./product-reference-mapper"
 import type {
@@ -62,9 +62,8 @@ export async function listProductReference(
 
   const rows: ProductReferenceListItem[] = products.map((product) => {
     const list = refsByProductId.get(product.id)
-    const primary = list?.[0]
-    if (primary) {
-      return toProductReferenceListItemFromReference(primary)
+    if (list && list.length > 0) {
+      return toProductReferenceListItemFromReferences(product, list)
     }
     return toProductReferenceListItemWithoutReference(product)
   })

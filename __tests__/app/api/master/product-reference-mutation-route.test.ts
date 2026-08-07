@@ -52,6 +52,17 @@ const sampleItem = {
   productGroup: null,
   referenceProductCode: "5101001",
   hasReference: true,
+  references: [
+    {
+      id: "ref-1",
+      hookGroup: "K",
+      hookNo: 12,
+      supplierCode: "K.144",
+      productGroup: null,
+      productCode: "5101001",
+    },
+  ],
+  referenceCount: 1,
   deleted: false,
 }
 
@@ -129,6 +140,8 @@ describe("PATCH /api/master/products/[productId]", () => {
       hookNo: null,
       supplierCode: "",
       referenceProductCode: "",
+      references: [],
+      referenceCount: 0,
     })
 
     const req = new NextRequest("http://localhost/api/master/products/p1", {
